@@ -21,9 +21,9 @@ OpenAPI: `3.0.0`, 471 path, 539 operation.
 Текущий frontend pin
 `openapi/retenive-backend.json` имеет SHA-256
 `75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`.
-Количество paths и operation IDs совпадает с новым экспортом, но содержимое и SHA не совпадают;
-перед следующей реализацией контракт нужно повторно pin/generate. Это frontend sync-work, а не
-backend-блокер.
+Raw SHA свежего backend export отличается из-за порядка JSON-ключей. Canonical drift-check
+подтвердил полное семантическое совпадение operations/schemas с pinned artifact; повторная
+generation не дала contract diff. Frontend metadata закреплена на backend source revision выше.
 
 Статусы ниже означают:
 
@@ -44,8 +44,8 @@ notifications и External Work.
 
 | № | Задача | Backend-статус | Что именно мешает полному завершению |
 |---:|---|---|---|
-| 01 | Workspace/messaging contract sync | Нет | Только обновить frontend pin на свежий main |
-| 02 | Inbox/Case/workforce contract sync | Нет | Только обновить pin и capability matrix |
+| 01 | Workspace/messaging contract sync | Нет | Pin и source revision проверены на свежем main |
+| 02 | Inbox/Case/workforce contract sync | Нет | Pinned contract семантически совпадает со свежим main |
 | 03 | Content/Lead/notifications contract sync | Нет | Sync может честно отметить отсутствующие vertical как unpublished |
 | 04 | Shared Conversation Surface | Нет | Frontend architecture |
 | 05 | Users migration | Нет | Существующие Conversation/translation/AI suspension операции опубликованы |

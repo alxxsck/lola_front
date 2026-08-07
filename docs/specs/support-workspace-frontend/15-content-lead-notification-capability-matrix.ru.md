@@ -8,11 +8,11 @@
 
 Pinned contract: `sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`
 
-Backend docs/source review: `c8948779d9d5ef4fb1421a5ac416768782dd8647`
+Backend docs/source review: `0ca33c93e52d689de388187091e6aa2f6c05639b`
 
-Frontend реализует только то, что опубликовано в pinned OpenAPI. Текущий
-backend source уже содержит более новый browser-notification slice, но до
-повторного pin/generate он остаётся `NOT_PUBLISHED` для CMS frontend.
+Frontend реализует только то, что опубликовано в pinned OpenAPI. Backend main
+содержит internal browser-notification policy/intent slices, но не публикует
+preference/subscription/device controllers; vertical остаётся `NOT_PUBLISHED`.
 `READY` означает typed transport и достаточную authority. `RELEASE_GATED`
 требует server rollout/admission. `PARTIAL` означает, что часть projection или
 ошибок не типизирована. Нельзя подменять пробел локальным DTO или legacy
@@ -103,9 +103,9 @@ Pinned contract содержит только legacy email Case Escalation prefe
 - browser notification permission/rollout projection.
 
 `NotificationDestination_*`, platform notification operations и email
-preference не являются заменой. В current backend source эти controllers уже
-есть, но CMS ждёт новый pinned OpenAPI и generated client. До этого Task 27 не
-показывает enabled toggle, devices или fake deep link.
+preference не являются заменой. В проверенном backend main публичных browser
+notification controllers нет. До их публикации Task 27 не показывает enabled
+toggle, devices или fake deep link.
 
 ## 6. Flags, owners и blockers
 
@@ -115,7 +115,7 @@ preference не являются заменой. В current backend source эт�
 | Internal Knowledge         | Project admission; docs flags `SUPPORT_INTERNAL_KNOWLEDGE_*`                          | Knowledge/Content → Task 25                    |
 | Lead Control               | typed disabled/not-ready errors; отдельный project rollout contract отсутствует       | Lead projection/rollout → Task 26              |
 | Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
-| Browser notifications      | в pin ничего нет; source flags `PERSONAL_SUPPORT_BROWSER_PUSH_*` не frontend contract | Notifications/Auth/deep-link → re-pin, Task 27 |
+| Browser notifications      | в pin ничего нет; source flags `PERSONAL_SUPPORT_BROWSER_PUSH_*` не frontend contract | Notifications/Auth/deep-link backend → Task 27 |
 | Whole Support shell        | временный `VITE_SUPPORT_WORKSPACE_ENABLED`                                            | backend rollout → cutover tasks                |
 
 Backend environment flag не равен frontend feature flag. UI читает только

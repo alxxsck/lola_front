@@ -15,3 +15,7 @@
 
 `Idempotency lookup`, durable CMS read position и typed realtime payload честно
 помечены `NOT_PUBLISHED`; Task 01 не подменяет backend gaps клиентской логикой.
+
+**Повторная проверка 2026-08-07:** backend `origin/main`
+`0ca33c93e52d689de388187091e6aa2f6c05639b`; fresh export семантически совпал с
+pinned artifact после canonical ordering, source revision обновлена, drift/check/generation зелёные.

@@ -1,6 +1,7 @@
 # Support Workspace: зафиксированные contract gaps
 
-Статус: blocking gaps для production cutover
+Статус: исторический snapshot; актуальная сводка —
+[backend-блокеры 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)
 Источник проверки: OpenAPI, экспортированный из `Lola_backend` ветки `develop`
 на commit `866404ec167ae293777259ee2bdd60d609c914af`
 Дата: 7 августа 2026 года

@@ -13,8 +13,11 @@
 - [x] Fixtures покрывают denied permission, revoked subscription, stale projection, partial action и unknown outcome.
 - [x] Feature flags и backend owners указаны для каждого capability gap.
 
-Browser notification preferences, subscriptions, devices и safe deep-link
-contracts присутствуют в текущем backend source, но отсутствуют в pinned
-OpenAPI/generated client. До повторного pin/generate они остаются
-`NOT_PUBLISHED`; legacy email preferences и Notification Destinations не
-используются как замена.
+Backend `origin/main` содержит внутренние notification policy/intent slices, но
+не публикует browser preference, subscription/device или safe deep-link
+controllers в OpenAPI. Они остаются `NOT_PUBLISHED`; legacy email preferences и
+Notification Destinations не используются как замена.
+
+**Повторная проверка 2026-08-07:** backend `origin/main`
+`0ca33c93e52d689de388187091e6aa2f6c05639b`; fresh export семантически совпал с
+pinned artifact, source revision обновлена, contract fixtures и generation зелёные.

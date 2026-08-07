@@ -3,7 +3,7 @@
 Статус: normative baseline для frontend Task 01
 Версия: 1
 Дата: 7 августа 2026 года
-Backend source: `fcb752a7793d801c5baac6e53c8512b54a36aa5c`
+Backend source: `0ca33c93e52d689de388187091e6aa2f6c05639b`
 Pinned contract: `sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`
 
 Этот документ отделяет опубликованный production contract от backend intent.
