@@ -1,5 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { reactive, ref } from "vue";
+import { nextTick, reactive, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import UserWorkspaceDialog from "./UserWorkspaceDialog.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
@@ -10,6 +10,10 @@ import ReplyTranslationPreview from "@/features/conversation-translation/ui/Repl
 import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
 import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
 import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
+import {
+  getRootScrollLockCount,
+  releaseRootScrollLock,
+} from "@/features/support-workspace/presentation/root-scroll-lock";
 
 const mocks = vi.hoisted(() => ({
   getConversations: vi.fn(),
@@ -163,7 +167,11 @@ describe("единое рабочее пространство пользова�
   beforeEach(() => {
     vi.restoreAllMocks();
     sessionStorage.clear();
-    document.body.classList.remove("workspace-scroll-locked");
+    Object.defineProperty(window, "scrollTo", {
+      configurable: true,
+      value: vi.fn(),
+    });
+    while (getRootScrollLockCount() > 0) releaseRootScrollLock();
     Object.defineProperty(HTMLElement.prototype, "scrollTo", {
       configurable: true,
       value: vi.fn(),
@@ -271,6 +279,11 @@ describe("единое рабочее пространство пользова�
       },
       global: {
         stubs: {
+          FullViewportWorkspaceShell: {
+            props: ["mode"],
+            template:
+              '<div data-testid="workspace-presentation-shell" :data-presentation-mode="mode"><slot /></div>',
+          },
           Dialog: {
             props: ["blockScroll", "visible"],
             emits: ["update:visible"],
@@ -1190,12 +1203,31 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    expect(
-      wrapper.get("section[data-block-scroll]").attributes("data-block-scroll"),
-    ).toBeDefined();
-    expect(document.body.classList.contains("workspace-scroll-locked")).toBe(
-      true,
+    expect(getRootScrollLockCount()).toBe(1);
+    expect(document.body.style.position).toBe("fixed");
+
+    wrapper.unmount();
+    expect(getRootScrollLockCount()).toBe(0);
+    expect(document.body.style.position).toBe("");
+  });
+
+  it("разворачивает Users workspace через общий presentation shell", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    const toggle = wrapper.get(
+      'button[aria-label="Развернуть рабочее место на всю вкладку"]',
     );
+    await toggle.trigger("click");
+    await nextTick();
+
+    const shell = wrapper.get('[data-testid="workspace-presentation-shell"]');
+    expect(shell.attributes("data-presentation-mode")).toBe("full-tab");
+    expect(wrapper.find(".p-dialog-maximized").exists()).toBe(false);
+    expect(getRootScrollLockCount()).toBe(1);
+
+    wrapper.unmount();
+    expect(getRootScrollLockCount()).toBe(0);
   });
 
   it("показывает ошибку перевода вне chat layout", async () => {

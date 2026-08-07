@@ -74,6 +74,37 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 }
 
 describe("AppShell", () => {
+  it("uses the compact application rail on the Support workspace route", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", [
+        "project.conversations.read",
+        "project.support.workspace.use",
+      ]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: "/support/inbox",
+          component: { template: "<div />" },
+          meta: { supportWorkspacePresentation: true },
+        },
+      ],
+    });
+    await router.push("/support/inbox");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+
+    expect(wrapper.get(".shell").classes()).toContain("shell--support-focus");
+    expect(wrapper.get(".sidebar").attributes("aria-label")).toBe(
+      "Основная навигация CMS",
+    );
+  });
+
   it("opens personal security settings from the profile menu", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

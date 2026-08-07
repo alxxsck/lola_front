@@ -65,6 +65,7 @@ import {
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
+import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 import { relativeTime } from "@/shared/lib/format";
@@ -88,7 +89,36 @@ const inbox = createSupportInboxController(
 );
 const availabilityDialogVisible = ref(false);
 const caseDialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
-const workspaceFullscreen = ref(false);
+const workspaceFullscreen = ref(true);
+const workspacePresentedFullscreen = ref(true);
+const workspacePresentationTransitioning = ref(false);
+let workspacePresentationLauncher: HTMLElement | null = null;
+let workspacePresentationFocusTarget: HTMLElement | null = null;
+
+function setWorkspaceFullscreen(fullscreen: boolean, event?: Event): void {
+  if (workspacePresentationTransitioning.value) return;
+  const eventTarget =
+    event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  if (fullscreen && eventTarget) workspacePresentationLauncher = eventTarget;
+  workspacePresentationFocusTarget = fullscreen
+    ? eventTarget
+    : (workspacePresentationLauncher ?? eventTarget);
+  workspaceFullscreen.value = fullscreen;
+}
+
+function handleWorkspacePresentationTransition(transitioning: boolean): void {
+  workspacePresentationTransitioning.value = transitioning;
+  if (transitioning || !workspacePresentationFocusTarget) return;
+  const target = workspacePresentationFocusTarget;
+  workspacePresentationFocusTarget = null;
+  void nextTick(() => {
+    if (target.isConnected) target.focus({ preventScroll: true });
+  });
+}
+
+function handleWorkspacePresented(mode: "windowed" | "full-tab"): void {
+  workspacePresentedFullscreen.value = mode === "full-tab";
+}
 
 const routeConversationId = computed(() => {
   const routeId = route.params.conversationId;
@@ -736,9 +766,18 @@ function moveInboxSelection(direction: -1 | 1): void {
 }
 
 function handleWorkspaceKeydown(event: KeyboardEvent): void {
-  if (workspaceFullscreen.value && event.key === "Escape") {
+  if (
+    event.key === "Escape" &&
+    document.querySelector("[role='dialog'][aria-modal='true']")
+  )
+    return;
+  if (
+    workspaceFullscreen.value &&
+    workspacePresentationLauncher &&
+    event.key === "Escape"
+  ) {
     event.preventDefault();
-    workspaceFullscreen.value = false;
+    void setWorkspaceFullscreen(false);
     return;
   }
   if (
@@ -1287,354 +1326,418 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    class="page support-workspace-page"
-    :class="{ 'support-workspace-page--fullscreen': workspaceFullscreen }"
+  <FullViewportWorkspaceShell
+    :mode="workspaceFullscreen ? 'full-tab' : 'windowed'"
+    @transitioning="handleWorkspacePresentationTransition"
+    @presented="handleWorkspacePresented"
   >
-    <header class="page-header support-workspace-header">
-      <div>
-        <div class="eyebrow"><i class="pi pi-headphones" /> Поддержка</div>
-        <h1>Поддержка</h1>
-        <p class="subtitle">Единая очередь чатов с пользователями.</p>
-      </div>
-      <div class="header-actions">
-        <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
-        <Button
-          v-if="canReadAvailability"
-          label="Моя доступность"
-          icon="pi pi-user-clock"
-          severity="secondary"
-          outlined
-          @click="availabilityDialogVisible = true"
-        />
-        <Button
-          :label="workspaceFullscreen ? 'Свернуть' : 'На весь экран'"
-          :icon="
-            workspaceFullscreen
-              ? 'pi pi-window-minimize'
-              : 'pi pi-window-maximize'
-          "
-          severity="secondary"
-          outlined
-          @click="workspaceFullscreen = !workspaceFullscreen"
-        />
-        <Button
-          label="Обновить"
-          icon="pi pi-refresh"
-          severity="secondary"
-          outlined
-          :loading="
-            inbox.loading.value ||
-            conversation.loading.value ||
-            availability.loading.value ||
-            availability.changing.value ||
-            routingOffers.loading.value ||
-            Boolean(routingOffers.changingOfferId.value)
-          "
-          @click="reload"
-        />
-      </div>
-    </header>
-
-    <div
-      class="support-workspace card"
+    <section
+      class="page support-workspace-page"
       :class="{
-        'has-route-selection': Boolean(routeConversationId),
+        'support-workspace-page--full-tab': workspacePresentedFullscreen,
       }"
     >
-      <aside class="inbox-pane" aria-label="Диалоги проекта">
-        <div class="pane-heading">
-          <div>
-            <span class="eyebrow">Поддержка</span>
-            <h2>Входящие</h2>
-          </div>
-          <span class="inbox-count">{{ inbox.items.value.length }}</span>
+      <header class="page-header support-workspace-header">
+        <div>
+          <div class="eyebrow"><i class="pi pi-headphones" /> Поддержка</div>
+          <h1>Поддержка</h1>
+          <p class="subtitle">Единая очередь чатов с пользователями.</p>
         </div>
-
-        <div class="queue-summary">
-          <span><i class="pi pi-inbox" aria-hidden="true" /> Все диалоги</span>
-          <small>J / K для навигации</small>
-        </div>
-
-        <div
-          v-if="inbox.loading.value && !inbox.items.value.length"
-          class="inbox-skeletons"
-        >
-          <Skeleton v-for="index in 5" :key="index" height="76px" />
-        </div>
-        <Message
-          v-else-if="inbox.error.value"
-          severity="error"
-          :closable="false"
-        >
-          {{ inbox.error.value }}
-        </Message>
-        <p v-else-if="!inbox.items.value.length" class="empty-pane">
-          В этом проекте пока нет доступных диалогов.
-        </p>
-        <div v-else class="conversation-list">
-          <button
-            v-for="conversation in inbox.items.value"
-            :key="conversation.id"
-            type="button"
-            class="conversation-row"
-            :class="{ selected: conversation.id === selectedConversation?.id }"
-            :aria-current="
-              conversation.id === selectedConversation?.id ? 'true' : undefined
-            "
-            @click="openConversation(conversation.id)"
-          >
-            <div class="conversation-row__top">
-              <span class="conversation-avatar">{{
-                initials(conversation.title)
-              }}</span>
-              <strong>{{ conversation.title }}</strong>
-              <time :datetime="conversation.updatedAt">{{
-                relativeTime(conversation.updatedAt)
-              }}</time>
-            </div>
-            <p>
-              {{
-                conversation.lastMessageAt
-                  ? `Последняя активность ${relativeTime(conversation.lastMessageAt)}`
-                  : "Сообщений пока нет"
-              }}
-            </p>
-            <span class="conversation-row__meta">
-              <span
-                :class="[
-                  'conversation-state',
-                  conversation.status.toLowerCase(),
-                ]"
-              >
-                {{ conversation.status === "OPEN" ? "Открыт" : "Закрыт" }}
-              </span>
-              {{ conversation.messageCount }} сообщений
-            </span>
-          </button>
+        <div class="header-actions">
+          <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
           <Button
-            v-if="inbox.nextCursor.value"
-            label="Показать ещё"
+            v-if="canReadAvailability"
+            label="Моя доступность"
+            icon="pi pi-user"
             severity="secondary"
-            text
-            :loading="inbox.loading.value"
-            @click="inbox.loadMore"
+            outlined
+            @click="availabilityDialogVisible = true"
+          />
+          <Button
+            :label="workspaceFullscreen ? 'Свернуть' : 'На весь экран'"
+            :icon="
+              workspaceFullscreen
+                ? 'pi pi-window-minimize'
+                : 'pi pi-window-maximize'
+            "
+            severity="secondary"
+            outlined
+            :disabled="workspacePresentationTransitioning"
+            @click="setWorkspaceFullscreen(!workspaceFullscreen, $event)"
+          />
+          <Button
+            label="Обновить"
+            icon="pi pi-refresh"
+            severity="secondary"
+            outlined
+            :loading="
+              inbox.loading.value ||
+              conversation.loading.value ||
+              availability.loading.value ||
+              availability.changing.value ||
+              routingOffers.loading.value ||
+              Boolean(routingOffers.changingOfferId.value)
+            "
+            @click="reload"
           />
         </div>
-      </aside>
+      </header>
 
-      <main class="conversation-pane" aria-label="Выбранный диалог">
-        <template v-if="selectedConversation">
-          <header class="conversation-header">
+      <div
+        class="support-workspace card"
+        :class="{
+          'has-route-selection': Boolean(routeConversationId),
+        }"
+      >
+        <aside class="inbox-pane" aria-label="Диалоги проекта">
+          <div class="pane-heading">
             <div>
-              <Button
-                class="mobile-back"
-                label="Назад к списку диалогов"
-                icon="pi pi-arrow-left"
-                severity="secondary"
-                text
-                @click="backToInbox"
-              />
-              <span class="eyebrow">{{
-                selectedConversation.status === "OPEN"
-                  ? "Активный диалог"
-                  : "Архивный диалог"
-              }}</span>
-              <h2>{{ selectedConversation.title }}</h2>
-              <p>Безопасный контекст доступен в панели диалога.</p>
+              <span class="eyebrow">Поддержка</span>
+              <h2>Входящие</h2>
             </div>
-            <div class="conversation-header__actions">
-              <Button
-                class="mobile-context"
-                label="Контекст"
-                icon="pi pi-user"
-                severity="secondary"
-                text
-                @click="contextDrawerVisible = true"
-              />
-              <Tag
-                :value="
-                  selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
-                "
-                :severity="
-                  selectedConversation.status === 'OPEN'
-                    ? 'success'
-                    : 'secondary'
-                "
-              />
-            </div>
-          </header>
+            <span class="inbox-count">{{ inbox.items.value.length }}</span>
+          </div>
 
-          <ConversationAISuspensionBanner
-            v-if="canReadSelectedAiSuspension && selectedAiSuspensionEntry"
-            :entry="selectedAiSuspensionEntry"
-            :can-manage="canManageSelectedAiSuspension"
-            :conversation-open="selectedConversation.status === 'OPEN'"
-            :show-history="canReadSelectedAiSuspension"
-            @extend="openAiSuspensionDialog('EXTEND')"
-            @resume="openAiSuspensionDialog('RESUME')"
-            @history="aiSuspensionHistoryVisible = true"
-          />
+          <div class="queue-summary">
+            <span
+              ><i class="pi pi-inbox" aria-hidden="true" /> Все диалоги</span
+            >
+            <small>J / K для навигации</small>
+          </div>
 
           <div
-            v-if="conversation.loading.value"
-            class="message-skeletons"
-            aria-busy="true"
+            v-if="inbox.loading.value && !inbox.items.value.length"
+            class="inbox-skeletons"
           >
-            <Skeleton
-              v-for="index in 5"
-              :key="index"
-              height="64px"
-              border-radius="14px"
-            />
+            <Skeleton v-for="index in 5" :key="index" height="76px" />
           </div>
           <Message
-            v-else-if="conversation.error.value"
+            v-else-if="inbox.error.value"
             severity="error"
             :closable="false"
           >
-            {{ conversation.error.value }}
+            {{ inbox.error.value }}
           </Message>
-          <SupportConversationPane
-            v-else-if="conversation.selection.value"
-            :title="selectedConversation.title"
-            :messages="conversation.messages.value"
-            :translations="translation.messageTranslations.value"
-            :assistant-label="auth.project?.assistantName ?? 'Lola'"
-            :history="supportConversationHistory"
-            :translation="supportConversationTranslation"
-            :composer="supportConversationComposer"
-            :ai-suspension="supportConversationAiSuspension"
-            @load-older="conversation.loadOlder"
-            @cancel-translation="translation.cancelMessageTranslations"
-            @change-translation-mode="changeSupportTranslationMode"
-            @reconcile-required="reconcileSupportSurface"
-            @draft-change="changeSupportDraft"
-            @send="sendSupportReply"
-            @request-reply-translation="prepareReplyTranslation"
-            @reconcile-reply-translation="translation.reconcileReplyPreview"
-            @retry-reply-translation="translation.retryReplyPreview"
-            @save-reply-translation="translation.editReplyTranslation"
-            @send-reply-translation="sendSupportTranslatedReply"
-            @composer-action="handleSupportComposerAction"
-            @start-ai-suspension="openAiSuspensionDialog('START')"
-            @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
-            @retry-ai-suspension="reloadSelectedAiSuspension"
-          />
-          <p v-else class="empty-pane support-conversation-unavailable">
-            Выбранный диалог недоступен.
+          <p v-else-if="!inbox.items.value.length" class="empty-pane">
+            В этом проекте пока нет доступных диалогов.
           </p>
-          <Message
-            v-if="reply.error.value"
-            severity="error"
-            :closable="false"
-            class="support-reply-error"
-            role="alert"
-          >
-            {{ reply.error.value }}
-          </Message>
-          <ConversationTemplateGallery
-            :visible="replyTemplateGalleryVisible"
-            :templates="defaultConversationReplyTemplates"
-            @close="replyTemplateGalleryVisible = false"
-            @select="applySupportReplyTemplate"
-          />
-          <Message
-            v-if="canManageTranslation && translation.error.value"
-            severity="error"
-            :closable="false"
-            class="reply-translation-error"
-          >
-            {{ translation.error.value }}
-          </Message>
-          <div
-            v-if="canManageTranslation && translationSettingsVisible"
-            class="reply-translation-settings"
-          >
-            <ConversationTranslationBanner
-              :state="translation.state.value"
-              :loading="translation.loading.value"
-              :saving="translation.savingPreference.value"
-              :can-manage="canManageTranslation"
-              :eligible-count="0"
-              @reload="ensureReplyTranslationLoaded"
-              @update-enabled="setTranslationEnabled($event)"
-              @update-target-locale="setTranslationTargetLocale($event)"
+          <div v-else class="conversation-list">
+            <button
+              v-for="conversation in inbox.items.value"
+              :key="conversation.id"
+              type="button"
+              class="conversation-row"
+              :class="{
+                selected: conversation.id === selectedConversation?.id,
+              }"
+              :aria-current="
+                conversation.id === selectedConversation?.id
+                  ? 'true'
+                  : undefined
+              "
+              @click="openConversation(conversation.id)"
+            >
+              <div class="conversation-row__top">
+                <span class="conversation-avatar">{{
+                  initials(conversation.title)
+                }}</span>
+                <strong>{{ conversation.title }}</strong>
+              </div>
+              <p v-if="conversation.lastMessageAt">
+                Последняя активность
+                <time :datetime="conversation.lastMessageAt">
+                  {{ relativeTime(conversation.lastMessageAt) }}
+                </time>
+              </p>
+              <p v-else>Сообщений пока нет</p>
+              <span class="conversation-row__meta">
+                <span
+                  :class="[
+                    'conversation-state',
+                    conversation.status.toLowerCase(),
+                  ]"
+                >
+                  {{ conversation.status === "OPEN" ? "Открыт" : "Закрыт" }}
+                </span>
+                {{ conversation.messageCount }} сообщений
+              </span>
+            </button>
+            <Button
+              v-if="inbox.nextCursor.value"
+              label="Показать ещё"
+              severity="secondary"
+              text
+              :loading="inbox.loading.value"
+              @click="inbox.loadMore"
             />
           </div>
-          <Dialog
-            :visible="sendWithoutTranslationVisible"
-            modal
-            header="Отправить без перевода?"
-            :style="{ width: 'min(500px, calc(100vw - 32px))' }"
-            @update:visible="setSendWithoutTranslationVisible"
-          >
-            <div class="send-without-translation">
-              <Message severity="warn" :closable="false">
-                Пользователь получит исходный текст вместо
-                {{
-                  translation.targetLocale.value
-                    ? `перевода на ${translation.targetLocale.value.toUpperCase()}`
-                    : "перевода"
-                }}.
-              </Message>
-              <label for="support-send-without-translation-reason">
-                Причина исключения
-              </label>
-              <textarea
-                id="support-send-without-translation-reason"
-                v-model="sendWithoutTranslationReason"
-                rows="3"
-                maxlength="500"
-                placeholder="Почему сообщение нужно отправить без перевода?"
-              />
-              <small>{{ sendWithoutTranslationReason.length }}/500</small>
-              <div class="send-without-translation__actions">
+        </aside>
+
+        <main class="conversation-pane" aria-label="Выбранный диалог">
+          <template v-if="selectedConversation">
+            <header class="conversation-header">
+              <div>
                 <Button
-                  type="button"
-                  label="Отмена"
+                  class="mobile-back"
+                  label="Назад к списку диалогов"
+                  icon="pi pi-arrow-left"
                   severity="secondary"
                   text
-                  @click="setSendWithoutTranslationVisible(false)"
+                  @click="backToInbox"
                 />
+                <span class="eyebrow">{{
+                  selectedConversation.status === "OPEN"
+                    ? "Активный диалог"
+                    : "Архивный диалог"
+                }}</span>
+                <h2>{{ selectedConversation.title }}</h2>
+                <p>Безопасный контекст доступен в панели диалога.</p>
+              </div>
+              <div class="conversation-header__actions">
                 <Button
-                  type="button"
-                  label="Отправить исходный текст"
-                  icon="pi pi-send"
-                  severity="danger"
-                  :loading="reply.sending.value"
-                  :disabled="!sendWithoutTranslationReason.trim()"
-                  @click="sendReplyWithoutTranslation"
+                  class="mobile-context"
+                  label="Контекст"
+                  icon="pi pi-user"
+                  severity="secondary"
+                  text
+                  @click="contextDrawerVisible = true"
+                />
+                <Tag
+                  :value="
+                    selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
+                  "
+                  :severity="
+                    selectedConversation.status === 'OPEN'
+                      ? 'success'
+                      : 'secondary'
+                  "
                 />
               </div>
-            </div>
-          </Dialog>
-        </template>
-        <div
-          v-else-if="inbox.loading.value || conversation.loading.value"
-          class="empty-selection"
-          aria-busy="true"
-        >
-          <Skeleton width="180px" height="24px" />
-          <Skeleton width="240px" height="16px" />
-        </div>
-        <div v-else class="empty-selection">
-          <i class="pi pi-comments" aria-hidden="true" />
-          <template v-if="route.params.conversationId">
-            <h2>Диалог недоступен</h2>
-            <p>Диалог не найден или у вас больше нет прав на его просмотр.</p>
-          </template>
-          <template v-else>
-            <h2>Выберите диалог</h2>
-            <p>История и безопасный контекст появятся здесь.</p>
-          </template>
-        </div>
-      </main>
+            </header>
 
-      <aside
+            <ConversationAISuspensionBanner
+              v-if="canReadSelectedAiSuspension && selectedAiSuspensionEntry"
+              :entry="selectedAiSuspensionEntry"
+              :can-manage="canManageSelectedAiSuspension"
+              :conversation-open="selectedConversation.status === 'OPEN'"
+              :show-history="canReadSelectedAiSuspension"
+              @extend="openAiSuspensionDialog('EXTEND')"
+              @resume="openAiSuspensionDialog('RESUME')"
+              @history="aiSuspensionHistoryVisible = true"
+            />
+
+            <div
+              v-if="conversation.loading.value"
+              class="message-skeletons"
+              aria-busy="true"
+            >
+              <Skeleton
+                v-for="index in 5"
+                :key="index"
+                height="64px"
+                border-radius="14px"
+              />
+            </div>
+            <Message
+              v-else-if="conversation.error.value"
+              severity="error"
+              :closable="false"
+            >
+              {{ conversation.error.value }}
+            </Message>
+            <SupportConversationPane
+              v-else-if="conversation.selection.value"
+              :title="selectedConversation.title"
+              :messages="conversation.messages.value"
+              :translations="translation.messageTranslations.value"
+              :assistant-label="auth.project?.assistantName ?? 'Lola'"
+              :history="supportConversationHistory"
+              :translation="supportConversationTranslation"
+              :composer="supportConversationComposer"
+              :ai-suspension="supportConversationAiSuspension"
+              @load-older="conversation.loadOlder"
+              @cancel-translation="translation.cancelMessageTranslations"
+              @change-translation-mode="changeSupportTranslationMode"
+              @reconcile-required="reconcileSupportSurface"
+              @draft-change="changeSupportDraft"
+              @send="sendSupportReply"
+              @request-reply-translation="prepareReplyTranslation"
+              @reconcile-reply-translation="translation.reconcileReplyPreview"
+              @retry-reply-translation="translation.retryReplyPreview"
+              @save-reply-translation="translation.editReplyTranslation"
+              @send-reply-translation="sendSupportTranslatedReply"
+              @composer-action="handleSupportComposerAction"
+              @start-ai-suspension="openAiSuspensionDialog('START')"
+              @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
+              @retry-ai-suspension="reloadSelectedAiSuspension"
+            />
+            <p v-else class="empty-pane support-conversation-unavailable">
+              Выбранный диалог недоступен.
+            </p>
+            <Message
+              v-if="reply.error.value"
+              severity="error"
+              :closable="false"
+              class="support-reply-error"
+              role="alert"
+            >
+              {{ reply.error.value }}
+            </Message>
+            <ConversationTemplateGallery
+              :visible="replyTemplateGalleryVisible"
+              :templates="defaultConversationReplyTemplates"
+              @close="replyTemplateGalleryVisible = false"
+              @select="applySupportReplyTemplate"
+            />
+            <Message
+              v-if="canManageTranslation && translation.error.value"
+              severity="error"
+              :closable="false"
+              class="reply-translation-error"
+            >
+              {{ translation.error.value }}
+            </Message>
+            <div
+              v-if="canManageTranslation && translationSettingsVisible"
+              class="reply-translation-settings"
+            >
+              <ConversationTranslationBanner
+                :state="translation.state.value"
+                :loading="translation.loading.value"
+                :saving="translation.savingPreference.value"
+                :can-manage="canManageTranslation"
+                :eligible-count="0"
+                @reload="ensureReplyTranslationLoaded"
+                @update-enabled="setTranslationEnabled($event)"
+                @update-target-locale="setTranslationTargetLocale($event)"
+              />
+            </div>
+            <Dialog
+              :visible="sendWithoutTranslationVisible"
+              modal
+              header="Отправить без перевода?"
+              :style="{ width: 'min(500px, calc(100vw - 32px))' }"
+              @update:visible="setSendWithoutTranslationVisible"
+            >
+              <div class="send-without-translation">
+                <Message severity="warn" :closable="false">
+                  Пользователь получит исходный текст вместо
+                  {{
+                    translation.targetLocale.value
+                      ? `перевода на ${translation.targetLocale.value.toUpperCase()}`
+                      : "перевода"
+                  }}.
+                </Message>
+                <label for="support-send-without-translation-reason">
+                  Причина исключения
+                </label>
+                <textarea
+                  id="support-send-without-translation-reason"
+                  v-model="sendWithoutTranslationReason"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Почему сообщение нужно отправить без перевода?"
+                />
+                <small>{{ sendWithoutTranslationReason.length }}/500</small>
+                <div class="send-without-translation__actions">
+                  <Button
+                    type="button"
+                    label="Отмена"
+                    severity="secondary"
+                    text
+                    @click="setSendWithoutTranslationVisible(false)"
+                  />
+                  <Button
+                    type="button"
+                    label="Отправить исходный текст"
+                    icon="pi pi-send"
+                    severity="danger"
+                    :loading="reply.sending.value"
+                    :disabled="!sendWithoutTranslationReason.trim()"
+                    @click="sendReplyWithoutTranslation"
+                  />
+                </div>
+              </div>
+            </Dialog>
+          </template>
+          <div
+            v-else-if="inbox.loading.value || conversation.loading.value"
+            class="empty-selection"
+            aria-busy="true"
+          >
+            <Skeleton width="180px" height="24px" />
+            <Skeleton width="240px" height="16px" />
+          </div>
+          <div v-else class="empty-selection">
+            <i class="pi pi-comments" aria-hidden="true" />
+            <template v-if="route.params.conversationId">
+              <h2>Диалог недоступен</h2>
+              <p>Диалог не найден или у вас больше нет прав на его просмотр.</p>
+            </template>
+            <template v-else>
+              <h2>Выберите диалог</h2>
+              <p>История и безопасный контекст появятся здесь.</p>
+            </template>
+          </div>
+        </main>
+
+        <aside
+          v-if="selectedConversation && conversation.selection.value"
+          class="context-pane"
+          aria-label="Контекст диалога"
+        >
+          <SupportConversationContext
+            :conversation="selectedConversation"
+            :selection="conversation.selection.value"
+            :can-manage-case="canManageSelectedCase"
+            :can-release-assignment="canReleaseSelectedAssignment"
+            :can-read-internal-notes="canReadSelectedInternalNotes"
+            :can-read-profile="canReadProfile"
+            :profile="profile.profile.value"
+            :profile-loading="profile.loading.value"
+            :profile-error="profile.error.value"
+            :assignment-release="{
+              releasing: assignmentRelease.releasing.value,
+              error: assignmentRelease.error.value,
+              unknownOutcome: assignmentRelease.unknownOutcome.value,
+              completed: assignmentRelease.completed.value,
+              canRetry: assignmentRelease.canRetry.value,
+            }"
+            @load-profile="profile.load"
+            @release-assignment="assignmentRelease.release"
+            @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
+            @open-internal-notes="openInternalNotes"
+            @classify-case="classifySelectedCase"
+          />
+        </aside>
+      </div>
+      <SupportRoutingOffers
+        v-if="canManageRoutingOffers"
+        class="support-routing-offers"
+        :class="{
+          'support-routing-offers--empty':
+            !routingOffers.loading.value &&
+            !routingOffers.offers.value.length &&
+            !routingOffers.error.value,
+        }"
+        :offers="routingOffers.offers.value"
+        :loading="routingOffers.loading.value"
+        :changing-offer-id="routingOffers.changingOfferId.value"
+        :error="routingOffers.error.value"
+        :unknown-outcome="routingOffers.unknownOutcome.value"
+        :last-outcome="routingOffers.lastOutcome.value"
+        :can-retry="routingOffers.canRetry.value"
+        @refresh="routingOffers.load"
+        @action="routingOffers.act"
+        @retry="routingOffers.retryUnknownOutcome"
+      />
+      <Drawer
         v-if="selectedConversation && conversation.selection.value"
-        class="context-pane"
+        :visible="contextDrawerVisible"
+        position="right"
         aria-label="Контекст диалога"
+        :style="{ width: 'min(420px, 100vw)' }"
+        @update:visible="contextDrawerVisible = $event"
       >
         <SupportConversationContext
           :conversation="selectedConversation"
@@ -1659,147 +1762,104 @@ onBeforeUnmount(() => {
           @open-internal-notes="openInternalNotes"
           @classify-case="classifySelectedCase"
         />
-      </aside>
-    </div>
-    <SupportRoutingOffers
-      v-if="canManageRoutingOffers"
-      :offers="routingOffers.offers.value"
-      :loading="routingOffers.loading.value"
-      :changing-offer-id="routingOffers.changingOfferId.value"
-      :error="routingOffers.error.value"
-      :unknown-outcome="routingOffers.unknownOutcome.value"
-      :last-outcome="routingOffers.lastOutcome.value"
-      :can-retry="routingOffers.canRetry.value"
-      @refresh="routingOffers.load"
-      @action="routingOffers.act"
-      @retry="routingOffers.retryUnknownOutcome"
-    />
-    <Drawer
-      v-if="selectedConversation && conversation.selection.value"
-      :visible="contextDrawerVisible"
-      position="right"
-      aria-label="Контекст диалога"
-      :style="{ width: 'min(420px, 100vw)' }"
-      @update:visible="contextDrawerVisible = $event"
-    >
-      <SupportConversationContext
-        :conversation="selectedConversation"
-        :selection="conversation.selection.value"
-        :can-manage-case="canManageSelectedCase"
-        :can-release-assignment="canReleaseSelectedAssignment"
-        :can-read-internal-notes="canReadSelectedInternalNotes"
-        :can-read-profile="canReadProfile"
-        :profile="profile.profile.value"
-        :profile-loading="profile.loading.value"
-        :profile-error="profile.error.value"
-        :assignment-release="{
-          releasing: assignmentRelease.releasing.value,
-          error: assignmentRelease.error.value,
-          unknownOutcome: assignmentRelease.unknownOutcome.value,
-          completed: assignmentRelease.completed.value,
-          canRetry: assignmentRelease.canRetry.value,
-        }"
-        @load-profile="profile.load"
-        @release-assignment="assignmentRelease.release"
-        @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
-        @open-internal-notes="openInternalNotes"
-        @classify-case="classifySelectedCase"
+      </Drawer>
+      <Dialog
+        v-if="canReadAvailability"
+        v-model:visible="availabilityDialogVisible"
+        modal
+        header="Моя доступность"
+        :style="{ width: 'min(680px, calc(100vw - 32px))' }"
+      >
+        <SupportAvailabilityStatus
+          :availability="availability.availability.value"
+          :loading="availability.loading.value"
+          :changing="availability.changing.value"
+          :error="availability.error.value"
+          :can-manage="canManageOwnAvailability"
+          :unknown-outcome="availability.unknownOutcome.value"
+          :needs-reconcile="availability.needsReconcile.value"
+          :can-retry-after-reconcile="availability.canRetryAfterReconcile.value"
+          :draft="availability.draft.value"
+          @refresh="availability.load"
+          @change="availability.change"
+          @retry="availability.retryUnknownOutcome"
+          @retry-after-reconcile="availability.retryAfterReconcile"
+        />
+      </Dialog>
+      <EndUserCaseDialogs
+        v-if="canManageSelectedCase"
+        ref="caseDialogs"
+        :classification-options="
+          conversation.selection.value?.classificationOptions ?? []
+        "
       />
-    </Drawer>
-    <Dialog
-      v-if="canReadAvailability"
-      v-model:visible="availabilityDialogVisible"
-      modal
-      header="Моя доступность"
-      :style="{ width: 'min(680px, calc(100vw - 32px))' }"
-    >
-      <SupportAvailabilityStatus
-        :availability="availability.availability.value"
-        :loading="availability.loading.value"
-        :changing="availability.changing.value"
-        :error="availability.error.value"
-        :can-manage="canManageOwnAvailability"
-        :unknown-outcome="availability.unknownOutcome.value"
-        :needs-reconcile="availability.needsReconcile.value"
-        :can-retry-after-reconcile="availability.canRetryAfterReconcile.value"
-        :draft="availability.draft.value"
-        @refresh="availability.load"
-        @change="availability.change"
-        @retry="availability.retryUnknownOutcome"
-        @retry-after-reconcile="availability.retryAfterReconcile"
+      <SupportInternalNotesDialog
+        v-if="
+          canReadSelectedInternalNotes && conversation.selection.value?.case
+        "
+        v-model:visible="internalNotesVisible"
+        :notes="internalNotes.notes.value"
+        :next-cursor="internalNotes.nextCursor.value"
+        :loading="internalNotes.loading.value"
+        :loading-more="internalNotes.loadingMore.value"
+        :error="internalNotes.error.value"
+        :can-read-history="canReadSelectedInternalNoteHistory"
+        :can-write="canWriteSelectedInternalNotes"
+        :can-redact="canRedactSelectedInternalNotes"
+        :creating="internalNotes.creating.value"
+        :correcting-note-id="internalNotes.correctingNoteId.value"
+        :tombstoning-note-id="internalNotes.tombstoningNoteId.value"
+        :mutation-error="internalNotes.mutationError.value"
+        :selected-history-note="internalNotes.selectedHistoryNote.value"
+        :history="internalNotes.history.value"
+        :history-next-cursor="internalNotes.historyNextCursor.value"
+        :history-loading="internalNotes.historyLoading.value"
+        :history-loading-more="internalNotes.historyLoadingMore.value"
+        :history-error="internalNotes.historyError.value"
+        @reload="internalNotes.load"
+        @load-more="
+          internalNotes.load(internalNotes.nextCursor.value ?? undefined)
+        "
+        @open-history="internalNotes.openHistory"
+        @close-history="internalNotes.closeHistory"
+        @load-history-more="
+          internalNotes.loadHistory(
+            internalNotes.historyNextCursor.value ?? undefined,
+          )
+        "
+        @create="createInternalNote"
+        @correct="correctInternalNote"
+        @tombstone="tombstoneInternalNote"
       />
-    </Dialog>
-    <EndUserCaseDialogs
-      v-if="canManageSelectedCase"
-      ref="caseDialogs"
-      :classification-options="
-        conversation.selection.value?.classificationOptions ?? []
-      "
-    />
-    <SupportInternalNotesDialog
-      v-if="canReadSelectedInternalNotes && conversation.selection.value?.case"
-      v-model:visible="internalNotesVisible"
-      :notes="internalNotes.notes.value"
-      :next-cursor="internalNotes.nextCursor.value"
-      :loading="internalNotes.loading.value"
-      :loading-more="internalNotes.loadingMore.value"
-      :error="internalNotes.error.value"
-      :can-read-history="canReadSelectedInternalNoteHistory"
-      :can-write="canWriteSelectedInternalNotes"
-      :can-redact="canRedactSelectedInternalNotes"
-      :creating="internalNotes.creating.value"
-      :correcting-note-id="internalNotes.correctingNoteId.value"
-      :tombstoning-note-id="internalNotes.tombstoningNoteId.value"
-      :mutation-error="internalNotes.mutationError.value"
-      :selected-history-note="internalNotes.selectedHistoryNote.value"
-      :history="internalNotes.history.value"
-      :history-next-cursor="internalNotes.historyNextCursor.value"
-      :history-loading="internalNotes.historyLoading.value"
-      :history-loading-more="internalNotes.historyLoadingMore.value"
-      :history-error="internalNotes.historyError.value"
-      @reload="internalNotes.load"
-      @load-more="
-        internalNotes.load(internalNotes.nextCursor.value ?? undefined)
-      "
-      @open-history="internalNotes.openHistory"
-      @close-history="internalNotes.closeHistory"
-      @load-history-more="
-        internalNotes.loadHistory(
-          internalNotes.historyNextCursor.value ?? undefined,
-        )
-      "
-      @create="createInternalNote"
-      @correct="correctInternalNote"
-      @tombstone="tombstoneInternalNote"
-    />
-    <ConversationAISuspensionDialog
-      v-if="
-        canManageSelectedAiSuspension &&
-        selectedConversation &&
-        selectedAiSuspensionEntry
-      "
-      v-model:visible="aiSuspensionDialogVisible"
-      :mode="aiSuspensionDialogMode"
-      :conversation-label="selectedConversation.title"
-      :current="selectedAiSuspensionEntry.detail ?? null"
-      :server-offset-ms="selectedAiSuspensionEntry.serverOffsetMs"
-      :busy="Boolean(selectedAiSuspensionEntry.mutating)"
-      :error="selectedAiSuspensionEntry.error"
-      @submit="submitAiSuspension"
-    />
-    <ConversationAISuspensionHistory
-      v-if="
-        canReadSelectedAiSuspension &&
-        selectedConversation &&
-        conversation.selection.value
-      "
-      v-model:visible="aiSuspensionHistoryVisible"
-      :project-id="auth.project?.id ?? ''"
-      :end-user-id="conversation.selection.value.endUser.id"
-      :conversation-id="selectedConversation.id"
-      @access-revoked="revokeSelectedAiSuspensionAccess"
-    />
-  </section>
+      <ConversationAISuspensionDialog
+        v-if="
+          canManageSelectedAiSuspension &&
+          selectedConversation &&
+          selectedAiSuspensionEntry
+        "
+        v-model:visible="aiSuspensionDialogVisible"
+        :mode="aiSuspensionDialogMode"
+        :conversation-label="selectedConversation.title"
+        :current="selectedAiSuspensionEntry.detail ?? null"
+        :server-offset-ms="selectedAiSuspensionEntry.serverOffsetMs"
+        :busy="Boolean(selectedAiSuspensionEntry.mutating)"
+        :error="selectedAiSuspensionEntry.error"
+        @submit="submitAiSuspension"
+      />
+      <ConversationAISuspensionHistory
+        v-if="
+          canReadSelectedAiSuspension &&
+          selectedConversation &&
+          conversation.selection.value
+        "
+        v-model:visible="aiSuspensionHistoryVisible"
+        :project-id="auth.project?.id ?? ''"
+        :end-user-id="conversation.selection.value.endUser.id"
+        :conversation-id="selectedConversation.id"
+        @access-revoked="revokeSelectedAiSuspensionAccess"
+      />
+    </section>
+  </FullViewportWorkspaceShell>
 </template>
 
 <style scoped>
@@ -1840,17 +1900,38 @@ onBeforeUnmount(() => {
 .support-workspace-header .subtitle {
   margin-top: 4px;
 }
-.support-workspace-page--fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
+.support-workspace-page--full-tab {
+  width: 100%;
+  max-width: none;
+  height: 100%;
   margin: 0;
-  padding: 16px;
-  overflow: auto;
-  background: var(--surface-ground);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-canvas);
 }
-.support-workspace-page--fullscreen .support-workspace {
-  height: calc(100dvh - 142px);
+.support-workspace-page--full-tab .support-workspace-header {
+  flex: 0 0 auto;
+}
+.support-workspace-page--full-tab .support-workspace {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.support-workspace-page--full-tab .support-routing-offers--empty {
+  display: none;
+}
+.support-workspace-page--full-tab
+  .support-routing-offers:not(.support-routing-offers--empty) {
+  flex: 0 0 auto;
+  max-height: min(180px, 24dvh);
+  margin: 12px 0 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .support-workspace {
   height: calc(100dvh - 150px);
@@ -1938,6 +2019,7 @@ onBeforeUnmount(() => {
   justify-self: start;
 }
 .conversation-row {
+  box-sizing: border-box;
   width: 100%;
   padding: 12px 12px 12px 10px;
   border: 1px solid transparent;
@@ -1968,6 +2050,13 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-row__top {
+  gap: 8px;
+}
+.conversation-row time {
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 .conversation-avatar {
@@ -2003,6 +2092,11 @@ onBeforeUnmount(() => {
 }
 .conversation-row__meta {
   margin-left: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
 }
 .conversation-state {
   display: inline-flex;
@@ -2114,15 +2208,67 @@ onBeforeUnmount(() => {
   }
 }
 @media (max-width: 720px) {
-  .support-workspace-page--fullscreen {
-    padding: 10px;
+  .support-workspace-page--full-tab {
+    padding: 0;
   }
-  .support-workspace-page--fullscreen .support-workspace {
-    height: auto;
+  .support-workspace-page--full-tab .support-workspace-header {
+    margin: 0;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .support-workspace-page--full-tab
+    .support-workspace-header
+    > div:first-child {
+    width: 100%;
+  }
+  .support-workspace-page--full-tab .support-workspace-header .eyebrow,
+  .support-workspace-page--full-tab .support-workspace-header .subtitle {
+    display: none;
+  }
+  .support-workspace-page--full-tab .support-workspace-header h1 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+  .support-workspace-page--full-tab .header-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .support-workspace-page--full-tab .header-actions :deep(.p-tag) {
+    margin-right: auto;
+  }
+  .support-workspace-page--full-tab .header-actions :deep(.p-button) {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+  .support-workspace-page--full-tab .header-actions :deep(.p-button-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .support-workspace {
     display: block;
     height: auto;
+  }
+  .support-workspace-page--full-tab .support-workspace {
+    height: auto;
+    display: block;
+  }
+  .support-workspace-page--full-tab
+    .support-workspace.has-route-selection
+    .conversation-pane,
+  .support-workspace-page--full-tab
+    .support-workspace:not(.has-route-selection)
+    .inbox-pane {
+    height: 100%;
   }
   .support-workspace:not(.has-route-selection) .conversation-pane,
   .support-workspace:not(.has-route-selection) .context-pane,
@@ -2135,11 +2281,40 @@ onBeforeUnmount(() => {
   }
   .conversation-list {
     max-height: 260px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .conversation-header {
     align-items: flex-start;
     padding: 16px;
+  }
+  .support-workspace-page--full-tab .conversation-header {
+    min-height: 48px;
+    align-items: center;
+    padding: 4px 8px;
+  }
+  .support-workspace-page--full-tab
+    .conversation-header
+    > div:first-child
+    > :not(.mobile-back) {
+    display: none;
+  }
+  .support-workspace-page--full-tab .mobile-back {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+  }
+  .support-workspace-page--full-tab .mobile-back :deep(.p-button-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .conversation-header__actions {
     justify-content: flex-end;

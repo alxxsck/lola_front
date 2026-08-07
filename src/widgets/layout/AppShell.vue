@@ -29,6 +29,9 @@ import ThemeSwitch from "./ThemeSwitch.vue";
 
 const route = useRoute();
 const router = useRouter();
+const supportFocus = computed(
+  () => route.meta.supportWorkspacePresentation === true,
+);
 const auth = useAuthStore();
 const projectActions = useProjectActionsStore();
 const suspensions = useConversationAISuspensionStore();
@@ -396,8 +399,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="shell">
-    <aside class="sidebar" :class="{ open: sidebarOpen }">
+  <div class="shell" :class="{ 'shell--support-focus': supportFocus }">
+    <aside
+      class="sidebar"
+      :class="{ open: sidebarOpen }"
+      aria-label="Основная навигация CMS"
+    >
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-mark">
@@ -443,6 +450,8 @@ onBeforeUnmount(() => {
               v-else
               :to="item.to"
               class="nav-item"
+              :title="supportFocus ? item.label : undefined"
+              :aria-label="supportFocus ? item.label : undefined"
               :class="{
                 active: isNavigationItemActive(item.to),
                 'nav-item--nested': item.nested,
@@ -561,6 +570,56 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
+}
+.shell--support-focus {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+.shell--support-focus .sidebar {
+  padding: 14px 8px 12px;
+}
+.shell--support-focus .brand {
+  justify-content: center;
+  padding: 0 0 14px;
+}
+.shell--support-focus .brand > div:last-child,
+.shell--support-focus .project-copy,
+.shell--support-focus .project-pill > i,
+.shell--support-focus .nav-item > span:not(.live-pulse),
+.shell--support-focus .sidebar-note,
+.shell--support-focus .sidebar-profile > div,
+.shell--support-focus .sidebar-profile > i {
+  display: none;
+}
+.shell--support-focus .project-pill {
+  justify-content: center;
+  padding: 7px;
+  margin-bottom: 12px;
+}
+.shell--support-focus .nav-item,
+.shell--support-focus .nav-item--nested {
+  width: 100%;
+  min-height: 40px;
+  justify-content: center;
+  margin-left: 0;
+  padding: 10px;
+}
+.shell--support-focus .nav-item--nested::after {
+  display: none;
+}
+.shell--support-focus .nav-item.active::before {
+  left: -8px;
+}
+.shell--support-focus .sidebar-profile {
+  justify-content: center;
+  padding: 4px 0;
+}
+.shell--support-focus :deep(.theme-switch) {
+  justify-content: center;
+  padding: 10px;
+}
+.shell--support-focus :deep(.theme-copy),
+.shell--support-focus :deep(.theme-track) {
+  display: none;
 }
 .sidebar {
   position: sticky;
@@ -883,6 +942,58 @@ nav {
     inset: 0;
     background: var(--overlay-backdrop);
     z-index: 19;
+  }
+  .shell--support-focus .sidebar {
+    padding: 24px 16px 18px;
+  }
+  .shell--support-focus .brand {
+    justify-content: flex-start;
+    padding: 0 8px 24px;
+  }
+  .shell--support-focus .brand > div:last-child,
+  .shell--support-focus .project-copy,
+  .shell--support-focus .sidebar-profile > div {
+    display: block;
+  }
+  .shell--support-focus .project-pill > i,
+  .shell--support-focus .sidebar-profile > i {
+    display: inline-block;
+  }
+  .shell--support-focus .nav-item > span:not(.live-pulse) {
+    display: inline;
+  }
+  .shell--support-focus .sidebar-note {
+    display: flex;
+  }
+  .shell--support-focus .project-pill {
+    justify-content: flex-start;
+    padding: 11px;
+    margin-bottom: 20px;
+  }
+  .shell--support-focus .nav-item {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  .shell--support-focus .nav-item--nested {
+    width: calc(100% - 22px);
+    margin-left: 22px;
+    padding: 8px 11px;
+  }
+  .shell--support-focus .nav-item--nested::after {
+    display: block;
+  }
+  .shell--support-focus .sidebar-profile {
+    justify-content: flex-start;
+    padding: 6px 8px 2px;
+  }
+  .shell--support-focus :deep(.theme-switch) {
+    justify-content: flex-start;
+    padding: 10px 11px;
+  }
+  .shell--support-focus :deep(.theme-copy),
+  .shell--support-focus :deep(.theme-track) {
+    display: flex;
   }
 }
 </style>

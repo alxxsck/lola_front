@@ -38,7 +38,9 @@ test("operator previews a translated reply and can inspect its Russian source", 
 
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   await composer.fill("Проверил списание. Возвращаем вторую оплату.");
-  await page.getByRole("button", { name: /Перевести на DE|Перевести ответ/ }).click();
+  await page
+    .getByRole("button", { name: /Перевести на DE|Перевести ответ/ })
+    .click();
 
   const preview = page.getByRole("region", {
     name: "Предпросмотр перевода ответа",
@@ -77,7 +79,7 @@ test("translated message view does not reserve a side column in the bubble", asy
   await page.getByRole("button", { name: "Открыть чат" }).click();
 
   await page.getByRole("button", { name: /Перевод · RU/ }).click();
-  const bubble = page.locator("article.message-bubble").first();
+  const bubble = page.locator("article.conversation-surface__message").first();
   const body = bubble.locator(".translated-message > p");
   const [bubbleBox, bodyBox] = await Promise.all([
     bubble.boundingBox(),
@@ -100,8 +102,20 @@ test("maximized user workspace fills the viewport", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: "Открыть чат" }).click();
   await page
-    .getByRole("button", { name: "Развернуть рабочее пространство" })
+    .getByRole("button", {
+      name: "Развернуть рабочее место на всю вкладку",
+    })
     .click();
+
+  const presentationShell = page.getByTestId("workspace-presentation-shell");
+  await expect(presentationShell).toHaveAttribute(
+    "data-presentation-mode",
+    "full-tab",
+  );
+  await expect(presentationShell).toHaveAttribute(
+    "data-transition-phase",
+    "idle",
+  );
 
   const dialog = page.getByRole("dialog", {
     name: /Рабочее пространство пользователя/,
@@ -116,8 +130,15 @@ test("maximized user workspace fills the viewport", async ({ page }) => {
   }
 
   expect(dialogBox.width).toBeGreaterThanOrEqual(1590);
-  expect(dialogBox.height).toBeGreaterThanOrEqual(960);
+  expect(dialogBox.height).toBeGreaterThanOrEqual(990);
   expect(workspaceBox.height).toBeGreaterThan(880);
+  await expect(
+    page.getByRole("button", { name: "Вернуть рабочее место в окно" }),
+  ).toBeEnabled();
+  await expect(presentationShell).toHaveAttribute(
+    "data-presentation-mode",
+    "full-tab",
+  );
 });
 
 test("translation settings stay usable across responsive layouts", async ({
@@ -229,7 +250,9 @@ test("stale preview recovers and same-language reply uses normal send", async ({
 
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   await composer.fill("Первый вариант ответа");
-  await page.getByRole("button", { name: /Перевести на DE|Перевести ответ/ }).click();
+  await page
+    .getByRole("button", { name: /Перевести на DE|Перевести ответ/ })
+    .click();
   const preview = page.getByRole("region", {
     name: "Предпросмотр перевода ответа",
   });

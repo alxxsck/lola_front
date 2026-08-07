@@ -263,13 +263,19 @@ export const router = createRouter({
           path: "support/inbox",
           name: "support-inbox",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
-          meta: { supportWorkspaceAccess: true },
+          meta: {
+            supportWorkspaceAccess: true,
+            supportWorkspacePresentation: true,
+          },
         },
         {
           path: "support/inbox/conversations/:conversationId",
           name: "support-inbox-conversation",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
-          meta: { supportWorkspaceAccess: true },
+          meta: {
+            supportWorkspaceAccess: true,
+            supportWorkspacePresentation: true,
+          },
         },
         {
           path: "support/control",

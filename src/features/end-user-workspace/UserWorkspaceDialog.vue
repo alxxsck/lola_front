@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -58,6 +65,11 @@ import EndUserAiAllowanceCard from "@/features/ai-costs/ui/EndUserAiAllowanceCar
 import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOperationalStateCard.vue";
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
+import {
+  acquireRootScrollLock,
+  releaseRootScrollLock,
+} from "@/features/support-workspace/presentation/root-scroll-lock";
+import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
 import UserConversationPane from "./UserConversationPane.vue";
 
@@ -105,6 +117,10 @@ const detail = ref<ProfileProjectionResponseDto | null>(null);
 const detailLoading = ref(false);
 const detailError = ref("");
 const workspaceMode = ref<WorkspaceMode>("PROFILE");
+const workspaceFullTab = ref(false);
+const workspacePresentedFullTab = ref(false);
+const workspacePresentationTransitioning = ref(false);
+let workspacePresentationFocusTarget: HTMLElement | null = null;
 const mobilePane = ref<MobilePane>("CHAT");
 const messageViewMode = ref<MessageViewMode>("TRANSLATED");
 const conversationSearch = ref("");
@@ -133,6 +149,38 @@ let profileRequest = 0;
 let unsubscribeMessage: (() => void) | undefined;
 let unsubscribeTranslation: (() => void) | undefined;
 let unsubscribeReconcile: (() => void) | undefined;
+let ownsPresentationLock = false;
+
+function setPresentationLock(locked: boolean): void {
+  if (locked && !ownsPresentationLock) {
+    acquireRootScrollLock();
+    ownsPresentationLock = true;
+  } else if (!locked && ownsPresentationLock) {
+    releaseRootScrollLock();
+    ownsPresentationLock = false;
+  }
+}
+
+function toggleWorkspacePresentation(event?: Event): void {
+  if (workspacePresentationTransitioning.value) return;
+  workspacePresentationFocusTarget =
+    event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  workspaceFullTab.value = !workspaceFullTab.value;
+}
+
+function handleWorkspacePresentationTransition(transitioning: boolean): void {
+  workspacePresentationTransitioning.value = transitioning;
+  if (transitioning || !workspacePresentationFocusTarget) return;
+  const target = workspacePresentationFocusTarget;
+  workspacePresentationFocusTarget = null;
+  void nextTick(() => {
+    if (target.isConnected) target.focus({ preventScroll: true });
+  });
+}
+
+function handleWorkspacePresented(mode: "windowed" | "full-tab"): void {
+  workspacePresentedFullTab.value = mode === "full-tab";
+}
 let unsubscribeRealtimeState: (() => void) | undefined;
 let presenceTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -678,8 +726,9 @@ watch(
 watch(
   () => [visible.value, props.projectId, props.endUserId] as const,
   ([isVisible, , endUserId]) => {
-    document.body.classList.toggle("workspace-scroll-locked", isVisible);
+    setPresentationLock(isVisible);
     if (!isVisible || !endUserId) {
+      workspaceFullTab.value = false;
       closeWorkspace();
       return;
     }
@@ -783,14 +832,14 @@ watch(
 );
 
 onMounted(() => {
-  document.body.classList.toggle("workspace-scroll-locked", visible.value);
+  setPresentationLock(visible.value);
   unsubscribeRealtimeState = cmsRealtimeClient.onState((state) => {
     realtimeState.value = state;
   });
   startConversationRealtime();
 });
 onBeforeUnmount(() => {
-  document.body.classList.remove("workspace-scroll-locked");
+  setPresentationLock(false);
   unsubscribeRealtimeState?.();
   stopConversationRealtime();
   closeWorkspace();
@@ -1332,717 +1381,770 @@ function displayField(
 </script>
 
 <template>
-  <Dialog
-    :visible="visible"
-    @update:visible="requestVisibility"
-    modal
-    block-scroll
-    maximizable
-    :maximize-button-props="{
-      'aria-label': 'Развернуть рабочее пространство',
-    }"
-    :draggable="false"
-    :style="{
-      width: 'min(1480px, calc(100vw - 32px))',
-      height: 'min(900px, calc(100dvh - 32px))',
-      maxHeight: 'calc(100dvh - 32px)',
-    }"
-    :content-style="{ padding: '0', overflow: 'hidden' }"
-    :class="[
-      'user-workspace-dialog',
-      { 'user-workspace-dialog--chat': workspaceMode === 'CHAT' },
-    ]"
-    :aria-label="`Рабочее пространство пользователя ${displayName}`"
+  <FullViewportWorkspaceShell
+    :mode="workspaceFullTab ? 'full-tab' : 'windowed'"
+    measure-selector=".user-workspace-dialog"
+    portal-windowed
+    @transitioning="handleWorkspacePresentationTransition"
+    @presented="handleWorkspacePresented"
   >
-    <template #header>
-      <div class="workspace-title">
-        <Button
-          v-if="workspaceMode === 'CHAT'"
-          data-action="open-profile"
-          icon="pi pi-arrow-left"
-          label="К профилю"
-          aria-label="К профилю"
-          severity="secondary"
-          size="small"
-          class="workspace-back"
-          @click="openProfile"
-        />
-        <span v-if="workspaceMode === 'CHAT'" class="workspace-divider" />
-        <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
-        <div class="workspace-identity">
-          <h2>{{ displayName }}</h2>
-          <span class="workspace-identity-meta">
-            {{
-              workspaceMode === "CHAT"
-                ? detail?.externalUserId || endUserId || "—"
-                : "Профиль пользователя"
-            }}
-            <i
-              v-if="workspaceMode === 'CHAT'"
-              class="presence-dot"
-              :class="{ online: Boolean(onlineSession) }"
-              role="img"
-              :aria-label="
-                onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'
-              "
-            />
-          </span>
-        </div>
-        <div class="workspace-statuses">
-          <span
-            class="connection-status"
-            :data-state="realtimeStatus.state"
-            data-testid="live-connection-status"
-            :title="
-              realtimeStatus.state === 'error'
-                ? 'Обновления в реальном времени недоступны, история сверяется через API'
-                : undefined
-            "
-          >
-            <i class="connection-live-dot" />
-            {{ realtimeStatus.label }}
-          </span>
-        </div>
-      </div>
-    </template>
-
-    <section
-      v-if="workspaceMode === 'PROFILE'"
-      class="profile-overview"
-      data-testid="profile-overview"
+    <Dialog
+      :visible="visible"
+      @update:visible="requestVisibility"
+      append-to="self"
+      modal
+      :draggable="false"
+      :pt="{ mask: { class: 'user-workspace-dialog-mask' } }"
+      :style="{
+        width: workspacePresentedFullTab
+          ? '100%'
+          : 'min(1480px, calc(100vw - 32px))',
+        height: workspacePresentedFullTab
+          ? '100%'
+          : 'min(900px, calc(100dvh - 32px))',
+        maxHeight: workspacePresentedFullTab ? 'none' : 'calc(100dvh - 32px)',
+      }"
+      :content-style="{ padding: '0', overflow: 'hidden' }"
+      :class="[
+        'user-workspace-dialog',
+        {
+          'user-workspace-dialog--chat': workspaceMode === 'CHAT',
+          'user-workspace-dialog--full-tab': workspacePresentedFullTab,
+        },
+      ]"
+      :aria-label="`Рабочее пространство пользователя ${displayName}`"
     >
-      <div class="profile-hero">
-        <div class="profile-identity">
-          <span class="profile-avatar">{{
-            displayName.slice(0, 1).toUpperCase()
-          }}</span>
-          <div>
-            <span class="eyebrow">Профиль пользователя</span>
-            <h2>{{ displayName }}</h2>
-            <p>
-              {{ detail?.externalUserId || endUserId }}
-              <template v-if="detail?.observedAt">
-                · обновлён {{ relativeTime(detail.observedAt) }}
-              </template>
-            </p>
-          </div>
-        </div>
-        <Button
-          v-if="canReadConversations"
-          data-action="open-chat"
-          label="Открыть чат"
-          icon="pi pi-arrow-right"
-          icon-pos="right"
-          @click="openChat"
-        />
-      </div>
-
-      <div class="profile-layout">
-        <main class="profile-main">
-          <section class="profile-card">
-            <header class="profile-card-header">
-              <div>
-                <span class="eyebrow">Контекст</span>
-                <h3><i class="pi pi-id-card" /> Основная информация</h3>
-              </div>
-              <div class="profile-card-header-actions">
-                <EndUserProfileSyncHistory
-                  v-if="canReadProfiles && endUserId"
-                  :project-id="projectId"
-                  :end-user-id="endUserId"
-                />
-                <Tag
-                  :value="onlineSession ? 'Онлайн' : 'Офлайн'"
-                  :severity="onlineSession ? 'success' : 'secondary'"
-                  rounded
-                />
-              </div>
-            </header>
-            <div v-if="detailLoading" class="profile-loading">
-              <Skeleton v-for="item in 6" :key="item" height="64px" />
-            </div>
-            <Message v-else-if="detailError" severity="error" :closable="false">
-              {{ detailError }}
-            </Message>
-            <template v-else-if="detail">
-              <dl class="profile-facts">
-                <div>
-                  <dt>ID продукта</dt>
-                  <dd>{{ detail.externalUserId }}</dd>
-                </div>
-                <div>
-                  <dt>Версия профиля</dt>
-                  <dd>{{ detail.profileVersion }}</dd>
-                </div>
-                <div>
-                  <dt>Контракт полей</dt>
-                  <dd>
-                    {{
-                      detail.contractRevision !== null &&
-                      detail.contractRevision !== undefined
-                        ? `v${detail.contractRevision}`
-                        : "Не указан"
-                    }}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Публикация настроек</dt>
-                  <dd>
-                    {{
-                      detail.publicationSequence !== null &&
-                      detail.publicationSequence !== undefined
-                        ? `#${detail.publicationSequence}`
-                        : "Не указана"
-                    }}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Актуальность</dt>
-                  <dd>
-                    {{
-                      detail.observedAt
-                        ? relativeTime(detail.observedAt)
-                        : "Нет данных"
-                    }}
-                  </dd>
-                </div>
-                <div v-for="field in detail.fields" :key="field.definitionId">
-                  <dt>{{ field.label }}</dt>
-                  <dd>{{ displayField(field) }}</dd>
-                </div>
-              </dl>
-            </template>
-            <div v-else class="profile-empty">
-              Профиль скрыт вашими правами доступа.
-            </div>
-          </section>
-
-          <EndUserAiUsageCard
-            v-if="canReadAiUsage && endUserId"
-            :project-id="projectId"
-            :end-user-id="endUserId"
+      <template #header>
+        <div class="workspace-title">
+          <Button
+            v-if="workspaceMode === 'CHAT'"
+            data-action="open-profile"
+            icon="pi pi-arrow-left"
+            label="К профилю"
+            aria-label="К профилю"
+            severity="secondary"
+            size="small"
+            class="workspace-back"
+            @click="openProfile"
           />
-          <section v-else class="profile-card profile-empty-card">
-            <i class="pi pi-lock" />
-            <div>
-              <strong>Потребление AI недоступно</strong>
-              <span>Нужно право на чтение статистики AI проекта.</span>
-            </div>
-          </section>
-          <EndUserAiAllowanceCard
-            v-if="canReadAllowance && endUserId"
-            :project-id="projectId"
-            :end-user-id="endUserId"
-            :can-grant="canGrantAllowance"
-            :can-manage="canManageAllowance"
-            :can-reconcile="canReconcileAllowance"
-            :refresh-key="allowanceRefreshKey"
-            @open-details="openAllowanceDetails"
-            @open-journal="openAllowanceJournal"
-          />
-          <EndUserOperationalStateCard
-            v-if="canReadEndUserState && endUserId"
-            :project-id="projectId"
-            :end-user-id="endUserId"
-            :can-manage="canManageEndUserState"
-          />
-        </main>
-
-        <aside class="profile-actions" aria-label="Действия с пользователем">
-          <section class="profile-card action-card">
-            <header class="profile-card-header">
-              <div>
-                <span class="eyebrow">Управление</span>
-                <h3><i class="pi pi-bolt" /> Действия</h3>
-              </div>
-            </header>
-            <section
-              v-if="canStartAIReview && endUserId"
-              class="ai-review-entry"
-              data-testid="ai-review-entry"
-            >
-              <span class="ai-review-entry-icon"
-                ><i class="pi pi-sparkles"
-              /></span>
-              <div>
-                <strong>AI-анализ событий</strong>
-                <span>Выберите события и сначала оцените объём запроса.</span>
-              </div>
-              <Button
-                label="Запросить анализ"
-                icon="pi pi-arrow-right"
-                icon-pos="right"
-                size="small"
-                severity="secondary"
-                outlined
-                @click="aiReviewVisible = true"
-              />
-            </section>
-            <EndUserTelegramPanel
-              :visible="visible"
-              :project-id="projectId"
-              :end-user-id="endUserId"
-              :can-read="canReadTelegramLinks"
-              :can-send="canSendTelegramPersonalMessages"
-              @dirty-change="telegramDraftDirty = $event"
-            />
-          </section>
-
-          <section v-if="canReadUserMemory && endUserId" class="profile-card">
-            <UserMemoryPanel
-              :project-id="projectId"
-              :end-user-id="endUserId"
-              :user-label="displayName"
-              :editable="
-                hasProjectPermission(
-                  projectPermissions,
-                  'project.user_memory.manage',
-                )
-              "
-            />
-          </section>
-        </aside>
-      </div>
-    </section>
-
-    <div
-      v-show="workspaceMode === 'CHAT'"
-      class="workspace-grid"
-      :data-mobile-pane="mobilePane"
-      data-testid="chat-workspace"
-    >
-      <aside class="conversation-pane">
-        <button
-          type="button"
-          class="mobile-conversation-profile"
-          aria-label="К профилю"
-          @click="openProfile"
-        >
+          <span v-if="workspaceMode === 'CHAT'" class="workspace-divider" />
           <span class="avatar">{{
             displayName.slice(0, 1).toUpperCase()
           }}</span>
-          <div>
-            <strong>{{ displayName }}</strong>
-            <small>
-              {{ (conversationLocale ?? "—").toUpperCase() }}
-            </small>
-          </div>
-          <span class="connection-status" :data-state="realtimeStatus.state">
-            <i class="connection-live-dot" />
-            {{ realtimeStatus.label }}
-          </span>
-          <i class="pi pi-chevron-right" aria-hidden="true" />
-        </button>
-        <div class="pane-header">
-          <h3>Диалоги · {{ conversations.length }}</h3>
-          <Button
-            v-if="canReply"
-            icon="pi pi-plus"
-            label="Новый"
-            size="small"
-            outlined
-            :disabled="!onlineSession"
-            @click="newChatOpen = true"
-          />
-        </div>
-        <label class="conversation-search">
-          <i class="pi pi-search" aria-hidden="true" />
-          <input
-            v-model="conversationSearch"
-            type="search"
-            aria-label="Поиск по диалогам"
-            placeholder="Поиск по диалогам"
-          />
-          <button
-            v-if="conversationSearch"
-            type="button"
-            aria-label="Очистить поиск"
-            @click="conversationSearch = ''"
-          >
-            <i class="pi pi-times" aria-hidden="true" />
-          </button>
-        </label>
-        <div v-if="conversationsLoading" class="pane-loading">
-          <Skeleton v-for="item in 5" :key="item" height="74px" />
-        </div>
-        <div v-else-if="!conversations.length" class="empty-state">
-          <i class="pi pi-comments" /><strong>Диалогов пока нет</strong>
-          <span>Начните новый разговор, когда пользователь будет онлайн.</span>
-        </div>
-        <div
-          v-else
-          class="conversation-list"
-          role="navigation"
-          aria-label="Диалоги пользователя"
-        >
-          <button
-            v-for="conversation in filteredConversations"
-            :key="conversation.id"
-            type="button"
-            :aria-current="
-              selectedConversation?.id === conversation.id ? 'page' : undefined
-            "
-            :class="{ selected: selectedConversation?.id === conversation.id }"
-            @click="selectConversation(conversation)"
-          >
-            <span class="conversation-row-title">
-              <strong>{{ conversation.title }}</strong>
-              <span
-                v-if="
-                  conversationAISuspensionEnabled &&
-                  conversationIsSuspended(conversation)
-                "
-                class="conversation-badge warning"
-              >
-                AI ⏸
-              </span>
-              <span
-                v-else-if="
-                  selectedConversation?.id === conversation.id &&
-                  conversationLocale
-                "
-                class="conversation-badge accent"
-              >
-                {{ conversationLocale.toUpperCase() }}
-              </span>
-            </span>
-            <span
-              >{{ relativeTime(conversation.lastMessageAt) }} ·
-              {{ conversation.messageCount }} сообщ.<template
-                v-if="conversation.isCurrent"
-              >
-                · текущий</template
-              ></span
-            >
-          </button>
-          <div
-            v-if="!filteredConversations.length"
-            class="conversation-search-empty"
-          >
-            Ничего не найдено
-          </div>
-        </div>
-        <Button
-          v-if="nextConversationCursor"
-          label="Показать ещё"
-          icon="pi pi-chevron-down"
-          severity="secondary"
-          text
-          :loading="conversationsLoadingMore"
-          @click="consoleState.loadMoreConversations"
-        />
-      </aside>
-
-      <main class="chat-pane">
-        <div
-          v-if="selectedConversation"
-          class="conversation-state-rail"
-          :data-online="Boolean(onlineSession)"
-          aria-label="Состояние диалога"
-        >
-          <button
-            type="button"
-            class="mobile-chat-back"
-            aria-label="К списку диалогов"
-            @click="mobilePane = 'LIST'"
-          >
-            <i class="pi pi-arrow-left" aria-hidden="true" />
-          </button>
-          <div class="chat-heading">
-            <h3>{{ selectedConversation.title }}</h3>
-            <span>
+          <div class="workspace-identity">
+            <h2>{{ displayName }}</h2>
+            <span class="workspace-identity-meta">
               {{
-                selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт"
+                workspaceMode === "CHAT"
+                  ? detail?.externalUserId || endUserId || "—"
+                  : "Профиль пользователя"
               }}
-              · сессия #{{
-                Math.max(selectedConversation.currentInteractionSessionCount, 1)
-              }}
-            </span>
-          </div>
-          <template
-            v-if="conversationAISuspensionEnabled && selectedSuspensionEntry"
-          >
-            <ConversationAISuspensionHeaderActions
-              :entry="selectedSuspensionEntry"
-              :can-manage="canManageSuspension"
-              :conversation-open="selectedConversation.status === 'ACTIVE'"
-              hide-active-status
-              :show-history="false"
-              @start="openSuspension('START')"
-              @history="suspensionHistoryVisible = true"
-              @retry="
-                props.endUserId &&
-                suspensionStore.loadDetail(
-                  props.endUserId,
-                  selectedConversation.id,
-                )
-              "
-            />
-            <ConversationAISuspensionBanner
-              :entry="selectedSuspensionEntry"
-              :can-manage="canManageSuspension"
-              :conversation-open="selectedConversation.status === 'ACTIVE'"
-              compact
-              :show-history="false"
-              @extend="openSuspension('EXTEND')"
-              @resume="openSuspension('RESUME')"
-              @history="suspensionHistoryVisible = true"
-            />
-          </template>
-          <div class="conversation-menu-anchor">
-            <button
-              type="button"
-              class="conversation-more"
-              aria-label="Другие действия с диалогом"
-              aria-haspopup="menu"
-              :aria-expanded="conversationMenuVisible"
-              @click="toggleConversationMenu"
-            >
-              <i class="pi pi-ellipsis-h" aria-hidden="true" />
-            </button>
-            <div
-              v-if="conversationMenuVisible"
-              class="conversation-settings-menu"
-              role="menu"
-            >
-              <span class="menu-section-label">Язык</span>
-              <ConversationTranslationBanner
-                v-if="canManageTranslation"
-                :state="translation.state.value"
-                :loading="translation.loading.value"
-                :saving="translation.savingPreference.value"
-                :can-manage="canManageTranslation"
-                :eligible-count="visibleTranslationMessageIds.length"
-                @reload="ensureTranslationLoaded"
-                @update-enabled="setTranslationEnabled"
-                @update-target-locale="setTranslationTargetLocale($event)"
-                @translate-visible="
-                  translation.translateMessages(visibleTranslationMessageIds)
+              <i
+                v-if="workspaceMode === 'CHAT'"
+                class="presence-dot"
+                :class="{ online: Boolean(onlineSession) }"
+                role="img"
+                :aria-label="
+                  onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'
                 "
               />
-              <button
-                type="button"
-                role="menuitem"
-                @click="
-                  messageViewMode =
-                    messageViewMode === 'ORIGINAL' ? 'TRANSLATED' : 'ORIGINAL'
-                "
-              >
-                <i class="pi pi-eye" aria-hidden="true" />
-                {{
-                  messageViewMode === "ORIGINAL"
-                    ? "Показывать переводы"
-                    : "Показывать оригиналы"
-                }}
-              </button>
-              <span class="menu-section-label">Диалог</span>
-              <button
-                type="button"
-                role="menuitem"
-                @click="suspensionHistoryVisible = true"
-              >
-                <i class="pi pi-history" aria-hidden="true" />
-                История режима AI и пауз
-              </button>
-              <button type="button" role="menuitem" @click="copyConversationId">
-                <i class="pi pi-copy" aria-hidden="true" />
-                Скопировать ID диалога
-              </button>
-              <button type="button" role="menuitem" @click="exportConversation">
-                <i class="pi pi-download" aria-hidden="true" />
-                Выгрузить переписку
-              </button>
-            </div>
+            </span>
           </div>
-        </div>
-        <UserConversationPane
-          v-if="canReadConversations && selectedConversation"
-          :key="`${projectId}:${auth.user?.id ?? 'current-operator'}:${endUserId ?? 'none'}`"
-          class="user-conversation-surface"
-          :title="selectedConversation.title"
-          :messages="messages"
-          :translations="translation.messageTranslations.value"
-          :history="userConversationHistory"
-          :translation="userConversationTranslation"
-          :composer="userConversationComposer"
-          @load-older="loadOlderMessagesThroughSurface"
-          @cancel-translation="translation.cancelMessageTranslations"
-          @change-translation-mode="changeTranslationMode"
-          @reconcile-required="consoleState.reconcileSelected"
-          @draft-change="changeSurfaceDraft"
-          @send="
-            changeSurfaceDraft($event);
-            sendReply();
-          "
-          @request-reply-translation="prepareReplyTranslation"
-          @reconcile-reply-translation="translation.reconcileReplyPreview"
-          @retry-reply-translation="translation.retryReplyPreview"
-          @save-reply-translation="translation.editReplyTranslation"
-          @send-reply-translation="sendTranslatedReply($event.text)"
-          @composer-action="handleConversationComposerAction"
-        />
-        <div v-else class="empty-state chat-empty">
-          <i class="pi pi-comment" /><strong>Выберите диалог</strong>
-          <span>История и live-сообщения появятся здесь.</span>
+          <div class="workspace-statuses">
+            <span
+              class="connection-status"
+              :data-state="realtimeStatus.state"
+              data-testid="live-connection-status"
+              :title="
+                realtimeStatus.state === 'error'
+                  ? 'Обновления в реальном времени недоступны, история сверяется через API'
+                  : undefined
+              "
+            >
+              <i class="connection-live-dot" />
+              {{ realtimeStatus.label }}
+            </span>
+          </div>
           <Button
-            data-action="open-profile"
-            icon="pi pi-user"
-            label="К профилю"
+            :label="workspaceFullTab ? 'Свернуть' : 'На весь экран'"
+            :icon="
+              workspaceFullTab
+                ? 'pi pi-window-minimize'
+                : 'pi pi-window-maximize'
+            "
+            :aria-label="
+              workspaceFullTab
+                ? 'Вернуть рабочее место в окно'
+                : 'Развернуть рабочее место на всю вкладку'
+            "
             severity="secondary"
-            text
+            outlined
             size="small"
-            @click="openProfile"
+            :disabled="workspacePresentationTransitioning"
+            @click="toggleWorkspacePresentation"
           />
         </div>
-        <ConversationTicketDrawer
-          v-if="selectedConversation"
-          :visible="ticketDrawerVisible"
-          :external-user-id="detail?.externalUserId || endUserId || '—'"
-          :conversation-title="selectedConversation.title"
-          :message-count="messages.length"
-          @close="ticketDrawerVisible = false"
-        />
-        <ConversationTemplateGallery
-          :visible="replyTemplateGalleryVisible"
-          :templates="defaultConversationReplyTemplates"
-          @close="replyTemplateGalleryVisible = false"
-          @select="applyReplyTemplate"
-        />
-      </main>
-    </div>
+      </template>
 
-    <AIReviewDialog
-      v-if="aiReviewVisible && endUserId"
-      v-model:visible="aiReviewVisible"
-      :project-id="projectId"
-      :end-user-id="endUserId"
-      :timezone="projectTimezone"
-      :can-open-analysis="canReadAIAnalyses"
-    />
+      <section
+        v-if="workspaceMode === 'PROFILE'"
+        class="profile-overview"
+        data-testid="profile-overview"
+      >
+        <div class="profile-hero">
+          <div class="profile-identity">
+            <span class="profile-avatar">{{
+              displayName.slice(0, 1).toUpperCase()
+            }}</span>
+            <div>
+              <span class="eyebrow">Профиль пользователя</span>
+              <h2>{{ displayName }}</h2>
+              <p>
+                {{ detail?.externalUserId || endUserId }}
+                <template v-if="detail?.observedAt">
+                  · обновлён {{ relativeTime(detail.observedAt) }}
+                </template>
+              </p>
+            </div>
+          </div>
+          <Button
+            v-if="canReadConversations"
+            data-action="open-chat"
+            label="Открыть чат"
+            icon="pi pi-arrow-right"
+            icon-pos="right"
+            @click="openChat"
+          />
+        </div>
 
-    <AiAllowanceUserDialog
-      v-if="allowanceDialogVisible && canReadAllowance && endUserId"
-      :visible="true"
-      :project-id="projectId"
-      :end-user-id="endUserId"
-      :identity="detail?.externalUserId || externalUserId || endUserId"
-      :initial-mode="allowanceDialogMode"
-      :can-read="canReadAllowance"
-      :can-grant="canGrantAllowance"
-      :can-manage="canManageAllowance"
-      :can-reconcile="canReconcileAllowance"
-      @update:visible="allowanceDialogVisible = $event"
-      @open-journal="openAllowanceJournal"
-      @changed="refreshAllowance"
-      @fresh-login="requireFreshAllowanceLogin"
-    />
+        <div class="profile-layout">
+          <main class="profile-main">
+            <section class="profile-card">
+              <header class="profile-card-header">
+                <div>
+                  <span class="eyebrow">Контекст</span>
+                  <h3><i class="pi pi-id-card" /> Основная информация</h3>
+                </div>
+                <div class="profile-card-header-actions">
+                  <EndUserProfileSyncHistory
+                    v-if="canReadProfiles && endUserId"
+                    :project-id="projectId"
+                    :end-user-id="endUserId"
+                  />
+                  <Tag
+                    :value="onlineSession ? 'Онлайн' : 'Офлайн'"
+                    :severity="onlineSession ? 'success' : 'secondary'"
+                    rounded
+                  />
+                </div>
+              </header>
+              <div v-if="detailLoading" class="profile-loading">
+                <Skeleton v-for="item in 6" :key="item" height="64px" />
+              </div>
+              <Message
+                v-else-if="detailError"
+                severity="error"
+                :closable="false"
+              >
+                {{ detailError }}
+              </Message>
+              <template v-else-if="detail">
+                <dl class="profile-facts">
+                  <div>
+                    <dt>ID продукта</dt>
+                    <dd>{{ detail.externalUserId }}</dd>
+                  </div>
+                  <div>
+                    <dt>Версия профиля</dt>
+                    <dd>{{ detail.profileVersion }}</dd>
+                  </div>
+                  <div>
+                    <dt>Контракт полей</dt>
+                    <dd>
+                      {{
+                        detail.contractRevision !== null &&
+                        detail.contractRevision !== undefined
+                          ? `v${detail.contractRevision}`
+                          : "Не указан"
+                      }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Публикация настроек</dt>
+                    <dd>
+                      {{
+                        detail.publicationSequence !== null &&
+                        detail.publicationSequence !== undefined
+                          ? `#${detail.publicationSequence}`
+                          : "Не указана"
+                      }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Актуальность</dt>
+                    <dd>
+                      {{
+                        detail.observedAt
+                          ? relativeTime(detail.observedAt)
+                          : "Нет данных"
+                      }}
+                    </dd>
+                  </div>
+                  <div v-for="field in detail.fields" :key="field.definitionId">
+                    <dt>{{ field.label }}</dt>
+                    <dd>{{ displayField(field) }}</dd>
+                  </div>
+                </dl>
+              </template>
+              <div v-else class="profile-empty">
+                Профиль скрыт вашими правами доступа.
+              </div>
+            </section>
 
-    <Dialog
-      v-if="canReadAllowance && endUserId"
-      v-model:visible="allowanceJournalVisible"
-      modal
-      :header="`Журнал AI-квоты · ${detail?.externalUserId || externalUserId || endUserId}`"
-      :style="{ width: 'min(1180px, 96vw)' }"
-    >
-      <AiAllowanceJournalPanel
+            <EndUserAiUsageCard
+              v-if="canReadAiUsage && endUserId"
+              :project-id="projectId"
+              :end-user-id="endUserId"
+            />
+            <section v-else class="profile-card profile-empty-card">
+              <i class="pi pi-lock" />
+              <div>
+                <strong>Потребление AI недоступно</strong>
+                <span>Нужно право на чтение статистики AI проекта.</span>
+              </div>
+            </section>
+            <EndUserAiAllowanceCard
+              v-if="canReadAllowance && endUserId"
+              :project-id="projectId"
+              :end-user-id="endUserId"
+              :can-grant="canGrantAllowance"
+              :can-manage="canManageAllowance"
+              :can-reconcile="canReconcileAllowance"
+              :refresh-key="allowanceRefreshKey"
+              @open-details="openAllowanceDetails"
+              @open-journal="openAllowanceJournal"
+            />
+            <EndUserOperationalStateCard
+              v-if="canReadEndUserState && endUserId"
+              :project-id="projectId"
+              :end-user-id="endUserId"
+              :can-manage="canManageEndUserState"
+            />
+          </main>
+
+          <aside class="profile-actions" aria-label="Действия с пользователем">
+            <section class="profile-card action-card">
+              <header class="profile-card-header">
+                <div>
+                  <span class="eyebrow">Управление</span>
+                  <h3><i class="pi pi-bolt" /> Действия</h3>
+                </div>
+              </header>
+              <section
+                v-if="canStartAIReview && endUserId"
+                class="ai-review-entry"
+                data-testid="ai-review-entry"
+              >
+                <span class="ai-review-entry-icon"
+                  ><i class="pi pi-sparkles"
+                /></span>
+                <div>
+                  <strong>AI-анализ событий</strong>
+                  <span>Выберите события и сначала оцените объём запроса.</span>
+                </div>
+                <Button
+                  label="Запросить анализ"
+                  icon="pi pi-arrow-right"
+                  icon-pos="right"
+                  size="small"
+                  severity="secondary"
+                  outlined
+                  @click="aiReviewVisible = true"
+                />
+              </section>
+              <EndUserTelegramPanel
+                :visible="visible"
+                :project-id="projectId"
+                :end-user-id="endUserId"
+                :can-read="canReadTelegramLinks"
+                :can-send="canSendTelegramPersonalMessages"
+                @dirty-change="telegramDraftDirty = $event"
+              />
+            </section>
+
+            <section v-if="canReadUserMemory && endUserId" class="profile-card">
+              <UserMemoryPanel
+                :project-id="projectId"
+                :end-user-id="endUserId"
+                :user-label="displayName"
+                :editable="
+                  hasProjectPermission(
+                    projectPermissions,
+                    'project.user_memory.manage',
+                  )
+                "
+              />
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <div
+        v-show="workspaceMode === 'CHAT'"
+        class="workspace-grid"
+        :data-mobile-pane="mobilePane"
+        data-testid="chat-workspace"
+      >
+        <aside class="conversation-pane">
+          <button
+            type="button"
+            class="mobile-conversation-profile"
+            aria-label="К профилю"
+            @click="openProfile"
+          >
+            <span class="avatar">{{
+              displayName.slice(0, 1).toUpperCase()
+            }}</span>
+            <div>
+              <strong>{{ displayName }}</strong>
+              <small>
+                {{ (conversationLocale ?? "—").toUpperCase() }}
+              </small>
+            </div>
+            <span class="connection-status" :data-state="realtimeStatus.state">
+              <i class="connection-live-dot" />
+              {{ realtimeStatus.label }}
+            </span>
+            <i class="pi pi-chevron-right" aria-hidden="true" />
+          </button>
+          <div class="pane-header">
+            <h3>Диалоги · {{ conversations.length }}</h3>
+            <Button
+              v-if="canReply"
+              icon="pi pi-plus"
+              label="Новый"
+              size="small"
+              outlined
+              :disabled="!onlineSession"
+              @click="newChatOpen = true"
+            />
+          </div>
+          <label class="conversation-search">
+            <i class="pi pi-search" aria-hidden="true" />
+            <input
+              v-model="conversationSearch"
+              type="search"
+              aria-label="Поиск по диалогам"
+              placeholder="Поиск по диалогам"
+            />
+            <button
+              v-if="conversationSearch"
+              type="button"
+              aria-label="Очистить поиск"
+              @click="conversationSearch = ''"
+            >
+              <i class="pi pi-times" aria-hidden="true" />
+            </button>
+          </label>
+          <div v-if="conversationsLoading" class="pane-loading">
+            <Skeleton v-for="item in 5" :key="item" height="74px" />
+          </div>
+          <div v-else-if="!conversations.length" class="empty-state">
+            <i class="pi pi-comments" /><strong>Диалогов пока нет</strong>
+            <span
+              >Начните новый разговор, когда пользователь будет онлайн.</span
+            >
+          </div>
+          <div
+            v-else
+            class="conversation-list"
+            role="navigation"
+            aria-label="Диалоги пользователя"
+          >
+            <button
+              v-for="conversation in filteredConversations"
+              :key="conversation.id"
+              type="button"
+              :aria-current="
+                selectedConversation?.id === conversation.id
+                  ? 'page'
+                  : undefined
+              "
+              :class="{
+                selected: selectedConversation?.id === conversation.id,
+              }"
+              @click="selectConversation(conversation)"
+            >
+              <span class="conversation-row-title">
+                <strong>{{ conversation.title }}</strong>
+                <span
+                  v-if="
+                    conversationAISuspensionEnabled &&
+                    conversationIsSuspended(conversation)
+                  "
+                  class="conversation-badge warning"
+                >
+                  AI ⏸
+                </span>
+                <span
+                  v-else-if="
+                    selectedConversation?.id === conversation.id &&
+                    conversationLocale
+                  "
+                  class="conversation-badge accent"
+                >
+                  {{ conversationLocale.toUpperCase() }}
+                </span>
+              </span>
+              <span
+                >{{ relativeTime(conversation.lastMessageAt) }} ·
+                {{ conversation.messageCount }} сообщ.<template
+                  v-if="conversation.isCurrent"
+                >
+                  · текущий</template
+                ></span
+              >
+            </button>
+            <div
+              v-if="!filteredConversations.length"
+              class="conversation-search-empty"
+            >
+              Ничего не найдено
+            </div>
+          </div>
+          <Button
+            v-if="nextConversationCursor"
+            label="Показать ещё"
+            icon="pi pi-chevron-down"
+            severity="secondary"
+            text
+            :loading="conversationsLoadingMore"
+            @click="consoleState.loadMoreConversations"
+          />
+        </aside>
+
+        <main class="chat-pane">
+          <div
+            v-if="selectedConversation"
+            class="conversation-state-rail"
+            :data-online="Boolean(onlineSession)"
+            aria-label="Состояние диалога"
+          >
+            <button
+              type="button"
+              class="mobile-chat-back"
+              aria-label="К списку диалогов"
+              @click="mobilePane = 'LIST'"
+            >
+              <i class="pi pi-arrow-left" aria-hidden="true" />
+            </button>
+            <div class="chat-heading">
+              <h3>{{ selectedConversation.title }}</h3>
+              <span>
+                {{
+                  selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт"
+                }}
+                · сессия #{{
+                  Math.max(
+                    selectedConversation.currentInteractionSessionCount,
+                    1,
+                  )
+                }}
+              </span>
+            </div>
+            <template
+              v-if="conversationAISuspensionEnabled && selectedSuspensionEntry"
+            >
+              <ConversationAISuspensionHeaderActions
+                :entry="selectedSuspensionEntry"
+                :can-manage="canManageSuspension"
+                :conversation-open="selectedConversation.status === 'ACTIVE'"
+                hide-active-status
+                :show-history="false"
+                @start="openSuspension('START')"
+                @history="suspensionHistoryVisible = true"
+                @retry="
+                  props.endUserId &&
+                  suspensionStore.loadDetail(
+                    props.endUserId,
+                    selectedConversation.id,
+                  )
+                "
+              />
+              <ConversationAISuspensionBanner
+                :entry="selectedSuspensionEntry"
+                :can-manage="canManageSuspension"
+                :conversation-open="selectedConversation.status === 'ACTIVE'"
+                compact
+                :show-history="false"
+                @extend="openSuspension('EXTEND')"
+                @resume="openSuspension('RESUME')"
+                @history="suspensionHistoryVisible = true"
+              />
+            </template>
+            <div class="conversation-menu-anchor">
+              <button
+                type="button"
+                class="conversation-more"
+                aria-label="Другие действия с диалогом"
+                aria-haspopup="menu"
+                :aria-expanded="conversationMenuVisible"
+                @click="toggleConversationMenu"
+              >
+                <i class="pi pi-ellipsis-h" aria-hidden="true" />
+              </button>
+              <div
+                v-if="conversationMenuVisible"
+                class="conversation-settings-menu"
+                role="menu"
+              >
+                <span class="menu-section-label">Язык</span>
+                <ConversationTranslationBanner
+                  v-if="canManageTranslation"
+                  :state="translation.state.value"
+                  :loading="translation.loading.value"
+                  :saving="translation.savingPreference.value"
+                  :can-manage="canManageTranslation"
+                  :eligible-count="visibleTranslationMessageIds.length"
+                  @reload="ensureTranslationLoaded"
+                  @update-enabled="setTranslationEnabled"
+                  @update-target-locale="setTranslationTargetLocale($event)"
+                  @translate-visible="
+                    translation.translateMessages(visibleTranslationMessageIds)
+                  "
+                />
+                <button
+                  type="button"
+                  role="menuitem"
+                  @click="
+                    messageViewMode =
+                      messageViewMode === 'ORIGINAL' ? 'TRANSLATED' : 'ORIGINAL'
+                  "
+                >
+                  <i class="pi pi-eye" aria-hidden="true" />
+                  {{
+                    messageViewMode === "ORIGINAL"
+                      ? "Показывать переводы"
+                      : "Показывать оригиналы"
+                  }}
+                </button>
+                <span class="menu-section-label">Диалог</span>
+                <button
+                  type="button"
+                  role="menuitem"
+                  @click="suspensionHistoryVisible = true"
+                >
+                  <i class="pi pi-history" aria-hidden="true" />
+                  История режима AI и пауз
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  @click="copyConversationId"
+                >
+                  <i class="pi pi-copy" aria-hidden="true" />
+                  Скопировать ID диалога
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  @click="exportConversation"
+                >
+                  <i class="pi pi-download" aria-hidden="true" />
+                  Выгрузить переписку
+                </button>
+              </div>
+            </div>
+          </div>
+          <UserConversationPane
+            v-if="canReadConversations && selectedConversation"
+            :key="`${projectId}:${auth.user?.id ?? 'current-operator'}:${endUserId ?? 'none'}`"
+            class="user-conversation-surface"
+            :title="selectedConversation.title"
+            :messages="messages"
+            :translations="translation.messageTranslations.value"
+            :history="userConversationHistory"
+            :translation="userConversationTranslation"
+            :composer="userConversationComposer"
+            @load-older="loadOlderMessagesThroughSurface"
+            @cancel-translation="translation.cancelMessageTranslations"
+            @change-translation-mode="changeTranslationMode"
+            @reconcile-required="consoleState.reconcileSelected"
+            @draft-change="changeSurfaceDraft"
+            @send="
+              changeSurfaceDraft($event);
+              sendReply();
+            "
+            @request-reply-translation="prepareReplyTranslation"
+            @reconcile-reply-translation="translation.reconcileReplyPreview"
+            @retry-reply-translation="translation.retryReplyPreview"
+            @save-reply-translation="translation.editReplyTranslation"
+            @send-reply-translation="sendTranslatedReply($event.text)"
+            @composer-action="handleConversationComposerAction"
+          />
+          <div v-else class="empty-state chat-empty">
+            <i class="pi pi-comment" /><strong>Выберите диалог</strong>
+            <span>История и live-сообщения появятся здесь.</span>
+            <Button
+              data-action="open-profile"
+              icon="pi pi-user"
+              label="К профилю"
+              severity="secondary"
+              text
+              size="small"
+              @click="openProfile"
+            />
+          </div>
+          <ConversationTicketDrawer
+            v-if="selectedConversation"
+            :visible="ticketDrawerVisible"
+            :external-user-id="detail?.externalUserId || endUserId || '—'"
+            :conversation-title="selectedConversation.title"
+            :message-count="messages.length"
+            @close="ticketDrawerVisible = false"
+          />
+          <ConversationTemplateGallery
+            :visible="replyTemplateGalleryVisible"
+            :templates="defaultConversationReplyTemplates"
+            @close="replyTemplateGalleryVisible = false"
+            @select="applyReplyTemplate"
+          />
+        </main>
+      </div>
+
+      <AIReviewDialog
+        v-if="aiReviewVisible && endUserId"
+        v-model:visible="aiReviewVisible"
         :project-id="projectId"
-        :can-read="canReadAllowance"
-        :can-reconcile="canReconcileAllowance"
         :end-user-id="endUserId"
-        :cursor="allowanceJournalCursor"
-        embedded
-        @next-cursor="allowanceJournalCursor = $event"
+        :timezone="projectTimezone"
+        :can-open-analysis="canReadAIAnalyses"
+      />
+
+      <AiAllowanceUserDialog
+        v-if="allowanceDialogVisible && canReadAllowance && endUserId"
+        :visible="true"
+        :project-id="projectId"
+        :end-user-id="endUserId"
+        :identity="detail?.externalUserId || externalUserId || endUserId"
+        :initial-mode="allowanceDialogMode"
+        :can-read="canReadAllowance"
+        :can-grant="canGrantAllowance"
+        :can-manage="canManageAllowance"
+        :can-reconcile="canReconcileAllowance"
+        @update:visible="allowanceDialogVisible = $event"
+        @open-journal="openAllowanceJournal"
         @changed="refreshAllowance"
         @fresh-login="requireFreshAllowanceLogin"
       />
-    </Dialog>
 
-    <Dialog
-      v-model:visible="newChatOpen"
-      modal
-      header="Новый диалог"
-      :style="{ width: 'min(520px, 94vw)' }"
-      class="new-chat-dialog"
-    >
-      <div class="new-chat-form">
-        <p>
-          Первое сообщение создаст отдельный диалог и сразу откроет его в
-          рабочем пространстве.
-        </p>
-        <Textarea
-          v-model="newChatText"
-          rows="5"
-          maxlength="10000"
-          autofocus
-          placeholder="Напишите первое сообщение"
-          aria-label="Первое сообщение нового диалога"
+      <Dialog
+        v-if="canReadAllowance && endUserId"
+        v-model:visible="allowanceJournalVisible"
+        modal
+        :header="`Журнал AI-квоты · ${detail?.externalUserId || externalUserId || endUserId}`"
+        :style="{ width: 'min(1180px, 96vw)' }"
+      >
+        <AiAllowanceJournalPanel
+          :project-id="projectId"
+          :can-read="canReadAllowance"
+          :can-reconcile="canReconcileAllowance"
+          :end-user-id="endUserId"
+          :cursor="allowanceJournalCursor"
+          embedded
+          @next-cursor="allowanceJournalCursor = $event"
+          @changed="refreshAllowance"
+          @fresh-login="requireFreshAllowanceLogin"
         />
-        <div>
-          <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="newChatOpen = false"
-          /><Button
-            v-if="canReply"
-            label="Создать и отправить"
-            icon="pi pi-send"
-            :loading="creatingConversation"
-            :disabled="!newChatText.trim() || !onlineSession"
-            @click="createConversation"
-          />
-        </div>
-      </div>
-    </Dialog>
+      </Dialog>
 
-    <Dialog
-      v-model:visible="sendWithoutTranslationVisible"
-      @update:visible="setSendWithoutTranslationVisible"
-      modal
-      header="Отправить без перевода?"
-      :style="{ width: 'min(500px, 94vw)' }"
-    >
-      <div class="send-without-translation">
-        <Message severity="warn" :closable="false">
-          Пользователь получит исходный русский текст вместо
-          {{
-            translation.targetLocale.value
-              ? `перевода на ${localeDisplayName(translation.targetLocale.value)}`
-              : "перевода"
-          }}.
-        </Message>
-        <div class="field">
-          <label for="send-without-translation-reason"
-            >Причина исключения</label
-          >
+      <Dialog
+        v-model:visible="newChatOpen"
+        modal
+        header="Новый диалог"
+        :style="{ width: 'min(520px, 94vw)' }"
+        class="new-chat-dialog"
+      >
+        <div class="new-chat-form">
+          <p>
+            Первое сообщение создаст отдельный диалог и сразу откроет его в
+            рабочем пространстве.
+          </p>
           <Textarea
-            id="send-without-translation-reason"
-            v-model="sendWithoutTranslationReason"
-            rows="3"
-            maxlength="500"
-            placeholder="Почему сообщение нужно отправить без перевода?"
+            v-model="newChatText"
+            rows="5"
+            maxlength="10000"
+            autofocus
+            placeholder="Напишите первое сообщение"
+            aria-label="Первое сообщение нового диалога"
           />
-          <small>{{ sendWithoutTranslationReason.length }}/500</small>
+          <div>
+            <Button
+              label="Отмена"
+              severity="secondary"
+              text
+              @click="newChatOpen = false"
+            /><Button
+              v-if="canReply"
+              label="Создать и отправить"
+              icon="pi pi-send"
+              :loading="creatingConversation"
+              :disabled="!newChatText.trim() || !onlineSession"
+              @click="createConversation"
+            />
+          </div>
         </div>
-        <div class="send-without-translation__actions">
-          <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="setSendWithoutTranslationVisible(false)"
-          />
-          <Button
-            label="Отправить исходный текст"
-            icon="pi pi-send"
-            severity="danger"
-            :loading="sendingReply"
-            :disabled="!sendWithoutTranslationReason.trim()"
-            @click="sendReplyWithoutTranslation"
-          />
+      </Dialog>
+
+      <Dialog
+        v-model:visible="sendWithoutTranslationVisible"
+        @update:visible="setSendWithoutTranslationVisible"
+        modal
+        header="Отправить без перевода?"
+        :style="{ width: 'min(500px, 94vw)' }"
+      >
+        <div class="send-without-translation">
+          <Message severity="warn" :closable="false">
+            Пользователь получит исходный русский текст вместо
+            {{
+              translation.targetLocale.value
+                ? `перевода на ${localeDisplayName(translation.targetLocale.value)}`
+                : "перевода"
+            }}.
+          </Message>
+          <div class="field">
+            <label for="send-without-translation-reason"
+              >Причина исключения</label
+            >
+            <Textarea
+              id="send-without-translation-reason"
+              v-model="sendWithoutTranslationReason"
+              rows="3"
+              maxlength="500"
+              placeholder="Почему сообщение нужно отправить без перевода?"
+            />
+            <small>{{ sendWithoutTranslationReason.length }}/500</small>
+          </div>
+          <div class="send-without-translation__actions">
+            <Button
+              label="Отмена"
+              severity="secondary"
+              text
+              @click="setSendWithoutTranslationVisible(false)"
+            />
+            <Button
+              label="Отправить исходный текст"
+              icon="pi pi-send"
+              severity="danger"
+              :loading="sendingReply"
+              :disabled="!sendWithoutTranslationReason.trim()"
+              @click="sendReplyWithoutTranslation"
+            />
+          </div>
         </div>
-      </div>
+      </Dialog>
     </Dialog>
-  </Dialog>
+  </FullViewportWorkspaceShell>
 
   <ConversationAISuspensionDialog
     v-if="
@@ -2311,12 +2413,12 @@ function displayField(
   background: var(--surface-ground);
   animation: chat-enter 0.22s ease-out;
 }
-:global(.user-workspace-dialog.p-dialog-maximized .p-dialog-content) {
+:global(.user-workspace-dialog--full-tab .p-dialog-content) {
   flex: 1;
   min-height: 0;
 }
-:global(.user-workspace-dialog.p-dialog-maximized .workspace-grid),
-:global(.user-workspace-dialog.p-dialog-maximized .profile-overview) {
+:global(.user-workspace-dialog--full-tab .workspace-grid),
+:global(.user-workspace-dialog--full-tab .profile-overview) {
   height: 100%;
   min-height: 0;
 }
@@ -2673,8 +2775,22 @@ function displayField(
   background: var(--surface-card);
   box-shadow: var(--shadow-dialog);
 }
-:global(body.p-overflow-hidden),
-:global(body.workspace-scroll-locked) {
+:global(.workspace-presentation-shell--full-tab .user-workspace-dialog-mask) {
+  position: absolute !important;
+  inset: 0;
+  padding: 0;
+  background: transparent;
+}
+:global(.user-workspace-dialog--full-tab.p-dialog) {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+:global(body.p-overflow-hidden) {
   overflow: hidden !important;
   overscroll-behavior: none;
 }
@@ -2684,7 +2800,6 @@ function displayField(
   border-bottom: 1px solid var(--border-subtle);
   background: var(--surface-card);
 }
-:global(.user-workspace-dialog .p-dialog-maximize-button),
 :global(.user-workspace-dialog .p-dialog-close-button) {
   width: 36px;
   height: 36px;
@@ -2695,7 +2810,6 @@ function displayField(
   color: var(--text-small-muted) !important;
   box-shadow: none !important;
 }
-:global(.user-workspace-dialog .p-dialog-maximize-button:hover),
 :global(.user-workspace-dialog .p-dialog-close-button:hover) {
   background: var(--surface-hover) !important;
   color: var(--text-primary) !important;
