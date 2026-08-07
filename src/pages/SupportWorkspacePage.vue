@@ -89,18 +89,30 @@ const inboxView = computed<"CONVERSATIONS" | "CASES">(() =>
 );
 const availabilityDialogVisible = ref(false);
 const caseDialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
+const workspaceFullscreen = ref(false);
 
 const routeConversationId = computed(() => {
   const routeId = route.params.conversationId;
   return typeof routeId === "string" ? routeId : undefined;
 });
+const routeCaseId = computed(() => {
+  const routeId = route.params.caseId;
+  return typeof routeId === "string" ? routeId : undefined;
+});
 const requestedConversationId = computed(
-  () => routeConversationId.value ?? inbox.items.value[0]?.id,
+  () =>
+    routeConversationId.value ??
+    (routeCaseId.value ? undefined : inbox.items.value[0]?.id),
+);
+const selectedTargetKey = computed(
+  () =>
+    `${requestedConversationId.value ?? ""}\u0000${routeCaseId.value ?? ""}`,
 );
 const conversation = createSupportConversationController(
   {
     projectId: () => auth.project?.id,
     conversationId: () => requestedConversationId.value,
+    caseId: () => routeCaseId.value,
     onForbidden: handleConversationForbidden,
   },
   supportWorkspaceSource,
@@ -231,7 +243,7 @@ const workspaceLiveSeverity = computed(() =>
       : "info",
 );
 const selectedConversation = computed(() => {
-  if (routeConversationId.value)
+  if (routeConversationId.value || routeCaseId.value)
     return conversation.selection.value?.conversation ?? null;
   return (
     conversation.selection.value?.conversation ?? inbox.items.value[0] ?? null
@@ -301,6 +313,12 @@ const canManageSelectedCase = computed(
       auth.project?.effectivePermissionCodes ?? [],
       "project.cases.manage",
     ),
+);
+const canManageCaseSettings = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.cases.settings.manage",
+  ),
 );
 const internalNotesAccessDenied = ref(false);
 const canReadSelectedInternalNotes = computed(
@@ -524,12 +542,16 @@ async function setInboxView(view: "CONVERSATIONS" | "CASES"): Promise<void> {
   if (view === "CASES") query.view = "cases";
   else delete query.view;
   await router.replace({
-    name: routeConversationId.value
-      ? "support-inbox-conversation"
-      : "support-inbox",
-    ...(routeConversationId.value
-      ? { params: { conversationId: routeConversationId.value } }
-      : {}),
+    name: routeCaseId.value
+      ? "support-inbox-case"
+      : routeConversationId.value
+        ? "support-inbox-conversation"
+        : "support-inbox",
+    ...(routeCaseId.value
+      ? { params: { caseId: routeCaseId.value } }
+      : routeConversationId.value
+        ? { params: { conversationId: routeConversationId.value } }
+        : {}),
     query,
   });
   if (view === "CASES" && !casesInbox.items.value.length)
@@ -538,8 +560,9 @@ async function setInboxView(view: "CONVERSATIONS" | "CASES"): Promise<void> {
 
 async function openCase(caseId: string): Promise<void> {
   await router.push({
-    name: "end-user-case-detail",
+    name: "support-inbox-case",
     params: { caseId },
+    query: { ...route.query, view: "cases" },
   });
 }
 
@@ -641,6 +664,11 @@ function moveInboxSelection(direction: -1 | 1): void {
 }
 
 function handleWorkspaceKeydown(event: KeyboardEvent): void {
+  if (workspaceFullscreen.value && event.key === "Escape") {
+    event.preventDefault();
+    workspaceFullscreen.value = false;
+    return;
+  }
   if (
     event.defaultPrevented ||
     event.altKey ||
@@ -857,7 +885,7 @@ async function handleConversationForbidden(): Promise<void> {
     // The revoked conversation was purged before authority recovery.
   }
   await inbox.load().catch(() => undefined);
-  if (routeConversationId.value)
+  if (routeConversationId.value || routeCaseId.value)
     await router.replace({ name: "support-inbox" });
 }
 
@@ -1035,7 +1063,7 @@ watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
 });
 
 watch(
-  () => requestedConversationId.value,
+  selectedTargetKey,
   () => {
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
@@ -1126,7 +1154,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="page support-workspace-page">
+  <section
+    class="page support-workspace-page"
+    :class="{ 'support-workspace-page--fullscreen': workspaceFullscreen }"
+  >
     <header class="page-header support-workspace-header">
       <div>
         <div class="eyebrow"><i class="pi pi-headphones" /> Поддержка</div>
@@ -1144,6 +1175,17 @@ onBeforeUnmount(() => {
           severity="secondary"
           outlined
           @click="availabilityDialogVisible = true"
+        />
+        <Button
+          :label="workspaceFullscreen ? 'Свернуть' : 'На весь экран'"
+          :icon="
+            workspaceFullscreen
+              ? 'pi pi-window-minimize'
+              : 'pi pi-window-maximize'
+          "
+          severity="secondary"
+          outlined
+          @click="workspaceFullscreen = !workspaceFullscreen"
         />
         <Button
           label="Обновить"
@@ -1170,7 +1212,9 @@ onBeforeUnmount(() => {
 
     <div
       class="support-workspace card"
-      :class="{ 'has-route-selection': Boolean(routeConversationId) }"
+      :class="{
+        'has-route-selection': Boolean(routeConversationId || routeCaseId),
+      }"
     >
       <aside class="inbox-pane" aria-label="Диалоги проекта">
         <div class="pane-heading">
@@ -1205,6 +1249,13 @@ onBeforeUnmount(() => {
             Обращения
           </button>
         </div>
+        <RouterLink
+          v-if="inboxView === 'CASES' && canManageCaseSettings"
+          class="case-settings-link"
+          :to="{ name: 'end-user-case-settings' }"
+        >
+          <i class="pi pi-cog" aria-hidden="true" /> Настройки обращений
+        </RouterLink>
 
         <div
           v-if="
@@ -1293,6 +1344,8 @@ onBeforeUnmount(() => {
             :key="item.id"
             type="button"
             class="case-row"
+            :class="{ selected: item.id === routeCaseId }"
+            :aria-current="item.id === routeCaseId ? 'true' : undefined"
             @click="openCase(item.id)"
           >
             <div class="case-row__top">
@@ -1880,6 +1933,18 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-size: 0.82rem;
 }
+.support-workspace-page--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  background: var(--surface-ground);
+}
+.support-workspace-page--fullscreen .support-workspace {
+  height: calc(100dvh - 142px);
+}
 .support-workspace {
   height: min(720px, calc(100dvh - 160px));
   padding: 0;
@@ -2001,6 +2066,10 @@ onBeforeUnmount(() => {
 .case-row:hover {
   background: var(--surface-muted);
 }
+.case-row.selected {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
 .case-row:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
@@ -2038,6 +2107,20 @@ onBeforeUnmount(() => {
   margin: 5px 0 8px;
   color: var(--text-secondary);
   font-size: 0.78rem;
+}
+.case-settings-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: -2px 0 12px;
+  color: var(--brand);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.case-settings-link:hover,
+.case-settings-link:focus-visible {
+  text-decoration: underline;
 }
 .conversation-row strong {
   max-width: 15ch;
@@ -2237,6 +2320,12 @@ onBeforeUnmount(() => {
   }
 }
 @media (max-width: 720px) {
+  .support-workspace-page--fullscreen {
+    padding: 10px;
+  }
+  .support-workspace-page--fullscreen .support-workspace {
+    height: auto;
+  }
   .support-workspace {
     display: block;
     height: auto;

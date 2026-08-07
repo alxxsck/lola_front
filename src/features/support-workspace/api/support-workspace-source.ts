@@ -99,9 +99,15 @@ export interface SupportWorkspaceSource {
   ): Promise<CursorPage<SupportWorkspaceCaseRow>>;
   readSelection(
     projectId: string,
-    conversationId: string,
+    target: SupportWorkspaceSelectionTarget,
     request?: { messageCursor?: string; messageLimit?: number },
   ): Promise<SupportWorkspaceSelection>;
+}
+
+/** Exact server-owned target for the inspector. One of the ids is required. */
+export interface SupportWorkspaceSelectionTarget {
+  conversationId?: string;
+  caseId?: string;
 }
 
 function mapWorkspaceCaseRow(value: {
@@ -270,10 +276,15 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
     };
   },
 
-  async readSelection(projectId, conversationId, request) {
+  async readSelection(projectId, target, request) {
+    if (!target.conversationId && !target.caseId)
+      throw new Error("Support workspace selection requires an exact target");
     const response = await supportWorkspaceRead(projectId, {
       mode: "SELECTION",
-      conversationId,
+      ...(target.conversationId
+        ? { conversationId: target.conversationId }
+        : {}),
+      ...(target.caseId ? { caseId: target.caseId } : {}),
       messageLimit: request?.messageLimit ?? 50,
       ...(request?.messageCursor
         ? { messageCursor: request.messageCursor }
@@ -285,7 +296,7 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       );
     }
     const conversation = mapWorkspaceConversation(response.conversation);
-    if (conversation.id !== conversationId) {
+    if (target.conversationId && conversation.id !== target.conversationId) {
       throw new Error("Support workspace returned a different conversation");
     }
     if (conversation.endUserId !== response.endUser.id) {
@@ -293,15 +304,19 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
         "Support workspace returned a conversation from another end user",
       );
     }
+    const supportCase = mapWorkspaceCase(response.case, response.endUser.id);
+    if (target.caseId && supportCase?.id !== target.caseId) {
+      throw new Error("Support workspace returned a different case");
+    }
     return {
       checkpoint: response.checkpoint,
       capabilitiesRevision: response.capabilitiesRevision,
       capabilities: response.capabilities,
       endUser: response.endUser,
-      case: mapWorkspaceCase(response.case, response.endUser.id),
+      case: supportCase,
       conversation,
       messages: {
-        items: mapSelectionMessages(conversationId, response.messages.items),
+        items: mapSelectionMessages(conversation.id, response.messages.items),
         nextCursor: response.messages.nextCursor ?? null,
       },
     };
@@ -363,7 +378,10 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
     };
   },
 
-  async readSelection(projectId, conversationId, request) {
+  async readSelection(projectId, target, request) {
+    const conversationId = target.conversationId ?? target.caseId;
+    if (!conversationId)
+      throw new Error("Support workspace selection requires an exact target");
     const page = await repository.getProjectConversations(projectId, {
       limit: 100,
     });
@@ -391,7 +409,22 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         lastSeenAt: selected.updatedAt,
         locale: null,
       },
-      case: null,
+      case: target.caseId
+        ? {
+            id: target.caseId,
+            title: selected.title,
+            status: selected.status === "ACTIVE" ? "OPEN" : "RESOLVED",
+            priority: "NORMAL",
+            groupCode: "GENERAL",
+            projectSequence: "—",
+            attentionRequired: selected.isCurrent,
+            lastActivityAt: selected.updatedAt,
+            updatedAt: selected.updatedAt,
+            version: 1,
+            assignee: null,
+            assignment: null,
+          }
+        : null,
       conversation: {
         id: selected.id,
         endUserId: selected.endUser.id,

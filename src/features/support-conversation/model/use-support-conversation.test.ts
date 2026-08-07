@@ -7,9 +7,7 @@ import type {
 } from "@/features/support-workspace/api/support-workspace-source";
 import { createSupportConversationController } from "./use-support-conversation";
 
-function conversation(
-  id: string,
-): SupportWorkspaceConversation {
+function conversation(id: string): SupportWorkspaceConversation {
   return {
     id,
     endUserId: `user-${id}`,
@@ -116,7 +114,10 @@ describe("support conversation controller", () => {
       readSelection: vi.fn().mockReturnValue(response.promise),
     };
     const controller = createSupportConversationController(
-      { projectId: () => projectId, conversationId: () => selectedConversationId },
+      {
+        projectId: () => projectId,
+        conversationId: () => selectedConversationId,
+      },
       source,
     );
 
@@ -126,19 +127,23 @@ describe("support conversation controller", () => {
     response.resolve(selection("conversation-1", [message("stale", 1)]));
     await loading;
 
-    expect(source.readSelection).toHaveBeenCalledWith("project-1", "conversation-1");
+    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
+      conversationId: "conversation-1",
+    });
     expect(controller.messages.value).toEqual([]);
   });
 
   it("uses ordinal only and surfaces a reconcile state for a history gap", async () => {
     const source = {
-      readSelection: vi.fn().mockResolvedValue(
-        selection("conversation-1", [
-          message("second", 2),
-          message("first", 1),
-          message("fourth", 4),
-        ]),
-      ),
+      readSelection: vi
+        .fn()
+        .mockResolvedValue(
+          selection("conversation-1", [
+            message("second", 2),
+            message("first", 1),
+            message("fourth", 4),
+          ]),
+        ),
     };
     const controller = createSupportConversationController(
       { projectId: () => "project-1", conversationId: () => "conversation-1" },
@@ -157,9 +162,11 @@ describe("support conversation controller", () => {
       conversationId: "another-conversation",
     };
     const source = {
-      readSelection: vi.fn().mockResolvedValue(
-        selection("conversation-1", [foreignMessage], null, true),
-      ),
+      readSelection: vi
+        .fn()
+        .mockResolvedValue(
+          selection("conversation-1", [foreignMessage], null, true),
+        ),
     };
     const controller = createSupportConversationController(
       { projectId: () => "project-1", conversationId: () => "conversation-1" },
@@ -174,9 +181,11 @@ describe("support conversation controller", () => {
 
   it("loads an authoritative selection directly by conversation id", async () => {
     const source = {
-      readSelection: vi.fn().mockResolvedValue(
-        selection("conversation-outside-first-page", [message("first", 1)]),
-      ),
+      readSelection: vi
+        .fn()
+        .mockResolvedValue(
+          selection("conversation-outside-first-page", [message("first", 1)]),
+        ),
     };
     const controller = createSupportConversationController(
       {
@@ -188,14 +197,40 @@ describe("support conversation controller", () => {
 
     await controller.load();
 
-    expect(source.readSelection).toHaveBeenCalledWith(
-      "project-1",
-      "conversation-outside-first-page",
-    );
+    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
+      conversationId: "conversation-outside-first-page",
+    });
     expect(controller.selection.value?.endUser.externalId).toBe(
       "external-conversation-outside-first-page",
     );
     expect(controller.messages.value.map((item) => item.id)).toEqual(["first"]);
+  });
+
+  it("loads the inspector by Case id without selecting a fallback conversation", async () => {
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValue(
+          selection("conversation-linked-to-case", [message("first", 1)]),
+        ),
+    };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => undefined,
+        caseId: () => "case-1",
+      },
+      source,
+    );
+
+    await controller.load();
+
+    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
+      caseId: "case-1",
+    });
+    expect(controller.selection.value?.conversation?.id).toBe(
+      "conversation-linked-to-case",
+    );
   });
 
   it("merges the older cursor page in authoritative ordinal order", async () => {
@@ -210,7 +245,10 @@ describe("support conversation controller", () => {
           ),
         )
         .mockResolvedValueOnce(
-          selection("conversation-1", [message("first", 1), message("second", 2)]),
+          selection("conversation-1", [
+            message("first", 1),
+            message("second", 2),
+          ]),
         ),
     };
     const controller = createSupportConversationController(
@@ -224,7 +262,7 @@ describe("support conversation controller", () => {
     expect(source.readSelection).toHaveBeenNthCalledWith(
       2,
       "project-1",
-      "conversation-1",
+      { conversationId: "conversation-1" },
       { messageCursor: "older-page", messageLimit: 50 },
     );
     expect(controller.messages.value.map((item) => item.id)).toEqual([
@@ -241,10 +279,16 @@ describe("support conversation controller", () => {
       readSelection: vi
         .fn()
         .mockResolvedValueOnce(
-          selection("conversation-1", [message("first", 1), message("second", 2)]),
+          selection("conversation-1", [
+            message("first", 1),
+            message("second", 2),
+          ]),
         )
         .mockResolvedValueOnce(
-          selection("conversation-1", [message("second", 2), message("third", 3)]),
+          selection("conversation-1", [
+            message("second", 2),
+            message("third", 3),
+          ]),
         ),
     };
     const controller = createSupportConversationController(
@@ -267,7 +311,9 @@ describe("support conversation controller", () => {
     const source = {
       readSelection: vi
         .fn()
-        .mockResolvedValueOnce(selection("conversation-1", [message("first", 1)]))
+        .mockResolvedValueOnce(
+          selection("conversation-1", [message("first", 1)]),
+        )
         .mockRejectedValueOnce(new ApiError(403, "Forbidden")),
     };
     const controller = createSupportConversationController(

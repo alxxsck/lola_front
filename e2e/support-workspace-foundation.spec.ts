@@ -155,6 +155,25 @@ test("switches between conversations and Cases without mixing their lists", asyn
   ).toBeVisible();
   await expect(queue.locator(".case-row").first()).toBeVisible();
   await expect(queue.locator(".conversation-row")).toHaveCount(0);
+
+  await queue.locator(".case-row").first().click();
+  await expect(page).toHaveURL(/\/support\/inbox\/cases\/[^?]+\?view=cases$/);
+  await expect(page.locator(".conversation-header h2")).toBeVisible();
+  await expect(page.locator(".context-pane")).toContainText("Обращение");
+});
+
+test("expands the workspace without leaving the operator workflow", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "На весь экран" }).click();
+  await expect(page.locator(".support-workspace-page")).toHaveClass(
+    /support-workspace-page--fullscreen/,
+  );
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".support-workspace-page")).not.toHaveClass(
+    /support-workspace-page--fullscreen/,
+  );
 });
 
 test("shows only the operator's server-authoritative routing offers", async ({

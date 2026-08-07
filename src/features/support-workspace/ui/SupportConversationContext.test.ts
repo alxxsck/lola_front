@@ -100,7 +100,7 @@ describe("support conversation context", () => {
       "Оператор Алина",
     );
     expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
-    expect(wrapper.get("a").text()).toBe("Открыть Case");
+    expect(wrapper.get("a").text()).toBe("Открыть в рабочем месте");
   });
 
   it("does not mount a Case deep link without the exact case-read permission", () => {

@@ -218,11 +218,12 @@ function profileClassificationLabel(
         v-if="canOpenCase"
         class="case-link"
         :to="{
-          name: 'end-user-case-detail',
+          name: 'support-inbox-case',
           params: { caseId: selection.case.id },
+          query: { view: 'cases' },
         }"
       >
-        Открыть Case
+        Открыть в рабочем месте
       </RouterLink>
       <Button
         v-if="canManageCase"

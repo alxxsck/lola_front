@@ -14,6 +14,7 @@ export type SupportConversationSource = Pick<
 export interface SupportConversationContext {
   projectId(): string | undefined;
   conversationId(): string | undefined;
+  caseId?(): string | undefined;
   onForbidden?(): void | Promise<void>;
 }
 
@@ -73,14 +74,24 @@ export function createSupportConversationController(
 
   function isCurrent(
     projectId: string,
-    conversationId: string,
+    target: { conversationId?: string; caseId?: string },
     requestGeneration: number,
   ): boolean {
     return (
       requestGeneration === generation &&
       context.projectId() === projectId &&
-      context.conversationId() === conversationId
+      context.conversationId() === target.conversationId &&
+      context.caseId?.() === target.caseId
     );
+  }
+
+  function selectedTarget(): { conversationId?: string; caseId?: string } {
+    return {
+      ...(context.conversationId()
+        ? { conversationId: context.conversationId() }
+        : {}),
+      ...(context.caseId?.() ? { caseId: context.caseId?.() } : {}),
+    };
   }
 
   async function purgeConcealedSelection(): Promise<void> {
@@ -106,22 +117,29 @@ export function createSupportConversationController(
 
   async function load(): Promise<void> {
     const projectId = context.projectId();
-    const conversationId = context.conversationId();
+    const target = selectedTarget();
     const requestGeneration = ++generation;
     messages.value = [];
     selection.value = null;
     nextMessageCursor.value = null;
     error.value = "";
-    if (!projectId || !conversationId) {
+    if (!projectId || (!target.conversationId && !target.caseId)) {
       loading.value = false;
       return;
     }
 
     loading.value = true;
     try {
-      const projection = await source.readSelection(projectId, conversationId);
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
-      const ordered = mergeMessages([], projection.messages.items, conversationId);
+      const projection = await source.readSelection(projectId, target);
+      if (!isCurrent(projectId, target, requestGeneration)) return;
+      const conversationId = projection.conversation?.id;
+      if (!conversationId)
+        throw new Error("Support workspace returned no conversation");
+      const ordered = mergeMessages(
+        [],
+        projection.messages.items,
+        conversationId,
+      );
       if (!ordered) {
         error.value = "История сообщений требует обновления";
         return;
@@ -130,7 +148,7 @@ export function createSupportConversationController(
       messages.value = ordered;
       nextMessageCursor.value = projection.messages.nextCursor;
     } catch (cause) {
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (!isCurrent(projectId, target, requestGeneration)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)
@@ -146,18 +164,27 @@ export function createSupportConversationController(
 
   async function loadOlder(): Promise<void> {
     const projectId = context.projectId();
-    const conversationId = context.conversationId();
+    const target = selectedTarget();
     const cursor = nextMessageCursor.value;
-    if (!projectId || !conversationId || !cursor || loadingOlder.value) return;
+    if (
+      !projectId ||
+      (!target.conversationId && !target.caseId) ||
+      !cursor ||
+      loadingOlder.value
+    )
+      return;
     const requestGeneration = ++generation;
     loadingOlder.value = true;
     error.value = "";
     try {
-      const projection = await source.readSelection(projectId, conversationId, {
+      const projection = await source.readSelection(projectId, target, {
         messageCursor: cursor,
         messageLimit: 50,
       });
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (!isCurrent(projectId, target, requestGeneration)) return;
+      const conversationId = projection.conversation?.id;
+      if (!conversationId)
+        throw new Error("Support workspace returned no conversation");
       const merged = mergeMessages(
         messages.value,
         projection.messages.items,
@@ -171,7 +198,7 @@ export function createSupportConversationController(
       messages.value = merged;
       nextMessageCursor.value = projection.messages.nextCursor;
     } catch (cause) {
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (!isCurrent(projectId, target, requestGeneration)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)
@@ -187,14 +214,17 @@ export function createSupportConversationController(
 
   async function reconcile(): Promise<void> {
     const projectId = context.projectId();
-    const conversationId = context.conversationId();
-    if (!projectId || !conversationId) return;
+    const target = selectedTarget();
+    if (!projectId || (!target.conversationId && !target.caseId)) return;
     const requestGeneration = ++generation;
     try {
-      const projection = await source.readSelection(projectId, conversationId, {
+      const projection = await source.readSelection(projectId, target, {
         messageLimit: 50,
       });
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (!isCurrent(projectId, target, requestGeneration)) return;
+      const conversationId = projection.conversation?.id;
+      if (!conversationId)
+        throw new Error("Support workspace returned no conversation");
       const merged = mergeMessages(
         messages.value,
         projection.messages.items,
@@ -208,7 +238,7 @@ export function createSupportConversationController(
       messages.value = merged;
       nextMessageCursor.value = projection.messages.nextCursor;
     } catch (cause) {
-      if (!isCurrent(projectId, conversationId, requestGeneration)) return;
+      if (!isCurrent(projectId, target, requestGeneration)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)

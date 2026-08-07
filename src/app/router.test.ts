@@ -855,10 +855,15 @@ describe("authentication routes", () => {
     await router.push("/support/inbox/conversations/conversation-1");
     expect(router.currentRoute.value.name).toBe("support-inbox-conversation");
 
+    await router.push("/support/inbox/cases/case-1");
+    expect(router.currentRoute.value.name).toBe("support-inbox-case");
+
     await router.push("/support/control");
     expect(router.currentRoute.value.name).toBe("overview");
 
-    auth.project!.effectivePermissionCodes = ["project.support.lead_control.read"];
+    auth.project!.effectivePermissionCodes = [
+      "project.support.lead_control.read",
+    ];
     await router.push("/support/control");
     expect(router.currentRoute.value.name).toBe("support-control");
   });
