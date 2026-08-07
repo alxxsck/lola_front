@@ -4,7 +4,11 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 16 — Завершить Case workflow и классификацию.
 
-**Status:** ready-for-agent
+**Status:** dependency-blocked-by-16
+
+**Backend gate (audit 2026-08-07):** прямого backend-блокера у inspector tabs нет — profile,
+state, events и activity reads опубликованы. Полное выполнение ждёт незаблокированную часть 16 по
+явной dependency. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#20--permission-gated-inspector-tabs).
 
 - [ ] Tabs `Обращение`, `Пользователь`, `Данные`, `События`, `Активность` имеют независимые loading/error/empty states.
 - [ ] Sensitive fields загружаются лениво только после permission check.

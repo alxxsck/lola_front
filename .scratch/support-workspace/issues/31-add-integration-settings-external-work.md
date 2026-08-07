@@ -4,7 +4,10 @@
 
 **Blocked by:** 30 — Синхронизировать JSM/HelpDesk-контракты.
 
-**Status:** ready-for-agent
+**Status:** blocked-by-backend
+
+**Backend gate (audit 2026-08-07):** полный blocker — connection, provider catalog,
+mapping lifecycle, External Work inbox и receipt APIs отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#31--integration-settings-и-external-work-inbox).
 
 - [ ] Settings показывает disconnected/authorizing/connected/degraded/reauth-required/disabled states.
 - [ ] Site/project выбираются явно, включая multi-site, с test connection и last successful sync.

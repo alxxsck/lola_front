@@ -4,7 +4,10 @@
 
 **Blocked by:** 01 — Синхронизировать workspace и messaging-контракты; 06 — Перевести Support chat на Conversation Surface.
 
-**Status:** ready-for-agent
+**Status:** blocked-by-backend
+
+**Backend gate (audit 2026-08-07):** полный blocker — reader-scoped read position,
+unread/first-unread projection и monotonic ACK отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#14--readunread-и-first-unread).
 
 - [ ] Inbox показывает authoritative unread state/count без локального таймера.
 - [ ] History ставит разделитель first-unread и сохраняет anchor при догрузке старых страниц.

@@ -4,7 +4,10 @@
 
 **Blocked by:** 28 — Перевести legacy entry points на Support.
 
-**Status:** ready-for-agent
+**Status:** transitively-blocked-by-backend
+
+**Backend gate (audit 2026-08-07):** visual/read-only hardening можно продолжать; write pilot
+ждёт 28 и typed project rollout/admission. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#29--hardening-pilot-и-rollback-core-support).
 
 - [ ] Visual matrix проходит desktop/tablet/mobile, light/dark, 200% zoom и mobile keyboard.
 - [ ] Keyboard-only и axe не находят critical/serious нарушения основного flow.

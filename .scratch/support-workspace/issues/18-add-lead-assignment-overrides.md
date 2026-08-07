@@ -4,7 +4,10 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 16 — Завершить Case workflow и классификацию; 17 — Завершить действия оператора с назначением.
 
-**Status:** ready-for-agent
+**Status:** partially-blocked-by-backend
+
+**Backend gate (audit 2026-08-07):** single-Case commands существуют; eligible targets,
+explicit override action и bulk per-item receipt отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#18--назначение-и-override-для-лида).
 
 - [ ] Lead может assign/reassign/unassign Case оператору или команде по отдельным permissions.
 - [ ] Override availability/capacity требует отдельного allowed action и обязательной причины.

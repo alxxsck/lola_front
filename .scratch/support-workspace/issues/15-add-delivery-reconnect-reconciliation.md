@@ -4,7 +4,10 @@
 
 **Blocked by:** 01 — Синхронизировать workspace и messaging-контракты; 13 — Добавить durable send и idempotency recovery.
 
-**Status:** ready-for-agent
+**Status:** partially-blocked-by-backend
+
+**Backend gate (audit 2026-08-07):** REST delivery/reconcile можно реализовать, но ticket
+нельзя закрыть без delivery/outcome lookup-retry и typed realtime contract. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#15--delivery-и-reconnect-reconciliation).
 
 - [ ] `Accepted / Delivered / Read / Failed` показываются только для релевантного исходящего Message.
 - [ ] Delivery state не откатывается назад из-за out-of-order события.

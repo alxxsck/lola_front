@@ -74,6 +74,7 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)             | W0 contract matrix workspace, history, send, delivery и blockers          |
 | [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md)           | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers     |
 | [15-content-lead-notification-capability-matrix.ru.md](./15-content-lead-notification-capability-matrix.ru.md) | W0 matrix notes, macros, Internal Knowledge, Lead Control и notifications |
+| [Backend-блокеры задач 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)          | актуальные direct/partial/transitive gates по backend `origin/main`        |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
 [support-operator-workspace-ux.ru.md](../../research/support-operator-workspace-ux.ru.md).

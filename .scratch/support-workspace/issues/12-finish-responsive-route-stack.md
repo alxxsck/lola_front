@@ -4,7 +4,10 @@
 
 **Blocked by:** 08 — Реализовать общий full-tab presentation shell; 09 — Объединить Cases и Conversations в одном inbox.
 
-**Status:** ready-for-agent
+**Status:** completed
+
+**Backend audit (2026-08-07):** прямого backend-блокера нет; responsive route stack закрыт
+frontend-реализацией и проверками.
 
 - [ ] Tablet показывает inbox + Conversation, а inspector открывает доступный drawer.
 - [ ] Mobile показывает одну поверхность и использует canonical route/back navigation.
