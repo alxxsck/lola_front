@@ -66,6 +66,11 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [05-lead-quality-analytics.ru.md](./05-lead-quality-analytics.ru.md)                   | контроль работы, QA и статистику                                      |
 | [06-frontend-architecture-contracts.ru.md](./06-frontend-architecture-contracts.ru.md) | модули, state, API/realtime контракты и migration map                 |
 | [07-testing-rollout-roadmap.ru.md](./07-testing-rollout-roadmap.ru.md)                 | этапы, acceptance criteria, тесты и rollout                           |
+| [08-remediation-plan.ru.md](./08-remediation-plan.ru.md)                               | проверенный gap analysis и порядок устранения разрывов                 |
+| [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                             | целевой UI/UX, responsive и visual acceptance                         |
+| [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)       | full-tab shell, кнопка, motion, scroll/focus contract                  |
+| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md) | короткий backlog W0–F7, cutover и отдельный integration track          |
+| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                         | видимый индекс 33 локальных задач и их blocking edges                  |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
 [support-operator-workspace-ux.ru.md](../../research/support-operator-workspace-ux.ru.md).
@@ -160,6 +165,9 @@ End User не получает CMS routes и CMS permissions. Он видит т
 - Users chat и Support используют один Conversation Surface, один message
   renderer/composer и один toggle `Оригинал / Перевод`; второй chat renderer
   отсутствует;
+- кнопка `На весь экран` открывает тот же Surface в full-tab shell: его границы
+  совпадают с viewport вкладки, CMS background не виден и не прокручивается,
+  а toggle не сбрасывает draft, selection, translation mode или message anchor;
 - reconnect/reload не создаёт дублей и восстанавливает authoritative state;
 - 1440×1000, 1024×768 и 390×844 проходят visual и keyboard QA;
 - axe не находит критических нарушений в основных сценариях;
