@@ -1803,7 +1803,7 @@ onBeforeUnmount(() => {
     );
   overflow: hidden;
   border-color: color-mix(in srgb, var(--line) 82%, transparent);
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-raised);
 }
 .inbox-pane,
 .context-pane {
@@ -1924,7 +1924,7 @@ onBeforeUnmount(() => {
 }
 .conversation-row.selected .conversation-avatar {
   background: var(--brand);
-  color: white;
+  color: var(--on-brand);
 }
 .conversation-row time,
 .conversation-row__meta,
