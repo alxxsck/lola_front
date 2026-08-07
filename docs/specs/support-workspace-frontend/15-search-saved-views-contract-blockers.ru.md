@@ -1,53 +1,69 @@
 # Contract blockers: Support search и Saved Views
 
-Дата проверки: 7 августа 2026 года
+Дата повторной проверки: 7 августа 2026 года
 
-Статус: normative implementation gate для frontend Tickets 10–11
+Статус: **P1-блокеры Tickets 10–11 сняты; оба пункта готовы, можно проверять и брать в frontend-разработку.**
 
-Pinned contract:
-`sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`.
-Проверенный backend checkout:
-`0ca33c93e52d689de388187091e6aa2f6c05639b`.
+Проверенный backend `main`: `b63d8bc` (`Support Platform: complete search and system views`).
 
-Здесь зафиксирована причина, по которой Tickets 10 и 11 нельзя безопасно
-реализовать поверх текущего transport contract. Канонический статус задач
-меняется только в GitHub Issues. На момент проверки issues с такими названиями
-в репозитории нет.
+Frontend перед началом реализации должен обновить pinned OpenAPI/generated client из этого backend
+checkout. Канонический статус задач по-прежнему меняется только в GitHub Issues.
 
 ## Ticket 10 — server search, filters и sort
 
-Pinned OpenAPI публикует только request grammar `SupportSearchQueryDto`.
-Responses операций `SupportSearch_cases`, `SupportSearch_conversations` и
-`SupportSearch_messages` не имеют schema; generated client возвращает `void`.
-Операции для поиска пользователей нет. В request grammar также нет закрытых
-Case filters и sort, требуемых тикетом.
-Текущий backend checkout по-прежнему использует description-only
-`@ApiOkResponse` и не закрывает этот transport gap.
+**Готово, можно проверять и брать в разработку.**
 
-Для снятия блокировки backend должен опубликовать permission-safe user search и
-типизированную bounded result page для Cases, Conversations, Messages и Users.
-Каждый scope должен иметь canonical target identity, cursor,
-freshness/degraded state и validation/error responses. Нужна и закрытая
-server-owned grammar для разрешённых filters/sort с привязкой cursor к
-нормализованному query. Затем frontend обновляет pinned OpenAPI и generated
-client. До этого нельзя создавать локальные response DTO, фильтровать неполную
-страницу или раскрывать hidden targets через fallback owner reads.
+Backend публикует typed bounded response pages для Cases, Conversations, Messages и End Users:
+canonical target identity, signed cursor, freshness (`READY | BUILDING | DEGRADED`), match provenance
+и typed validation/error responses.
 
-## Ticket 11 — Saved Views
+Закрытая `CASES` grammar теперь включает:
 
-Pinned OpenAPI публикует requests и concurrency headers для catalog, query,
-create, replace, publish и archive, но не публикует response schemas. Generated
-client возвращает `void`; у frontend нет typed view identity, scope,
-permission, revision/ETag, count, freshness или authoritative query result.
-Текущий backend checkout также не прикрепляет response models к этим операциям.
+- status, priority и waiting side;
+- assignee CMS User IDs, Team IDs и `ASSIGNED | UNASSIGNED`;
+- SLA state и SLA due sort;
+- Queue IDs, topic и category;
+- channel и language;
+- `UNREAD | READ`, `HAS_DRAFT | NO_DRAFT`, `PROBLEM | HEALTHY` для delivery;
+- bounded time range и exact Case/Conversation/Message/End User IDs;
+- sorts `RELEVANCE`, `ACTIVITY_AT`, `PRIORITY`, `SLA_DUE_AT`, `WAITING_SINCE`,
+  `UNREAD_COUNT`, `CREATED_AT` с `ASC | DESC`.
 
-Для снятия блокировки backend должен опубликовать типизированные результаты
-catalog/query/mutation, закрытую Saved View draft grammar, server-owned
-count/freshness, scope/permission metadata, revision/ETag и conflict/error
-responses. System Views требуют отдельного authoritative preset catalog:
-стабильную identity, permission/scope, query, count и freshness semantics. Если
-они остаются frontend-owned routes, backend всё равно должен опубликовать
-именованные authoritative query operations для каждого preset. После обновления
-pinned OpenAPI и generated client frontend сможет подключить UI. До этого нельзя
-создавать фиктивные personal/team/system views или хранить Project-scoped truth
-локально.
+Нормализованные filters/sort входят в query hash и signed cursor. Structured Case query допускается
+без phrase, но остаётся bounded; Case-only поля на других surfaces отклоняются. Exact IDs, включая
+Queue IDs, owner-authorize до Search projection, поэтому denied targets не становятся existence
+oracle. Search reader использует отдельную least-privilege DB identity и не читает canonical owner
+tables.
+
+Проверено: OpenAPI/DTO contracts, cursor binding, tenant/actor fences, 532 миграции на чистой БД,
+20k Cases/60k Messages и 10 конкурентных Case Search readers под server timeout 1,5 с.
+
+## Ticket 11 — Saved Views и System Views
+
+**Готово, можно проверять и брать в разработку.**
+
+Backend публикует typed catalog/query/mutation responses, closed Saved View draft grammar,
+permissions, strong ETag, immutable published revision, typed count/freshness и Queue execution
+receipt. Surface permission, Queue permission, current Queue visibility/lifecycle/READY generation и
+все `filters.queueIds` revalidate fail closed при execution и Default resolution.
+
+Authoritative System View catalog и query operations готовы для:
+
+- `MY_ACTIVE`;
+- `MY_TEAM_UNASSIGNED`;
+- `ALL_CASES`;
+- `ALL_CONVERSATIONS`.
+
+`MY_ACTIVE` и `MY_TEAM_UNASSIGNED` применяют server-owned actor-relative scope set-based до
+sort/keyset/`LIMIT`, затем повторно reauthorize bounded result page. `MY_TEAM_UNASSIGNED` больше не
+возвращает `SUPPORT_VIEW_PRESET_NOT_READY`; `permitted` вычисляется из current permissions.
+
+Server-owned Default View готов через
+`GET/PUT /admin/projects/:projectId/support/saved-views/default`. Preference принадлежит паре
+Project/CMS User, использует strong actor-bound ETag, `If-Match` и `Idempotency-Key`. Durable replay
+возвращает исходный полный receipt даже после смены preference или отзыва permissions; недоступный
+Saved/System View сохраняет selection, но возвращает `effectiveSelection: null` и typed reason.
+
+Проверено: CRUD/ETag/idempotency, permission revocation, Queue visibility, degraded counts/freshness,
+pre-`LIMIT` System View scope, least privilege, clean PostgreSQL migration gate и повторное
+архитектурное/security/scalability ревью — P0/P1 не найдено.
