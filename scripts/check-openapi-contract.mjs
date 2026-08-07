@@ -1,8 +1,13 @@
 import { readFile } from "node:fs/promises";
+import { validateSupportInboxCaseWorkforceContract } from "./support-inbox-case-workforce-contract.mjs";
 import { validateSupportWorkspaceMessagingContract } from "./support-workspace-contract.mjs";
 
-const snapshotUrl = new URL("../openapi/retenive-backend.json", import.meta.url);
+const snapshotUrl = new URL(
+  "../openapi/retenive-backend.json",
+  import.meta.url,
+);
 const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
+validateSupportInboxCaseWorkforceContract(document);
 validateSupportWorkspaceMessagingContract(document);
 
 const unversionedPaths = Object.keys(document.paths ?? {}).filter(
