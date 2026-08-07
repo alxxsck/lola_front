@@ -19,15 +19,19 @@ Pinned contract:
 Pinned OpenAPI публикует только request grammar `SupportSearchQueryDto`.
 Responses операций `SupportSearch_cases`, `SupportSearch_conversations` и
 `SupportSearch_messages` не имеют schema; generated client возвращает `void`.
+Операции для поиска пользователей нет. В request grammar также нет закрытых
+Case filters и sort, требуемых тикетом.
 Текущий backend checkout по-прежнему использует description-only
 `@ApiOkResponse` и не закрывает этот transport gap.
 
-Для снятия блокировки backend должен опубликовать типизированную bounded result
-page для каждого разрешённого scope: canonical target identity, cursor,
-freshness/degraded state и validation/error responses. Затем frontend обновляет
-pinned OpenAPI и generated client. До этого нельзя создавать локальные response
-DTO, фильтровать неполную страницу или раскрывать hidden targets через fallback
-owner reads.
+Для снятия блокировки backend должен опубликовать permission-safe user search и
+типизированную bounded result page для Cases, Conversations, Messages и Users.
+Каждый scope должен иметь canonical target identity, cursor,
+freshness/degraded state и validation/error responses. Нужна и закрытая
+server-owned grammar для разрешённых filters/sort с привязкой cursor к
+нормализованному query. Затем frontend обновляет pinned OpenAPI и generated
+client. До этого нельзя создавать локальные response DTO, фильтровать неполную
+страницу или раскрывать hidden targets через fallback owner reads.
 
 ## Ticket 11 — Saved Views
 
@@ -40,6 +44,10 @@ permission, revision/ETag, count, freshness или authoritative query result.
 Для снятия блокировки backend должен опубликовать типизированные результаты
 catalog/query/mutation, закрытую Saved View draft grammar, server-owned
 count/freshness, scope/permission metadata, revision/ETag и conflict/error
-responses. После обновления pinned OpenAPI и generated client frontend сможет
-подключить UI. До этого нельзя создавать фиктивные personal/team/system views
-или хранить Project-scoped truth локально.
+responses. System Views требуют отдельного authoritative preset catalog:
+стабильную identity, permission/scope, query, count и freshness semantics. Если
+они остаются frontend-owned routes, backend всё равно должен опубликовать
+именованные authoritative query operations для каждого preset. После обновления
+pinned OpenAPI и generated client frontend сможет подключить UI. До этого нельзя
+создавать фиктивные personal/team/system views или хранить Project-scoped truth
+локально.

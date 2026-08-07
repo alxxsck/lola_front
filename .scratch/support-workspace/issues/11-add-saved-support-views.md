@@ -6,6 +6,10 @@
 
 **Status:** ready-for-agent
 
+**Execution gate:** реализация заблокирована опубликованными контрактами;
+условия снятия блокировки зафиксированы в
+[contract gate](../../../docs/specs/support-workspace-frontend/15-search-saved-views-contract-blockers.ru.md#ticket-11--saved-views).
+
 - [ ] System Views и personal/team Saved Views различаются по scope и permissions.
 - [ ] Create/replace/publish/archive используют revision contract и показывают conflict рядом с действием.
 - [ ] Выбор view обновляет URL и authoritative inbox query.

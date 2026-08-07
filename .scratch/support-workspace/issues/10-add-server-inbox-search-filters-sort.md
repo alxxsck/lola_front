@@ -6,6 +6,10 @@
 
 **Status:** ready-for-agent
 
+**Execution gate:** реализация заблокирована опубликованными контрактами;
+условия снятия блокировки зафиксированы в
+[contract gate](../../../docs/specs/support-workspace-frontend/15-search-saved-views-contract-blockers.ru.md#ticket-10--server-search-filters-и-sort).
+
 - [ ] URL хранит нормализованные shareable query/filter/sort параметры.
 - [ ] Search поддерживает разрешённые scopes и не раскрывает hidden targets.
 - [ ] Filter/sort отправляются серверу вместе с cursor и не применяются к одной загруженной странице.
