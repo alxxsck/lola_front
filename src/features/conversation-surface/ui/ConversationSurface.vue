@@ -62,12 +62,10 @@ const drafts = new Map<string, string>();
 const draft = ref(props.composer.initialDraft);
 const newMessageCount = ref(0);
 let anchor: { height: number; top: number } | null = null;
+let stickToLatest = true;
+let surfaceResizeObserver: ResizeObserver | null = null;
 
 const draftKey = computed(() => conversationSurfaceDraftKey(props.composer));
-const conversationKey = computed(() => {
-  const { projectId, conversationId } = props.composer.scope;
-  return `${projectId}:${conversationId}`;
-});
 const scrollSessionKey = computed(() =>
   conversationSurfaceSessionKey(props.composer.scope),
 );
@@ -210,6 +208,7 @@ function scrollToLatest(smooth = true): void {
   });
   if (!element.scrollTo) element.scrollTop = element.scrollHeight;
   newMessageCount.value = 0;
+  stickToLatest = true;
 }
 
 function captureScrollAnchor(key = scrollSessionKey.value): void {
@@ -266,15 +265,17 @@ function requestOlder(): void {
 }
 
 function handleLogScroll(): void {
-  if (nearLatest()) newMessageCount.value = 0;
+  stickToLatest = nearLatest();
+  if (stickToLatest) newMessageCount.value = 0;
   if ((logElement.value?.scrollTop ?? 100) <= 72) requestOlder();
   captureScrollAnchor();
 }
 
-watch(conversationKey, () => {
+watch(scrollSessionKey, async (nextKey, previousKey) => {
+  if (previousKey) captureScrollAnchor(previousKey);
   newMessageCount.value = 0;
   anchor = null;
-  void nextTick(() => scrollToLatest(false));
+  await restoreScrollAnchor(nextKey);
 });
 
 watch(
@@ -346,8 +347,19 @@ watch(
   { flush: "pre" },
 );
 
-onMounted(() => void restoreScrollAnchor());
-onBeforeUnmount(() => captureScrollAnchor());
+onMounted(() => {
+  void restoreScrollAnchor();
+  if (typeof ResizeObserver === "undefined") return;
+  surfaceResizeObserver = new ResizeObserver(() => {
+    if (stickToLatest) void nextTick(() => scrollToLatest(false));
+  });
+  if (logElement.value) surfaceResizeObserver.observe(logElement.value);
+});
+onBeforeUnmount(() => {
+  captureScrollAnchor();
+  surfaceResizeObserver?.disconnect();
+  surfaceResizeObserver = null;
+});
 </script>
 
 <template>
@@ -724,6 +736,7 @@ onBeforeUnmount(() => captureScrollAnchor());
   transition: width 180ms ease;
 }
 .conversation-surface__message {
+  min-width: 0;
   width: fit-content;
   max-width: min(72%, 64ch);
   margin: 0 0 14px;
@@ -732,6 +745,7 @@ onBeforeUnmount(() => captureScrollAnchor());
   border-radius: 16px 16px 16px 5px;
   background: var(--surface-card);
   box-shadow: 0 7px 20px color-mix(in srgb, var(--text-primary) 5%, transparent);
+  overflow-wrap: anywhere;
 }
 .conversation-surface__message.is-outbound {
   margin-left: auto;
@@ -849,7 +863,7 @@ onBeforeUnmount(() => captureScrollAnchor());
     background-position: -220% 0;
   }
 }
-@media (max-width: 767px) {
+@container conversation-surface (max-width: 620px) {
   .conversation-surface__toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -869,6 +883,8 @@ onBeforeUnmount(() => captureScrollAnchor());
     min-height: 44px;
     padding: 0 8px;
   }
+}
+@media (max-width: 767px) {
   .conversation-surface__log {
     padding: 14px 12px 22px;
   }

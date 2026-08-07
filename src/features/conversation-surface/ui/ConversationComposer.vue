@@ -655,7 +655,7 @@ function runAction(action: ConversationSurfaceComposerAction): void {
 @media (max-width: 767px) {
   .conversation-composer {
     margin: 0;
-    padding: 11px 12px 10px;
+    padding: 11px 12px calc(12px + env(safe-area-inset-bottom));
     border-width: 1px 0 0;
     border-radius: 0;
     background: var(--surface-card);

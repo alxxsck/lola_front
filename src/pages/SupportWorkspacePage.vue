@@ -711,12 +711,19 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
   const selectionKey = `${item.kind}:${item.id}`;
   lastInboxSelectionKey.value = selectionKey;
   if (selectionKey === requestedSelectionKey.value) return;
+  const query = { ...route.query };
+  delete query.panel;
   await router.push(
     item.kind === "CASE"
-      ? { name: "support-inbox-case", params: { caseId: item.id } }
+      ? {
+          name: "support-inbox-case",
+          params: { caseId: item.id },
+          query,
+        }
       : {
           name: "support-inbox-conversation",
           params: { conversationId: item.id },
+          query,
         },
   );
 }
@@ -746,17 +753,33 @@ async function backToInbox(): Promise<void> {
           Object.entries(route.query).filter(([key]) => key !== "mode"),
         );
   delete query.panel;
-  await router.replace({
+  const inboxLocation = {
     name: "support-inbox",
     query,
-  });
+  } as const;
+  if (window.history.state?.back === router.resolve(inboxLocation).fullPath) {
+    router.back();
+    return;
+  }
+  await router.replace(inboxLocation);
 }
 
 function syncMobileWorkspace(
   event: MediaQueryList | MediaQueryListEvent,
 ): void {
+  const drawerWasVisible = contextDrawerVisible.value;
   isMobileWorkspace.value = event.matches;
+  if (event.matches && drawerWasVisible && requestedSelectionKey.value) {
+    contextDrawerVisible.value = false;
+    void router.replace({
+      query: { ...route.query, panel: "inspector" },
+    });
+    return;
+  }
   if (!event.matches && mobileInspectorRequested.value) {
+    contextDrawerVisible.value = window.matchMedia(
+      "(max-width: 1279px)",
+    ).matches;
     const query = { ...route.query };
     delete query.panel;
     void router.replace({ query });
@@ -1226,7 +1249,7 @@ async function submitAiSuspension(value: {
 onMounted(async () => {
   window.addEventListener("keydown", handleWorkspaceKeydown);
   mobileWorkspaceMedia = window.matchMedia("(max-width: 767px)");
-  compactWorkspaceMedia = window.matchMedia("(max-width: 1180px)");
+  compactWorkspaceMedia = window.matchMedia("(max-width: 1279px)");
   syncMobileWorkspace(mobileWorkspaceMedia);
   syncCompactWorkspace(compactWorkspaceMedia);
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
@@ -1403,6 +1426,7 @@ watch(mobileInspectorRequested, (requested, previousRequested) => {
   }
   if (!requested && previousRequested) {
     void nextTick(() => {
+      if (contextDrawerVisible.value) return;
       const trigger =
         contextTrigger ??
         document.querySelector<HTMLElement>(
@@ -2381,7 +2405,7 @@ onBeforeUnmount(() => {
 .empty-selection p {
   margin: 0;
 }
-@media (max-width: 1180px) {
+@media (max-width: 1279px) {
   .support-workspace {
     grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
   }

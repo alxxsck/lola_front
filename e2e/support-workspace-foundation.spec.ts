@@ -162,9 +162,11 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
   await expect(queue.locator(".case-row")).toHaveCount(3);
 
   await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
-  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
+  await expect(page).toHaveURL(
+    /\/support\/inbox\/cases\/case-demo-deposit\?mode=cases$/,
+  );
   const desktopContext = page.locator(".context-pane");
-  const usesContextDrawer = (page.viewportSize()?.width ?? 1280) <= 1180;
+  const usesContextDrawer = (page.viewportSize()?.width ?? 1280) <= 1279;
   const context = usesContextDrawer
     ? page.getByRole("dialog", { name: "Контекст диалога" })
     : desktopContext;
@@ -186,7 +188,9 @@ test("restores typed inbox routes with Back and Forward and keeps a Case without
   await queue.getByRole("button", { name: "Обращения" }).click();
   await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
   await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
-  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
+  await expect(page).toHaveURL(
+    /\/support\/inbox\/cases\/case-demo-deposit\?mode=cases$/,
+  );
 
   await page.goBack();
   await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
@@ -195,7 +199,9 @@ test("restores typed inbox routes with Back and Forward and keeps a Case without
   ).toBeVisible();
 
   await page.goForward();
-  await expect(page).toHaveURL(/\/support\/inbox\/cases\/case-demo-deposit$/);
+  await expect(page).toHaveURL(
+    /\/support\/inbox\/cases\/case-demo-deposit\?mode=cases$/,
+  );
   await page.goto("/support/inbox/cases/case-demo-resolved");
   await expect(
     page.getByRole("heading", { name: "У обращения нет связанного чата" }),
@@ -436,6 +442,28 @@ test("uses route-aware inbox and chat panes on mobile", async ({ page }) => {
   await expect(page).toHaveURL(/\/support\/inbox$/);
 });
 
+test("uses the real mobile history stack and preserves safe inbox query", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/control");
+  await page.goto("/support/inbox?view=mine&status=open");
+
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+  await expect(page).toHaveURL(
+    /\/support\/inbox\/conversations\/conv_3\?view=mine&status=open$/,
+  );
+
+  await page.getByRole("button", { name: "Назад к списку диалогов" }).click();
+  await expect(page).toHaveURL(
+    /\/support\/inbox\?view=mine&status=open$/,
+  );
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/control$/);
+});
+
 test("preserves mobile inbox position, selection, draft and message anchor across browser Back", async ({
   page,
 }) => {
@@ -507,6 +535,45 @@ test("preserves mobile inbox position, selection, draft and message anchor acros
     .toBe(anchorId);
 });
 
+test("restores each conversation message anchor when route selection changes", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/support/inbox/conversations/conv_3");
+  await page.addStyleTag({
+    content: ".conversation-surface__log { max-height: 150px !important; }",
+  });
+
+  const messageLog = page.locator(".conversation-surface__log");
+  await messageLog.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  const anchorId = await messageLog.evaluate((element) => {
+    const logRect = element.getBoundingClientRect();
+    return [...element.querySelectorAll<HTMLElement>("[data-message-id]")].find(
+      (message) => message.getBoundingClientRect().bottom > logRect.top,
+    )?.dataset.messageId;
+  });
+  expect(anchorId).toBeTruthy();
+
+  await page.getByRole("button", { name: /Первый депозит/ }).click();
+  await expect(page).not.toHaveURL(/\/conversations\/conv_3$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await expect
+    .poll(() =>
+      messageLog.evaluate((element) => {
+        const logRect = element.getBoundingClientRect();
+        return [
+          ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
+        ].find(
+          (message) => message.getBoundingClientRect().bottom > logRect.top,
+        )?.dataset.messageId;
+      }),
+    )
+    .toBe(anchorId);
+});
+
 test("uses a routed inspector on mobile and an accessible drawer on tablet", async ({
   page,
 }) => {
@@ -562,6 +629,23 @@ test("uses a routed inspector on mobile and an accessible drawer on tablet", asy
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
   await expect(contextTrigger).toBeFocused();
+
+  await contextTrigger.click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page).toHaveURL(/\?panel=inspector$/);
+  await expect(
+    page.getByRole("button", { name: "Назад к диалогу" }),
+  ).toBeFocused();
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await expect(page).not.toHaveURL(/panel=inspector/);
+  await expect(drawer).toBeVisible();
+  await expect
+    .poll(() =>
+      drawer.evaluate((element) => element.contains(document.activeElement)),
+    )
+    .toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(contextTrigger).toBeFocused();
 });
 
 test("keeps the exact tablet and mobile route matrix usable without overflow", async ({
@@ -570,6 +654,8 @@ test("keeps the exact tablet and mobile route matrix usable without overflow", a
   for (const viewport of [
     { width: 1024, height: 768 },
     { width: 768, height: 1024 },
+    { width: 1181, height: 820 },
+    { width: 1279, height: 820 },
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/support/inbox");
@@ -583,6 +669,31 @@ test("keeps the exact tablet and mobile route matrix usable without overflow", a
     await expect(
       page.getByRole("textbox", { name: "Ответ пользователю" }),
     ).toBeVisible();
+    const conversationGeometry = await page.evaluate(() => {
+      const surface = document.querySelector<HTMLElement>(
+        ".conversation-surface",
+      );
+      const toolbar = document.querySelector<HTMLElement>(
+        ".conversation-surface__toolbar",
+      );
+      const messages = [
+        ...document.querySelectorAll<HTMLElement>("[data-message-id]"),
+      ];
+      const surfaceRect = surface?.getBoundingClientRect();
+      return {
+        toolbarOverflow:
+          (toolbar?.scrollWidth ?? 0) - (toolbar?.clientWidth ?? 0),
+        messageOverflow: messages.some((message) => {
+          const rect = message.getBoundingClientRect();
+          return (
+            rect.left < (surfaceRect?.left ?? 0) - 0.5 ||
+            rect.right > (surfaceRect?.right ?? 0) + 0.5
+          );
+        }),
+      };
+    });
+    expect(conversationGeometry.toolbarOverflow).toBeLessThanOrEqual(0);
+    expect(conversationGeometry.messageOverflow).toBe(false);
     await page.getByRole("button", { name: "Контекст" }).click();
     const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
     await expect(drawer).toBeVisible();
@@ -682,6 +793,29 @@ test("keeps the full-tab shell stable for reduced motion and mobile focus", asyn
   expect(
     await draft.evaluate((element) => element.getBoundingClientRect().bottom),
   ).toBeLessThanOrEqual(500.5);
+  const keyboardGeometry = await page.evaluate(() => {
+    const log = document.querySelector<HTMLElement>(
+      ".conversation-surface__log",
+    );
+    const lastMessage = [
+      ...document.querySelectorAll<HTMLElement>("[data-message-id]"),
+    ].at(-1);
+    const logRect = log?.getBoundingClientRect();
+    const messageRect = lastMessage?.getBoundingClientRect();
+    const composer = document.querySelector<HTMLElement>(
+      ".conversation-composer",
+    );
+    return {
+      lastMessageVisible:
+        Boolean(messageRect && logRect) &&
+        messageRect!.bottom <= logRect!.bottom + 0.5 &&
+        messageRect!.bottom > logRect!.top,
+      composerSafeArea:
+        Number.parseFloat(getComputedStyle(composer!).paddingBottom) >= 12,
+    };
+  });
+  expect(keyboardGeometry.lastMessageVisible).toBe(true);
+  expect(keyboardGeometry.composerSafeArea).toBe(true);
 });
 
 test("restores readable CMS navigation when the mobile workspace is collapsed", async ({
