@@ -37,6 +37,32 @@ Backend-документ или реализованный внутренний 
 если операция/response schema/authority не опубликованы в OpenAPI. Особенно это касается browser
 notifications и External Work.
 
+## Оперативные обновления после аудита
+
+Историческая карта ниже зафиксирована на backend commit `0ca33c9`. Готовность уже снятых блокеров
+учитывается по обновлениям в этом разделе.
+
+### 10 — Server search, filters и sort
+
+**Сделано на backend `main`:** `9da7bc9` (`Support Platform: complete search and saved view contracts`).
+Опубликован typed server-side search/filter/sort contract с project-scoped authority. **Блокер снят;
+можно проверять и брать задачу 10 в работу.**
+
+### 11 — Saved Views
+
+**Сделано на backend `main`:** `9da7bc9` (`Support Platform: complete search and saved view contracts`).
+Опубликованы typed Saved Views contracts, включая preset catalog, counts и freshness semantics.
+**Блокер снят; можно проверять и брать задачу 11 в работу.**
+
+### 13 — Durable send и idempotency recovery
+
+**Сделано на backend `main`:** `3791c37` (`Support Platform: complete durable send recovery
+contract`). Опубликован `AdminMessaging_lookupOutcome`: lookup по исходному `Idempotency-Key`
+изолирован по actor, Project и End User, возвращает persisted message с актуальным delivery receipt,
+имеет typed `200/400/403/404`, `Cache-Control: no-store` и не раскрывает существование результата
+из другого scope. Typed `409 IDEMPOTENCY_KEY_REUSED` закреплён в OpenAPI для безопасного сохранения
+draft. **Блокер снят; можно проверять и брать задачу 13 в работу.**
+
 ## Итоговая карта
 
 Сводно: **11** задач не имеют прямого backend-блокера, **10** имеют полный blocker,
