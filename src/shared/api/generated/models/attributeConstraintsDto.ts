@@ -5,23 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeConstraintsDtoMinimum } from "./attributeConstraintsDtoMinimum";
-import type { AttributeConstraintsDtoMaximum } from "./attributeConstraintsDtoMaximum";
 import type { AttributeConstraintsDtoAllowedValuesItem } from "./attributeConstraintsDtoAllowedValuesItem";
+import type { AttributeConstraintsDtoMaximum } from "./attributeConstraintsDtoMaximum";
+import type { AttributeConstraintsDtoMinimum } from "./attributeConstraintsDtoMinimum";
 
 export interface AttributeConstraintsDto {
-  /**
-   * @minimum 0
-   * @maximum 10000
-   */
-  minLength?: number;
+  /** @maxItems 100 */
+  allowedValues?: AttributeConstraintsDtoAllowedValuesItem[];
+  /** @maxLength 64 */
+  defaultLocale?: string;
+  maximum?: AttributeConstraintsDtoMaximum;
   /**
    * @minimum 0
    * @maximum 10000
    */
   maxLength?: number;
   minimum?: AttributeConstraintsDtoMinimum;
-  maximum?: AttributeConstraintsDtoMaximum;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  minLength?: number;
   /**
    * @minimum 1
    * @maximum 38
@@ -32,8 +36,4 @@ export interface AttributeConstraintsDto {
    * @maximum 38
    */
   scale?: number;
-  /** @maxItems 100 */
-  allowedValues?: AttributeConstraintsDtoAllowedValuesItem[];
-  /** @maxLength 64 */
-  defaultLocale?: string;
 }

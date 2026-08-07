@@ -7,12 +7,12 @@
  */
 
 export interface EndUserCaseCostOperationResponseDto {
+  billedCostUsd: string;
+  /** @minimum 0 */
+  caseCount: number;
+  estimatedCostUsd: string;
   operation: string;
   /** @minimum 0 */
   requestCount: number;
-  /** @minimum 0 */
-  caseCount: number;
   totalTokens: string;
-  billedCostUsd: string;
-  estimatedCostUsd: string;
 }

@@ -6,43 +6,24 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiOperationListItemDtoCategory } from "./aiOperationListItemDtoCategory";
-import type { AiOperationListItemDtoStatus } from "./aiOperationListItemDtoStatus";
-import type { AiOperationActorDto } from "./aiOperationActorDto";
 import type { AiOperationListItemDtoChargedAccount } from "./aiOperationListItemDtoChargedAccount";
-import type { AiOperationSubjectSummaryDto } from "./aiOperationSubjectSummaryDto";
-import type { AiOperationListItemDtoResultReference } from "./aiOperationListItemDtoResultReference";
 import type { AiOperationListItemDtoCost } from "./aiOperationListItemDtoCost";
+import type { AiOperationActorDto } from "./aiOperationActorDto";
+import type { AiOperationListItemDtoResultReference } from "./aiOperationListItemDtoResultReference";
+import type { AiOperationListItemDtoStatus } from "./aiOperationListItemDtoStatus";
+import type { AiOperationSubjectSummaryDto } from "./aiOperationSubjectSummaryDto";
 
 export interface AiOperationListItemDto {
-  operationId: string;
-  projectSequence: string;
-  rootCorrelationId: string;
-  /** @nullable */
-  parentOperationId?: string | null;
-  category: AiOperationListItemDtoCategory;
-  status: AiOperationListItemDtoStatus;
-  title: string;
-  sourceKind: string;
-  sourceId: string;
-  initiator: AiOperationActorDto;
-  chargedAccount: AiOperationListItemDtoChargedAccount;
-  /** @nullable */
-  responsibleCmsUserId?: string | null;
-  /** @nullable */
-  responsibleCmsUserDisplayName?: string | null;
-  /** @nullable */
-  authorizedByCmsUserId?: string | null;
   /** @nullable */
   authorizedByCmsUserDisplayName?: string | null;
   /** @nullable */
+  authorizedByCmsUserId?: string | null;
+  category: AiOperationListItemDtoCategory;
+  chargedAccount: AiOperationListItemDtoChargedAccount;
+  /** @nullable */
   chargedEndUserId?: string | null;
-  subjectSummary: AiOperationSubjectSummaryDto;
-  /**
-   * Canonical domain result resolved by the server.
-   * @nullable
-   */
-  resultReference?: AiOperationListItemDtoResultReference;
-  usageRecords: number;
+  /** @nullable */
+  completedAt?: string | null;
   /**
    * Monetary cost projection. Null without project.ai_analysis_cost.read.
    * @nullable
@@ -54,8 +35,27 @@ export interface AiOperationListItemDto {
    * @pattern ^\d+$
    */
   dbWorkUnits?: string | null;
+  initiator: AiOperationActorDto;
   limitationCodes: string[];
-  startedAt: string;
+  operationId: string;
   /** @nullable */
-  completedAt?: string | null;
+  parentOperationId?: string | null;
+  projectSequence: string;
+  /** @nullable */
+  responsibleCmsUserDisplayName?: string | null;
+  /** @nullable */
+  responsibleCmsUserId?: string | null;
+  /**
+   * Canonical domain result resolved by the server.
+   * @nullable
+   */
+  resultReference?: AiOperationListItemDtoResultReference;
+  rootCorrelationId: string;
+  sourceId: string;
+  sourceKind: string;
+  startedAt: string;
+  status: AiOperationListItemDtoStatus;
+  subjectSummary: AiOperationSubjectSummaryDto;
+  title: string;
+  usageRecords: number;
 }

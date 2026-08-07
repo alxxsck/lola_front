@@ -9,12 +9,12 @@
 export interface CreateEventSchemaSuccessorDto {
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
+  expectedBaseRevisionId: string;
+  /** @minimum 1 */
+  expectedDraftVersion: number;
   /**
    * @minLength 1
    * @maxLength 120
    */
   name: string;
-  /** @minimum 1 */
-  expectedDraftVersion: number;
-  expectedBaseRevisionId: string;
 }

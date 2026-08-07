@@ -8,13 +8,13 @@
 
 export interface SupportBusinessCalendarIntervalDto {
   /**
-   * @minimum 0
-   * @maximum 1439
-   */
-  startMinute: number;
-  /**
    * @minimum 1
    * @maximum 1440
    */
   endMinute: number;
+  /**
+   * @minimum 0
+   * @maximum 1439
+   */
+  startMinute: number;
 }

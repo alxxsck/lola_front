@@ -8,44 +8,44 @@
 import type { AiUsageBreakdownResponseDtoReasoningEffort } from "./aiUsageBreakdownResponseDtoReasoningEffort";
 
 export interface AiUsageBreakdownResponseDto {
-  records: number;
-  inputCharacters: number;
-  providerBilledUnits: string;
-  totalTokens: number;
-  inputTokens: number;
+  /** @nullable */
+  appliedModel: string | null;
+  billedCost: string;
+  cachedInputAudioTokens: number;
+  cachedInputImageTokens: number;
+  cachedInputTextTokens: number;
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
-  outputTokens: number;
-  reasoningTokens: number;
-  inputTextTokens: number;
-  cachedInputTextTokens: number;
-  outputTextTokens: number;
-  inputAudioTokens: number;
-  cachedInputAudioTokens: number;
-  outputAudioTokens: number;
-  inputImageTokens: number;
-  cachedInputImageTokens: number;
-  outputImageTokens: number;
+  currency: string;
   durationSeconds: string;
-  estimatedCost: string;
-  billedCost: string;
-  /** Provider-reported currency cost. */
-  providerReportedCost: string;
-  /** Locally estimated fallback currency cost. */
-  estimatedFallbackCost: string;
   /** providerReportedCost plus estimatedFallbackCost. */
   effectiveCost: string;
-  provider: string;
+  estimatedCost: string;
+  /** Locally estimated fallback currency cost. */
+  estimatedFallbackCost: string;
+  inputAudioTokens: number;
+  inputCharacters: number;
+  inputImageTokens: number;
+  inputTextTokens: number;
+  inputTokens: number;
   /** @nullable */
   model: string | null;
   /** @nullable */
-  requestedModel: string | null;
-  /** @nullable */
-  appliedModel: string | null;
-  /** @nullable */
-  reasoningEffort: AiUsageBreakdownResponseDtoReasoningEffort;
-  /** @nullable */
   modelConfigRevision: string | null;
   operation: string;
-  currency: string;
+  outputAudioTokens: number;
+  outputImageTokens: number;
+  outputTextTokens: number;
+  outputTokens: number;
+  provider: string;
+  providerBilledUnits: string;
+  /** Provider-reported currency cost. */
+  providerReportedCost: string;
+  /** @nullable */
+  reasoningEffort: AiUsageBreakdownResponseDtoReasoningEffort;
+  reasoningTokens: number;
+  records: number;
+  /** @nullable */
+  requestedModel: string | null;
+  totalTokens: number;
 }

@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportInternalNoteResponseDtoLifecycle } from "./supportInternalNoteResponseDtoLifecycle";
 import type { SupportInternalNoteResponseDtoCreator } from "./supportInternalNoteResponseDtoCreator";
+import type { SupportInternalNoteResponseDtoLifecycle } from "./supportInternalNoteResponseDtoLifecycle";
 
 export interface SupportInternalNoteResponseDto {
-  id: string;
-  endUserCaseId: string;
+  /** @pattern ^"sin1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
+  /** @nullable */
+  body: string | null;
   /** @nullable */
   conversationId: string | null;
+  createdAt: string;
+  creator: SupportInternalNoteResponseDtoCreator;
+  currentRevisionNumber: number;
+  endUserCaseId: string;
+  hasUnavailableReferences: boolean;
+  id: string;
   /** @nullable */
-  messageId: string | null;
+  knowledgeDocumentId: string | null;
+  lifecycle: SupportInternalNoteResponseDtoLifecycle;
   /** @nullable */
   macroRevisionId: string | null;
   /** @nullable */
-  knowledgeDocumentId: string | null;
-  hasUnavailableReferences: boolean;
-  lifecycle: SupportInternalNoteResponseDtoLifecycle;
-  version: number;
-  currentRevisionNumber: number;
-  /** @nullable */
-  body: string | null;
-  creator: SupportInternalNoteResponseDtoCreator;
-  createdAt: string;
-  updatedAt: string;
+  messageId: string | null;
   /** @nullable */
   tombstonedAt: string | null;
-  /** @pattern ^"sin1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
+  updatedAt: string;
+  version: number;
 }

@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringDocumentResponseDtoImportanceClass } from "./scenarioAuthoringDocumentResponseDtoImportanceClass";
-import type { ScenarioAuthoringDocumentResponseDtoUnavailableReason } from "./scenarioAuthoringDocumentResponseDtoUnavailableReason";
-import type { ScenarioAuthoringDocumentResponseDtoSource } from "./scenarioAuthoringDocumentResponseDtoSource";
 import type { ScenarioAuthoringDocumentResponseDtoDraft } from "./scenarioAuthoringDocumentResponseDtoDraft";
+import type { ScenarioAuthoringDocumentResponseDtoImportanceClass } from "./scenarioAuthoringDocumentResponseDtoImportanceClass";
+import type { ScenarioAuthoringDocumentResponseDtoSource } from "./scenarioAuthoringDocumentResponseDtoSource";
+import type { ScenarioAuthoringDocumentResponseDtoUnavailableReason } from "./scenarioAuthoringDocumentResponseDtoUnavailableReason";
 
 export interface ScenarioAuthoringDocumentResponseDto {
-  scenarioId: string;
-  projectId: string;
   code: string;
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  status: string;
-  importanceClass: ScenarioAuthoringDocumentResponseDtoImportanceClass;
-  respectsQuietHours: boolean;
-  triggerEventDefinitionRevisionId: string;
+  createdAt: string;
   /** @nullable */
   currentRevisionId?: string | null;
-  editable: boolean;
   /** @nullable */
-  unavailableReason?: ScenarioAuthoringDocumentResponseDtoUnavailableReason;
-  /** @nullable */
-  source?: ScenarioAuthoringDocumentResponseDtoSource;
+  description?: string | null;
   /** @nullable */
   draft?: ScenarioAuthoringDocumentResponseDtoDraft;
-  createdAt: string;
+  editable: boolean;
+  importanceClass: ScenarioAuthoringDocumentResponseDtoImportanceClass;
+  name: string;
+  projectId: string;
+  respectsQuietHours: boolean;
+  scenarioId: string;
+  /** @nullable */
+  source?: ScenarioAuthoringDocumentResponseDtoSource;
+  status: string;
+  triggerEventDefinitionRevisionId: string;
+  /** @nullable */
+  unavailableReason?: ScenarioAuthoringDocumentResponseDtoUnavailableReason;
   updatedAt: string;
 }

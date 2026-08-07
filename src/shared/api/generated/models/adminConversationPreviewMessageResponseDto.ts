@@ -8,8 +8,8 @@
 import type { MessageRole } from "./messageRole";
 
 export interface AdminConversationPreviewMessageResponseDto {
+  createdAt: string;
   id: string;
   role: MessageRole;
   text: string;
-  createdAt: string;
 }

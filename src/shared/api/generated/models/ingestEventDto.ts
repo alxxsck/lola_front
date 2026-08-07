@@ -5,40 +5,40 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IngestEventDtoPayload } from "./ingestEventDtoPayload";
 import type { IngestEventDtoContext } from "./ingestEventDtoContext";
+import type { IngestEventDtoPayload } from "./ingestEventDtoPayload";
 
 export interface IngestEventDto {
-  projectId?: string;
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  externalUserId?: string;
-  /**
-   * @deprecated
-   * @minLength 1
-   * @maxLength 200
-   */
-  userId?: string;
+  context?: IngestEventDtoContext;
   /**
    * @minLength 1
    * @maxLength 120
    */
   eventCode: string;
-  payload: IngestEventDtoPayload;
-  context?: IngestEventDtoContext;
-  /** @maxLength 5000 */
-  message?: string;
   /** @maxLength 200 */
   externalEventId?: string;
-  occurredAt?: string;
-  /** @deprecated */
-  timestamp?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  externalUserId?: string;
+  /** @maxLength 5000 */
+  message?: string;
   /**
    * Reject before EventLog write unless the End User has at least this profileVersion.
    * @maxLength 19
    * @pattern ^(?:0|[1-9]\d*)$
    */
   minimumProfileVersion?: string;
+  occurredAt?: string;
+  payload: IngestEventDtoPayload;
+  projectId?: string;
+  /** @deprecated */
+  timestamp?: string;
+  /**
+   * @deprecated
+   * @minLength 1
+   * @maxLength 200
+   */
+  userId?: string;
 }

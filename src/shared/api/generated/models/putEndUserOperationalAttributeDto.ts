@@ -9,16 +9,16 @@ import type { PutEndUserOperationalAttributeDtoOperation } from "./putEndUserOpe
 import type { PutEndUserOperationalAttributeDtoValue } from "./putEndUserOperationalAttributeDtoValue";
 
 export interface PutEndUserOperationalAttributeDto {
-  operation: PutEndUserOperationalAttributeDtoOperation;
-  /** Typed value; required for SET and forbidden for UNSET */
-  value?: PutEndUserOperationalAttributeDtoValue;
+  effectiveAt?: string;
   /** @minimum 0 */
   expectedVersion: number;
+  expiresAt?: string;
+  operation: PutEndUserOperationalAttributeDtoOperation;
   /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
-  effectiveAt?: string;
-  expiresAt?: string;
+  /** Typed value; required for SET and forbidden for UNSET */
+  value?: PutEndUserOperationalAttributeDtoValue;
 }

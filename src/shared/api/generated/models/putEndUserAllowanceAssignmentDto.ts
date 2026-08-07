@@ -7,14 +7,14 @@
  */
 
 export interface PutEndUserAllowanceAssignmentDto {
+  effectiveFrom: string;
+  effectiveUntil?: string;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
    */
   expectedProjectPolicyVersion: string;
   planId: string;
-  effectiveFrom: string;
-  effectiveUntil?: string;
   /** @maxLength 500 */
   reason: string;
 }

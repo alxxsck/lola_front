@@ -7,16 +7,16 @@
  */
 
 export interface SavedSupportViewQueryDto {
-  /**
-   * @minLength 2
-   * @maxLength 256
-   */
-  phrase?: string;
+  /** @maxLength 2048 */
+  cursor?: string;
   /**
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
-  /** @maxLength 2048 */
-  cursor?: string;
+  /**
+   * @minLength 2
+   * @maxLength 256
+   */
+  phrase?: string;
 }

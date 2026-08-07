@@ -9,15 +9,15 @@ import type { ConversationContentLegalHoldResponseDtoScope } from "./conversatio
 import type { ConversationContentLegalHoldResponseDtoState } from "./conversationContentLegalHoldResponseDtoState";
 
 export interface ConversationContentLegalHoldResponseDto {
-  id: string;
-  scope: ConversationContentLegalHoldResponseDtoScope;
-  targetId: string;
-  state: ConversationContentLegalHoldResponseDtoState;
-  reason: string;
-  version: number;
-  createdAt: string;
-  /** @nullable */
-  releasedAt: string | null;
   /** @pattern ^"cch1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
+  createdAt: string;
+  id: string;
+  reason: string;
+  /** @nullable */
+  releasedAt: string | null;
+  scope: ConversationContentLegalHoldResponseDtoScope;
+  state: ConversationContentLegalHoldResponseDtoState;
+  targetId: string;
+  version: number;
 }

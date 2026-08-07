@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchCanonicalTargetResponseDto } from "./supportSearchCanonicalTargetResponseDto";
 import type { SupportSearchMessageResultResponseDtoMatchProvenance } from "./supportSearchMessageResultResponseDtoMatchProvenance";
 import type { SupportSearchMessageResultResponseDtoRole } from "./supportSearchMessageResultResponseDtoRole";
+import type { SupportSearchCanonicalTargetResponseDto } from "./supportSearchCanonicalTargetResponseDto";
 
 export interface SupportSearchMessageResultResponseDto {
-  target: SupportSearchCanonicalTargetResponseDto;
+  activityAt: string;
   /** @nullable */
   caseId?: string | null;
   /** @nullable */
   conversationId?: string | null;
   /** @nullable */
   endUserId?: string | null;
-  activityAt: string;
-  /** @maxLength 280 */
-  snippet: string;
-  matchProvenance: SupportSearchMessageResultResponseDtoMatchProvenance;
-  /** @nullable */
-  matchLocale?: string | null;
-  role: SupportSearchMessageResultResponseDtoRole;
   /** @nullable */
   language?: string | null;
+  /** @nullable */
+  matchLocale?: string | null;
+  matchProvenance: SupportSearchMessageResultResponseDtoMatchProvenance;
+  role: SupportSearchMessageResultResponseDtoRole;
+  /** @maxLength 280 */
+  snippet: string;
+  target: SupportSearchCanonicalTargetResponseDto;
 }

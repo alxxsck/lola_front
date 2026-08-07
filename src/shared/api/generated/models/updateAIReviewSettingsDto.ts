@@ -7,12 +7,12 @@
  */
 
 export interface UpdateAIReviewSettingsDto {
-  /** @minimum 1 */
-  expectedVersion: number;
-  enabled: boolean;
   /**
    * @minimum 1
    * @maximum 1000
    */
   dailyRunLimit: number;
+  enabled: boolean;
+  /** @minimum 1 */
+  expectedVersion: number;
 }

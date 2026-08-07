@@ -8,6 +8,6 @@
 
 export interface AudienceLocaleResponseDto {
   code: string;
-  language: string;
   label: string;
+  language: string;
 }

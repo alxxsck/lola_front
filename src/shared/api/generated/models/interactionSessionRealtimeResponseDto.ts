@@ -7,7 +7,7 @@
  */
 
 export interface InteractionSessionRealtimeResponseDto {
-  socketIoPath: string;
-  socketIoNamespace: string;
   anyCablePath: string;
+  socketIoNamespace: string;
+  socketIoPath: string;
 }

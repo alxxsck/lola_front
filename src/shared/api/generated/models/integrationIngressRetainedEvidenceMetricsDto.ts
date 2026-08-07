@@ -8,15 +8,15 @@
 
 export interface IntegrationIngressRetainedEvidenceMetricsDto {
   /** @minimum 0 */
+  batches: number;
+  /** @minimum 0 */
+  deliveryIdConflicts: number;
+  /** @minimum 0 */
+  duplicates: number;
+  /** @minimum 0 */
   envelopes: number;
   /** @minimum 0 */
   recordedBodyBytes: number;
   /** @minimum 0 */
   recordedItems: number;
-  /** @minimum 0 */
-  batches: number;
-  /** @minimum 0 */
-  duplicates: number;
-  /** @minimum 0 */
-  deliveryIdConflicts: number;
 }

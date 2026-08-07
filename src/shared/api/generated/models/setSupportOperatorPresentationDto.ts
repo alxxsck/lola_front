@@ -9,11 +9,6 @@ import type { SetSupportOperatorPresentationDtoAvatarAssetId } from "./setSuppor
 import type { SetSupportOperatorPresentationDtoAvatarAssetVersion } from "./setSupportOperatorPresentationDtoAvatarAssetVersion";
 
 export interface SetSupportOperatorPresentationDto {
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  displayName: string;
   /** @nullable */
   avatarAssetId?: SetSupportOperatorPresentationDtoAvatarAssetId;
   /**
@@ -21,4 +16,9 @@ export interface SetSupportOperatorPresentationDto {
    * @nullable
    */
   avatarAssetVersion?: SetSupportOperatorPresentationDtoAvatarAssetVersion;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  displayName: string;
 }

@@ -8,12 +8,12 @@
 import type { EventSchemaDraftHealthResponseDtoHealth } from "./eventSchemaDraftHealthResponseDtoHealth";
 
 export interface EventSchemaDraftHealthResponseDto {
-  draftId: string;
-  definitionKeyId: string;
-  /** @minimum 1 */
-  draftVersion: number;
-  classification: string;
   /** @minimum 0 */
   blockingCount: number;
+  classification: string;
+  definitionKeyId: string;
+  draftId: string;
+  /** @minimum 1 */
+  draftVersion: number;
   health: EventSchemaDraftHealthResponseDtoHealth;
 }

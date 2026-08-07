@@ -9,30 +9,30 @@ import type { ReplyTranslationDraftResponseDtoStatus } from "./replyTranslationD
 import type { ReplyTranslationDraftResponseDtoTargetLocaleSource } from "./replyTranslationDraftResponseDtoTargetLocaleSource";
 
 export interface ReplyTranslationDraftResponseDto {
-  id: string;
   conversationId: string;
-  status: ReplyTranslationDraftResponseDtoStatus;
+  createdAt: string;
+  /** @nullable */
+  deliveredTextPreview?: string | null;
+  /** @nullable */
+  editedTranslatedText?: string | null;
+  /** @nullable */
+  errorCode?: string | null;
+  expiresAt: string;
+  id: string;
+  model?: string;
+  modelConfigRevision?: string;
+  provider?: string;
   queued: boolean;
+  sourceLocale: string;
   /** @nullable */
   sourceText?: string | null;
   sourceTextHash: string;
-  sourceLocale: string;
+  status: ReplyTranslationDraftResponseDtoStatus;
   targetLocale: string;
   targetLocaleSource: ReplyTranslationDraftResponseDtoTargetLocaleSource;
   /** @nullable */
   translatedText?: string | null;
-  /** @nullable */
-  editedTranslatedText?: string | null;
-  /** @nullable */
-  deliveredTextPreview?: string | null;
-  warnings: string[];
-  /** @nullable */
-  errorCode?: string | null;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
-  provider?: string;
-  model?: string;
-  modelConfigRevision?: string;
   translationConfigRevision?: string;
+  updatedAt: string;
+  warnings: string[];
 }

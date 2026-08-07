@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectTranslationSettingsValueResponseDto } from "./projectTranslationSettingsValueResponseDto";
 import type { TranslationAvailabilityResponseDto } from "./translationAvailabilityResponseDto";
+import type { ProjectTranslationSettingsValueResponseDto } from "./projectTranslationSettingsValueResponseDto";
 
 export interface ProjectTranslationSettingsResponseDto {
-  projectVersion: number;
-  supportedLocales: string[];
-  settings: ProjectTranslationSettingsValueResponseDto;
-  configRevision: string;
   availability: TranslationAvailabilityResponseDto;
+  configRevision: string;
+  projectVersion: number;
+  settings: ProjectTranslationSettingsValueResponseDto;
+  supportedLocales: string[];
 }

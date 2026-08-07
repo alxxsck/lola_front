@@ -10,7 +10,7 @@ import type { AudienceSegmentMembershipNodeDtoOperator } from "./audienceSegment
 
 export interface AudienceSegmentMembershipNodeDto {
   kind: AudienceSegmentMembershipNodeDtoKind;
+  operator: AudienceSegmentMembershipNodeDtoOperator;
   segmentId: string;
   segmentRevisionId: string;
-  operator: AudienceSegmentMembershipNodeDtoOperator;
 }

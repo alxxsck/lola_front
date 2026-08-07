@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectPermissionDtoScope } from "./projectPermissionDtoScope";
-import type { ProjectPermissionDtoLabelTranslations } from "./projectPermissionDtoLabelTranslations";
 import type { ProjectPermissionDtoDescriptionTranslations } from "./projectPermissionDtoDescriptionTranslations";
+import type { ProjectPermissionDtoLabelTranslations } from "./projectPermissionDtoLabelTranslations";
+import type { ProjectPermissionDtoScope } from "./projectPermissionDtoScope";
 
 export interface ProjectPermissionDto {
-  code: string;
-  scope: ProjectPermissionDtoScope;
   category: string;
-  risk: string;
-  label: string;
+  code: string;
   description: string;
-  labelTranslations: ProjectPermissionDtoLabelTranslations;
   descriptionTranslations: ProjectPermissionDtoDescriptionTranslations;
+  label: string;
+  labelTranslations: ProjectPermissionDtoLabelTranslations;
+  risk: string;
+  scope: ProjectPermissionDtoScope;
 }

@@ -10,9 +10,9 @@ import type { IamMfaRecoveryEnrollmentOptionsResponseDtoPublicKey } from "./iamM
 import type { IamMfaRecoveryEnrollmentOptionsResponseDtoReason } from "./iamMfaRecoveryEnrollmentOptionsResponseDtoReason";
 
 export interface IamMfaRecoveryEnrollmentOptionsResponseDto {
-  kind: IamMfaRecoveryEnrollmentOptionsResponseDtoKind;
   ceremonyToken: string;
   expiresAt: string;
+  kind: IamMfaRecoveryEnrollmentOptionsResponseDtoKind;
   publicKey: IamMfaRecoveryEnrollmentOptionsResponseDtoPublicKey;
   reason: IamMfaRecoveryEnrollmentOptionsResponseDtoReason;
 }

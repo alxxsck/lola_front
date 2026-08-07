@@ -8,23 +8,23 @@
 import type { AiOperationProviderCostDtoState } from "./aiOperationProviderCostDtoState";
 
 export interface AiOperationProviderCostDto {
-  /** @nullable */
-  providerReportedCost?: string | null;
-  /** @nullable */
-  estimatedFallbackCost?: string | null;
   /**
    * Known cost only. Null when every linked usage record is unpriced.
    * @nullable
    */
   effectiveCost?: string | null;
-  state: AiOperationProviderCostDtoState;
-  /** @minimum 0 */
-  unknownUsageRecords: number;
+  /** @nullable */
+  estimatedFallbackCost?: string | null;
+  provider: string;
+  /** @nullable */
+  providerReportedCost?: string | null;
   /**
    * Maximum reserved AI cost in canonical USD ticks.
    * @pattern ^\d+$
    */
   reservedCostUsdTicks: string;
-  provider: string;
+  state: AiOperationProviderCostDtoState;
+  /** @minimum 0 */
+  unknownUsageRecords: number;
   usageRecords: number;
 }

@@ -5,50 +5,50 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseEscalationResponseDtoStatus } from "./endUserCaseEscalationResponseDtoStatus";
-import type { EndUserCaseEscalationResponseDtoSource } from "./endUserCaseEscalationResponseDtoSource";
-import type { EndUserCaseEscalationActorResponseDto } from "./endUserCaseEscalationActorResponseDto";
+import type { EndUserCaseEscalationResponseDtoCancelledBy } from "./endUserCaseEscalationResponseDtoCancelledBy";
 import type { EndUserCaseEscalationResponseDtoClaimant } from "./endUserCaseEscalationResponseDtoClaimant";
 import type { EndUserCaseEscalationResponseDtoClosedBy } from "./endUserCaseEscalationResponseDtoClosedBy";
-import type { EndUserCaseEscalationResponseDtoCancelledBy } from "./endUserCaseEscalationResponseDtoCancelledBy";
+import type { EndUserCaseEscalationActorResponseDto } from "./endUserCaseEscalationActorResponseDto";
+import type { EndUserCaseEscalationResponseDtoSource } from "./endUserCaseEscalationResponseDtoSource";
+import type { EndUserCaseEscalationResponseDtoStatus } from "./endUserCaseEscalationResponseDtoStatus";
 
 export interface EndUserCaseEscalationResponseDto {
-  id: string;
-  caseId: string;
-  /** @minimum 1 */
-  occurrenceNumber: number;
-  /** @minimum 1 */
-  version: number;
-  status: EndUserCaseEscalationResponseDtoStatus;
-  source: EndUserCaseEscalationResponseDtoSource;
-  reasonCode: string;
-  summary: string;
-  /** @nullable */
-  sourceInvocationId?: string | null;
-  /** @nullable */
-  sourceMessageId?: string | null;
-  /** @nullable */
-  conversationId?: string | null;
-  requester: EndUserCaseEscalationActorResponseDto;
-  requestedAt: string;
-  /** @nullable */
-  claimant?: EndUserCaseEscalationResponseDtoClaimant;
-  /** @nullable */
-  claimedAt?: string | null;
-  /** @nullable */
-  closedBy?: EndUserCaseEscalationResponseDtoClosedBy;
-  /** @nullable */
-  closeReason?: string | null;
-  /** @nullable */
-  closedAt?: string | null;
-  /** @nullable */
-  cancelledBy?: EndUserCaseEscalationResponseDtoCancelledBy;
   /** @nullable */
   cancellationReason?: string | null;
   /** @nullable */
   cancelledAt?: string | null;
   /** @nullable */
-  notificationEventId: string | null;
+  cancelledBy?: EndUserCaseEscalationResponseDtoCancelledBy;
+  caseId: string;
+  /** @nullable */
+  claimant?: EndUserCaseEscalationResponseDtoClaimant;
+  /** @nullable */
+  claimedAt?: string | null;
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  closedBy?: EndUserCaseEscalationResponseDtoClosedBy;
+  /** @nullable */
+  closeReason?: string | null;
+  /** @nullable */
+  conversationId?: string | null;
   createdAt: string;
+  id: string;
+  /** @nullable */
+  notificationEventId: string | null;
+  /** @minimum 1 */
+  occurrenceNumber: number;
+  reasonCode: string;
+  requestedAt: string;
+  requester: EndUserCaseEscalationActorResponseDto;
+  source: EndUserCaseEscalationResponseDtoSource;
+  /** @nullable */
+  sourceInvocationId?: string | null;
+  /** @nullable */
+  sourceMessageId?: string | null;
+  status: EndUserCaseEscalationResponseDtoStatus;
+  summary: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

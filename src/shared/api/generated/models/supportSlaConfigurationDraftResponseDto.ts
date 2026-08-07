@@ -8,11 +8,11 @@
 import type { ReplaceSupportSlaConfigurationDraftDto } from "./replaceSupportSlaConfigurationDraftDto";
 
 export interface SupportSlaConfigurationDraftResponseDto {
+  configuration?: ReplaceSupportSlaConfigurationDraftDto;
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
   /** @minimum 1 */
   generation: number;
   /** @minimum 1 */
   version: number;
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
-  configuration?: ReplaceSupportSlaConfigurationDraftDto;
 }

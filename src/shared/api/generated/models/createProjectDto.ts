@@ -8,6 +8,14 @@
 import type { CreateProjectDtoSettings } from "./createProjectDtoSettings";
 
 export interface CreateProjectDto {
+  /** @maxLength 80 */
+  assistantName?: string;
+  defaultLocale?: string;
+  /**
+   * @minLength 2
+   * @maxLength 100
+   */
+  name: string;
   /**
    * @minLength 2
    * @maxLength 100
@@ -15,18 +23,12 @@ export interface CreateProjectDto {
   organizationName: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   organizationSlug: string;
-  /**
-   * @minLength 2
-   * @maxLength 100
-   */
-  name: string;
+  /** General project settings. */
+  settings?: CreateProjectDtoSettings;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   slug: string;
-  defaultLocale?: string;
   /** @maxItems 20 */
   supportedLocales?: string[];
-  /** @maxLength 80 */
-  assistantName?: string;
   /** @maxLength 20000 */
   systemPrompt?: string;
   /**
@@ -34,6 +36,4 @@ export interface CreateProjectDto {
    * @maxLength 20000
    */
   voiceInstructions?: string;
-  /** General project settings. */
-  settings?: CreateProjectDtoSettings;
 }

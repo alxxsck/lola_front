@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SavedSupportViewMessageDraftDtoSchemaVersion } from "./savedSupportViewMessageDraftDtoSchemaVersion";
 import type { SavedSupportViewMessageDraftDtoColumnsItem } from "./savedSupportViewMessageDraftDtoColumnsItem";
-import type { SavedSupportViewMessageDraftDtoSurface } from "./savedSupportViewMessageDraftDtoSurface";
 import type { SavedSupportViewMessageFiltersDto } from "./savedSupportViewMessageFiltersDto";
+import type { SavedSupportViewMessageDraftDtoSchemaVersion } from "./savedSupportViewMessageDraftDtoSchemaVersion";
 import type { SupportContentSearchSortDto } from "./supportContentSearchSortDto";
+import type { SavedSupportViewMessageDraftDtoSurface } from "./savedSupportViewMessageDraftDtoSurface";
 
 export interface SavedSupportViewMessageDraftDto {
-  schemaVersion: SavedSupportViewMessageDraftDtoSchemaVersion;
+  /** @maxItems 13 */
+  columns: SavedSupportViewMessageDraftDtoColumnsItem[];
   /**
    * @minLength 2
    * @maxLength 120
    */
   displayName: string;
-  /** @maxItems 5 */
-  columns: SavedSupportViewMessageDraftDtoColumnsItem[];
-  surface: SavedSupportViewMessageDraftDtoSurface;
   filters: SavedSupportViewMessageFiltersDto;
+  schemaVersion: SavedSupportViewMessageDraftDtoSchemaVersion;
   sort: SupportContentSearchSortDto;
+  surface: SavedSupportViewMessageDraftDtoSurface;
 }

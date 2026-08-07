@@ -9,10 +9,10 @@ import type { SupportExternalMappingDefinitionDto } from "./supportExternalMappi
 
 export interface UpdateSupportExternalMappingDraftDto {
   catalogSnapshotId: string;
+  definition: SupportExternalMappingDefinitionDto;
   /**
    * @minLength 1
    * @maxLength 128
    */
   formRevision: string;
-  definition: SupportExternalMappingDefinitionDto;
 }

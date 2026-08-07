@@ -8,7 +8,7 @@
 import type { IamEmailInvitationConsumedResponseDtoKind } from "./iamEmailInvitationConsumedResponseDtoKind";
 
 export interface IamEmailInvitationConsumedResponseDto {
+  expiresAt: string;
   kind: IamEmailInvitationConsumedResponseDtoKind;
   readonly setupToken: string;
-  expiresAt: string;
 }

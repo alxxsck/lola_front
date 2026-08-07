@@ -8,9 +8,9 @@
 import type { SupportQueueManualRoutingDtoMode } from "./supportQueueManualRoutingDtoMode";
 
 export interface SupportQueueManualRoutingDto {
+  /** @maxItems 0 */
+  fallbackTeamIds: string[];
   mode: SupportQueueManualRoutingDtoMode;
   /** @maxItems 0 */
   primaryTeamIds: string[];
-  /** @maxItems 0 */
-  fallbackTeamIds: string[];
 }

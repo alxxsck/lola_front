@@ -8,9 +8,9 @@
 import type { ConversationLanguageDecisionResponseDtoSource } from "./conversationLanguageDecisionResponseDtoSource";
 
 export interface ConversationLanguageDecisionResponseDto {
+  conflictingLocale?: string;
   /** @nullable */
   locale: string | null;
-  source: ConversationLanguageDecisionResponseDtoSource;
-  conflictingLocale?: string;
   needsConfirmation: boolean;
+  source: ConversationLanguageDecisionResponseDtoSource;
 }

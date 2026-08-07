@@ -6,12 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IntegrationEventRouteSummaryPolicyDto } from "./integrationEventRouteSummaryPolicyDto";
-import type { IntegrationEventRouteSummaryItemDto } from "./integrationEventRouteSummaryItemDto";
 import type { IntegrationEventRouteSummaryManageTargetDto } from "./integrationEventRouteSummaryManageTargetDto";
+import type { IntegrationEventRouteSummaryItemDto } from "./integrationEventRouteSummaryItemDto";
 
 export interface IntegrationEventRouteSummaryResponseDto {
   eventDefinitionKeyId: string;
   ingressPolicy: IntegrationEventRouteSummaryPolicyDto;
-  routes: IntegrationEventRouteSummaryItemDto[];
   manageTarget: IntegrationEventRouteSummaryManageTargetDto;
+  routes: IntegrationEventRouteSummaryItemDto[];
 }

@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportContentPanelMacrosDtoState } from "./supportContentPanelMacrosDtoState";
 import type { SupportContentPanelMacrosDtoItemsItem } from "./supportContentPanelMacrosDtoItemsItem";
+import type { SupportContentPanelMacrosDtoState } from "./supportContentPanelMacrosDtoState";
 
 export interface SupportContentPanelMacrosDto {
-  state: SupportContentPanelMacrosDtoState;
+  code?: string;
   items: SupportContentPanelMacrosDtoItemsItem[];
   /** @nullable */
   nextCursor?: string | null;
-  code?: string;
+  state: SupportContentPanelMacrosDtoState;
 }

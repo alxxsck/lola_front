@@ -6,19 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AudienceSnapshotPolicyV2ResponseDtoInitialEvaluation } from "./audienceSnapshotPolicyV2ResponseDtoInitialEvaluation";
-import type { AudienceSnapshotPolicyV2ResponseDtoTruth } from "./audienceSnapshotPolicyV2ResponseDtoTruth";
 import type { AudienceSnapshotPolicyV2ResponseDtoMissing } from "./audienceSnapshotPolicyV2ResponseDtoMissing";
-import type { AudienceSnapshotPolicyV2ResponseDtoStale } from "./audienceSnapshotPolicyV2ResponseDtoStale";
-import type { AudienceSnapshotPolicyV2ResponseDtoRevision } from "./audienceSnapshotPolicyV2ResponseDtoRevision";
 import type { AudienceSnapshotPolicyV2ResponseDtoPersistence } from "./audienceSnapshotPolicyV2ResponseDtoPersistence";
 import type { AudienceSnapshotPolicyV2ResponseDtoRecheckTrigger } from "./audienceSnapshotPolicyV2ResponseDtoRecheckTrigger";
+import type { AudienceSnapshotPolicyV2ResponseDtoRevision } from "./audienceSnapshotPolicyV2ResponseDtoRevision";
+import type { AudienceSnapshotPolicyV2ResponseDtoStale } from "./audienceSnapshotPolicyV2ResponseDtoStale";
+import type { AudienceSnapshotPolicyV2ResponseDtoTruth } from "./audienceSnapshotPolicyV2ResponseDtoTruth";
 
 export interface AudienceSnapshotPolicyV2ResponseDto {
   initialEvaluation: AudienceSnapshotPolicyV2ResponseDtoInitialEvaluation;
-  truth: AudienceSnapshotPolicyV2ResponseDtoTruth;
   missing: AudienceSnapshotPolicyV2ResponseDtoMissing;
-  stale: AudienceSnapshotPolicyV2ResponseDtoStale;
-  revision: AudienceSnapshotPolicyV2ResponseDtoRevision;
   persistence: AudienceSnapshotPolicyV2ResponseDtoPersistence;
   recheckTrigger: AudienceSnapshotPolicyV2ResponseDtoRecheckTrigger;
+  revision: AudienceSnapshotPolicyV2ResponseDtoRevision;
+  stale: AudienceSnapshotPolicyV2ResponseDtoStale;
+  truth: AudienceSnapshotPolicyV2ResponseDtoTruth;
 }

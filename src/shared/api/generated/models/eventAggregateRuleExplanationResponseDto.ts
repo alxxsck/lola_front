@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventAggregateRuleExplanationResponseDtoKind } from "./eventAggregateRuleExplanationResponseDtoKind";
 import type { ExplainValueResponseDto } from "./explainValueResponseDto";
+import type { EventAggregateRuleExplanationResponseDtoKind } from "./eventAggregateRuleExplanationResponseDtoKind";
 import type { ExplainWindowResponseDto } from "./explainWindowResponseDto";
 
 export interface EventAggregateRuleExplanationResponseDto {
-  kind: EventAggregateRuleExplanationResponseDtoKind;
-  matched: boolean;
   actual?: ExplainValueResponseDto;
   expected?: ExplainValueResponseDto;
+  kind: EventAggregateRuleExplanationResponseDtoKind;
+  matched: boolean;
   matchedCount?: string;
   window?: ExplainWindowResponseDto;
 }

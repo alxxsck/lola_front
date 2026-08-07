@@ -8,11 +8,11 @@
 import type { AiOperationCostDto } from "./aiOperationCostDto";
 
 export interface AiOperationModelBreakdownDto {
+  cost: AiOperationCostDto;
+  /** @pattern ^\d+$ */
+  dbWorkUnits: string;
   /** @nullable */
   model?: string | null;
   operations: number;
   usageRecords: number;
-  cost: AiOperationCostDto;
-  /** @pattern ^\d+$ */
-  dbWorkUnits: string;
 }

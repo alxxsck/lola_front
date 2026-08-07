@@ -5,24 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisScheduleSummaryDtoState } from "./projectAIAnalysisScheduleSummaryDtoState";
-import type { ProjectAIAnalysisScheduleSummaryDtoScheduleType } from "./projectAIAnalysisScheduleSummaryDtoScheduleType";
 import type { ProjectAIAnalysisScheduleSummaryDtoDstDisambiguation } from "./projectAIAnalysisScheduleSummaryDtoDstDisambiguation";
+import type { ProjectAIAnalysisScheduleSummaryDtoScheduleType } from "./projectAIAnalysisScheduleSummaryDtoScheduleType";
+import type { ProjectAIAnalysisScheduleSummaryDtoState } from "./projectAIAnalysisScheduleSummaryDtoState";
 
 export interface ProjectAIAnalysisScheduleSummaryDto {
-  scheduleId: string;
-  state: ProjectAIAnalysisScheduleSummaryDtoState;
-  scheduleType: ProjectAIAnalysisScheduleSummaryDtoScheduleType;
-  /** @minimum 1 */
-  scheduleSpecVersion: number;
-  localDateTime: string;
-  timezone: string;
+  /** @nullable */
+  cancelledAt?: string | null;
   dstDisambiguation: ProjectAIAnalysisScheduleSummaryDtoDstDisambiguation;
-  runAt: string;
-  /** @nullable */
-  nextRunAt?: string | null;
-  /** @nullable */
-  firedRunId?: string | null;
   /** @nullable */
   failureCode?: string | null;
   /** @nullable */
@@ -30,5 +20,15 @@ export interface ProjectAIAnalysisScheduleSummaryDto {
   /** @nullable */
   firedAt?: string | null;
   /** @nullable */
-  cancelledAt?: string | null;
+  firedRunId?: string | null;
+  localDateTime: string;
+  /** @nullable */
+  nextRunAt?: string | null;
+  runAt: string;
+  scheduleId: string;
+  /** @minimum 1 */
+  scheduleSpecVersion: number;
+  scheduleType: ProjectAIAnalysisScheduleSummaryDtoScheduleType;
+  state: ProjectAIAnalysisScheduleSummaryDtoState;
+  timezone: string;
 }

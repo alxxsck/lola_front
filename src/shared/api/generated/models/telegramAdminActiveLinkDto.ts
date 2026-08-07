@@ -8,10 +8,10 @@
 import type { TelegramLinkStatus } from "./telegramLinkStatus";
 
 export interface TelegramAdminActiveLinkDto {
-  status: TelegramLinkStatus;
-  linkedAt: string;
   /** @nullable */
   displayName?: string | null;
+  linkedAt: string;
+  status: TelegramLinkStatus;
   /** @nullable */
   username?: string | null;
 }

@@ -8,8 +8,8 @@
 import type { InteractionSessionUserResponseDtoAttributes } from "./interactionSessionUserResponseDtoAttributes";
 
 export interface InteractionSessionUserResponseDto {
-  id: string;
-  externalId: string;
-  isGuest: boolean;
   attributes: InteractionSessionUserResponseDtoAttributes;
+  externalId: string;
+  id: string;
+  isGuest: boolean;
 }

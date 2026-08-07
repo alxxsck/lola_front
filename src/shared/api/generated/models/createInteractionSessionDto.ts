@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateInteractionSessionDtoAttributes } from "./createInteractionSessionDtoAttributes";
 import type { CreateInteractionSessionDtoContext } from "./createInteractionSessionDtoContext";
 import type { CreateInteractionSessionDtoProfile } from "./createInteractionSessionDtoProfile";
-import type { CreateInteractionSessionDtoAttributes } from "./createInteractionSessionDtoAttributes";
 import type { SessionAttributeSnapshotEnvelopeDto } from "./sessionAttributeSnapshotEnvelopeDto";
 
 export interface CreateInteractionSessionDto {
-  locale?: string;
+  /** Complete user attribute snapshot validated against the current project schema. Omit to preserve stored attributes. */
+  attributes?: CreateInteractionSessionDtoAttributes;
   context?: CreateInteractionSessionDtoContext;
-  /**
-   * @minimum 300
-   * @maximum 604800
-   */
-  ttlSeconds?: number;
   /**
    * @minLength 1
    * @maxLength 200
    */
   externalUserId: string;
+  locale?: string;
   profile?: CreateInteractionSessionDtoProfile;
-  /** Complete user attribute snapshot validated against the current project schema. Omit to preserve stored attributes. */
-  attributes?: CreateInteractionSessionDtoAttributes;
   /** Atomic End User Attribute Snapshot. Validation failure never blocks Session creation. */
   profileSnapshot?: SessionAttributeSnapshotEnvelopeDto;
+  /**
+   * @minimum 300
+   * @maximum 604800
+   */
+  ttlSeconds?: number;
 }

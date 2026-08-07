@@ -8,7 +8,6 @@
 import type { SupportLeadSafeActorDtoType } from "./supportLeadSafeActorDtoType";
 
 export interface SupportLeadSafeActorDto {
-  type: SupportLeadSafeActorDtoType;
   /** @nullable */
   cmsUserId: string | null;
   /**
@@ -16,4 +15,5 @@ export interface SupportLeadSafeActorDto {
    * @nullable
    */
   systemCode: string | null;
+  type: SupportLeadSafeActorDtoType;
 }

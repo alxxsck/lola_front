@@ -7,19 +7,19 @@
  */
 
 export interface ProjectAIAnalysisUsageByCmsUserDto {
-  runs: number;
-  modelAttempts: number;
-  /** @pattern ^\d+$ */
-  reservedAiCostUsdTicks: string;
-  /** @pattern ^\d+$ */
-  estimatedAiCostUsdTicks: string;
-  /** @pattern ^\d+$ */
-  billedAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualDbWorkUnits: string;
-  reconciliationPendingRuns: number;
-  costStatuses: string[];
+  /** @pattern ^\d+$ */
+  billedAiCostUsdTicks: string;
   cmsUserId: string;
+  costStatuses: string[];
+  /** @pattern ^\d+$ */
+  estimatedAiCostUsdTicks: string;
+  modelAttempts: number;
+  reconciliationPendingRuns: number;
+  /** @pattern ^\d+$ */
+  reservedAiCostUsdTicks: string;
+  runs: number;
 }

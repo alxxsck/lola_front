@@ -8,12 +8,12 @@
 import type { CreateSupportPresentationAvatarUploadDtoContentType } from "./createSupportPresentationAvatarUploadDtoContentType";
 
 export interface CreateSupportPresentationAvatarUploadDto {
+  /** @pattern ^[a-f0-9]{64}$ */
+  checksumSha256: string;
   contentType: CreateSupportPresentationAvatarUploadDtoContentType;
   /**
    * @minimum 1
    * @maximum 5242880
    */
   sizeBytes: number;
-  /** @pattern ^[a-f0-9]{64}$ */
-  checksumSha256: string;
 }

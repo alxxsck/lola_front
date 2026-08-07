@@ -7,10 +7,10 @@
  */
 
 export interface EventIngestionPolicyResponseDto {
-  /** @minimum 1 */
-  version: number;
-  enabled: boolean;
   clientIngestible: boolean;
   countsAsActivity: boolean;
+  enabled: boolean;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

@@ -6,40 +6,40 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiOperationActorDto } from "./aiOperationActorDto";
+import type { AiOperationTimelineItemDtoDataAccess } from "./aiOperationTimelineItemDtoDataAccess";
 import type { AiOperationTimelineItemDtoModelAttempt } from "./aiOperationTimelineItemDtoModelAttempt";
 import type { AiOperationTimelineItemDtoToolCall } from "./aiOperationTimelineItemDtoToolCall";
-import type { AiOperationTimelineItemDtoDataAccess } from "./aiOperationTimelineItemDtoDataAccess";
 
 export interface AiOperationTimelineItemDto {
-  sequence: string;
-  kind: string;
-  occurredAt: string;
-  eventType: string;
   actor: AiOperationActorDto;
   /** @nullable */
-  status?: string | null;
-  /** @nullable */
-  outcomeCode?: string | null;
-  /** @nullable */
-  stepId?: string | null;
-  /** @nullable */
-  ordinal?: number | null;
-  /** @nullable */
-  parentStepId?: string | null;
-  /** @nullable */
-  name?: string | null;
-  /** @nullable */
-  summary?: string | null;
-  /** @nullable */
-  inputHash?: string | null;
-  /** @nullable */
-  outputHash?: string | null;
+  dataAccess: AiOperationTimelineItemDtoDataAccess;
   /** @nullable */
   errorCode?: string | null;
+  eventType: string;
+  /** @nullable */
+  inputHash?: string | null;
+  kind: string;
   /** @nullable */
   modelAttempt: AiOperationTimelineItemDtoModelAttempt;
   /** @nullable */
-  toolCall: AiOperationTimelineItemDtoToolCall;
+  name?: string | null;
+  occurredAt: string;
   /** @nullable */
-  dataAccess: AiOperationTimelineItemDtoDataAccess;
+  ordinal?: number | null;
+  /** @nullable */
+  outcomeCode?: string | null;
+  /** @nullable */
+  outputHash?: string | null;
+  /** @nullable */
+  parentStepId?: string | null;
+  sequence: string;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  stepId?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  toolCall: AiOperationTimelineItemDtoToolCall;
 }

@@ -8,17 +8,17 @@
 import type { ProjectRoleResponseDtoStatus } from "./projectRoleResponseDtoStatus";
 
 export interface ProjectRoleResponseDto {
-  id: string;
-  projectId: string;
-  key: string;
-  name: string;
-  description: string;
-  status: ProjectRoleResponseDtoStatus;
-  managed: boolean;
-  version: number;
-  permissionCodes: string[];
   assignedMembershipCount: number;
   assignedMembershipCountCapped: boolean;
   createdAt: string;
+  description: string;
+  id: string;
+  key: string;
+  managed: boolean;
+  name: string;
+  permissionCodes: string[];
+  projectId: string;
+  status: ProjectRoleResponseDtoStatus;
   updatedAt: string;
+  version: number;
 }

@@ -8,11 +8,11 @@
 import type { EventIngestionPolicyResponseDto } from "./eventIngestionPolicyResponseDto";
 
 export interface EventIngestionPolicyMutationResponseDto {
-  definitionKeyId: string;
   /** @nullable */
   currentRevisionId?: string | null;
+  definitionKeyId: string;
+  policy: EventIngestionPolicyResponseDto;
   policyChanged: boolean;
   /** Policy never creates a schema revision. */
   schemaRevisionUnchanged: boolean;
-  policy: EventIngestionPolicyResponseDto;
 }

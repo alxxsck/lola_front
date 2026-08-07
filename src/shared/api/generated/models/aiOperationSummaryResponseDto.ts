@@ -5,20 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiOperationSummaryResponseDtoCost } from "./aiOperationSummaryResponseDtoCost";
-import type { AiOperationSummaryBreakdownDto } from "./aiOperationSummaryBreakdownDto";
+import type { AiOperationSummaryBreakdownLimitsDto } from "./aiOperationSummaryBreakdownLimitsDto";
 import type { AiOperationCostedBreakdownDto } from "./aiOperationCostedBreakdownDto";
-import type { AiOperationProviderCostDto } from "./aiOperationProviderCostDto";
-import type { AiOperationResponsibleCmsUserBreakdownDto } from "./aiOperationResponsibleCmsUserBreakdownDto";
 import type { AiOperationChargedEndUserBreakdownDto } from "./aiOperationChargedEndUserBreakdownDto";
 import type { AiOperationModelBreakdownDto } from "./aiOperationModelBreakdownDto";
 import type { AiOperationPeriodBreakdownDto } from "./aiOperationPeriodBreakdownDto";
-import type { AiOperationSummaryBreakdownLimitsDto } from "./aiOperationSummaryBreakdownLimitsDto";
+import type { AiOperationProviderCostDto } from "./aiOperationProviderCostDto";
+import type { AiOperationResponsibleCmsUserBreakdownDto } from "./aiOperationResponsibleCmsUserBreakdownDto";
+import type { AiOperationSummaryBreakdownDto } from "./aiOperationSummaryBreakdownDto";
+import type { AiOperationSummaryResponseDtoCost } from "./aiOperationSummaryResponseDtoCost";
 
 export interface AiOperationSummaryResponseDto {
-  operations: number;
-  rootOperations: number;
-  usageRecords: number;
+  breakdownLimits: AiOperationSummaryBreakdownLimitsDto;
+  byCategory: AiOperationCostedBreakdownDto[];
+  byChargedAccount: AiOperationCostedBreakdownDto[];
+  byChargedEndUser: AiOperationChargedEndUserBreakdownDto[];
+  byModel: AiOperationModelBreakdownDto[];
+  byPeriod: AiOperationPeriodBreakdownDto[];
+  byProvider: AiOperationProviderCostDto[];
+  byResponsibleCmsUser: AiOperationResponsibleCmsUserBreakdownDto[];
+  byStatus: AiOperationSummaryBreakdownDto[];
   /**
    * Monetary cost projection. Null without project.ai_analysis_cost.read.
    * @nullable
@@ -30,13 +36,7 @@ export interface AiOperationSummaryResponseDto {
    * @pattern ^\d+$
    */
   dbWorkUnits?: string | null;
-  byStatus: AiOperationSummaryBreakdownDto[];
-  byChargedAccount: AiOperationCostedBreakdownDto[];
-  byProvider: AiOperationProviderCostDto[];
-  byCategory: AiOperationCostedBreakdownDto[];
-  byResponsibleCmsUser: AiOperationResponsibleCmsUserBreakdownDto[];
-  byChargedEndUser: AiOperationChargedEndUserBreakdownDto[];
-  byModel: AiOperationModelBreakdownDto[];
-  byPeriod: AiOperationPeriodBreakdownDto[];
-  breakdownLimits: AiOperationSummaryBreakdownLimitsDto;
+  operations: number;
+  rootOperations: number;
+  usageRecords: number;
 }

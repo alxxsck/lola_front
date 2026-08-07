@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioRunStepResponseDtoCommand } from "./scenarioRunStepResponseDtoCommand";
 import type { ScenarioActionExecutor } from "./scenarioActionExecutor";
 import type { ScenarioRunStepStatus } from "./scenarioRunStepStatus";
-import type { ScenarioRunStepResponseDtoCommand } from "./scenarioRunStepResponseDtoCommand";
 
 export interface ScenarioRunStepResponseDto {
-  id: string;
-  position: number;
-  nodeKey: string;
   actionType: string;
-  executor: ScenarioActionExecutor;
-  status: ScenarioRunStepStatus;
+  /** @nullable */
+  command?: ScenarioRunStepResponseDtoCommand;
   /** @nullable */
   errorCode?: string | null;
+  executor: ScenarioActionExecutor;
   /** @nullable */
-  startedAt?: string | null;
+  finishedAt?: string | null;
+  id: string;
+  nodeKey: string;
+  position: number;
   /** @nullable */
   resumeAt?: string | null;
   /** @nullable */
-  finishedAt?: string | null;
-  /** @nullable */
-  command?: ScenarioRunStepResponseDtoCommand;
+  startedAt?: string | null;
+  status: ScenarioRunStepStatus;
 }

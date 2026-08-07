@@ -9,17 +9,17 @@ import type { ReplaceSupportWorkforceDraftDto } from "./replaceSupportWorkforceD
 import type { SupportWorkforceIdentitySnapshotsResponseDto } from "./supportWorkforceIdentitySnapshotsResponseDto";
 
 export interface SupportWorkforcePublishedRevisionResponseDto {
-  id: string;
-  /** @minimum 1 */
-  revisionNumber: number;
-  /** @minimum 1 */
-  sourceDraftGeneration: number;
+  configuration?: ReplaceSupportWorkforceDraftDto;
   /**
    * @minLength 64
    * @maxLength 64
    */
   contentHash: string;
-  publishedAt: string;
-  configuration?: ReplaceSupportWorkforceDraftDto;
+  id: string;
   identitySnapshots?: SupportWorkforceIdentitySnapshotsResponseDto;
+  publishedAt: string;
+  /** @minimum 1 */
+  revisionNumber: number;
+  /** @minimum 1 */
+  sourceDraftGeneration: number;
 }

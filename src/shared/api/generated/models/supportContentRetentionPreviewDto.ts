@@ -7,8 +7,8 @@
  */
 
 export interface SupportContentRetentionPreviewDto {
-  projectId: string;
-  noteId: string;
   caseId: string;
+  noteId: string;
+  projectId: string;
   retainUntil: string;
 }

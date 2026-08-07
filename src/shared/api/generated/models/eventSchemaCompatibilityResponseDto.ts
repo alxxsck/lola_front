@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventSchemaCompatibilityResponseDtoClassification } from "./eventSchemaCompatibilityResponseDtoClassification";
-import type { EventSchemaCompatibilityResponseDtoProducerCompatibility } from "./eventSchemaCompatibilityResponseDtoProducerCompatibility";
-import type { EventSchemaCompatibilityResponseDtoConsumerCompatibility } from "./eventSchemaCompatibilityResponseDtoConsumerCompatibility";
-import type { EventSchemaChangeReasonResponseDto } from "./eventSchemaChangeReasonResponseDto";
 import type { EventSchemaAffectedConsumerResponseDto } from "./eventSchemaAffectedConsumerResponseDto";
+import type { EventSchemaCompatibilityResponseDtoClassification } from "./eventSchemaCompatibilityResponseDtoClassification";
+import type { EventSchemaCompatibilityResponseDtoConsumerCompatibility } from "./eventSchemaCompatibilityResponseDtoConsumerCompatibility";
+import type { EventSchemaCompatibilityResponseDtoProducerCompatibility } from "./eventSchemaCompatibilityResponseDtoProducerCompatibility";
+import type { EventSchemaChangeReasonResponseDto } from "./eventSchemaChangeReasonResponseDto";
 
 export interface EventSchemaCompatibilityResponseDto {
-  classification: EventSchemaCompatibilityResponseDtoClassification;
-  producerCompatibility: EventSchemaCompatibilityResponseDtoProducerCompatibility;
-  consumerCompatibility: EventSchemaCompatibilityResponseDtoConsumerCompatibility;
-  reasons: EventSchemaChangeReasonResponseDto[];
   affectedConsumers?: EventSchemaAffectedConsumerResponseDto[];
+  classification: EventSchemaCompatibilityResponseDtoClassification;
+  consumerCompatibility: EventSchemaCompatibilityResponseDtoConsumerCompatibility;
+  producerCompatibility: EventSchemaCompatibilityResponseDtoProducerCompatibility;
+  reasons: EventSchemaChangeReasonResponseDto[];
 }

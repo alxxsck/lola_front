@@ -8,24 +8,24 @@
 import type { ProductApiRequestLogItemDtoOutcome } from "./productApiRequestLogItemDtoOutcome";
 
 export interface ProductApiRequestLogItemDto {
-  id: string;
   credentialId: string;
-  /** @nullable */
-  requestId?: string | null;
+  /** @minimum 0 */
+  durationMs: number;
   /** @nullable */
   externalUserId?: string | null;
+  id: string;
   method: string;
+  outcome: ProductApiRequestLogItemDtoOutcome;
   path: string;
   /** @minimum 0 */
   payloadBytes: number;
+  receivedAt: string;
+  /** @nullable */
+  requestId?: string | null;
+  retainUntil: string;
   /**
    * @minimum 100
    * @maximum 599
    */
   statusCode: number;
-  outcome: ProductApiRequestLogItemDtoOutcome;
-  /** @minimum 0 */
-  durationMs: number;
-  receivedAt: string;
-  retainUntil: string;
 }

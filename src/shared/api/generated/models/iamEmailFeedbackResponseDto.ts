@@ -8,6 +8,6 @@
 
 export interface IamEmailFeedbackResponseDto {
   accepted: boolean;
-  replayed: boolean;
   correlated: boolean;
+  replayed: boolean;
 }

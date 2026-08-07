@@ -8,11 +8,11 @@
 import type { CreateSupportContentLegalHoldDtoScope } from "./createSupportContentLegalHoldDtoScope";
 
 export interface CreateSupportContentLegalHoldDto {
-  scope: CreateSupportContentLegalHoldDtoScope;
-  targetId: string;
   /**
    * @minLength 3
    * @maxLength 500
    */
   reason: string;
+  scope: CreateSupportContentLegalHoldDtoScope;
+  targetId: string;
 }

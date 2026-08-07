@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AudienceSnapshotPolicyResponseDtoDeletedDefinition } from "./audienceSnapshotPolicyResponseDtoDeletedDefinition";
 import type { AudienceSnapshotPolicyResponseDtoInitialEvaluation } from "./audienceSnapshotPolicyResponseDtoInitialEvaluation";
 import type { AudienceSnapshotPolicyResponseDtoMissingOrNull } from "./audienceSnapshotPolicyResponseDtoMissingOrNull";
-import type { AudienceSnapshotPolicyResponseDtoDeletedDefinition } from "./audienceSnapshotPolicyResponseDtoDeletedDefinition";
-import type { AudienceSnapshotPolicyResponseDtoUnavailableSource } from "./audienceSnapshotPolicyResponseDtoUnavailableSource";
-import type { AudienceSnapshotPolicyResponseDtoSegmentRevision } from "./audienceSnapshotPolicyResponseDtoSegmentRevision";
 import type { AudienceSnapshotPolicyResponseDtoPersistence } from "./audienceSnapshotPolicyResponseDtoPersistence";
 import type { AudienceSnapshotPolicyResponseDtoRecheckTrigger } from "./audienceSnapshotPolicyResponseDtoRecheckTrigger";
+import type { AudienceSnapshotPolicyResponseDtoSegmentRevision } from "./audienceSnapshotPolicyResponseDtoSegmentRevision";
+import type { AudienceSnapshotPolicyResponseDtoUnavailableSource } from "./audienceSnapshotPolicyResponseDtoUnavailableSource";
 
 export interface AudienceSnapshotPolicyResponseDto {
+  deletedDefinition: AudienceSnapshotPolicyResponseDtoDeletedDefinition;
   initialEvaluation: AudienceSnapshotPolicyResponseDtoInitialEvaluation;
   missingOrNull: AudienceSnapshotPolicyResponseDtoMissingOrNull;
-  deletedDefinition: AudienceSnapshotPolicyResponseDtoDeletedDefinition;
-  unavailableSource: AudienceSnapshotPolicyResponseDtoUnavailableSource;
-  segmentRevision: AudienceSnapshotPolicyResponseDtoSegmentRevision;
   persistence: AudienceSnapshotPolicyResponseDtoPersistence;
   recheckTrigger: AudienceSnapshotPolicyResponseDtoRecheckTrigger;
+  segmentRevision: AudienceSnapshotPolicyResponseDtoSegmentRevision;
+  unavailableSource: AudienceSnapshotPolicyResponseDtoUnavailableSource;
 }

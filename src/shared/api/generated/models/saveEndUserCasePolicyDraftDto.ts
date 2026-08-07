@@ -12,8 +12,8 @@ import type { SaveEndUserCasePolicyDraftDtoScheduling } from "./saveEndUserCaseP
 export interface SaveEndUserCasePolicyDraftDto {
   /** @minimum 1 */
   expectedVersion: number;
-  idempotencyKey: string;
   groups: SaveEndUserCasePolicyDraftDtoGroupsItem[];
+  idempotencyKey: string;
   priorityRules: SaveEndUserCasePolicyDraftDtoPriorityRulesItem[];
   scheduling?: SaveEndUserCasePolicyDraftDtoScheduling;
 }

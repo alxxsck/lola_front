@@ -8,9 +8,9 @@
 import type { SupportLeadProjectionHealthSummaryDtoState } from "./supportLeadProjectionHealthSummaryDtoState";
 
 export interface SupportLeadProjectionHealthSummaryDto {
-  state: SupportLeadProjectionHealthSummaryDtoState;
-  /** @minimum 0 */
-  retryCount: number;
   /** @minimum 0 */
   deadLetterCount: number;
+  /** @minimum 0 */
+  retryCount: number;
+  state: SupportLeadProjectionHealthSummaryDtoState;
 }

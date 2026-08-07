@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeAdmissionRollbackResponseDtoState } from "./supportKnowledgeAdmissionRollbackResponseDtoState";
 import type { SupportKnowledgeAdmissionRollbackResponseDtoDeploymentRequiredActionsItem } from "./supportKnowledgeAdmissionRollbackResponseDtoDeploymentRequiredActionsItem";
+import type { SupportKnowledgeAdmissionRollbackResponseDtoState } from "./supportKnowledgeAdmissionRollbackResponseDtoState";
 
 export interface SupportKnowledgeAdmissionRollbackResponseDto {
-  projectId: string;
-  state: SupportKnowledgeAdmissionRollbackResponseDtoState;
   /** @minimum 1 */
   admissionVersion: number;
-  revokedAt: string;
-  replayed: boolean;
   deploymentRequiredActions: SupportKnowledgeAdmissionRollbackResponseDtoDeploymentRequiredActionsItem[];
+  projectId: string;
+  replayed: boolean;
+  revokedAt: string;
+  state: SupportKnowledgeAdmissionRollbackResponseDtoState;
 }

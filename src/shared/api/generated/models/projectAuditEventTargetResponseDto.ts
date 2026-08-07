@@ -8,6 +8,6 @@
 import type { ProjectAuditEventTargetResponseDtoKind } from "./projectAuditEventTargetResponseDtoKind";
 
 export interface ProjectAuditEventTargetResponseDto {
-  kind: ProjectAuditEventTargetResponseDtoKind;
   id: string;
+  kind: ProjectAuditEventTargetResponseDtoKind;
 }

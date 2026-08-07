@@ -7,8 +7,8 @@
  */
 
 export interface ScenarioGoalWindowResponseDto {
-  from: string;
-  to: string;
   deadlineAt: string;
   deadlineReached: boolean;
+  from: string;
+  to: string;
 }

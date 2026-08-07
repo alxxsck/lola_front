@@ -5,34 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminConversationPolicy } from "./adminConversationPolicy";
-import type { SendAdminMessageWithoutTranslationDto } from "./sendAdminMessageWithoutTranslationDto";
 import type { DirectAdminActionDto } from "./directAdminActionDto";
 import type { AdminMessageAISuspensionDto } from "./adminMessageAISuspensionDto";
+import type { AdminConversationPolicy } from "./adminConversationPolicy";
+import type { SendAdminMessageWithoutTranslationDto } from "./sendAdminMessageWithoutTranslationDto";
 
 export interface SendAdminMessageDto {
-  /**
-   * Compatibility fallback. New CMS clients must send conversationId.
-   * @deprecated
-   */
-  conversationPolicy?: AdminConversationPolicy;
-  /** Exact OPEN Conversation selected by the operator. Required for CMS vNext. */
-  conversationId?: string;
-  /** Case context selected by the operator for this reply. */
-  endUserCaseId?: string;
-  /**
-   * Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.
-   * @minLength 1
-   * @maxLength 10000
-   */
-  text?: string;
-  /** READY outbound translation draft consumed atomically with the ADMIN message. */
-  replyTranslationDraftId?: string;
-  /** Editable Support Macro Reply Draft consumed atomically with the ADMIN message. */
-  macroReplyDraftId?: string;
-  sendWithoutTranslation?: SendAdminMessageWithoutTranslationDto;
-  /** Optional preferred online session. If omitted, backend selects the most recently active session. */
-  interactionSessionId?: string;
   /** @maxItems 5 */
   actions?: DirectAdminActionDto[];
   aiSuspension?: AdminMessageAISuspensionDto;
@@ -41,4 +19,26 @@ export interface SendAdminMessageDto {
    * @maxItems 10
    */
   attachmentIds?: string[];
+  /** Exact OPEN Conversation selected by the operator. Required for CMS vNext. */
+  conversationId?: string;
+  /**
+   * Compatibility fallback. New CMS clients must send conversationId.
+   * @deprecated
+   */
+  conversationPolicy?: AdminConversationPolicy;
+  /** Case context selected by the operator for this reply. */
+  endUserCaseId?: string;
+  /** Optional preferred online session. If omitted, backend selects the most recently active session. */
+  interactionSessionId?: string;
+  /** Editable Support Macro Reply Draft consumed atomically with the ADMIN message. */
+  macroReplyDraftId?: string;
+  /** READY outbound translation draft consumed atomically with the ADMIN message. */
+  replyTranslationDraftId?: string;
+  sendWithoutTranslation?: SendAdminMessageWithoutTranslationDto;
+  /**
+   * Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.
+   * @minLength 1
+   * @maxLength 10000
+   */
+  text?: string;
 }

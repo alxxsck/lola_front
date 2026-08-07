@@ -8,19 +8,19 @@
 import type { CmsAgentRequestResponseDtoStatus } from "./cmsAgentRequestResponseDtoStatus";
 
 export interface CmsAgentRequestResponseDto {
-  requestId: string;
-  projectId: string;
-  rootOperationId: string;
-  requestingCmsUserId: string;
+  contentAvailable: boolean;
+  createdAt: string;
   /** @nullable */
   pinnedEndUserId?: string | null;
-  /** @nullable */
-  text?: string | null;
-  contentAvailable: boolean;
-  status: CmsAgentRequestResponseDtoStatus;
-  createdAt: string;
-  updatedAt: string;
-  retentionUntil: string;
+  projectId: string;
   /** @nullable */
   redactedAt?: string | null;
+  requestId: string;
+  requestingCmsUserId: string;
+  retentionUntil: string;
+  rootOperationId: string;
+  status: CmsAgentRequestResponseDtoStatus;
+  /** @nullable */
+  text?: string | null;
+  updatedAt: string;
 }

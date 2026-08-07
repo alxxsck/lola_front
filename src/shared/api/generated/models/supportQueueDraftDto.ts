@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueDraftDtoVisibility } from "./supportQueueDraftDtoVisibility";
 import type { SupportQueueFilterResponseDto } from "./supportQueueFilterResponseDto";
-import type { SupportQueueDraftSortDto } from "./supportQueueDraftSortDto";
 import type { SupportQueueDraftDtoRouting } from "./supportQueueDraftDtoRouting";
+import type { SupportQueueDraftSortDto } from "./supportQueueDraftSortDto";
+import type { SupportQueueDraftDtoVisibility } from "./supportQueueDraftDtoVisibility";
 
 export interface SupportQueueDraftDto {
-  /**
-   * @minLength 2
-   * @maxLength 120
-   */
-  displayName: string;
   /**
    * @maxLength 1000
    * @nullable
    */
   description?: string | null;
-  visibility: SupportQueueDraftDtoVisibility;
+  /**
+   * @minLength 2
+   * @maxLength 120
+   */
+  displayName: string;
   filter: SupportQueueFilterResponseDto;
+  routing: SupportQueueDraftDtoRouting;
   /** @maxItems 1 */
   sort: SupportQueueDraftSortDto[];
-  routing: SupportQueueDraftDtoRouting;
+  visibility: SupportQueueDraftDtoVisibility;
 }

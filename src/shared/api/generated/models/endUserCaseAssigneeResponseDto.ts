@@ -7,6 +7,6 @@
  */
 
 export interface EndUserCaseAssigneeResponseDto {
-  id: string;
   displayName: string;
+  id: string;
 }

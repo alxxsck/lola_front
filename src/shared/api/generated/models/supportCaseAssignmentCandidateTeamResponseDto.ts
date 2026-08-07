@@ -9,9 +9,9 @@ import type { SupportCaseAssignmentCandidateActionsResponseDto } from "./support
 import type { SupportCaseAssignmentCandidateOperatorResponseDto } from "./supportCaseAssignmentCandidateOperatorResponseDto";
 
 export interface SupportCaseAssignmentCandidateTeamResponseDto {
-  id: string;
-  code: string;
-  name: string;
   actions: SupportCaseAssignmentCandidateActionsResponseDto;
+  code: string;
+  id: string;
+  name: string;
   operators: SupportCaseAssignmentCandidateOperatorResponseDto[];
 }

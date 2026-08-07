@@ -7,7 +7,7 @@
  */
 
 export interface IntegrationActivityOriginDto {
-  kind: string;
   /** @nullable */
   id?: string | null;
+  kind: string;
 }

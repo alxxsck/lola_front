@@ -12,27 +12,27 @@ export interface AmplitudeInboundEventDto {
    * @minLength 1
    * @maxLength 255
    */
-  sourceEventId: string;
-  /**
-   * @minLength 1
-   * @maxLength 255
-   */
-  sourceInsertId?: string;
-  /**
-   * @minLength 1
-   * @maxLength 255
-   */
-  externalUserId: string;
-  /**
-   * @minLength 1
-   * @maxLength 255
-   */
   deviceId?: string;
   /**
    * @minLength 1
    * @maxLength 120
    */
   eventCode: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  externalUserId: string;
   occurredAt: string;
   payload: AmplitudeInboundEventDtoPayload;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  sourceEventId: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  sourceInsertId?: string;
 }

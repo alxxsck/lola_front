@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventCatalogHealthSummaryResponseDto } from "./eventCatalogHealthSummaryResponseDto";
 import type { EventConsumerHealthResponseDto } from "./eventConsumerHealthResponseDto";
 import type { EventSchemaDraftHealthResponseDto } from "./eventSchemaDraftHealthResponseDto";
+import type { EventCatalogHealthSummaryResponseDto } from "./eventCatalogHealthSummaryResponseDto";
 
 export interface EventCatalogHealthResponseDto {
-  summary: EventCatalogHealthSummaryResponseDto;
-  consumers: EventConsumerHealthResponseDto[];
   activeWaits: EventConsumerHealthResponseDto[];
+  consumers: EventConsumerHealthResponseDto[];
   drafts: EventSchemaDraftHealthResponseDto[];
+  summary: EventCatalogHealthSummaryResponseDto;
   truncated: boolean;
 }

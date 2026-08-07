@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeManagedDocumentResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentResponseDtoLifecycle";
 import type { SupportKnowledgeManagedDocumentResponseDtoCurrentDraftRevision } from "./supportKnowledgeManagedDocumentResponseDtoCurrentDraftRevision";
 import type { SupportKnowledgeManagedDocumentResponseDtoCurrentPublishedRevision } from "./supportKnowledgeManagedDocumentResponseDtoCurrentPublishedRevision";
+import type { SupportKnowledgeManagedDocumentResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentResponseDtoLifecycle";
 
 export interface SupportKnowledgeManagedDocumentResponseDto {
-  documentId: string;
-  lifecycle: SupportKnowledgeManagedDocumentResponseDtoLifecycle;
+  /** @nullable */
+  archivedAt?: string | null;
+  createdAt: string;
   /** @nullable */
   currentDraftRevision: SupportKnowledgeManagedDocumentResponseDtoCurrentDraftRevision;
   /** @nullable */
   currentPublishedRevision: SupportKnowledgeManagedDocumentResponseDtoCurrentPublishedRevision;
-  /** @nullable */
-  archivedAt?: string | null;
-  createdAt: string;
+  documentId: string;
+  lifecycle: SupportKnowledgeManagedDocumentResponseDtoLifecycle;
   updatedAt: string;
 }

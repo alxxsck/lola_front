@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkforceTeamDto } from "./supportWorkforceTeamDto";
 import type { SupportWorkforceOperatorDto } from "./supportWorkforceOperatorDto";
+import type { SupportWorkforceTeamDto } from "./supportWorkforceTeamDto";
 
 export interface ReplaceSupportWorkforceDraftDto {
-  /** @maxItems 100 */
-  teams: SupportWorkforceTeamDto[];
   /** @maxItems 500 */
   operators: SupportWorkforceOperatorDto[];
+  /** @maxItems 100 */
+  teams: SupportWorkforceTeamDto[];
 }

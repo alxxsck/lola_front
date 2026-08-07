@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventQueryRequestAttributionDto } from "./eventQueryRequestAttributionDto";
 import type { EventQueryRequestHistoryItemDtoAudience } from "./eventQueryRequestHistoryItemDtoAudience";
+import type { EventQueryLinkedAiUsageDto } from "./eventQueryLinkedAiUsageDto";
 import type { EventQueryRequestHistoryItemDtoQueryShape } from "./eventQueryRequestHistoryItemDtoQueryShape";
 import type { EventQueryRequestHistoryItemDtoRange } from "./eventQueryRequestHistoryItemDtoRange";
-import type { EventQueryRequestAttributionDto } from "./eventQueryRequestAttributionDto";
-import type { EventQueryLinkedAiUsageDto } from "./eventQueryLinkedAiUsageDto";
 
 export interface EventQueryRequestHistoryItemDto {
-  id: string;
-  createdAt: string;
-  endUserId: string;
-  origin: string;
+  attribution: EventQueryRequestAttributionDto;
   audience: EventQueryRequestHistoryItemDtoAudience;
-  mode: string;
+  createdAt: string;
+  /** @minimum 0 */
+  durationMs: number;
+  endUserId: string;
+  /** @minimum 0 */
+  estimatedAddedInputTokens: number;
   eventCodes: string[];
-  queryShape: EventQueryRequestHistoryItemDtoQueryShape;
+  id: string;
+  linkedAiUsage: EventQueryLinkedAiUsageDto;
+  mode: string;
+  origin: string;
   /** @nullable */
   policyRevisionId?: string | null;
+  queryShape: EventQueryRequestHistoryItemDtoQueryShape;
   /** @nullable */
   range?: EventQueryRequestHistoryItemDtoRange;
-  snapshotReceivedAt: string;
-  status: string;
   /** @nullable */
   rejectionCode?: string | null;
   /** @minimum 0 */
-  scannedRows: number;
+  resultBytes: number;
   /** @minimum 0 */
   returnedRows: number;
   /** @minimum 0 */
-  resultBytes: number;
-  /** @minimum 0 */
-  estimatedAddedInputTokens: number;
-  /** @minimum 0 */
-  durationMs: number;
-  attribution: EventQueryRequestAttributionDto;
-  linkedAiUsage: EventQueryLinkedAiUsageDto;
+  scannedRows: number;
+  snapshotReceivedAt: string;
+  status: string;
 }

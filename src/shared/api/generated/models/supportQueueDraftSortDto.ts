@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueDraftSortDtoField } from "./supportQueueDraftSortDtoField";
 import type { SupportQueueDraftSortDtoDirection } from "./supportQueueDraftSortDtoDirection";
+import type { SupportQueueDraftSortDtoField } from "./supportQueueDraftSortDtoField";
 
 export interface SupportQueueDraftSortDto {
-  field: SupportQueueDraftSortDtoField;
   direction: SupportQueueDraftSortDtoDirection;
+  field: SupportQueueDraftSortDtoField;
 }

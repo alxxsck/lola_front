@@ -7,20 +7,20 @@
  */
 
 export interface SupportEndUserSearchQueryDto {
-  /**
-   * @minLength 2
-   * @maxLength 256
-   */
-  phrase?: string;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
   /** @maxLength 2048 */
   cursor?: string;
   /** @maxItems 50 */
   endUserIds?: string[];
   /** @maxItems 50 */
   externalEndUserIds?: string[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minLength 2
+   * @maxLength 256
+   */
+  phrase?: string;
 }

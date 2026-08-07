@@ -10,11 +10,11 @@
  * Provide text or a file. Without a file, text is required and limited to 4096 characters. With a file, text is an optional caption limited to 1024 characters.
  */
 export type TelegramPersonalOutboundCreateBody = {
+  file?: Blob;
   /**
    * Message text. When a file is present, this is a media caption limited to 1024 characters.
    * @minLength 1
    * @maxLength 4096
    */
   text?: string;
-  file?: Blob;
 };

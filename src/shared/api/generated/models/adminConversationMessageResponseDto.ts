@@ -5,34 +5,34 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
+import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
+import type { AdminConversationMessageResponseDtoContentState } from "./adminConversationMessageResponseDtoContentState";
+import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
-import type { AdminConversationMessageResponseDtoContentState } from "./adminConversationMessageResponseDtoContentState";
-import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
-import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
 import type { AdminConversationMessageTranslationResponseDto } from "./adminConversationMessageTranslationResponseDto";
-import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 
 export interface AdminConversationMessageResponseDto {
-  id: string;
-  threadId: string;
-  role: MessageRole;
-  status: MessageStatus;
-  text: string;
+  attachments: ChatAttachmentMessageSnapshotResponseDto[];
+  /** @nullable */
+  author: AdminConversationMessageResponseDtoAuthor;
   contentState: AdminConversationMessageResponseDtoContentState;
   /** @minimum 1 */
   contentVersion: number;
-  /** @minimum 1 */
-  revisionNumber: number;
-  /** @nullable */
-  tombstonedAt?: string | null;
+  createdAt: string;
+  delivery?: AdminMessageDeliveryResponseDto;
+  id: string;
   /** @minimum 1 */
   ordinal: number;
+  /** @minimum 1 */
+  revisionNumber: number;
+  role: MessageRole;
+  status: MessageStatus;
+  text: string;
+  threadId: string;
   /** @nullable */
-  author: AdminConversationMessageResponseDtoAuthor;
-  attachments: ChatAttachmentMessageSnapshotResponseDto[];
-  createdAt: string;
-  updatedAt: string;
+  tombstonedAt?: string | null;
   translation?: AdminConversationMessageTranslationResponseDto;
-  delivery?: AdminMessageDeliveryResponseDto;
+  updatedAt: string;
 }

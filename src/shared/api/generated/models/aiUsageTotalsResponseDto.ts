@@ -7,39 +7,39 @@
  */
 
 export interface AiUsageTotalsResponseDto {
-  records: number;
-  inputCharacters: number;
-  providerBilledUnits: string;
-  totalTokens: number;
-  inputTokens: number;
+  billedCost: string;
+  cachedInputAudioTokens: number;
+  cachedInputImageTokens: number;
+  cachedInputTextTokens: number;
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
-  outputTokens: number;
-  reasoningTokens: number;
-  inputTextTokens: number;
-  cachedInputTextTokens: number;
-  outputTextTokens: number;
-  inputAudioTokens: number;
-  cachedInputAudioTokens: number;
-  outputAudioTokens: number;
-  inputImageTokens: number;
-  cachedInputImageTokens: number;
-  outputImageTokens: number;
   durationSeconds: string;
-  estimatedCost: string;
-  billedCost: string;
-  /** Provider-reported currency cost. */
-  providerReportedCost: string;
-  /** Locally estimated fallback currency cost. */
-  estimatedFallbackCost: string;
   /** providerReportedCost plus estimatedFallbackCost. */
   effectiveCost: string;
-  unpricedRecords: number;
-  /** Records measured in provider billing units without a per-request currency cost. */
-  providerReportedUsageRecords: number;
+  estimatedCost: string;
   /** Records included in estimatedCost. */
   estimatedCostRecords: number;
-  providerReportedCostRecords: number;
+  /** Locally estimated fallback currency cost. */
+  estimatedFallbackCost: string;
   estimatedRecords: number;
+  inputAudioTokens: number;
+  inputCharacters: number;
+  inputImageTokens: number;
+  inputTextTokens: number;
+  inputTokens: number;
+  outputAudioTokens: number;
+  outputImageTokens: number;
+  outputTextTokens: number;
+  outputTokens: number;
+  providerBilledUnits: string;
+  /** Provider-reported currency cost. */
+  providerReportedCost: string;
+  providerReportedCostRecords: number;
+  /** Records measured in provider billing units without a per-request currency cost. */
+  providerReportedUsageRecords: number;
   providerUnitOnlyRecords: number;
+  reasoningTokens: number;
+  records: number;
+  totalTokens: number;
+  unpricedRecords: number;
 }

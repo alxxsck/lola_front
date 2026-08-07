@@ -9,7 +9,7 @@ import type { ApiErrorDetailsResponseDto } from "./apiErrorDetailsResponseDto";
 
 export interface ApiErrorBodyResponseDto {
   code: string;
-  message: string;
   details?: ApiErrorDetailsResponseDto;
+  message: string;
   requestId?: string;
 }

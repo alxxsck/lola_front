@@ -10,6 +10,6 @@ import type { SupportPresentationAvatarCompleteResponseDtoState } from "./suppor
 export interface SupportPresentationAvatarCompleteResponseDto {
   assetId: string;
   assetVersion: number;
-  state: SupportPresentationAvatarCompleteResponseDtoState;
   replayed: boolean;
+  state: SupportPresentationAvatarCompleteResponseDtoState;
 }

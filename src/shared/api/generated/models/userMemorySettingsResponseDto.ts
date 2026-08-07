@@ -8,10 +8,10 @@
 import type { UserMemorySettingsLimitsResponseDto } from "./userMemorySettingsLimitsResponseDto";
 
 export interface UserMemorySettingsResponseDto {
-  /** @minimum 1 */
-  projectVersion: number;
-  enabled: boolean;
   dailyExtractionCallLimit: number;
+  enabled: boolean;
   factTtlDays: number;
   limits: UserMemorySettingsLimitsResponseDto;
+  /** @minimum 1 */
+  projectVersion: number;
 }

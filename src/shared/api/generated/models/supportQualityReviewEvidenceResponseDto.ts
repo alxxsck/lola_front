@@ -8,9 +8,9 @@
 import type { SupportQualityReviewEvidenceResponseDtoRationale } from "./supportQualityReviewEvidenceResponseDtoRationale";
 
 export interface SupportQualityReviewEvidenceResponseDto {
-  messageId: string;
   /** @minimum 1 */
   messageContentVersion: number;
+  messageId: string;
   /** @minimum 1 */
   messageRevisionNumber: number;
   /** @nullable */

@@ -8,9 +8,9 @@
 import type { SupportContentRolloutResponseDtoEnabledCapabilitiesItem } from "./supportContentRolloutResponseDtoEnabledCapabilitiesItem";
 
 export interface SupportContentRolloutResponseDto {
-  version: number;
-  hardOff: boolean;
-  enabledCapabilities: SupportContentRolloutResponseDtoEnabledCapabilitiesItem[];
   /** @pattern ^"scr1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
+  enabledCapabilities: SupportContentRolloutResponseDtoEnabledCapabilitiesItem[];
+  hardOff: boolean;
+  version: number;
 }

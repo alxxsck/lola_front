@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConversationAISuspensionSummaryResponseDtoMode } from "./conversationAISuspensionSummaryResponseDtoMode";
 import type { ConversationAISuspensionSummaryResponseDtoLifecycle } from "./conversationAISuspensionSummaryResponseDtoLifecycle";
+import type { ConversationAISuspensionSummaryResponseDtoMode } from "./conversationAISuspensionSummaryResponseDtoMode";
 
 export interface ConversationAISuspensionSummaryResponseDto {
-  mode: ConversationAISuspensionSummaryResponseDtoMode;
   lifecycle: ConversationAISuspensionSummaryResponseDtoLifecycle;
-  version: string;
+  mode: ConversationAISuspensionSummaryResponseDtoMode;
   serverTime: string;
   /** @nullable */
   suspendedUntil: string | null;
+  version: string;
 }

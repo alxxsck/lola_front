@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UserAttributeDefinitionResponseDto } from "./userAttributeDefinitionResponseDto";
 import type { UserAttributeSchemaResponseDtoCurrentRevision } from "./userAttributeSchemaResponseDtoCurrentRevision";
+import type { UserAttributeDefinitionResponseDto } from "./userAttributeDefinitionResponseDto";
 
 export interface UserAttributeSchemaResponseDto {
-  definitions: UserAttributeDefinitionResponseDto[];
   /** @nullable */
   currentRevision?: UserAttributeSchemaResponseDtoCurrentRevision;
+  definitions: UserAttributeDefinitionResponseDto[];
 }

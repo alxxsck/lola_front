@@ -7,11 +7,11 @@
  */
 
 export interface EndUserCaseCostBudgetResponseDto {
-  emergencyPaused: boolean;
-  projectDailyTokenHardCap: string;
   /** @minimum 0 */
   backlogCount: number;
+  degradedReasons: string[];
+  emergencyPaused: boolean;
   /** @nullable */
   oldestPendingAt: string | null;
-  degradedReasons: string[];
+  projectDailyTokenHardCap: string;
 }

@@ -7,13 +7,13 @@
  */
 
 export interface ReplaceCmsUserPlatformRolesDto {
-  /** @minimum 1 */
-  version: number;
-  /** @maxItems 32 */
-  roleIds: string[];
   /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
+  /** @maxItems 32 */
+  roleIds: string[];
+  /** @minimum 1 */
+  version: number;
 }

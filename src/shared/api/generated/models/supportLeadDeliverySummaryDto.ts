@@ -8,9 +8,9 @@
 import type { SupportLeadDeliverySummaryDtoState } from "./supportLeadDeliverySummaryDtoState";
 
 export interface SupportLeadDeliverySummaryDto {
-  state: SupportLeadDeliverySummaryDtoState;
-  /** @minimum 0 */
-  pendingCount: number;
   /** @minimum 0 */
   outcomeUnknownCount: number;
+  /** @minimum 0 */
+  pendingCount: number;
+  state: SupportLeadDeliverySummaryDtoState;
 }

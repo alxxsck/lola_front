@@ -7,16 +7,16 @@
  */
 
 export interface IntegrationRecoveryAttemptDto {
+  /** @nullable */
+  ambiguous: boolean | null;
   /** @minimum 1 */
   attemptNumber: number;
-  startedAt: string;
+  /** @nullable */
+  errorCode: string | null;
   /** @nullable */
   finishedAt: string | null;
   /** @nullable */
   outcome: string | null;
-  /** @nullable */
-  errorCode: string | null;
-  /** @nullable */
-  ambiguous: boolean | null;
   recovered: boolean;
+  startedAt: string;
 }

@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueTimeRangePredicateResponseDtoKind } from "./supportQueueTimeRangePredicateResponseDtoKind";
 import type { SupportQueueTimeRangePredicateResponseDtoField } from "./supportQueueTimeRangePredicateResponseDtoField";
+import type { SupportQueueTimeRangePredicateResponseDtoKind } from "./supportQueueTimeRangePredicateResponseDtoKind";
 
 export interface SupportQueueTimeRangePredicateResponseDto {
-  kind: SupportQueueTimeRangePredicateResponseDtoKind;
   field: SupportQueueTimeRangePredicateResponseDtoField;
   /** @nullable */
   from: string | null;
+  kind: SupportQueueTimeRangePredicateResponseDtoKind;
   /** @nullable */
   to: string | null;
 }

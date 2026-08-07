@@ -8,6 +8,6 @@
 import type { ScenarioGoalActualResponseDtoVisibility } from "./scenarioGoalActualResponseDtoVisibility";
 
 export interface ScenarioGoalActualResponseDto {
-  visibility: ScenarioGoalActualResponseDtoVisibility;
   value?: string;
+  visibility: ScenarioGoalActualResponseDtoVisibility;
 }

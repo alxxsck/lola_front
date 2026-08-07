@@ -6,17 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportViewPresetResponseDtoCode } from "./supportViewPresetResponseDtoCode";
-import type { SupportViewPresetResponseDtoScope } from "./supportViewPresetResponseDtoScope";
-import type { SupportViewPresetResponseDtoSurface } from "./supportViewPresetResponseDtoSurface";
 import type { SavedSupportViewCountResponseDto } from "./savedSupportViewCountResponseDto";
 import type { SupportSearchFreshnessResponseDto } from "./supportSearchFreshnessResponseDto";
+import type { SupportViewPresetResponseDtoScope } from "./supportViewPresetResponseDtoScope";
+import type { SupportViewPresetResponseDtoSurface } from "./supportViewPresetResponseDtoSurface";
 
 export interface SupportViewPresetResponseDto {
   code: SupportViewPresetResponseDtoCode;
+  count: SavedSupportViewCountResponseDto;
   displayNameKey: string;
+  freshness: SupportSearchFreshnessResponseDto;
+  permitted: boolean;
   scope: SupportViewPresetResponseDtoScope;
   surface: SupportViewPresetResponseDtoSurface;
-  permitted: boolean;
-  count: SavedSupportViewCountResponseDto;
-  freshness: SupportSearchFreshnessResponseDto;
 }

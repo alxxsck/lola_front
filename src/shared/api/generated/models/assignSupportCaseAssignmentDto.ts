@@ -8,19 +8,19 @@
 import type { AssignSupportCaseAssignmentDtoReasonCode } from "./assignSupportCaseAssignmentDtoReasonCode";
 
 export interface AssignSupportCaseAssignmentDto {
-  teamId: string;
-  operatorCmsUserId: string;
-  /** @minimum 1 */
-  expectedCaseVersion: number;
   /**
    * @minLength 1
    * @maxLength 256
    */
   caseReadToken?: string;
+  /** @minimum 1 */
+  expectedCaseVersion: number;
+  operatorCmsUserId: string;
   reasonCode: AssignSupportCaseAssignmentDtoReasonCode;
   /**
    * @minLength 1
    * @maxLength 500
    */
   reasonNote?: string;
+  teamId: string;
 }

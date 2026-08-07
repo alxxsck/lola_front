@@ -9,7 +9,7 @@ import type { EventQueryUsageResponseDtoScopeAudience } from "./eventQueryUsageR
 
 export type EventQueryUsageResponseDtoScope = {
   /** @nullable */
-  endUserId?: string | null;
-  /** @nullable */
   audience?: EventQueryUsageResponseDtoScopeAudience;
+  /** @nullable */
+  endUserId?: string | null;
 };

@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { RealtimeModel } from "./realtimeModel";
 import type { CompatibilityVoiceConfigDto } from "./compatibilityVoiceConfigDto";
+import type { RealtimeModel } from "./realtimeModel";
 
 export interface CompatibilityStartVoiceSessionDto {
   /** @maxLength 200 */
   agentId: string;
-  voiceModelId?: RealtimeModel;
   voiceConfig?: CompatibilityVoiceConfigDto;
+  voiceModelId?: RealtimeModel;
 }

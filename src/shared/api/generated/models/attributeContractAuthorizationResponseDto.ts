@@ -8,10 +8,10 @@
 
 export interface AttributeContractAuthorizationResponseDto {
   /** @nullable */
-  readinessEvidenceId?: string | null;
-  securityConfirmations: string[];
-  /** @nullable */
   breakingChangePlan?: string | null;
   /** @nullable */
   compatibilityGraceDays?: number | null;
+  /** @nullable */
+  readinessEvidenceId?: string | null;
+  securityConfirmations: string[];
 }

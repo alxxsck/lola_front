@@ -8,17 +8,17 @@
 import type { CmsUserSummaryDtoStatus } from "./cmsUserSummaryDtoStatus";
 
 export interface CmsUserSummaryDto {
-  id: string;
-  email: string;
-  givenName: string;
-  familyName: string;
+  createdAt: string;
   displayName: string;
-  status: CmsUserSummaryDtoStatus;
+  email: string;
   emailVerified: boolean;
-  projectCount: number;
+  familyName: string;
+  givenName: string;
+  id: string;
   /** @nullable */
   lastLoginAt: string | null;
-  version: number;
-  createdAt: string;
+  projectCount: number;
+  status: CmsUserSummaryDtoStatus;
   updatedAt: string;
+  version: number;
 }

@@ -7,11 +7,11 @@
  */
 
 export interface CmsEmailChangeRequestDto {
-  /** @maxLength 320 */
-  newEmail: string;
   /**
    * @minLength 1
    * @maxLength 512
    */
   currentPassword: string;
+  /** @maxLength 320 */
+  newEmail: string;
 }

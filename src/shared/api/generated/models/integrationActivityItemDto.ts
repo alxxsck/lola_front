@@ -6,26 +6,26 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IntegrationActivityItemDtoActivityType } from "./integrationActivityItemDtoActivityType";
-import type { IntegrationActivityItemDtoStatus } from "./integrationActivityItemDtoStatus";
+import type { IntegrationActivityItemDtoContentState } from "./integrationActivityItemDtoContentState";
 import type { IntegrationActivityEndUserDto } from "./integrationActivityEndUserDto";
 import type { IntegrationActivityOriginDto } from "./integrationActivityOriginDto";
-import type { IntegrationActivityItemDtoContentState } from "./integrationActivityItemDtoContentState";
+import type { IntegrationActivityItemDtoStatus } from "./integrationActivityItemDtoStatus";
 
 export interface IntegrationActivityItemDto {
-  id: string;
-  provider: string;
   activityType: IntegrationActivityItemDtoActivityType;
-  status: IntegrationActivityItemDtoStatus;
-  state: string;
-  endUser: IntegrationActivityEndUserDto;
-  origin: IntegrationActivityOriginDto;
   /** @minimum 0 */
   attemptCount: number;
-  /** @nullable */
-  errorCode?: string | null;
   contentState: IntegrationActivityItemDtoContentState;
   createdAt: string;
-  updatedAt: string;
+  endUser: IntegrationActivityEndUserDto;
+  /** @nullable */
+  errorCode?: string | null;
   /** @nullable */
   finishedAt?: string | null;
+  id: string;
+  origin: IntegrationActivityOriginDto;
+  provider: string;
+  state: string;
+  status: IntegrationActivityItemDtoStatus;
+  updatedAt: string;
 }

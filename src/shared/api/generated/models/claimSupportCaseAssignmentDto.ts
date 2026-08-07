@@ -7,12 +7,12 @@
  */
 
 export interface ClaimSupportCaseAssignmentDto {
-  teamId: string;
-  /** @minimum 1 */
-  expectedCaseVersion: number;
   /**
    * @minLength 1
    * @maxLength 256
    */
   caseReadToken?: string;
+  /** @minimum 1 */
+  expectedCaseVersion: number;
+  teamId: string;
 }

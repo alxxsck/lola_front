@@ -7,11 +7,11 @@
  */
 
 export interface CmsUserLifecycleMutationDto {
-  /** @minimum 1 */
-  version: number;
   /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
+  /** @minimum 1 */
+  version: number;
 }

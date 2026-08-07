@@ -6,17 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiOperationProtectedAccessItemDtoAccessKind } from "./aiOperationProtectedAccessItemDtoAccessKind";
-import type { AiOperationProtectedAccessItemDtoOutcome } from "./aiOperationProtectedAccessItemDtoOutcome";
 import type { AiOperationProtectedAccessActorDto } from "./aiOperationProtectedAccessActorDto";
+import type { AiOperationProtectedAccessItemDtoOutcome } from "./aiOperationProtectedAccessItemDtoOutcome";
 
 export interface AiOperationProtectedAccessItemDto {
   accessEventId: string;
   accessKind: AiOperationProtectedAccessItemDtoAccessKind;
-  outcome: AiOperationProtectedAccessItemDtoOutcome;
   actor: AiOperationProtectedAccessActorDto;
-  requiredPermissionCode: string;
-  requestId: string;
   /** @nullable */
   correlationId?: string | null;
   occurredAt: string;
+  outcome: AiOperationProtectedAccessItemDtoOutcome;
+  requestId: string;
+  requiredPermissionCode: string;
 }

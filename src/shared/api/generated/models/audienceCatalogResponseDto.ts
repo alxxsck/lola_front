@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceCatalogResponseDtoVersion } from "./audienceCatalogResponseDtoVersion";
-import type { AudienceLocaleResponseDto } from "./audienceLocaleResponseDto";
-import type { AudienceTextSourceResponseDto } from "./audienceTextSourceResponseDto";
-import type { AudienceCountrySourceResponseDto } from "./audienceCountrySourceResponseDto";
 import type { AudienceAttributeResponseDto } from "./audienceAttributeResponseDto";
+import type { AudienceCountrySourceResponseDto } from "./audienceCountrySourceResponseDto";
+import type { AudienceTextSourceResponseDto } from "./audienceTextSourceResponseDto";
+import type { AudienceLocaleResponseDto } from "./audienceLocaleResponseDto";
 import type { AudienceSegmentSourceResponseDto } from "./audienceSegmentSourceResponseDto";
 import type { AudienceSnapshotPolicyResponseDto } from "./audienceSnapshotPolicyResponseDto";
+import type { AudienceCatalogResponseDtoVersion } from "./audienceCatalogResponseDtoVersion";
 
 export interface AudienceCatalogResponseDto {
-  version: AudienceCatalogResponseDtoVersion;
-  revision: string;
+  attributes: AudienceAttributeResponseDto[];
+  country: AudienceCountrySourceResponseDto;
+  languageSource: AudienceTextSourceResponseDto;
   locales: AudienceLocaleResponseDto[];
   localeSource: AudienceTextSourceResponseDto;
-  languageSource: AudienceTextSourceResponseDto;
-  country: AudienceCountrySourceResponseDto;
-  attributes: AudienceAttributeResponseDto[];
+  revision: string;
   segmentSource: AudienceSegmentSourceResponseDto;
   snapshotPolicy: AudienceSnapshotPolicyResponseDto;
+  version: AudienceCatalogResponseDtoVersion;
 }

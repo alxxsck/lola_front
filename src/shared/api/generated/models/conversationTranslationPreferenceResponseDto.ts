@@ -8,11 +8,11 @@
 
 export interface ConversationTranslationPreferenceResponseDto {
   enabled: boolean;
-  workingLocale: string;
   /** @nullable */
   endUserLocaleOverride: string | null;
   /** @nullable */
-  version: number | null;
-  /** @nullable */
   updatedAt: string | null;
+  /** @nullable */
+  version: number | null;
+  workingLocale: string;
 }

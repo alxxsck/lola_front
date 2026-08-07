@@ -7,11 +7,11 @@
  */
 
 export interface AssignableProjectRoleDto {
+  description: string;
   id: string;
   key: string;
-  name: string;
   managed: boolean;
-  version: number;
-  description: string;
+  name: string;
   permissionCodes: string[];
+  version: number;
 }

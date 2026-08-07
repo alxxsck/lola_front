@@ -9,13 +9,13 @@ import type { AIReviewEstimateResponseDtoCostLevel } from "./aIReviewEstimateRes
 import type { RangeDto } from "./rangeDto";
 
 export interface AIReviewEstimateResponseDto {
-  eventCount: number;
-  redactedBytes: number;
-  estimatedInputTokens: number;
-  costLevel: AIReviewEstimateResponseDtoCostLevel;
-  requiresConfirmation: boolean;
   blocked: boolean;
   blockedReason?: string;
-  timezone: string;
+  costLevel: AIReviewEstimateResponseDtoCostLevel;
+  estimatedInputTokens: number;
+  eventCount: number;
   range: RangeDto;
+  redactedBytes: number;
+  requiresConfirmation: boolean;
+  timezone: string;
 }

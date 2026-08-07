@@ -7,11 +7,11 @@
  */
 
 export interface CorrectConversationMessageContentDto {
+  /** @pattern ^[A-Z][A-Z0-9_]{2,99}$ */
+  reasonCode: string;
   /**
    * @minLength 1
    * @maxLength 16000
    */
   text: string;
-  /** @pattern ^[A-Z][A-Z0-9_]{2,99}$ */
-  reasonCode: string;
 }

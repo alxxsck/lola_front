@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { IntegrationIngressActivityItemDtoDeliveryIdConflict } from "./integrationIngressActivityItemDtoDeliveryIdConflict";
 import type { IntegrationIngressActivityItemDtoProvider } from "./integrationIngressActivityItemDtoProvider";
 import type { IntegrationIngressActivityItemDtoProviderCallType } from "./integrationIngressActivityItemDtoProviderCallType";
-import type { IntegrationIngressActivityItemDtoDeliveryIdConflict } from "./integrationIngressActivityItemDtoDeliveryIdConflict";
 
 export interface IntegrationIngressActivityItemDto {
-  id: string;
+  /** @nullable */
+  acceptedEventId: string | null;
+  /** @minimum 0 */
+  attemptCount: number;
   connectionId: string;
+  /** @nullable */
+  deliveryIdConflict: IntegrationIngressActivityItemDtoDeliveryIdConflict;
+  /** @minimum 0 */
+  duplicateCount: number;
+  /** @nullable */
+  failureCode: string | null;
+  id: string;
+  /** @nullable */
+  identityPolicyRevision: number | null;
+  /** @nullable */
+  nextAttemptAt: string | null;
+  occurredAt: string;
+  /** @nullable */
+  processedAt: string | null;
   provider: IntegrationIngressActivityItemDtoProvider;
   providerCallType: IntegrationIngressActivityItemDtoProviderCallType;
   providerEventName: string;
-  status: string;
+  receivedAt: string;
   /** @nullable */
   routeId: string | null;
   /** @nullable */
   routeRevisionId: string | null;
-  /** @nullable */
-  identityPolicyRevision: number | null;
-  /** @nullable */
-  acceptedEventId: string | null;
+  status: string;
   /** @nullable */
   suppressedDispatchId: string | null;
-  /** @nullable */
-  failureCode: string | null;
-  /** @minimum 0 */
-  attemptCount: number;
-  /** @minimum 0 */
-  duplicateCount: number;
-  occurredAt: string;
-  receivedAt: string;
-  /** @nullable */
-  processedAt: string | null;
-  /** @nullable */
-  nextAttemptAt: string | null;
-  /** @nullable */
-  deliveryIdConflict: IntegrationIngressActivityItemDtoDeliveryIdConflict;
 }

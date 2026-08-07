@@ -7,8 +7,8 @@
  */
 
 export interface AiOperationSummaryBreakdownLimitsDto {
-  maxHighCardinalityItems: number;
-  responsibleCmsUsersTruncated: boolean;
   chargedEndUsersTruncated: boolean;
+  maxHighCardinalityItems: number;
   modelsTruncated: boolean;
+  responsibleCmsUsersTruncated: boolean;
 }

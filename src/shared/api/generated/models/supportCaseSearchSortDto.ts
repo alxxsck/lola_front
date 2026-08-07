@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseSearchSortDtoField } from "./supportCaseSearchSortDtoField";
 import type { SupportCaseSearchSortDtoDirection } from "./supportCaseSearchSortDtoDirection";
+import type { SupportCaseSearchSortDtoField } from "./supportCaseSearchSortDtoField";
 
 export interface SupportCaseSearchSortDto {
-  field: SupportCaseSearchSortDtoField;
   direction: SupportCaseSearchSortDtoDirection;
+  field: SupportCaseSearchSortDtoField;
 }

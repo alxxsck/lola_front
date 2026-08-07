@@ -8,6 +8,6 @@
 import type { AiPricingRevisionActorDtoType } from "./aiPricingRevisionActorDtoType";
 
 export interface AiPricingRevisionActorDto {
-  type: AiPricingRevisionActorDtoType;
   id: string;
+  type: AiPricingRevisionActorDtoType;
 }

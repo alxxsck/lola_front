@@ -8,11 +8,11 @@
 import type { CreateConversationContentLegalHoldDtoScope } from "./createConversationContentLegalHoldDtoScope";
 
 export interface CreateConversationContentLegalHoldDto {
-  scope: CreateConversationContentLegalHoldDtoScope;
-  targetId: string;
   /**
    * @minLength 3
    * @maxLength 500
    */
   reason: string;
+  scope: CreateConversationContentLegalHoldDtoScope;
+  targetId: string;
 }

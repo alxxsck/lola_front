@@ -5,45 +5,45 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { MessageRole } from "./messageRole";
-import type { MessageStatus } from "./messageStatus";
+import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
+import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
 import type { AdminStoredMessageResponseDtoContent } from "./adminStoredMessageResponseDtoContent";
 import type { AdminStoredMessageResponseDtoMetadata } from "./adminStoredMessageResponseDtoMetadata";
-import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
-import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
+import type { MessageRole } from "./messageRole";
+import type { MessageStatus } from "./messageStatus";
 import type { AdminMessageThreadResponseDto } from "./adminMessageThreadResponseDto";
 
 export interface AdminStoredMessageResponseDto {
-  id: string;
-  threadId: string;
-  role: MessageRole;
-  status: MessageStatus;
-  text: string;
+  attachments: ChatAttachmentMessageSnapshotResponseDto[];
   /** @nullable */
-  content?: AdminStoredMessageResponseDtoContent;
-  commands: unknown[];
-  metadata: AdminStoredMessageResponseDtoMetadata;
-  /** @nullable */
-  provider?: string | null;
-  /** @nullable */
-  model?: string | null;
-  /** @nullable */
-  inputTokens?: number | null;
-  /** @nullable */
-  outputTokens?: number | null;
+  author: AdminStoredMessageResponseDtoAuthor;
   /** @nullable */
   clientMessageId?: string | null;
+  commands: unknown[];
+  /** @nullable */
+  content?: AdminStoredMessageResponseDtoContent;
+  createdAt: string;
+  id: string;
   /**
    * Internal idempotency fingerprint returned by the current service.
    * @nullable
    */
   idempotencyKey?: string | null;
+  /** @nullable */
+  inputTokens?: number | null;
+  metadata: AdminStoredMessageResponseDtoMetadata;
+  /** @nullable */
+  model?: string | null;
   /** @minimum 1 */
   ordinal: number;
   /** @nullable */
-  author: AdminStoredMessageResponseDtoAuthor;
-  attachments: ChatAttachmentMessageSnapshotResponseDto[];
-  createdAt: string;
-  updatedAt: string;
+  outputTokens?: number | null;
+  /** @nullable */
+  provider?: string | null;
+  role: MessageRole;
+  status: MessageStatus;
+  text: string;
   thread: AdminMessageThreadResponseDto;
+  threadId: string;
+  updatedAt: string;
 }

@@ -8,14 +8,14 @@
 import type { TelegramBroadcastPreviewExclusionsDto } from "./telegramBroadcastPreviewExclusionsDto";
 
 export interface TelegramBroadcastPreviewResponseDto {
-  /** @minimum 1 */
-  version: number;
-  revisionId: string;
   contentHash: string;
-  renderedText: string;
   /** @minimum 0 */
   eligibleRecipientCount: number;
+  exclusions: TelegramBroadcastPreviewExclusionsDto;
+  renderedText: string;
+  revisionId: string;
   /** @minimum 0 */
   totalEvaluated: number;
-  exclusions: TelegramBroadcastPreviewExclusionsDto;
+  /** @minimum 1 */
+  version: number;
 }

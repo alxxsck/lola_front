@@ -5,6 +5,13 @@ import type {
   SupportInboxMode,
 } from "@/features/support-workspace/api/support-workspace-source";
 import type { SupportInboxFailure } from "@/features/support-inbox/model/use-support-inbox";
+import type {
+  SupportSearchFreshness,
+  SupportSearchResult,
+} from "@/features/support-search/api/support-search-source";
+import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
+import type { SupportSearchFailure } from "@/features/support-search/model/use-support-search";
+import SupportSearchToolbar from "@/features/support-search/ui/SupportSearchToolbar.vue";
 import { relativeTime } from "@/shared/lib/format";
 
 defineProps<{
@@ -17,6 +24,15 @@ defineProps<{
   hasMore: boolean;
   canReadCases: boolean;
   canReadConversations: boolean;
+  canSearch: boolean;
+  searchState: SupportSearchRouteState;
+  searchActive: boolean;
+  searchItems: readonly SupportSearchResult[];
+  searchLoading: boolean;
+  searchError: string;
+  searchFailure: SupportSearchFailure;
+  searchFreshness: SupportSearchFreshness | null;
+  searchHasMore: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -24,7 +40,29 @@ const emit = defineEmits<{
   changeMode: [mode: SupportInboxMode];
   loadMore: [];
   retry: [];
+  changeSearch: [state: SupportSearchRouteState];
+  submitSearch: [state: SupportSearchRouteState];
+  closeSearch: [];
+  selectSearch: [item: SupportSearchResult];
+  loadMoreSearch: [];
 }>();
+
+function searchKind(value: SupportSearchResult["kind"]): string {
+  return {
+    CASE: "Обращение",
+    CONVERSATION: "Диалог",
+    MESSAGE: "Сообщение",
+    END_USER: "Пользователь",
+  }[value];
+}
+
+function matchReason(value?: SupportSearchResult["matchProvenance"]): string {
+  return value === "TRANSLATION"
+    ? "Совпадение в переводе"
+    : value === "ORIGINAL"
+      ? "Совпадение в оригинале"
+      : "Точное совпадение";
+}
 
 function itemKey(item: SupportInboxItem): string {
   return `${item.kind}:${item.id}`;
@@ -111,8 +149,71 @@ function inboxTime(value: string): string {
       </button>
     </div>
 
+    <SupportSearchToolbar
+      v-if="canSearch"
+      :model-value="searchState"
+      :active="searchActive"
+      :loading="searchLoading"
+      @update:model-value="emit('changeSearch', $event)"
+      @submit="emit('submitSearch', $event)"
+      @close="emit('closeSearch')"
+    />
+
+    <div v-if="searchActive" class="search-results" aria-live="polite">
+      <div
+        v-if="searchFreshness && searchFreshness.state !== 'READY'"
+        :class="['freshness-notice', searchFreshness.state.toLowerCase()]"
+        role="status"
+      >
+        <i class="pi pi-clock" aria-hidden="true" />
+        <span>
+          {{
+            searchFreshness.state === "BUILDING"
+              ? "Индекс обновляется"
+              : `Индекс отстаёт на ${searchFreshness.lagSeconds} сек.`
+          }}
+        </span>
+      </div>
+
+      <div v-if="searchLoading && !searchItems.length" class="inbox-skeletons" aria-busy="true">
+        <div v-for="index in 5" :key="index" class="inbox-skeleton-row"><Skeleton shape="circle" size="32px" /><div><Skeleton width="72%" height="14px" /><Skeleton width="52%" height="12px" /></div></div>
+      </div>
+      <div v-else-if="searchFailure === 'FORBIDDEN'" class="inbox-state" role="alert">
+        <i class="pi pi-lock" aria-hidden="true" /><strong>Поиск больше недоступен</strong><p>Права обновлены; скрытые результаты удалены.</p>
+      </div>
+      <div v-else-if="searchFailure === 'VALIDATION'" class="inbox-state" role="alert">
+        <i class="pi pi-info-circle" aria-hidden="true" /><strong>Не удалось применить запрос</strong><p>{{ searchError }}</p>
+      </div>
+      <div v-else-if="searchError && !searchItems.length" class="inbox-state" role="alert">
+        <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong>Поиск временно недоступен</strong><p>{{ searchError }}</p>
+      </div>
+      <div v-else-if="!searchItems.length && searchFreshness" class="inbox-state">
+        <i class="pi pi-search" aria-hidden="true" /><strong>Ничего не найдено</strong><p>Измените запрос или снимите часть фильтров.</p>
+      </div>
+      <div v-else-if="!searchItems.length" class="inbox-state">
+        <i class="pi pi-search" aria-hidden="true" /><strong>Введите запрос</strong><p>Минимум два символа или выберите фильтр обращений.</p>
+      </div>
+      <div v-else class="search-result-list">
+        <button
+          v-for="item in searchItems"
+          :key="`${item.kind}:${item.id}`"
+          type="button"
+          class="search-result-row"
+          @click="emit('selectSearch', item)"
+        >
+          <span class="search-result-icon"><i :class="item.kind === 'CASE' ? 'pi pi-briefcase' : item.kind === 'CONVERSATION' ? 'pi pi-comments' : item.kind === 'MESSAGE' ? 'pi pi-comment' : 'pi pi-user'" aria-hidden="true" /></span>
+          <span class="search-result-copy">
+            <span class="search-result-meta"><strong>{{ searchKind(item.kind) }}</strong><span>{{ matchReason(item.matchProvenance) }}<template v-if="item.locale"> · {{ item.locale.toUpperCase() }}</template></span><time :datetime="item.activityAt">{{ inboxTime(item.activityAt) }}</time></span>
+            <span class="search-result-snippet">{{ item.snippet }}</span>
+          </span>
+        </button>
+        <div v-if="searchError" class="pagination-error" role="alert"><span>{{ searchError }}</span><button type="button" @click="emit('submitSearch', searchState)">Повторить</button></div>
+        <button v-if="searchHasMore" type="button" class="load-more" :disabled="searchLoading" @click="emit('loadMoreSearch')"><i class="pi pi-chevron-down" aria-hidden="true" /> {{ searchLoading ? "Загружаем…" : "Показать ещё" }}</button>
+      </div>
+    </div>
+
     <div
-      v-if="loading && !items.length"
+      v-else-if="loading && !items.length"
       class="inbox-skeletons"
       aria-busy="true"
     >
@@ -242,11 +343,13 @@ function inboxTime(value: string): string {
 
 <style scoped>
 .support-inbox-pane {
+  position: relative;
   min-height: 0;
   padding: 12px 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 3;
   background: var(--surface-card);
   border-right: 1px solid var(--line);
 }
@@ -312,6 +415,37 @@ function inboxTime(value: string): string {
   overflow: auto;
   overscroll-behavior: contain;
 }
+.search-results {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.freshness-notice {
+  margin: 0 12px 8px;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: .72rem;
+}
+.freshness-notice.degraded { border-color: color-mix(in srgb, var(--status-warning-text) 30%, var(--line)); background: var(--status-warning-soft); color: var(--status-warning-text); }
+.search-result-list { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+.search-result-row { width: 100%; min-height: 72px; padding: 11px 14px; display: flex; align-items: flex-start; gap: 10px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.search-result-row:hover { background: var(--surface-muted); }
+.search-result-row:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+.search-result-icon { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
+.search-result-copy { min-width: 0; flex: 1; display: grid; gap: 6px; }
+.search-result-meta { min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .68rem; }
+.search-result-meta strong { color: var(--text-primary); font-size: .72rem; }
+.search-result-meta span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-result-meta time { flex: 0 0 auto; }
+.search-result-snippet { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--text-secondary); font-size: .78rem; line-height: 1.4; }
 .inbox-row {
   position: relative;
   width: 100%;

@@ -8,13 +8,13 @@
 import type { SupportSlaPolicyDto } from "./supportSlaPolicyDto";
 
 export interface SupportSlaPolicyRevisionResponseDto {
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
   id: string;
+  policy?: SupportSlaPolicyDto;
+  publishedAt: string;
   /** @minimum 1 */
   revisionNumber: number;
   /** @minimum 1 */
   sourceDraftGeneration: number;
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
-  publishedAt: string;
-  policy?: SupportSlaPolicyDto;
 }

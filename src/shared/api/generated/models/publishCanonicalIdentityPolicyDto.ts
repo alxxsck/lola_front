@@ -13,13 +13,13 @@ export interface PublishCanonicalIdentityPolicyDto {
    * @maxLength 64
    */
   canonicalKeyName: string;
+  /** @minimum 0 */
+  expectedVersion: number;
   /**
    * @minItems 2
    * @maxItems 8
    */
   participants: CanonicalIdentityPolicyParticipantDto[];
-  /** @minimum 0 */
-  expectedVersion: number;
   /**
    * @minLength 1
    * @maxLength 500

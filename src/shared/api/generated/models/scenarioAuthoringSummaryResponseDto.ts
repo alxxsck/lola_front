@@ -5,37 +5,37 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringSummaryResponseDtoStatus } from "./scenarioAuthoringSummaryResponseDtoStatus";
 import type { ScenarioAuthoringSummaryResponseDtoConversationPolicy } from "./scenarioAuthoringSummaryResponseDtoConversationPolicy";
 import type { ScenarioAuthoringSummaryResponseDtoImportanceClass } from "./scenarioAuthoringSummaryResponseDtoImportanceClass";
+import type { ScenarioAuthoringSummaryResponseDtoStatus } from "./scenarioAuthoringSummaryResponseDtoStatus";
 
 export interface ScenarioAuthoringSummaryResponseDto {
-  id: string;
-  projectId: string;
-  eventDefinitionId: string;
-  eventDefinitionKeyId: string;
+  /** @nullable */
+  activeFrom?: string | null;
+  /** @nullable */
+  activeTo?: string | null;
   code: string;
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  status: ScenarioAuthoringSummaryResponseDtoStatus;
   conversationPolicy: ScenarioAuthoringSummaryResponseDtoConversationPolicy;
-  priority: number;
-  importanceClass: ScenarioAuthoringSummaryResponseDtoImportanceClass;
-  respectsQuietHours: boolean;
-  /** @nullable */
-  currentRevisionId?: string | null;
   /** @minimum 0 */
   cooldownSeconds: number;
+  createdAt: string;
+  /** @nullable */
+  currentRevisionId?: string | null;
+  /** @nullable */
+  description?: string | null;
+  eventDefinitionId: string;
+  eventDefinitionKeyId: string;
+  id: string;
+  importanceClass: ScenarioAuthoringSummaryResponseDtoImportanceClass;
   /**
    * @minimum 1
    * @nullable
    */
   maxRunsPerUser?: number | null;
-  /** @nullable */
-  activeFrom?: string | null;
-  /** @nullable */
-  activeTo?: string | null;
-  createdAt: string;
+  name: string;
+  priority: number;
+  projectId: string;
+  respectsQuietHours: boolean;
+  status: ScenarioAuthoringSummaryResponseDtoStatus;
   updatedAt: string;
 }

@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalWorkCommandSubmitBodyOneOfSixIntent } from "./supportExternalWorkCommandSubmitBodyOneOfSixIntent";
 import type { SupportExternalWorkCommandSubmitBodyOneOfSixAudience } from "./supportExternalWorkCommandSubmitBodyOneOfSixAudience";
+import type { SupportExternalWorkCommandSubmitBodyOneOfSixIntent } from "./supportExternalWorkCommandSubmitBodyOneOfSixIntent";
 
 export type SupportExternalWorkCommandSubmitBodyOneOfSix = {
+  audience?: SupportExternalWorkCommandSubmitBodyOneOfSixAudience;
+  body: string;
   intent: SupportExternalWorkCommandSubmitBodyOneOfSixIntent;
   linkId: string;
-  body: string;
-  audience?: SupportExternalWorkCommandSubmitBodyOneOfSixAudience;
 };

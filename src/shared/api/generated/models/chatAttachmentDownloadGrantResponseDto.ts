@@ -7,6 +7,6 @@
  */
 
 export interface ChatAttachmentDownloadGrantResponseDto {
-  url: string;
   expiresAt: string;
+  url: string;
 }

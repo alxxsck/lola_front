@@ -14,10 +14,10 @@ export interface IntegrationConnectionCredentialResponseDto {
   fingerprint: string;
   /** @minimum 1 */
   revision: number;
+  rotatedAt: string;
   /**
    * @minimum 1
    * @nullable
    */
   testedRevision: number | null;
-  rotatedAt: string;
 }

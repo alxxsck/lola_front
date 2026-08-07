@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConversationMessageTranslationItemResponseDtoState } from "./conversationMessageTranslationItemResponseDtoState";
 import type { ConversationMessageTranslationItemResponseDtoSkipReason } from "./conversationMessageTranslationItemResponseDtoSkipReason";
+import type { ConversationMessageTranslationItemResponseDtoState } from "./conversationMessageTranslationItemResponseDtoState";
 
 export interface ConversationMessageTranslationItemResponseDto {
+  createdAt?: string;
+  /** @nullable */
+  errorCode?: string | null;
   messageId: string;
-  state: ConversationMessageTranslationItemResponseDtoState;
+  model?: string;
+  modelConfigRevision?: string;
+  provider?: string;
   skipReason?: ConversationMessageTranslationItemResponseDtoSkipReason;
-  translationId?: string;
   /** @nullable */
   sourceLocale?: string | null;
+  state: ConversationMessageTranslationItemResponseDtoState;
   targetLocale?: string;
   /** @nullable */
   translatedText?: string | null;
-  warnings?: string[];
-  /** @nullable */
-  errorCode?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  provider?: string;
-  model?: string;
-  modelConfigRevision?: string;
   translationConfigRevision?: string;
+  translationId?: string;
+  updatedAt?: string;
+  warnings?: string[];
 }

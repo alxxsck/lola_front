@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalConnectionResponseDtoProvider } from "./supportExternalConnectionResponseDtoProvider";
-import type { SupportExternalConnectionResponseDtoLifecycle } from "./supportExternalConnectionResponseDtoLifecycle";
-import type { SupportExternalConnectionResponseDtoCapabilities } from "./supportExternalConnectionResponseDtoCapabilities";
 import type { SupportExternalConnectionResponseDtoAccessTokenExpiresAt } from "./supportExternalConnectionResponseDtoAccessTokenExpiresAt";
+import type { SupportExternalConnectionResponseDtoCapabilities } from "./supportExternalConnectionResponseDtoCapabilities";
+import type { SupportExternalConnectionResponseDtoLifecycle } from "./supportExternalConnectionResponseDtoLifecycle";
+import type { SupportExternalConnectionResponseDtoProvider } from "./supportExternalConnectionResponseDtoProvider";
 
 export interface SupportExternalConnectionResponseDto {
-  id: string;
-  provider: SupportExternalConnectionResponseDtoProvider;
-  displayName: string;
-  lifecycle: SupportExternalConnectionResponseDtoLifecycle;
-  tenantIdentity: string;
-  capabilities: SupportExternalConnectionResponseDtoCapabilities;
-  credentialVersion: number;
-  version: number;
   /** @nullable */
   accessTokenExpiresAt: SupportExternalConnectionResponseDtoAccessTokenExpiresAt;
+  capabilities: SupportExternalConnectionResponseDtoCapabilities;
   credentialConfigured: boolean;
+  credentialVersion: number;
+  displayName: string;
+  id: string;
+  lifecycle: SupportExternalConnectionResponseDtoLifecycle;
+  provider: SupportExternalConnectionResponseDtoProvider;
+  tenantIdentity: string;
+  version: number;
 }

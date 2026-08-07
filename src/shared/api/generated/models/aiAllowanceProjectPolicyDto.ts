@@ -6,22 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiAllowanceProjectPolicyDtoEnforcementMode } from "./aiAllowanceProjectPolicyDtoEnforcementMode";
-import type { AiAllowanceProjectPolicyDtoWarningContent } from "./aiAllowanceProjectPolicyDtoWarningContent";
-import type { AiAllowanceProjectPolicyDtoLowThresholdMode } from "./aiAllowanceProjectPolicyDtoLowThresholdMode";
 import type { AiAllowanceProjectPolicyDtoExhaustedContent } from "./aiAllowanceProjectPolicyDtoExhaustedContent";
+import type { AiAllowanceProjectPolicyDtoLowThresholdMode } from "./aiAllowanceProjectPolicyDtoLowThresholdMode";
+import type { AiAllowanceProjectPolicyDtoWarningContent } from "./aiAllowanceProjectPolicyDtoWarningContent";
 
 export interface AiAllowanceProjectPolicyDto {
-  projectId: string;
+  createdAt: string;
   enforcementMode: AiAllowanceProjectPolicyDtoEnforcementMode;
-  timezone: string;
-  warningContent: AiAllowanceProjectPolicyDtoWarningContent;
+  exhaustedContent: AiAllowanceProjectPolicyDtoExhaustedContent;
   lowThresholdMode: AiAllowanceProjectPolicyDtoLowThresholdMode;
   /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
   lowThresholdValue: string;
-  exhaustedContent: AiAllowanceProjectPolicyDtoExhaustedContent;
+  projectId: string;
   showEndUserExactUsd: boolean;
+  timezone: string;
+  updatedAt: string;
   /** @pattern ^(?:0|[1-9]\d{0,19})$ */
   version: string;
-  createdAt: string;
-  updatedAt: string;
+  warningContent: AiAllowanceProjectPolicyDtoWarningContent;
 }

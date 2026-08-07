@@ -6,22 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CreateProjectAIAnalysisDtoExecutionMode } from "./createProjectAIAnalysisDtoExecutionMode";
-import type { CreateProjectAIAnalysisDtoScopeKind } from "./createProjectAIAnalysisDtoScopeKind";
 import type { ProjectAIAnalysisScheduleDto } from "./projectAIAnalysisScheduleDto";
+import type { CreateProjectAIAnalysisDtoScopeKind } from "./createProjectAIAnalysisDtoScopeKind";
 
 export interface CreateProjectAIAnalysisDto {
-  executionMode?: CreateProjectAIAnalysisDtoExecutionMode;
-  /**
-   * @minLength 1
-   * @maxLength 10000
-   */
-  question: string;
-  scopeKind: CreateProjectAIAnalysisDtoScopeKind;
   endUserId?: string;
-  schedule?: ProjectAIAnalysisScheduleDto;
+  executionMode?: CreateProjectAIAnalysisDtoExecutionMode;
   /**
    * @minLength 40
    * @maxLength 4096
    */
   highCostConfirmationToken?: string;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  question: string;
+  schedule?: ProjectAIAnalysisScheduleDto;
+  scopeKind: CreateProjectAIAnalysisDtoScopeKind;
 }

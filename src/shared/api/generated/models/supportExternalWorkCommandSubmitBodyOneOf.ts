@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalWorkCommandSubmitBodyOneOfIntent } from "./supportExternalWorkCommandSubmitBodyOneOfIntent";
 import type { SupportExternalWorkCommandSubmitBodyOneOfAudience } from "./supportExternalWorkCommandSubmitBodyOneOfAudience";
-import type { SupportExternalWorkCommandSubmitBodyOneOfRequester } from "./supportExternalWorkCommandSubmitBodyOneOfRequester";
 import type { SupportExternalWorkCommandSubmitBodyOneOfFieldValues } from "./supportExternalWorkCommandSubmitBodyOneOfFieldValues";
+import type { SupportExternalWorkCommandSubmitBodyOneOfIntent } from "./supportExternalWorkCommandSubmitBodyOneOfIntent";
+import type { SupportExternalWorkCommandSubmitBodyOneOfRequester } from "./supportExternalWorkCommandSubmitBodyOneOfRequester";
 
 export type SupportExternalWorkCommandSubmitBodyOneOf = {
-  intent: SupportExternalWorkCommandSubmitBodyOneOfIntent;
-  optionId: string;
-  mappingRevisionId: string;
+  audience?: SupportExternalWorkCommandSubmitBodyOneOfAudience;
+  body: string;
+  fieldValues?: SupportExternalWorkCommandSubmitBodyOneOfFieldValues;
   /** @maxLength 128 */
   formRevision: string;
-  title: string;
-  body: string;
-  audience?: SupportExternalWorkCommandSubmitBodyOneOfAudience;
+  intent: SupportExternalWorkCommandSubmitBodyOneOfIntent;
+  mappingRevisionId: string;
+  optionId: string;
   requester?: SupportExternalWorkCommandSubmitBodyOneOfRequester;
-  fieldValues?: SupportExternalWorkCommandSubmitBodyOneOfFieldValues;
+  title: string;
 };

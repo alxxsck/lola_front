@@ -8,25 +8,25 @@
 import type { ProjectAIAnalysisEstimateResponseDtoExecutionPath } from "./projectAIAnalysisEstimateResponseDtoExecutionPath";
 
 export interface ProjectAIAnalysisEstimateResponseDto {
+  /** @nullable */
+  cmsUserOverrideRevision?: number | null;
+  /** @nullable */
+  confirmationExpiresAt?: string | null;
+  confirmationRequired: boolean;
+  /** @nullable */
+  confirmationToken?: string | null;
   executionPath: ProjectAIAnalysisEstimateResponseDtoExecutionPath;
-  provider: string;
-  model: string;
-  pricingVersion: string;
-  /** @pattern ^\d+$ */
-  reservedCostUsdTicks: string;
   /** @pattern ^\d+$ */
   maxInputTokens: string;
   /** @pattern ^\d+$ */
   maxOutputTokens: string;
   /** @minimum 1 */
   maxProviderCalls: number;
+  model: string;
+  pricingVersion: string;
   /** @minimum 1 */
   projectPolicyRevision: number;
-  /** @nullable */
-  cmsUserOverrideRevision?: number | null;
-  confirmationRequired: boolean;
-  /** @nullable */
-  confirmationToken?: string | null;
-  /** @nullable */
-  confirmationExpiresAt?: string | null;
+  provider: string;
+  /** @pattern ^\d+$ */
+  reservedCostUsdTicks: string;
 }

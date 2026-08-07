@@ -9,9 +9,9 @@ import type { SupportKnowledgeCommandReceiptResponseDtoState } from "./supportKn
 
 export interface SupportKnowledgeCommandReceiptResponseDto {
   documentId: string;
+  replayed: boolean;
   revisionId: string;
   /** @minimum 1 */
   revisionNumber?: number;
   state: SupportKnowledgeCommandReceiptResponseDtoState;
-  replayed: boolean;
 }

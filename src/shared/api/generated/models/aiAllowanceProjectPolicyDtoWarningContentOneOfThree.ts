@@ -9,12 +9,12 @@ import type { AiAllowanceProjectPolicyDtoWarningContentOneOfThreeMode } from "./
 import type { AiAllowanceProjectPolicyDtoWarningContentOneOfThreeTranslations } from "./aiAllowanceProjectPolicyDtoWarningContentOneOfThreeTranslations";
 
 export type AiAllowanceProjectPolicyDtoWarningContentOneOfThree = {
-  mode: AiAllowanceProjectPolicyDtoWarningContentOneOfThreeMode;
   /**
    * @minLength 1
    * @maxLength 64
    */
   defaultLocale: string;
+  mode: AiAllowanceProjectPolicyDtoWarningContentOneOfThreeMode;
   /** Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed. */
   translations: AiAllowanceProjectPolicyDtoWarningContentOneOfThreeTranslations;
 };

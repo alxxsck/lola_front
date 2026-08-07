@@ -12,8 +12,16 @@ export type SavedSupportViewMessageDraftDtoColumnsItem =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SavedSupportViewMessageDraftDtoColumnsItem = {
   STATUS: "STATUS",
+  WAITING_SIDE: "WAITING_SIDE",
   PRIORITY: "PRIORITY",
   ASSIGNEE: "ASSIGNEE",
+  TEAM: "TEAM",
+  SLA: "SLA",
+  QUEUE: "QUEUE",
   ACTIVITY_AT: "ACTIVITY_AT",
   LANGUAGE: "LANGUAGE",
+  CHANNEL: "CHANNEL",
+  UNREAD: "UNREAD",
+  DRAFT: "DRAFT",
+  DELIVERY: "DELIVERY",
 } as const;

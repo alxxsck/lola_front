@@ -8,13 +8,13 @@
 
 export interface UpdateSupportContentRetentionDraftDto {
   /**
-   * @minimum 90
-   * @maximum 3650
-   */
-  minimumAgeDays: number;
-  /**
    * @minimum 30
    * @maximum 3650
    */
   afterCaseTerminalDays: number;
+  /**
+   * @minimum 90
+   * @maximum 3650
+   */
+  minimumAgeDays: number;
 }

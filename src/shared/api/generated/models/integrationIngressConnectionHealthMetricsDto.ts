@@ -8,13 +8,13 @@
 
 export interface IntegrationIngressConnectionHealthMetricsDto {
   /** @minimum 0 */
-  total: number;
-  /** @minimum 0 */
   active: number;
+  /** @minimum 0 */
+  compromisedCredentials: number;
   /** @minimum 0 */
   ingressEnabled: number;
   /** @minimum 0 */
-  compromisedCredentials: number;
+  total: number;
   /** @minimum 0 */
   unavailableCredentials: number;
 }

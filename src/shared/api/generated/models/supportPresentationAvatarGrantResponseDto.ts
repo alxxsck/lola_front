@@ -7,6 +7,6 @@
  */
 
 export interface SupportPresentationAvatarGrantResponseDto {
-  url: string;
   expiresAt: string;
+  url: string;
 }

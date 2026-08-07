@@ -7,7 +7,7 @@
  */
 
 export interface SupportCaseAssignmentCandidateActionsResponseDto {
-  claim: boolean;
   assign: boolean;
+  claim: boolean;
   transfer: boolean;
 }

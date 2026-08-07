@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiOperationUsageDtoTotals } from "./aiOperationUsageDtoTotals";
 import type { AiOperationUsageAttemptDto } from "./aiOperationUsageAttemptDto";
 import type { AiOperationPageInfoDto } from "./aiOperationPageInfoDto";
+import type { AiOperationUsageDtoTotals } from "./aiOperationUsageDtoTotals";
 
 export interface AiOperationUsageDto {
+  attempts: AiOperationUsageAttemptDto[];
+  pageInfo: AiOperationPageInfoDto;
   /**
    * Monetary cost projection. Null without project.ai_analysis_cost.read.
    * @nullable
    */
   totals?: AiOperationUsageDtoTotals;
-  attempts: AiOperationUsageAttemptDto[];
-  pageInfo: AiOperationPageInfoDto;
 }

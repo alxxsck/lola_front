@@ -9,11 +9,9 @@ import type { EventQueryPolicyItemDtoAllowedModesItem } from "./eventQueryPolicy
 import type { EventQueryPolicyFieldDto } from "./eventQueryPolicyFieldDto";
 
 export interface EventQueryPolicyItemDto {
+  allowedModes: EventQueryPolicyItemDtoAllowedModesItem[];
   /** @maxLength 500 */
   descriptionForAI: string;
-  allowedModes: EventQueryPolicyItemDtoAllowedModesItem[];
-  /** @maxItems 50 */
-  safeFields: EventQueryPolicyFieldDto[];
   /**
    * @minimum 1
    * @maximum 744
@@ -24,5 +22,7 @@ export interface EventQueryPolicyItemDto {
    * @maximum 2160
    */
   maxVerificationLookbackHours: number;
+  /** @maxItems 50 */
+  safeFields: EventQueryPolicyFieldDto[];
   stableCode: string;
 }

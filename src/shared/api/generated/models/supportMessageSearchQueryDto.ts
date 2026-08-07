@@ -5,24 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
-import type { SupportContentSearchSortDto } from "./supportContentSearchSortDto";
 import type { SupportMessageSearchQueryDtoRolesItem } from "./supportMessageSearchQueryDtoRolesItem";
+import type { SupportContentSearchSortDto } from "./supportContentSearchSortDto";
+import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
 
 export interface SupportMessageSearchQueryDto {
-  /**
-   * @minLength 2
-   * @maxLength 256
-   */
-  phrase?: string;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
+  /** @maxItems 50 */
+  caseIds?: string[];
+  /** @maxItems 50 */
+  conversationIds?: string[];
   /** @maxLength 2048 */
   cursor?: string;
-  timeRange?: SupportSearchTimeRangeDto;
   /** @maxItems 50 */
   endUserIds?: string[];
   /**
@@ -30,15 +23,22 @@ export interface SupportMessageSearchQueryDto {
    * @maxItems 50
    */
   externalEndUserIds?: string[];
-  sort?: SupportContentSearchSortDto;
-  /** @maxItems 50 */
-  caseIds?: string[];
-  /** @maxItems 50 */
-  conversationIds?: string[];
-  /** @maxItems 50 */
-  messageIds?: string[];
-  /** @maxItems 5 */
-  roles?: SupportMessageSearchQueryDtoRolesItem[];
   /** @maxItems 16 */
   languages?: string[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /** @maxItems 50 */
+  messageIds?: string[];
+  /**
+   * @minLength 2
+   * @maxLength 256
+   */
+  phrase?: string;
+  /** @maxItems 5 */
+  roles?: SupportMessageSearchQueryDtoRolesItem[];
+  sort?: SupportContentSearchSortDto;
+  timeRange?: SupportSearchTimeRangeDto;
 }

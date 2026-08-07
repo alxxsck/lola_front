@@ -8,8 +8,8 @@
 import type { ReconcileAiSpendReservationDtoResolution } from "./reconcileAiSpendReservationDtoResolution";
 
 export interface ReconcileAiSpendReservationDto {
-  reservationId: string;
-  resolution: ReconcileAiSpendReservationDtoResolution;
   /** @maxLength 500 */
   reason: string;
+  reservationId: string;
+  resolution: ReconcileAiSpendReservationDtoResolution;
 }

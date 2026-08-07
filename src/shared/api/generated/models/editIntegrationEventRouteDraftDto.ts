@@ -5,15 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
 import type { IntegrationCanonicalKeyExtractorDto } from "./integrationCanonicalKeyExtractorDto";
+import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
 
 export interface EditIntegrationEventRouteDraftDto {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  name: string;
+  canonicalKeyExtractor?: IntegrationCanonicalKeyExtractorDto;
   /**
    * @minLength 1
    * @maxLength 500
@@ -21,16 +17,20 @@ export interface EditIntegrationEventRouteDraftDto {
   description?: string;
   eventDefinitionKeyId: string;
   eventDefinitionRevisionId: string;
+  /** @minimum 1 */
+  expectedVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /** @maxItems 32 */
+  propertyBindings: IntegrationEventPropertyBindingDto[];
   /**
    * @minLength 1
    * @maxLength 120
    */
   providerEventName: string;
-  /** @maxItems 32 */
-  propertyBindings: IntegrationEventPropertyBindingDto[];
-  canonicalKeyExtractor?: IntegrationCanonicalKeyExtractorDto;
-  /** @minimum 1 */
-  expectedVersion: number;
   /**
    * @minLength 1
    * @maxLength 500

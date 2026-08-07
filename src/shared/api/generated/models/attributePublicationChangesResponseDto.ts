@@ -9,11 +9,11 @@ import type { AttributePublicationChangesResponseDtoContractCompatibility } from
 
 export interface AttributePublicationChangesResponseDto {
   contractChanged: boolean;
+  contractCompatibility: AttributePublicationChangesResponseDtoContractCompatibility;
+  /** @nullable */
+  lifecycleChanged: boolean | null;
   /** @nullable */
   metadataChanged: boolean | null;
   /** @nullable */
   policyChanged: boolean | null;
-  /** @nullable */
-  lifecycleChanged: boolean | null;
-  contractCompatibility: AttributePublicationChangesResponseDtoContractCompatibility;
 }

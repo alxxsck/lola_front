@@ -8,8 +8,8 @@
 import type { ProjectAuditEventActorResponseDtoType } from "./projectAuditEventActorResponseDtoType";
 
 export interface ProjectAuditEventActorResponseDto {
-  type: ProjectAuditEventActorResponseDtoType;
-  id: string;
-  email?: string;
   displayName?: string;
+  email?: string;
+  id: string;
+  type: ProjectAuditEventActorResponseDtoType;
 }

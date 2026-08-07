@@ -8,20 +8,20 @@
 import type { ScenarioRuleCostClass } from "./scenarioRuleCostClass";
 
 export interface ScenarioRuleCostResponseDto {
-  class: ScenarioRuleCostClass;
-  /**
-   * @minimum 0
-   * @maximum 50
-   */
-  leaves: number;
   /**
    * @minimum 0
    * @maximum 10
    */
   aggregateLeaves: number;
+  class: ScenarioRuleCostClass;
   /**
    * @minimum 0
    * @maximum 365
    */
   historyWindowDays: number;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  leaves: number;
 }

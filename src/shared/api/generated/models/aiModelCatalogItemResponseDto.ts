@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiModelCatalogItemResponseDtoWorkload } from "./aiModelCatalogItemResponseDtoWorkload";
 import type { AiModelCatalogItemResponseDtoReasoningEffortsItem } from "./aiModelCatalogItemResponseDtoReasoningEffortsItem";
+import type { AiModelCatalogItemResponseDtoWorkload } from "./aiModelCatalogItemResponseDtoWorkload";
 
 export interface AiModelCatalogItemResponseDto {
-  id: string;
+  cachedInputPricePerMillion: string;
   displayName: string;
-  workload: AiModelCatalogItemResponseDtoWorkload;
+  id: string;
+  inputPricePerMillion: string;
+  outputPricePerMillion: string;
+  /** @nullable */
+  providerAvailable: boolean | null;
   reasoningEfforts: AiModelCatalogItemResponseDtoReasoningEffortsItem[];
   reasoningRequired: boolean;
   reteniveTested: boolean;
   selectable: boolean;
-  /** @nullable */
-  providerAvailable: boolean | null;
-  inputPricePerMillion: string;
-  cachedInputPricePerMillion: string;
-  outputPricePerMillion: string;
+  workload: AiModelCatalogItemResponseDtoWorkload;
 }

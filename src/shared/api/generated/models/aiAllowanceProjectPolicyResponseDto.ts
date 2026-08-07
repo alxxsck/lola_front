@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiAllowanceProjectPolicyResponseDtoDefaultAssignment } from "./aiAllowanceProjectPolicyResponseDtoDefaultAssignment";
 import type { AiAllowanceLocalizationCatalogDto } from "./aiAllowanceLocalizationCatalogDto";
-import type { AiAllowanceProjectPolicyResponseDtoPolicy } from "./aiAllowanceProjectPolicyResponseDtoPolicy";
 import type { AiAllowanceProjectPolicyResponseDtoPlansItem } from "./aiAllowanceProjectPolicyResponseDtoPlansItem";
 import type { AiAllowanceProjectPolicyResponseDtoPlansPageInfo } from "./aiAllowanceProjectPolicyResponseDtoPlansPageInfo";
-import type { AiAllowanceProjectPolicyResponseDtoDefaultAssignment } from "./aiAllowanceProjectPolicyResponseDtoDefaultAssignment";
+import type { AiAllowanceProjectPolicyResponseDtoPolicy } from "./aiAllowanceProjectPolicyResponseDtoPolicy";
 import type { AiAllowanceRuntimeGatesDto } from "./aiAllowanceRuntimeGatesDto";
 
 export interface AiAllowanceProjectPolicyResponseDto {
-  /** @pattern ^(?:0|[1-9]\d{0,19})$ */
-  projectPolicyVersion: string;
-  localization: AiAllowanceLocalizationCatalogDto;
   /** @nullable */
-  policy: AiAllowanceProjectPolicyResponseDtoPolicy;
+  defaultAssignment: AiAllowanceProjectPolicyResponseDtoDefaultAssignment;
+  localization: AiAllowanceLocalizationCatalogDto;
   plans: AiAllowanceProjectPolicyResponseDtoPlansItem[];
   plansPageInfo: AiAllowanceProjectPolicyResponseDtoPlansPageInfo;
   /** @nullable */
-  defaultAssignment: AiAllowanceProjectPolicyResponseDtoDefaultAssignment;
+  policy: AiAllowanceProjectPolicyResponseDtoPolicy;
+  /** @pattern ^(?:0|[1-9]\d{0,19})$ */
+  projectPolicyVersion: string;
   runtimeGates: AiAllowanceRuntimeGatesDto;
 }

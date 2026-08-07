@@ -5,10 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CompatibilitySessionDtoRecipient } from "./compatibilitySessionDtoRecipient";
 import type { CompatibilitySessionDtoAttributes } from "./compatibilitySessionDtoAttributes";
+import type { CompatibilitySessionDtoRecipient } from "./compatibilitySessionDtoRecipient";
 
 export interface CompatibilitySessionDto {
+  attributes?: CompatibilitySessionDtoAttributes;
   /**
    * @minLength 1
    * @maxLength 200
@@ -20,5 +21,4 @@ export interface CompatibilitySessionDto {
    * @maximum 604800
    */
   ttlSeconds?: number;
-  attributes?: CompatibilitySessionDtoAttributes;
 }

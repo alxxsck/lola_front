@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueRelativeWindowPredicateResponseDtoKind } from "./supportQueueRelativeWindowPredicateResponseDtoKind";
 import type { SupportQueueRelativeWindowPredicateResponseDtoField } from "./supportQueueRelativeWindowPredicateResponseDtoField";
+import type { SupportQueueRelativeWindowPredicateResponseDtoKind } from "./supportQueueRelativeWindowPredicateResponseDtoKind";
 
 export interface SupportQueueRelativeWindowPredicateResponseDto {
-  kind: SupportQueueRelativeWindowPredicateResponseDtoKind;
-  field: SupportQueueRelativeWindowPredicateResponseDtoField;
   /**
    * @minimum 1
    * @maximum 366
    */
   days: number;
+  field: SupportQueueRelativeWindowPredicateResponseDtoField;
+  kind: SupportQueueRelativeWindowPredicateResponseDtoKind;
 }

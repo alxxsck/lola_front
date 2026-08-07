@@ -7,8 +7,8 @@
  */
 
 export interface EventLogDefinitionRefResponseDto {
-  id: string;
   code: string;
+  id: string;
   name: string;
   version: number;
 }

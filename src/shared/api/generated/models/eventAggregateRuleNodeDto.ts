@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { RuleCompareDto } from "./ruleCompareDto";
+import type { AggregateFilterDto } from "./aggregateFilterDto";
 import type { EventAggregateRuleNodeDtoKind } from "./eventAggregateRuleNodeDtoKind";
 import type { EventAggregateRuleNodeDtoMeasure } from "./eventAggregateRuleNodeDtoMeasure";
-import type { AggregateFilterDto } from "./aggregateFilterDto";
 import type { EventAggregateRuleNodeDtoWindow } from "./eventAggregateRuleNodeDtoWindow";
-import type { RuleCompareDto } from "./ruleCompareDto";
 
 export interface EventAggregateRuleNodeDto {
-  kind: EventAggregateRuleNodeDtoKind;
+  compare: RuleCompareDto;
   /** @maxLength 128 */
   eventCode: string;
-  measure: EventAggregateRuleNodeDtoMeasure;
   /** @maxLength 128 */
   fieldKey?: string;
   /** @maxItems 10 */
   filters?: AggregateFilterDto[];
+  kind: EventAggregateRuleNodeDtoKind;
+  measure: EventAggregateRuleNodeDtoMeasure;
   window: EventAggregateRuleNodeDtoWindow;
-  compare: RuleCompareDto;
 }

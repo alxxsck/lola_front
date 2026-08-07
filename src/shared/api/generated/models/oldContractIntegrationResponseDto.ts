@@ -7,11 +7,11 @@
  */
 
 export interface OldContractIntegrationResponseDto {
-  credentialId: string;
-  contractRevision: number;
-  activeContractRevision: number;
-  /** @nullable */
-  lastSeenAt?: string | null;
   /** @nullable */
   acceptedUntil?: string | null;
+  activeContractRevision: number;
+  contractRevision: number;
+  credentialId: string;
+  /** @nullable */
+  lastSeenAt?: string | null;
 }

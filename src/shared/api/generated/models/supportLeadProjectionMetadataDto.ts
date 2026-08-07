@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadProjectionMetadataDtoFreshnessState } from "./supportLeadProjectionMetadataDtoFreshnessState";
 import type { SupportLeadProjectionMetadataDtoEffectiveWindow } from "./supportLeadProjectionMetadataDtoEffectiveWindow";
+import type { SupportLeadProjectionMetadataDtoFreshnessState } from "./supportLeadProjectionMetadataDtoFreshnessState";
 import type { SupportLeadProjectionMetadataDtoSlaRolloutState } from "./supportLeadProjectionMetadataDtoSlaRolloutState";
 
 export interface SupportLeadProjectionMetadataDto {
-  /** @minimum 1 */
-  projectionGeneration: number;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  /**
-   * @nullable
-   * @pattern ^(0|[1-9][0-9]*)$
-   */
-  sourceHighWater: string | null;
-  freshnessState: SupportLeadProjectionMetadataDtoFreshnessState;
   computedAt: string;
+  /** @nullable */
+  effectiveWindow: SupportLeadProjectionMetadataDtoEffectiveWindow;
+  freshnessState: SupportLeadProjectionMetadataDtoFreshnessState;
   /**
    * @maxLength 2048
    * @nullable
    */
   nextCursor: string | null;
-  /** @nullable */
-  effectiveWindow: SupportLeadProjectionMetadataDtoEffectiveWindow;
+  /** @minimum 1 */
+  projectionGeneration: number;
   slaRolloutState: SupportLeadProjectionMetadataDtoSlaRolloutState;
+  /**
+   * @nullable
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  sourceHighWater: string | null;
 }

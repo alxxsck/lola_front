@@ -8,6 +8,8 @@
 import type { UpdateProjectSettingsDtoSettings } from "./updateProjectSettingsDtoSettings";
 
 export interface UpdateProjectSettingsDto {
+  /** @maxLength 80 */
+  assistantName?: string;
   /** @minimum 1 */
   expectedVersion: number;
   /**
@@ -15,12 +17,10 @@ export interface UpdateProjectSettingsDto {
    * @maxLength 100
    */
   name?: string;
-  /** @maxLength 80 */
-  assistantName?: string;
+  /** General Project settings. Protected and dedicated settings subtrees are preserved by the backend. */
+  settings?: UpdateProjectSettingsDtoSettings;
   /** @maxLength 20000 */
   systemPrompt?: string;
   /** @maxLength 20000 */
   voiceInstructions?: string;
-  /** General Project settings. Protected and dedicated settings subtrees are preserved by the backend. */
-  settings?: UpdateProjectSettingsDtoSettings;
 }

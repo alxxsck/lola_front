@@ -7,15 +7,15 @@
  */
 
 export interface EventDefinitionMetadataMutationResponseDto {
-  definitionKeyId: string;
   code: string;
-  name: string;
-  /** @nullable */
-  description?: string | null;
   /** @nullable */
   currentRevisionId?: string | null;
-  updatedAt: string;
+  definitionKeyId: string;
+  /** @nullable */
+  description?: string | null;
   metadataChanged: boolean;
+  name: string;
   /** Metadata never creates a schema revision. */
   schemaRevisionUnchanged: boolean;
+  updatedAt: string;
 }

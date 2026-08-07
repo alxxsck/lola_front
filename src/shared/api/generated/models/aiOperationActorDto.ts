@@ -8,9 +8,9 @@
 import type { AiOperationActorDtoType } from "./aiOperationActorDtoType";
 
 export interface AiOperationActorDto {
-  type: AiOperationActorDtoType;
-  /** @nullable */
-  id?: string | null;
   /** @nullable */
   displayName?: string | null;
+  /** @nullable */
+  id?: string | null;
+  type: AiOperationActorDtoType;
 }

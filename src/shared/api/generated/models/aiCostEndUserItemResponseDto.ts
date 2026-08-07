@@ -8,17 +8,17 @@
 
 export interface AiCostEndUserItemResponseDto {
   /** @nullable */
-  providerReportedCostUsd: string | null;
+  effectiveCostUsd: string | null;
+  endUserId: string;
   /** @nullable */
   estimatedFallbackCostUsd: string | null;
-  /** @nullable */
-  effectiveCostUsd: string | null;
+  externalId: string;
   /** Records with a concrete cost amount. */
   pricedCostRecords: number;
-  endUserId: string;
-  externalId: string;
+  /** @nullable */
+  providerReportedCostUsd: string | null;
+  records: number;
   /** @nullable */
   segment: string | null;
-  records: number;
   unpricedRecords: number;
 }

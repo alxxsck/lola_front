@@ -8,17 +8,17 @@
 import type { CreateChatAttachmentUploadDtoContentType } from "./createChatAttachmentUploadDtoContentType";
 
 export interface CreateChatAttachmentUploadDto {
+  /** @pattern ^[a-f0-9]{64}$ */
+  checksumSha256: string;
+  contentType: CreateChatAttachmentUploadDtoContentType;
   /**
    * @minLength 1
    * @maxLength 255
    */
   displayFilename: string;
-  contentType: CreateChatAttachmentUploadDtoContentType;
   /**
    * @minimum 1
    * @maximum 26214400
    */
   sizeBytes: number;
-  /** @pattern ^[a-f0-9]{64}$ */
-  checksumSha256: string;
 }

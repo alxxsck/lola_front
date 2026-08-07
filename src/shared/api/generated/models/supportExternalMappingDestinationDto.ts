@@ -9,25 +9,25 @@ import type { SupportExternalMappingDestinationDtoFieldValues } from "./supportE
 import type { SupportExternalMappingDestinationDtoPriorityByCasePriority } from "./supportExternalMappingDestinationDtoPriorityByCasePriority";
 
 export interface SupportExternalMappingDestinationDto {
-  /** @maxLength 255 */
-  destinationId: string;
-  /** @maxLength 255 */
-  formId?: string;
-  fieldValues: SupportExternalMappingDestinationDtoFieldValues;
-  /**
-   * Catalog field IDs that an operator may provide at Case command time.
-   * @maxItems 100
-   */
-  operatorInputFieldIds?: string[];
-  /** Required for HelpDesk V1. The requester is the only case-facing HelpDesk create input. */
-  requesterRequired?: boolean;
   /**
    * Fixed HelpDesk agent ID from the selected destination catalog.
    * @maxLength 255
    */
   agentId?: string;
+  /** @maxLength 255 */
+  destinationId: string;
+  fieldValues: SupportExternalMappingDestinationDtoFieldValues;
+  /** @maxLength 255 */
+  formId?: string;
+  /**
+   * Catalog field IDs that an operator may provide at Case command time.
+   * @maxItems 100
+   */
+  operatorInputFieldIds?: string[];
   /** Server-owned mapping from Case priority to HelpDesk ticket priority. */
   priorityByCasePriority?: SupportExternalMappingDestinationDtoPriorityByCasePriority;
+  /** Required for HelpDesk V1. The requester is the only case-facing HelpDesk create input. */
+  requesterRequired?: boolean;
   /**
    * Fixed destination-scoped HelpDesk tag IDs from the fresh catalog.
    * @maxItems 100

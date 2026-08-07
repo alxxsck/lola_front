@@ -9,6 +9,6 @@ import type { SupportExternalWorkCommandReceiptDtoStatus } from "./supportExtern
 
 export interface SupportExternalWorkCommandReceiptDto {
   commandId: string;
-  status: SupportExternalWorkCommandReceiptDtoStatus;
   replayed: boolean;
+  status: SupportExternalWorkCommandReceiptDtoStatus;
 }

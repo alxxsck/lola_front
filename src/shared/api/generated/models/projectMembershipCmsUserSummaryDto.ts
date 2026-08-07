@@ -8,13 +8,13 @@
 import type { ProjectMembershipCmsUserSummaryDtoStatus } from "./projectMembershipCmsUserSummaryDtoStatus";
 
 export interface ProjectMembershipCmsUserSummaryDto {
-  id: string;
-  email: string;
-  givenName: string;
-  familyName: string;
   displayName: string;
-  status: ProjectMembershipCmsUserSummaryDtoStatus;
+  email: string;
   emailVerified: boolean;
+  familyName: string;
+  givenName: string;
+  id: string;
   /** @nullable */
   lastLoginAt: string | null;
+  status: ProjectMembershipCmsUserSummaryDtoStatus;
 }

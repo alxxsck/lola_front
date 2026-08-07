@@ -7,11 +7,11 @@
  */
 
 export interface PublishedScenarioDependenciesResponseDto {
-  eventDefinitionRevisionIds: string[];
   actionTypes: string[];
   conditionPaths: string[];
-  userAttributeRevisionIds?: string[];
-  segmentRevisionIds?: string[];
+  eventDefinitionRevisionIds: string[];
   profileTemplateDefinitionIds?: string[];
   profileTemplateDefinitionRevisionIds?: string[];
+  segmentRevisionIds?: string[];
+  userAttributeRevisionIds?: string[];
 }

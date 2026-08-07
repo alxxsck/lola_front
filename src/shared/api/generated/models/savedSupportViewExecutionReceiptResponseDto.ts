@@ -9,7 +9,7 @@ import type { SavedSupportViewRevisionResponseDto } from "./savedSupportViewRevi
 
 export interface SavedSupportViewExecutionReceiptResponseDto {
   id: string;
-  revision: SavedSupportViewRevisionResponseDto;
   /** @nullable */
   queueRevisionId?: string | null;
+  revision: SavedSupportViewRevisionResponseDto;
 }

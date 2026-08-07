@@ -8,11 +8,6 @@
 
 export interface SupportRoutingRetryDto {
   /**
-   * @minimum 1
-   * @maximum 10
-   */
-  maxAttempts?: number;
-  /**
    * @minimum 0
    * @maximum 86400
    */
@@ -22,4 +17,9 @@ export interface SupportRoutingRetryDto {
    * @maximum 86400
    */
   fallbackDelaySeconds?: number;
+  /**
+   * @minimum 1
+   * @maximum 10
+   */
+  maxAttempts?: number;
 }

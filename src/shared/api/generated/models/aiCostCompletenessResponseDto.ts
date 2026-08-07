@@ -7,9 +7,9 @@
  */
 
 export interface AiCostCompletenessResponseDto {
-  totalRecords: number;
-  providerReportedRecords: number;
   estimatedRecords: number;
-  unpricedRecords: number;
   pricedPercent: string;
+  providerReportedRecords: number;
+  totalRecords: number;
+  unpricedRecords: number;
 }

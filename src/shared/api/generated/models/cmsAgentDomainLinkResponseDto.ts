@@ -9,13 +9,13 @@ import type { CmsAgentDomainLinkResponseDtoRelation } from "./cmsAgentDomainLink
 import type { CmsAgentDomainLinkResponseDtoResult } from "./cmsAgentDomainLinkResponseDtoResult";
 
 export interface CmsAgentDomainLinkResponseDto {
-  linkId: string;
-  interpretationRunId: string;
-  domainKind: string;
-  domainId: string;
-  relation: CmsAgentDomainLinkResponseDtoRelation;
+  createdAt: string;
   /** @nullable */
   domainAiOperationId?: string | null;
+  domainId: string;
+  domainKind: string;
+  interpretationRunId: string;
+  linkId: string;
+  relation: CmsAgentDomainLinkResponseDtoRelation;
   result: CmsAgentDomainLinkResponseDtoResult;
-  createdAt: string;
 }

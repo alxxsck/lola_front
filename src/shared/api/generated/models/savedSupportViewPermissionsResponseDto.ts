@@ -7,8 +7,8 @@
  */
 
 export interface SavedSupportViewPermissionsResponseDto {
+  archive: boolean;
+  publish: boolean;
   read: boolean;
   replaceDraft: boolean;
-  publish: boolean;
-  archive: boolean;
 }

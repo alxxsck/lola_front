@@ -7,29 +7,29 @@
  */
 
 export interface PublishAttributeContractDto {
-  /** @minimum 0 */
-  expectedDraftVersion: number;
-  /** @nullable */
-  expectedCurrentPublicationId: string | null;
-  /** @pattern ^[a-f0-9]{64}$ */
-  validationHash: string;
-  /**
-   * @minimum 0
-   * @maximum 30
-   */
-  compatibilityGraceDays?: number;
-  /**
-   * @minLength 1
-   * @maxLength 1000
-   */
-  reason: string;
-  /** @nullable */
-  readinessEvidenceId?: string | null;
-  /** @maxItems 50 */
-  securityConfirmations?: string[];
   /**
    * @maxLength 2000
    * @nullable
    */
   breakingChangePlan?: string | null;
+  /**
+   * @minimum 0
+   * @maximum 30
+   */
+  compatibilityGraceDays?: number;
+  /** @nullable */
+  expectedCurrentPublicationId: string | null;
+  /** @minimum 0 */
+  expectedDraftVersion: number;
+  /** @nullable */
+  readinessEvidenceId?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 1000
+   */
+  reason: string;
+  /** @maxItems 50 */
+  securityConfirmations?: string[];
+  /** @pattern ^[a-f0-9]{64}$ */
+  validationHash: string;
 }

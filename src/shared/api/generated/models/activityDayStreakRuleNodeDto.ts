@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActivityDayStreakRuleNodeDtoKind } from "./activityDayStreakRuleNodeDtoKind";
 import type { ActivityDayStreakCompareDto } from "./activityDayStreakCompareDto";
+import type { ActivityDayStreakRuleNodeDtoKind } from "./activityDayStreakRuleNodeDtoKind";
 
 export interface ActivityDayStreakRuleNodeDto {
-  kind: ActivityDayStreakRuleNodeDtoKind;
   compare: ActivityDayStreakCompareDto;
+  kind: ActivityDayStreakRuleNodeDtoKind;
 }

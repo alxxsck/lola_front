@@ -6,12 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PasswordEstablishedResponseDtoKind } from "./passwordEstablishedResponseDtoKind";
-import type { PasswordEstablishedResponseDtoStatus } from "./passwordEstablishedResponseDtoStatus";
 import type { PasswordEstablishedResponseDtoNext } from "./passwordEstablishedResponseDtoNext";
+import type { PasswordEstablishedResponseDtoStatus } from "./passwordEstablishedResponseDtoStatus";
 
 export interface PasswordEstablishedResponseDto {
-  kind: PasswordEstablishedResponseDtoKind;
   cmsUserId: string;
-  status: PasswordEstablishedResponseDtoStatus;
+  kind: PasswordEstablishedResponseDtoKind;
   next: PasswordEstablishedResponseDtoNext;
+  status: PasswordEstablishedResponseDtoStatus;
 }

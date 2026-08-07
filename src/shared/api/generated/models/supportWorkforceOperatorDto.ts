@@ -5,11 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkforceOperatorSkillDto } from "./supportWorkforceOperatorSkillDto";
 import type { SupportWorkforceOperatorLanguageDto } from "./supportWorkforceOperatorLanguageDto";
+import type { SupportWorkforceOperatorSkillDto } from "./supportWorkforceOperatorSkillDto";
 
 export interface SupportWorkforceOperatorDto {
   cmsUserId: string;
+  /** @maxItems 50 */
+  languages: SupportWorkforceOperatorLanguageDto[];
   /**
    * @minimum 100
    * @maximum 10000
@@ -17,6 +19,4 @@ export interface SupportWorkforceOperatorDto {
   maxCapacityUnits: number;
   /** @maxItems 100 */
   skills: SupportWorkforceOperatorSkillDto[];
-  /** @maxItems 50 */
-  languages: SupportWorkforceOperatorLanguageDto[];
 }

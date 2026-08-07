@@ -8,11 +8,11 @@
 
 export interface EndUserCaseCapabilitySummaryResponseDto {
   actionTypeCode: string;
-  /** @minimum 1 */
-  invocationCount: number;
-  /** @minimum 0 */
-  succeeded: number;
   /** @minimum 0 */
   failed: number;
+  /** @minimum 1 */
+  invocationCount: number;
   lastInvokedAt: string;
+  /** @minimum 0 */
+  succeeded: number;
 }

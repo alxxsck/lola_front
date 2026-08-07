@@ -8,6 +8,7 @@
 import type { ProjectTranslationGlossaryEntryDtoBehavior } from "./projectTranslationGlossaryEntryDtoBehavior";
 
 export interface ProjectTranslationGlossaryEntryDto {
+  behavior: ProjectTranslationGlossaryEntryDtoBehavior;
   /**
    * @minLength 1
    * @maxLength 200
@@ -18,5 +19,4 @@ export interface ProjectTranslationGlossaryEntryDto {
    * @maxLength 200
    */
   target?: string;
-  behavior: ProjectTranslationGlossaryEntryDtoBehavior;
 }

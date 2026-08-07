@@ -8,18 +8,18 @@
 import type { SessionAttributeSnapshotEnvelopeDtoAttributes } from "./sessionAttributeSnapshotEnvelopeDtoAttributes";
 
 export interface SessionAttributeSnapshotEnvelopeDto {
+  attributes: SessionAttributeSnapshotEnvelopeDtoAttributes;
   /** @minimum 1 */
   contractRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotencyKey: string;
   observedAt: string;
   /**
    * @maxLength 19
    * @pattern ^(?:0|[1-9]\d*)$
    */
   sourceSequence?: string;
-  attributes: SessionAttributeSnapshotEnvelopeDtoAttributes;
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  idempotencyKey: string;
 }

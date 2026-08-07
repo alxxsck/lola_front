@@ -8,11 +8,11 @@
 import type { AudienceRuleDto } from "./audienceRuleDto";
 
 export interface SegmentRevisionDetailResponseDto {
-  segmentRevisionId: string;
-  /** @minimum 1 */
-  revision: number;
   catalogRevision: string;
   contentHash: string;
   publishedAt: string;
+  /** @minimum 1 */
+  revision: number;
   rule: AudienceRuleDto;
+  segmentRevisionId: string;
 }

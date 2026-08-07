@@ -11,8 +11,8 @@ import type { AiPricingRevisionResponseDto } from "./aiPricingRevisionResponseDt
 export interface AiPricingRevisionStateResponseDto {
   /** @nullable */
   current: AiPricingRevisionStateResponseDtoCurrent;
-  history: AiPricingRevisionResponseDto[];
   hasMore: boolean;
+  history: AiPricingRevisionResponseDto[];
   /** @nullable */
   nextCursor: string | null;
   sourceUrl: string;

@@ -8,10 +8,10 @@
 import type { AudienceRequireFreshFreshnessDtoMode } from "./audienceRequireFreshFreshnessDtoMode";
 
 export interface AudienceRequireFreshFreshnessDto {
-  mode: AudienceRequireFreshFreshnessDtoMode;
   /**
    * @minimum 1
    * @maximum 31536000
    */
   maxAgeSeconds: number;
+  mode: AudienceRequireFreshFreshnessDtoMode;
 }

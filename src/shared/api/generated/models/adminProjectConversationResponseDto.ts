@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ThreadStatus } from "./threadStatus";
 import type { AdminProjectConversationEndUserResponseDto } from "./adminProjectConversationEndUserResponseDto";
 import type { AdminProjectConversationResponseDtoLastMessage } from "./adminProjectConversationResponseDtoLastMessage";
+import type { ThreadStatus } from "./threadStatus";
 
 export interface AdminProjectConversationResponseDto {
-  id: string;
-  projectId: string;
-  endUserId: string;
-  /** @nullable */
-  title: string | null;
-  status: ThreadStatus;
   createdAt: string;
-  updatedAt: string;
-  endUser: AdminProjectConversationEndUserResponseDto;
-  /** @minimum 0 */
-  messageCount: number;
-  /** @nullable */
-  lastMessage: AdminProjectConversationResponseDtoLastMessage;
-  isCurrent: boolean;
   /** @minimum 0 */
   currentInteractionSessionCount: number;
+  endUser: AdminProjectConversationEndUserResponseDto;
+  endUserId: string;
+  id: string;
+  isCurrent: boolean;
+  /** @nullable */
+  lastMessage: AdminProjectConversationResponseDtoLastMessage;
+  /** @minimum 0 */
+  messageCount: number;
+  projectId: string;
+  status: ThreadStatus;
+  /** @nullable */
+  title: string | null;
+  updatedAt: string;
 }

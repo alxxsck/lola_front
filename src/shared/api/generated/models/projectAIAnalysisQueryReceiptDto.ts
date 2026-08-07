@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisQueryReceiptDtoStatus } from "./projectAIAnalysisQueryReceiptDtoStatus";
 import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
+import type { ProjectAIAnalysisQueryReceiptDtoStatus } from "./projectAIAnalysisQueryReceiptDtoStatus";
 
 export interface ProjectAIAnalysisQueryReceiptDto {
+  complete: boolean;
+  createdAt: string;
+  durationMs: number;
+  examinedRows: number;
+  groups: number;
   id: string;
-  runId: string;
-  ordinal: number;
-  status: ProjectAIAnalysisQueryReceiptDtoStatus;
-  /** @pattern ^[0-9a-f]{64}$ */
-  queryHash: string;
-  /** @nullable */
-  rangeStartedAt?: string | null;
-  /** @nullable */
-  rangeEndedAt?: string | null;
+  limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @pattern ^\d+$ */
   matchedEndUserCount: string;
   matchedEndUserCountExact: boolean;
-  examinedRows: number;
-  resultRows: number;
-  groups: number;
-  serializedBytes: number;
-  durationMs: number;
-  /** @pattern ^\d+$ */
-  workUnits: string;
-  complete: boolean;
-  truncated: boolean;
-  limitationCodes: string[];
-  limitations: ProjectAIAnalysisErrorPresentationDto[];
+  ordinal: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  queryHash: string;
+  /** @nullable */
+  rangeEndedAt?: string | null;
+  /** @nullable */
+  rangeStartedAt?: string | null;
+  /** @nullable */
+  redactedAt?: string | null;
   /** @nullable */
   rejectionCode?: string | null;
   /** @nullable */
   rejectionMessage?: string | null;
-  /** @nullable */
-  redactedAt?: string | null;
-  createdAt: string;
+  resultRows: number;
+  runId: string;
+  serializedBytes: number;
+  status: ProjectAIAnalysisQueryReceiptDtoStatus;
+  truncated: boolean;
+  /** @pattern ^\d+$ */
+  workUnits: string;
 }

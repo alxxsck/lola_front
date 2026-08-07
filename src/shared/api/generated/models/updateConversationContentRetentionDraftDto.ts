@@ -8,15 +8,15 @@
 
 export interface UpdateConversationContentRetentionDraftDto {
   /**
-   * @minimum 730
-   * @maximum 3650
-   */
-  minimumAgeDays: number;
-  /**
    * @minimum 365
    * @maximum 3650
    */
   afterCaseTerminalDays: number;
+  /**
+   * @minimum 730
+   * @maximum 3650
+   */
+  minimumAgeDays: number;
   /**
    * @minimum 1
    * @maximum 30

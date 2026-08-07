@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseCostOperationResponseDto } from "./endUserCaseCostOperationResponseDto";
 import type { EndUserCaseCostBudgetResponseDto } from "./endUserCaseCostBudgetResponseDto";
+import type { EndUserCaseCostOperationResponseDto } from "./endUserCaseCostOperationResponseDto";
 
 export interface EndUserCaseCostSummaryResponseDto {
+  billedCostUsd: string;
+  budget: EndUserCaseCostBudgetResponseDto;
+  calculatedAt: string;
+  estimatedCostUsd: string;
+  operations: EndUserCaseCostOperationResponseDto[];
   /** @minimum 0 */
   requestCount: number;
   totalTokens: string;
-  billedCostUsd: string;
-  estimatedCostUsd: string;
-  operations: EndUserCaseCostOperationResponseDto[];
-  budget: EndUserCaseCostBudgetResponseDto;
-  calculatedAt: string;
 }

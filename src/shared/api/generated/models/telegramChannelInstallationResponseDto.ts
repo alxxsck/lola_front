@@ -5,42 +5,42 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { TelegramChannelHealthStatus } from "./telegramChannelHealthStatus";
 import type { TelegramChannelInstallationStatus } from "./telegramChannelInstallationStatus";
 import type { TelegramChannelSetupStatus } from "./telegramChannelSetupStatus";
-import type { TelegramChannelHealthStatus } from "./telegramChannelHealthStatus";
 
 export interface TelegramChannelInstallationResponseDto {
-  id: string;
-  projectId: string;
   botUsername: string;
-  deepLinkBase: string;
-  /** Lossless decimal Telegram Bot ID. */
-  telegramBotId: string;
-  /**
-   * @minLength 16
-   * @maxLength 16
-   */
-  credentialFingerprint: string;
-  status: TelegramChannelInstallationStatus;
-  webhookSetupStatus: TelegramChannelSetupStatus;
   broadcastsEnabled: boolean;
   /**
    * OCC version for broadcasts settings only.
    * @minimum 1
    */
   broadcastsVersion: number;
-  /** @nullable */
-  webhookSetupErrorCode?: string | null;
+  /**
+   * @minLength 16
+   * @maxLength 16
+   */
+  credentialFingerprint: string;
+  deepLinkBase: string;
   healthStatus: TelegramChannelHealthStatus;
+  id: string;
   /** @nullable */
   lastTestedAt?: string | null;
   /** @nullable */
   lastTestFailureCode?: string | null;
   /** @minimum 0 */
   linkedUserCount: number;
-  updatedByActorType: string;
+  projectId: string;
+  status: TelegramChannelInstallationStatus;
+  /** Lossless decimal Telegram Bot ID. */
+  telegramBotId: string;
+  updatedAt: string;
   updatedByActorId: string;
+  updatedByActorType: string;
   /** @minimum 1 */
   version: number;
-  updatedAt: string;
+  /** @nullable */
+  webhookSetupErrorCode?: string | null;
+  webhookSetupStatus: TelegramChannelSetupStatus;
 }

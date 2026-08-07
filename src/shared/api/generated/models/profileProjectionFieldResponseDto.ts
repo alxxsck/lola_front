@@ -5,35 +5,35 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProfileProjectionFieldResponseDtoLifecycle } from "./profileProjectionFieldResponseDtoLifecycle";
-import type { ProfileProjectionFieldResponseDtoClassification } from "./profileProjectionFieldResponseDtoClassification";
 import type { ProfileProjectionFieldResponseDtoAccess } from "./profileProjectionFieldResponseDtoAccess";
 import type { ProfileProjectionFieldResponseDtoAvailability } from "./profileProjectionFieldResponseDtoAvailability";
+import type { ProfileProjectionFieldResponseDtoClassification } from "./profileProjectionFieldResponseDtoClassification";
+import type { ProfileProjectionFieldResponseDtoLifecycle } from "./profileProjectionFieldResponseDtoLifecycle";
 import type { ProfileFieldValueResponseDto } from "./profileFieldValueResponseDto";
 
 export interface ProfileProjectionFieldResponseDto {
-  definitionId: string;
-  definitionRevisionId: string;
-  key: string;
-  label: string;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  purpose?: string | null;
-  valueType: string;
-  /** @nullable */
-  semanticRole?: string | null;
-  lifecycle: ProfileProjectionFieldResponseDtoLifecycle;
-  classification: ProfileProjectionFieldResponseDtoClassification;
   access: ProfileProjectionFieldResponseDtoAccess;
-  availability: ProfileProjectionFieldResponseDtoAvailability;
-  /** @nullable */
-  observedAt?: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   ageSeconds?: number | null;
-  value?: ProfileFieldValueResponseDto;
+  availability: ProfileProjectionFieldResponseDtoAvailability;
+  classification: ProfileProjectionFieldResponseDtoClassification;
+  definitionId: string;
+  definitionRevisionId: string;
+  /** @nullable */
+  description?: string | null;
+  key: string;
+  label: string;
+  lifecycle: ProfileProjectionFieldResponseDtoLifecycle;
+  /** @nullable */
+  observedAt?: string | null;
+  /** @nullable */
+  purpose?: string | null;
+  /** @nullable */
+  semanticRole?: string | null;
   untrustedData?: boolean;
+  value?: ProfileFieldValueResponseDto;
+  valueType: string;
 }

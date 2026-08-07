@@ -10,15 +10,15 @@ import type { SupportCaseAssignmentClaim400Current } from "./supportCaseAssignme
 
 export type SupportCaseAssignmentClaim400 = {
   code: SupportCaseAssignmentClaim400Code;
-  /** @minimum 1 */
-  currentVersion?: number;
-  /** @pattern ^"sc1\.[A-Za-z0-9_-]{43}"$ */
-  currentReadToken?: string;
+  current?: SupportCaseAssignmentClaim400Current;
   /** @pattern ^"sa1\.[A-Za-z0-9_-]{43}"$ */
   currentActionEtag?: string;
+  /** @pattern ^"sc1\.[A-Za-z0-9_-]{43}"$ */
+  currentReadToken?: string;
   /** @minimum 0 */
   currentUnits?: number;
   /** @minimum 1 */
+  currentVersion?: number;
+  /** @minimum 1 */
   maxCapacityUnits?: number;
-  current?: SupportCaseAssignmentClaim400Current;
 };

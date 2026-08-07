@@ -7,24 +7,24 @@
  */
 import type { AttributePublicationChangesResponseDto } from "./attributePublicationChangesResponseDto";
 import type { AttributeContractCompatibilityReportResponseDto } from "./attributeContractCompatibilityReportResponseDto";
-import type { AttributePublicationResponseDtoPublishedActorType } from "./attributePublicationResponseDtoPublishedActorType";
 import type { AttributeContractDocumentDto } from "./attributeContractDocumentDto";
+import type { AttributePublicationResponseDtoPublishedActorType } from "./attributePublicationResponseDtoPublishedActorType";
 
 export interface AttributePublicationResponseDto {
-  id: string;
-  projectId: string;
-  sequence: number;
   canonicalHash: string;
-  validationHash: string;
-  contractRevisionId: string;
-  contractVersion: number;
   changes: AttributePublicationChangesResponseDto;
   compatibilityReport: AttributeContractCompatibilityReportResponseDto;
+  contractRevisionId: string;
+  contractVersion: number;
+  document: AttributeContractDocumentDto;
+  id: string;
+  projectId: string;
+  publishedActorId: string;
+  publishedActorType: AttributePublicationResponseDtoPublishedActorType;
+  publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
-  publishedActorType: AttributePublicationResponseDtoPublishedActorType;
-  publishedActorId: string;
   publishReason: string;
-  publishedAt: string;
-  document: AttributeContractDocumentDto;
+  sequence: number;
+  validationHash: string;
 }

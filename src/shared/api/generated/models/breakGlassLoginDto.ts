@@ -17,11 +17,11 @@ export interface BreakGlassLoginDto {
    * @maxLength 1024
    */
   primaryCredential: string;
-  /** @pattern ^\d{6}$ */
-  secondFactorProof?: string;
   /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
+  /** @pattern ^\d{6}$ */
+  secondFactorProof?: string;
 }

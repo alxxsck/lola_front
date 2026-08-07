@@ -5,25 +5,34 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
+import type { SupportCaseSearchQueryDtoAssignmentStatesItem } from "./supportCaseSearchQueryDtoAssignmentStatesItem";
+import type { SupportCaseSearchQueryDtoCategoryCodesItem } from "./supportCaseSearchQueryDtoCategoryCodesItem";
+import type { SupportCaseSearchQueryDtoChannelsItem } from "./supportCaseSearchQueryDtoChannelsItem";
+import type { SupportCaseSearchQueryDtoDeliveryState } from "./supportCaseSearchQueryDtoDeliveryState";
+import type { SupportCaseSearchQueryDtoDraftState } from "./supportCaseSearchQueryDtoDraftState";
+import type { SupportCaseSearchQueryDtoPrioritiesItem } from "./supportCaseSearchQueryDtoPrioritiesItem";
+import type { SupportCaseSearchQueryDtoSlaStatesItem } from "./supportCaseSearchQueryDtoSlaStatesItem";
 import type { SupportCaseSearchSortDto } from "./supportCaseSearchSortDto";
 import type { SupportCaseSearchQueryDtoStatusesItem } from "./supportCaseSearchQueryDtoStatusesItem";
-import type { SupportCaseSearchQueryDtoPrioritiesItem } from "./supportCaseSearchQueryDtoPrioritiesItem";
+import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
+import type { SupportCaseSearchQueryDtoUnreadState } from "./supportCaseSearchQueryDtoUnreadState";
+import type { SupportCaseSearchQueryDtoWaitingSidesItem } from "./supportCaseSearchQueryDtoWaitingSidesItem";
 
 export interface SupportCaseSearchQueryDto {
-  /**
-   * @minLength 2
-   * @maxLength 256
-   */
-  phrase?: string;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
+  /** @maxItems 50 */
+  assigneeCmsUserIds?: string[];
+  /** @maxItems 2 */
+  assignmentStates?: SupportCaseSearchQueryDtoAssignmentStatesItem[];
+  /** @maxItems 50 */
+  caseIds?: string[];
+  /** @maxItems 6 */
+  categoryCodes?: SupportCaseSearchQueryDtoCategoryCodesItem[];
+  /** @maxItems 3 */
+  channels?: SupportCaseSearchQueryDtoChannelsItem[];
   /** @maxLength 2048 */
   cursor?: string;
-  timeRange?: SupportSearchTimeRangeDto;
+  deliveryState?: SupportCaseSearchQueryDtoDeliveryState;
+  draftState?: SupportCaseSearchQueryDtoDraftState;
   /** @maxItems 50 */
   endUserIds?: string[];
   /**
@@ -31,13 +40,33 @@ export interface SupportCaseSearchQueryDto {
    * @maxItems 50
    */
   externalEndUserIds?: string[];
-  sort?: SupportCaseSearchSortDto;
-  /** @maxItems 50 */
-  caseIds?: string[];
-  /** @maxItems 8 */
-  statuses?: SupportCaseSearchQueryDtoStatusesItem[];
+  /** @maxItems 16 */
+  languages?: string[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minLength 2
+   * @maxLength 256
+   */
+  phrase?: string;
   /** @maxItems 5 */
   priorities?: SupportCaseSearchQueryDtoPrioritiesItem[];
   /** @maxItems 50 */
+  queueIds?: string[];
+  /** @maxItems 4 */
+  slaStates?: SupportCaseSearchQueryDtoSlaStatesItem[];
+  sort?: SupportCaseSearchSortDto;
+  /** @maxItems 8 */
+  statuses?: SupportCaseSearchQueryDtoStatusesItem[];
+  /** @maxItems 50 */
+  teamIds?: string[];
+  timeRange?: SupportSearchTimeRangeDto;
+  /** @maxItems 50 */
   topicCodes?: string[];
+  unreadState?: SupportCaseSearchQueryDtoUnreadState;
+  /** @maxItems 4 */
+  waitingSides?: SupportCaseSearchQueryDtoWaitingSidesItem[];
 }

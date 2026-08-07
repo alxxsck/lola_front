@@ -12,11 +12,11 @@ import type { EmailCaseEscalationPreferenceResponseDtoTopic } from "./emailCaseE
 
 export interface EmailCaseEscalationPreferenceResponseDto {
   channel: EmailCaseEscalationPreferenceResponseDtoChannel;
-  subscribed: boolean;
   effectiveStatus: EmailCaseEscalationPreferenceResponseDtoEffectiveStatus;
-  /** @nullable */
-  ineligibilityReason: EmailCaseEscalationPreferenceResponseDtoIneligibilityReason;
   /** @minimum 0 */
   emailVersion: number;
+  /** @nullable */
+  ineligibilityReason: EmailCaseEscalationPreferenceResponseDtoIneligibilityReason;
+  subscribed: boolean;
   topic: EmailCaseEscalationPreferenceResponseDtoTopic;
 }

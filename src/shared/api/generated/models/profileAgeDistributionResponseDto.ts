@@ -7,8 +7,8 @@
  */
 
 export interface ProfileAgeDistributionResponseDto {
-  upTo24Hours: number;
   from24HoursTo7Days: number;
   from7To30Days: number;
   over30Days: number;
+  upTo24Hours: number;
 }

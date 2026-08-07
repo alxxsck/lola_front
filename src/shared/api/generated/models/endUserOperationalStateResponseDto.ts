@@ -7,7 +7,7 @@
  */
 
 export interface EndUserOperationalStateResponseDto {
-  projectId: string;
   endUserId: string;
   items: string[];
+  projectId: string;
 }

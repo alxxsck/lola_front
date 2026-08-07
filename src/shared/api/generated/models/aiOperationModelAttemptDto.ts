@@ -8,20 +8,20 @@
 import type { AiOperationModelAttemptDtoUsageRecord } from "./aiOperationModelAttemptDtoUsageRecord";
 
 export interface AiOperationModelAttemptDto {
-  provider: string;
+  capabilityRevision: string;
+  localDispatchId: string;
   model: string;
   operation: string;
-  localDispatchId: string;
+  /** @nullable */
+  previousResponseId: string | null;
+  promptCompilerRevision: string;
+  provider: string;
   /** @nullable */
   providerRequestId: string | null;
   /** @nullable */
   providerResponseId: string | null;
-  /** @nullable */
-  previousResponseId: string | null;
-  promptCompilerRevision: string;
-  capabilityRevision: string;
-  zeroDataRetentionObserved: string;
   responseStorageMode: string;
   /** @nullable */
   usageRecord: AiOperationModelAttemptDtoUsageRecord;
+  zeroDataRetentionObserved: string;
 }

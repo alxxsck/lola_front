@@ -8,11 +8,11 @@
 
 export interface SupportLeadInvestigationPinnedDto {
   /** @nullable */
+  calendarRevisionId: string | null;
+  /** @nullable */
   casePolicyRevisionId: string | null;
   /** @nullable */
   slaPolicyRevisionId: string | null;
-  /** @nullable */
-  calendarRevisionId: string | null;
   /** @nullable */
   workforceRevisionId: string | null;
 }

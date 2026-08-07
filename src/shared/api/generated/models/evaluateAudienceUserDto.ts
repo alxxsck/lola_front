@@ -8,11 +8,11 @@
 import type { AudienceRuleDto } from "./audienceRuleDto";
 
 export interface EvaluateAudienceUserDto {
-  rule: AudienceRuleDto;
-  endUserId: string;
   /**
    * @minLength 1
    * @maxLength 128
    */
   catalogRevision: string;
+  endUserId: string;
+  rule: AudienceRuleDto;
 }

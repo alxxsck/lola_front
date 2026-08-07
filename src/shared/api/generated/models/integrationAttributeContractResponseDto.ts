@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeJsonSchemaResponseDto } from "./attributeJsonSchemaResponseDto";
-import type { AttributeContractArtifactFieldResponseDto } from "./attributeContractArtifactFieldResponseDto";
-import type { IntegrationAttributeContractResponseDtoExamples } from "./integrationAttributeContractResponseDtoExamples";
 import type { AttributeContractAdmissionResponseDto } from "./attributeContractAdmissionResponseDto";
+import type { IntegrationAttributeContractResponseDtoExamples } from "./integrationAttributeContractResponseDtoExamples";
+import type { AttributeContractArtifactFieldResponseDto } from "./attributeContractArtifactFieldResponseDto";
+import type { AttributeJsonSchemaResponseDto } from "./attributeJsonSchemaResponseDto";
 
 export interface IntegrationAttributeContractResponseDto {
-  id: string;
-  version: number;
-  etag: string;
+  admission: AttributeContractAdmissionResponseDto;
   canonicalHash: string;
+  etag: string;
+  examples: IntegrationAttributeContractResponseDtoExamples;
+  fields: AttributeContractArtifactFieldResponseDto[];
+  id: string;
   publishedAt: string;
   schema: AttributeJsonSchemaResponseDto;
-  fields: AttributeContractArtifactFieldResponseDto[];
-  examples: IntegrationAttributeContractResponseDtoExamples;
-  admission: AttributeContractAdmissionResponseDto;
+  version: number;
 }

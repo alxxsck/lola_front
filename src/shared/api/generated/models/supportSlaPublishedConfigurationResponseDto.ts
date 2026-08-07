@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaPolicyRevisionResponseDto } from "./supportSlaPolicyRevisionResponseDto";
 import type { SupportBusinessCalendarRevisionResponseDto } from "./supportBusinessCalendarRevisionResponseDto";
+import type { SupportSlaPolicyRevisionResponseDto } from "./supportSlaPolicyRevisionResponseDto";
 
 export interface SupportSlaPublishedConfigurationResponseDto {
-  policyRevision: SupportSlaPolicyRevisionResponseDto;
   calendarRevision: SupportBusinessCalendarRevisionResponseDto;
+  policyRevision: SupportSlaPolicyRevisionResponseDto;
 }

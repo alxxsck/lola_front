@@ -7,6 +7,6 @@
  */
 
 export interface EventLogUserRefResponseDto {
-  id: string;
   externalId: string;
+  id: string;
 }

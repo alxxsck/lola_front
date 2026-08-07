@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryPolicyItemStateResponseDtoLifecycle } from "./eventQueryPolicyItemStateResponseDtoLifecycle";
 import type { EventQueryPolicyItemConfiguredResponseDto } from "./eventQueryPolicyItemConfiguredResponseDto";
-import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
-import type { EventQueryPolicyLifecycleRestrictionsDto } from "./eventQueryPolicyLifecycleRestrictionsDto";
 import type { EventQueryPolicyDiagnosticDto } from "./eventQueryPolicyDiagnosticDto";
+import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
+import type { EventQueryPolicyItemStateResponseDtoLifecycle } from "./eventQueryPolicyItemStateResponseDtoLifecycle";
+import type { EventQueryPolicyLifecycleRestrictionsDto } from "./eventQueryPolicyLifecycleRestrictionsDto";
 import type { EventQueryPolicySafeFieldRecommendationDto } from "./eventQueryPolicySafeFieldRecommendationDto";
 
 export interface EventQueryPolicyItemStateResponseDto {
-  definitionKeyId: string;
-  eventCode: string;
-  lifecycle: EventQueryPolicyItemStateResponseDtoLifecycle;
-  configured: EventQueryPolicyItemConfiguredResponseDto;
-  effective: EventQueryPolicyItemEffectiveResponseDto;
-  lifecycleRestrictions: EventQueryPolicyLifecycleRestrictionsDto;
-  diagnostics: EventQueryPolicyDiagnosticDto[];
-  safeFieldRecommendation: EventQueryPolicySafeFieldRecommendationDto;
   /** Opaque optimistic-concurrency token; no internal revision numbers are exposed. */
   concurrencyToken: string;
+  configured: EventQueryPolicyItemConfiguredResponseDto;
+  definitionKeyId: string;
+  diagnostics: EventQueryPolicyDiagnosticDto[];
+  effective: EventQueryPolicyItemEffectiveResponseDto;
+  eventCode: string;
+  lifecycle: EventQueryPolicyItemStateResponseDtoLifecycle;
+  lifecycleRestrictions: EventQueryPolicyLifecycleRestrictionsDto;
+  safeFieldRecommendation: EventQueryPolicySafeFieldRecommendationDto;
 }

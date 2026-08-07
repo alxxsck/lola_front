@@ -7,13 +7,13 @@
  */
 
 export interface SegmentSearchQueryDto {
-  /** @maxLength 128 */
-  query?: string;
+  cursor?: string;
+  includeArchived?: boolean;
   /**
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
-  cursor?: string;
-  includeArchived?: boolean;
+  /** @maxLength 128 */
+  query?: string;
 }

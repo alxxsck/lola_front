@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeJsonSchemaResponseDtoType } from "./attributeJsonSchemaResponseDtoType";
 import type { AttributeJsonSchemaResponseDtoProperties } from "./attributeJsonSchemaResponseDtoProperties";
+import type { AttributeJsonSchemaResponseDtoType } from "./attributeJsonSchemaResponseDtoType";
 
 export interface AttributeJsonSchemaResponseDto {
   $schema: string;
-  type: AttributeJsonSchemaResponseDtoType;
+  additionalProperties: boolean;
   properties: AttributeJsonSchemaResponseDtoProperties;
   required: string[];
-  additionalProperties: boolean;
+  type: AttributeJsonSchemaResponseDtoType;
 }

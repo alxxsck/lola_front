@@ -13,7 +13,7 @@ export interface AdminMessageAISuspensionDto {
    * @maximum 604800
    */
   durationSeconds: number;
-  reason: AdminMessageAISuspensionDtoReason;
   /** @maxLength 500 */
   note?: string;
+  reason: AdminMessageAISuspensionDtoReason;
 }

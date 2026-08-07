@@ -7,14 +7,14 @@
  */
 
 export interface TestTelegramBroadcastDto {
-  /** @minimum 1 */
-  expectedVersion: number;
   /**
    * Project-scoped external End User identifier used only for this test send.
    * @minLength 1
    * @maxLength 255
    */
   endUserExternalId: string;
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * @minLength 1
    * @maxLength 80

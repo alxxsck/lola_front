@@ -8,9 +8,9 @@
 import type { SupportSearchCanonicalTargetResponseDto } from "./supportSearchCanonicalTargetResponseDto";
 
 export interface SupportSearchEndUserResultResponseDto {
-  target: SupportSearchCanonicalTargetResponseDto;
   endUserId: string;
   /** @maxLength 200 */
   externalEndUserId: string;
   lastSeenAt: string;
+  target: SupportSearchCanonicalTargetResponseDto;
 }

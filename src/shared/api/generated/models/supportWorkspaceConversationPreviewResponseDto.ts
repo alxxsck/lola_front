@@ -8,9 +8,9 @@
 import type { MessageRole } from "./messageRole";
 
 export interface SupportWorkspaceConversationPreviewResponseDto {
+  createdAt: string;
   id: string;
-  role: MessageRole;
   /** @minimum 1 */
   ordinal: number;
-  createdAt: string;
+  role: MessageRole;
 }

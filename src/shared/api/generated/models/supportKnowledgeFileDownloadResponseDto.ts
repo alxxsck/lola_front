@@ -8,8 +8,8 @@
 
 export interface SupportKnowledgeFileDownloadResponseDto {
   documentId: string;
-  revisionId: string;
-  filename: string;
-  url: string;
   expiresAt: string;
+  filename: string;
+  revisionId: string;
+  url: string;
 }

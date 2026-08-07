@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalMappingRevisionResponseDtoStatus } from "./supportExternalMappingRevisionResponseDtoStatus";
 import type { SupportExternalMappingRevisionResponseDtoCatalogSnapshotId } from "./supportExternalMappingRevisionResponseDtoCatalogSnapshotId";
 import type { SupportExternalMappingDefinitionDto } from "./supportExternalMappingDefinitionDto";
+import type { SupportExternalMappingRevisionResponseDtoStatus } from "./supportExternalMappingRevisionResponseDtoStatus";
 
 export interface SupportExternalMappingRevisionResponseDto {
-  id: string;
-  rootId: string;
-  connectionId: string;
-  /** @minimum 1 */
-  revisionNumber: number;
-  status: SupportExternalMappingRevisionResponseDtoStatus;
   /** @nullable */
   catalogSnapshotId?: SupportExternalMappingRevisionResponseDtoCatalogSnapshotId;
+  connectionId: string;
+  definition: SupportExternalMappingDefinitionDto;
   /** @maxLength 128 */
   formRevision: string;
-  definition: SupportExternalMappingDefinitionDto;
+  id: string;
+  /** @minimum 1 */
+  revisionNumber: number;
+  rootId: string;
+  status: SupportExternalMappingRevisionResponseDtoStatus;
 }

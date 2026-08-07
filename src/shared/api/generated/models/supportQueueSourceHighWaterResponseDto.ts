@@ -7,7 +7,7 @@
  */
 
 export interface SupportQueueSourceHighWaterResponseDto {
-  case: string;
   assignment: string;
+  case: string;
   sla: string;
 }

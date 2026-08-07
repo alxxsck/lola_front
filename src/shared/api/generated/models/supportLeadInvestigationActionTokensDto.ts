@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadSlaClockActionTokenDto } from "./supportLeadSlaClockActionTokenDto";
 import type { SupportLeadAvailabilityActionTokenDto } from "./supportLeadAvailabilityActionTokenDto";
+import type { SupportLeadSlaClockActionTokenDto } from "./supportLeadSlaClockActionTokenDto";
 
 export interface SupportLeadInvestigationActionTokensDto {
-  /** @minimum 0 */
-  caseVersion: number;
-  /**
-   * @minLength 1
-   * @maxLength 256
-   */
-  caseReadToken: string;
   /**
    * @minLength 1
    * @maxLength 256
    * @nullable
    */
   assignmentEtag: string | null;
-  /** @maxItems 500 */
-  slaClockEtags: SupportLeadSlaClockActionTokenDto[];
   /** @maxItems 100 */
   availabilityVersions: SupportLeadAvailabilityActionTokenDto[];
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  caseReadToken: string;
+  /** @minimum 0 */
+  caseVersion: number;
+  /** @maxItems 500 */
+  slaClockEtags: SupportLeadSlaClockActionTokenDto[];
 }

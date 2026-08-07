@@ -7,9 +7,9 @@
  */
 
 export interface PublishConflictMetadataResponseDto {
+  currentRevisionId: string;
   /** @nullable */
   expectedCurrentRevisionId?: string | null;
   /** @nullable */
   previousCurrentRevisionId?: string | null;
-  currentRevisionId: string;
 }

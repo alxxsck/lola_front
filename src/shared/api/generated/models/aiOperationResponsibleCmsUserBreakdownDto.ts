@@ -9,11 +9,11 @@ import type { AiOperationCostDto } from "./aiOperationCostDto";
 
 export interface AiOperationResponsibleCmsUserBreakdownDto {
   cmsUserId: string;
+  cost: AiOperationCostDto;
+  /** @pattern ^\d+$ */
+  dbWorkUnits: string;
   /** @nullable */
   displayName?: string | null;
   operations: number;
   usageRecords: number;
-  cost: AiOperationCostDto;
-  /** @pattern ^\d+$ */
-  dbWorkUnits: string;
 }

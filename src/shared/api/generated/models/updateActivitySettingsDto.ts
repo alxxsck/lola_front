@@ -9,15 +9,15 @@
 export interface UpdateActivitySettingsDto {
   /** @minimum 1 */
   expectedVersion: number;
+  /**
+   * @minimum 1
+   * @maximum 300
+   */
+  reconnectGraceSeconds: number;
   timezone: string;
   /**
    * @minimum 60
    * @maximum 86400
    */
   visitInactivitySeconds: number;
-  /**
-   * @minimum 1
-   * @maximum 300
-   */
-  reconnectGraceSeconds: number;
 }

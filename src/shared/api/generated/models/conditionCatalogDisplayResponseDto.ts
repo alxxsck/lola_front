@@ -8,12 +8,12 @@
 import type { ConditionCatalogDisplayResponseDtoConversion } from "./conditionCatalogDisplayResponseDtoConversion";
 
 export interface ConditionCatalogDisplayResponseDto {
-  /** @minimum 0 */
-  scale: number;
+  conversion: ConditionCatalogDisplayResponseDtoConversion;
   /**
    * @minimum 0
    * @nullable
    */
   precision?: number | null;
-  conversion: ConditionCatalogDisplayResponseDtoConversion;
+  /** @minimum 0 */
+  scale: number;
 }

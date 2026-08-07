@@ -8,18 +8,18 @@
 import type { SyncAttributeSnapshotDtoAttributes } from "./syncAttributeSnapshotDtoAttributes";
 
 export interface SyncAttributeSnapshotDto {
+  attributes: SyncAttributeSnapshotDtoAttributes;
   /** @minimum 1 */
   contractRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  externalUserId: string;
   observedAt: string;
   /**
    * @maxLength 19
    * @pattern ^(?:0|[1-9]\d*)$
    */
   sourceSequence?: string;
-  attributes: SyncAttributeSnapshotDtoAttributes;
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  externalUserId: string;
 }

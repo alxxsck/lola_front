@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportOperationalAlertGenerationDtoSeverity } from "./supportOperationalAlertGenerationDtoSeverity";
-import type { SupportOperationalAlertGenerationDtoGrouping } from "./supportOperationalAlertGenerationDtoGrouping";
 import type { SupportOperationalAlertEscalationStepDto } from "./supportOperationalAlertEscalationStepDto";
+import type { SupportOperationalAlertGenerationDtoGrouping } from "./supportOperationalAlertGenerationDtoGrouping";
+import type { SupportOperationalAlertGenerationDtoSeverity } from "./supportOperationalAlertGenerationDtoSeverity";
 
 export interface SupportOperationalAlertGenerationDto {
-  /** @minimum 1 */
-  generation: number;
-  policyRevisionId: string;
-  /** @pattern ^[0-9a-f]{64}$ */
-  policyContentHash: string;
-  severity: SupportOperationalAlertGenerationDtoSeverity;
-  /** @minimum 0 */
-  cooldownSeconds: number;
-  grouping: SupportOperationalAlertGenerationDtoGrouping;
   /** @maxLength 64 */
   acknowledgementTarget: string;
-  openedAt: string;
+  /** @minimum 0 */
+  cooldownSeconds: number;
   /** @maxItems 10 */
   escalationSteps: SupportOperationalAlertEscalationStepDto[];
+  /** @minimum 1 */
+  generation: number;
+  grouping: SupportOperationalAlertGenerationDtoGrouping;
+  openedAt: string;
+  /** @pattern ^[0-9a-f]{64}$ */
+  policyContentHash: string;
+  policyRevisionId: string;
+  severity: SupportOperationalAlertGenerationDtoSeverity;
 }

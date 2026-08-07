@@ -8,8 +8,8 @@
 import type { UpdateSupportRoutingProjectRolloutDtoHardCeiling } from "./updateSupportRoutingProjectRolloutDtoHardCeiling";
 
 export interface UpdateSupportRoutingProjectRolloutDto {
-  hardCeiling: UpdateSupportRoutingProjectRolloutDtoHardCeiling;
   emergencyDisabled: boolean;
+  hardCeiling: UpdateSupportRoutingProjectRolloutDtoHardCeiling;
   /** @pattern ^[A-Z][A-Z0-9_]{2,99}$ */
   reasonCode: string;
 }

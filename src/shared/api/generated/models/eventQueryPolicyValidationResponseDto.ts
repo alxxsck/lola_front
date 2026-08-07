@@ -8,6 +8,6 @@
 import type { EventQueryPolicyDiagnosticDto } from "./eventQueryPolicyDiagnosticDto";
 
 export interface EventQueryPolicyValidationResponseDto {
-  valid: boolean;
   errors: EventQueryPolicyDiagnosticDto[];
+  valid: boolean;
 }

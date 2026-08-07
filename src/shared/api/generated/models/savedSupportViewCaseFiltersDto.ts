@@ -5,20 +5,49 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
-import type { SavedSupportViewCaseFiltersDtoStatusesItem } from "./savedSupportViewCaseFiltersDtoStatusesItem";
+import type { SavedSupportViewCaseFiltersDtoAssignmentStatesItem } from "./savedSupportViewCaseFiltersDtoAssignmentStatesItem";
+import type { SavedSupportViewCaseFiltersDtoCategoryCodesItem } from "./savedSupportViewCaseFiltersDtoCategoryCodesItem";
+import type { SavedSupportViewCaseFiltersDtoChannelsItem } from "./savedSupportViewCaseFiltersDtoChannelsItem";
+import type { SavedSupportViewCaseFiltersDtoDeliveryState } from "./savedSupportViewCaseFiltersDtoDeliveryState";
+import type { SavedSupportViewCaseFiltersDtoDraftState } from "./savedSupportViewCaseFiltersDtoDraftState";
 import type { SavedSupportViewCaseFiltersDtoPrioritiesItem } from "./savedSupportViewCaseFiltersDtoPrioritiesItem";
+import type { SavedSupportViewCaseFiltersDtoSlaStatesItem } from "./savedSupportViewCaseFiltersDtoSlaStatesItem";
+import type { SavedSupportViewCaseFiltersDtoStatusesItem } from "./savedSupportViewCaseFiltersDtoStatusesItem";
+import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
+import type { SavedSupportViewCaseFiltersDtoUnreadState } from "./savedSupportViewCaseFiltersDtoUnreadState";
+import type { SavedSupportViewCaseFiltersDtoWaitingSidesItem } from "./savedSupportViewCaseFiltersDtoWaitingSidesItem";
 
 export interface SavedSupportViewCaseFiltersDto {
-  timeRange?: SupportSearchTimeRangeDto;
   /** @maxItems 50 */
-  endUserIds?: string[];
+  assigneeCmsUserIds?: string[];
+  /** @maxItems 2 */
+  assignmentStates?: SavedSupportViewCaseFiltersDtoAssignmentStatesItem[];
   /** @maxItems 50 */
   caseIds?: string[];
-  /** @maxItems 8 */
-  statuses?: SavedSupportViewCaseFiltersDtoStatusesItem[];
+  /** @maxItems 6 */
+  categoryCodes?: SavedSupportViewCaseFiltersDtoCategoryCodesItem[];
+  /** @maxItems 3 */
+  channels?: SavedSupportViewCaseFiltersDtoChannelsItem[];
+  deliveryState?: SavedSupportViewCaseFiltersDtoDeliveryState;
+  draftState?: SavedSupportViewCaseFiltersDtoDraftState;
+  /** @maxItems 50 */
+  endUserIds?: string[];
+  /** @maxItems 16 */
+  languages?: string[];
   /** @maxItems 5 */
   priorities?: SavedSupportViewCaseFiltersDtoPrioritiesItem[];
   /** @maxItems 50 */
+  queueIds?: string[];
+  /** @maxItems 4 */
+  slaStates?: SavedSupportViewCaseFiltersDtoSlaStatesItem[];
+  /** @maxItems 8 */
+  statuses?: SavedSupportViewCaseFiltersDtoStatusesItem[];
+  /** @maxItems 50 */
+  teamIds?: string[];
+  timeRange?: SupportSearchTimeRangeDto;
+  /** @maxItems 50 */
   topicCodes?: string[];
+  unreadState?: SavedSupportViewCaseFiltersDtoUnreadState;
+  /** @maxItems 4 */
+  waitingSides?: SavedSupportViewCaseFiltersDtoWaitingSidesItem[];
 }

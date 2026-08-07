@@ -8,12 +8,12 @@
 import type { CreateSlackNotificationDestinationDtoTopic } from "./createSlackNotificationDestinationDtoTopic";
 
 export interface CreateSlackNotificationDestinationDto {
-  topic?: CreateSlackNotificationDestinationDtoTopic;
   /**
    * @minLength 1
    * @maxLength 120
    */
   displayName: string;
+  topic?: CreateSlackNotificationDestinationDtoTopic;
   /**
    * Write-only Slack Incoming Webhook URL. It is never returned.
    * @minLength 20

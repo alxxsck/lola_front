@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkspaceSelectionResponseDtoMode } from "./supportWorkspaceSelectionResponseDtoMode";
-import type { SupportWorkspaceEndUserResponseDto } from "./supportWorkspaceEndUserResponseDto";
+import type { SupportWorkspaceActionRevisionsResponseDto } from "./supportWorkspaceActionRevisionsResponseDto";
+import type { SupportWorkspaceCapabilitiesResponseDto } from "./supportWorkspaceCapabilitiesResponseDto";
 import type { SupportWorkspaceSelectionResponseDtoCase } from "./supportWorkspaceSelectionResponseDtoCase";
+import type { SupportWorkspaceClassificationOptionResponseDto } from "./supportWorkspaceClassificationOptionResponseDto";
 import type { SupportWorkspaceSelectionResponseDtoConversation } from "./supportWorkspaceSelectionResponseDtoConversation";
+import type { SupportWorkspaceEndUserResponseDto } from "./supportWorkspaceEndUserResponseDto";
 import type { SupportWorkspaceMessagePageResponseDto } from "./supportWorkspaceMessagePageResponseDto";
+import type { SupportWorkspaceSelectionResponseDtoMode } from "./supportWorkspaceSelectionResponseDtoMode";
 import type { SupportWorkspaceCaseRowResponseDto } from "./supportWorkspaceCaseRowResponseDto";
 import type { SupportWorkspaceConversationRowResponseDto } from "./supportWorkspaceConversationRowResponseDto";
-import type { SupportWorkspaceClassificationOptionResponseDto } from "./supportWorkspaceClassificationOptionResponseDto";
-import type { SupportWorkspaceCapabilitiesResponseDto } from "./supportWorkspaceCapabilitiesResponseDto";
-import type { SupportWorkspaceActionRevisionsResponseDto } from "./supportWorkspaceActionRevisionsResponseDto";
 
 export interface SupportWorkspaceSelectionResponseDto {
-  mode: SupportWorkspaceSelectionResponseDtoMode;
-  endUser: SupportWorkspaceEndUserResponseDto;
-  /** @nullable */
-  case: SupportWorkspaceSelectionResponseDtoCase;
-  /** @nullable */
-  conversation: SupportWorkspaceSelectionResponseDtoConversation;
-  messages: SupportWorkspaceMessagePageResponseDto;
-  relatedCases: SupportWorkspaceCaseRowResponseDto[];
-  relatedConversations: SupportWorkspaceConversationRowResponseDto[];
-  relatedCasesTruncated: boolean;
-  relatedConversationsTruncated: boolean;
-  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
+  actionRevisions: SupportWorkspaceActionRevisionsResponseDto;
   capabilities: SupportWorkspaceCapabilitiesResponseDto;
   capabilitiesRevision: string;
-  actionRevisions: SupportWorkspaceActionRevisionsResponseDto;
+  /** @nullable */
+  case: SupportWorkspaceSelectionResponseDtoCase;
   checkpoint: string;
+  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
+  /** @nullable */
+  conversation: SupportWorkspaceSelectionResponseDtoConversation;
+  endUser: SupportWorkspaceEndUserResponseDto;
+  messages: SupportWorkspaceMessagePageResponseDto;
+  mode: SupportWorkspaceSelectionResponseDtoMode;
+  relatedCases: SupportWorkspaceCaseRowResponseDto[];
+  relatedCasesTruncated: boolean;
+  relatedConversations: SupportWorkspaceConversationRowResponseDto[];
+  relatedConversationsTruncated: boolean;
 }

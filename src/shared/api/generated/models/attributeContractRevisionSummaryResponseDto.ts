@@ -8,15 +8,15 @@
 import type { AttributeContractCompatibilityReportResponseDto } from "./attributeContractCompatibilityReportResponseDto";
 
 export interface AttributeContractRevisionSummaryResponseDto {
+  canonicalHash: string;
+  compatibilityReport: AttributeContractCompatibilityReportResponseDto;
+  fieldCount: number;
   id: string;
   projectId: string;
-  version: number;
-  canonicalHash: string;
-  validationHash: string;
-  compatibilityReport: AttributeContractCompatibilityReportResponseDto;
+  publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
   publishReason: string;
-  publishedAt: string;
-  fieldCount: number;
+  validationHash: string;
+  version: number;
 }

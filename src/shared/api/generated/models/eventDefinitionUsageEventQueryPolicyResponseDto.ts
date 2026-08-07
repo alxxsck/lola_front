@@ -7,9 +7,9 @@
  */
 
 export interface EventDefinitionUsageEventQueryPolicyResponseDto {
-  currentGrantEnabled: boolean;
   currentConversationGrantEnabled: boolean;
-  publishedRevisionHistoryExists: boolean;
+  currentGrantEnabled: boolean;
   /** @minimum 0 */
   publishedRevisionHistoryCount: number;
+  publishedRevisionHistoryExists: boolean;
 }

@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisCompatibilityDtoSourceKind } from "./projectAIAnalysisCompatibilityDtoSourceKind";
 import type { ProjectAIAnalysisCompatibilityDtoAttributionStatus } from "./projectAIAnalysisCompatibilityDtoAttributionStatus";
 import type { ProjectAIAnalysisCompatibilityDtoProvenanceStatus } from "./projectAIAnalysisCompatibilityDtoProvenanceStatus";
+import type { ProjectAIAnalysisCompatibilityDtoSourceKind } from "./projectAIAnalysisCompatibilityDtoSourceKind";
 
 export interface ProjectAIAnalysisCompatibilityDto {
-  readOnly: boolean;
-  sourceKind: ProjectAIAnalysisCompatibilityDtoSourceKind;
-  sourceId: string;
   attributionStatus: ProjectAIAnalysisCompatibilityDtoAttributionStatus;
   provenanceStatus: ProjectAIAnalysisCompatibilityDtoProvenanceStatus;
+  readOnly: boolean;
+  sourceId: string;
+  sourceKind: ProjectAIAnalysisCompatibilityDtoSourceKind;
 }

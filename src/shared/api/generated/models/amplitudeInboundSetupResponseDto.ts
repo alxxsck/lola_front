@@ -9,23 +9,23 @@ import type { AmplitudeInboundSetupResponseDtoHeaderName } from "./amplitudeInbo
 import type { AmplitudeInboundSetupResponseDtoPayloadTemplate } from "./amplitudeInboundSetupResponseDtoPayloadTemplate";
 
 export interface AmplitudeInboundSetupResponseDto {
-  replayed: boolean;
+  admissionReady: boolean;
   connectionId: string;
   /** @minimum 1 */
   connectionVersion: number;
-  endpointPath: string;
-  headerName: AmplitudeInboundSetupResponseDtoHeaderName;
-  /** Shown only in this response. */
-  secret: string;
-  /** @minimum 1 */
-  credentialRevision: number;
   /**
    * @minLength 16
    * @maxLength 16
    */
   credentialFingerprint: string;
-  admissionReady: boolean;
+  /** @minimum 1 */
+  credentialRevision: number;
+  endpointPath: string;
+  headerName: AmplitudeInboundSetupResponseDtoHeaderName;
   /** @nullable */
   overlapEndsAt: string | null;
   payloadTemplate: AmplitudeInboundSetupResponseDtoPayloadTemplate;
+  replayed: boolean;
+  /** Shown only in this response. */
+  secret: string;
 }

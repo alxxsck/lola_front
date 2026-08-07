@@ -5,41 +5,41 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadSafeFactDtoFactKind } from "./supportLeadSafeFactDtoFactKind";
-import type { SupportLeadSafeFactDtoEventCode } from "./supportLeadSafeFactDtoEventCode";
 import type { SupportLeadSafeActorDto } from "./supportLeadSafeActorDto";
 import type { SupportLeadSafeFactDtoDeliveryState } from "./supportLeadSafeFactDtoDeliveryState";
+import type { SupportLeadSafeFactDtoEventCode } from "./supportLeadSafeFactDtoEventCode";
+import type { SupportLeadSafeFactDtoFactKind } from "./supportLeadSafeFactDtoFactKind";
 import type { SupportLeadSafeFactDtoReasonCode } from "./supportLeadSafeFactDtoReasonCode";
 
 export interface SupportLeadSafeFactDto {
   activityId: string;
   /** @pattern ^[1-9][0-9]*$ */
   activitySequence: string;
-  /** @minimum 1 */
-  schemaVersion: number;
-  factKind: SupportLeadSafeFactDtoFactKind;
-  eventCode: SupportLeadSafeFactDtoEventCode;
-  occurredAt: string;
   actor: SupportLeadSafeActorDto;
+  /** @nullable */
+  assignmentId: string | null;
   /** @nullable */
   caseId: string | null;
   /** @nullable */
   conversationId: string | null;
   /** @nullable */
-  assignmentId: string | null;
-  /** @nullable */
-  messageId: string | null;
-  /** @nullable */
-  operatorCmsUserId: string | null;
-  /** @nullable */
   deliveryId: string | null;
   /** @nullable */
   deliveryState: SupportLeadSafeFactDtoDeliveryState;
+  eventCode: SupportLeadSafeFactDtoEventCode;
+  factKind: SupportLeadSafeFactDtoFactKind;
   /** @nullable */
-  reasonCode: SupportLeadSafeFactDtoReasonCode;
+  messageId: string | null;
+  occurredAt: string;
+  /** @nullable */
+  operatorCmsUserId: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   ownerVersion: number | null;
+  /** @nullable */
+  reasonCode: SupportLeadSafeFactDtoReasonCode;
+  /** @minimum 1 */
+  schemaVersion: number;
 }

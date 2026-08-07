@@ -10,7 +10,7 @@ import type { EndUserCaseCmsParticipationResponseDto } from "./endUserCaseCmsPar
 
 export interface EndUserCaseWorkSummaryResponseDto {
   aiCapabilities: EndUserCaseCapabilitySummaryResponseDto[];
-  cmsParticipation: EndUserCaseCmsParticipationResponseDto;
   blockers: string[];
+  cmsParticipation: EndUserCaseCmsParticipationResponseDto;
   limitations: string[];
 }

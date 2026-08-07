@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AttributeContractAuthorizationResponseDto } from "./attributeContractAuthorizationResponseDto";
 import type { AttributeContractIssueResponseDto } from "./attributeContractIssueResponseDto";
 import type { AttributeDefinitionImpactResponseDto } from "./attributeDefinitionImpactResponseDto";
-import type { AttributeContractAuthorizationResponseDto } from "./attributeContractAuthorizationResponseDto";
-import type { AttributeContractCompatibilityReportResponseDtoSource } from "./attributeContractCompatibilityReportResponseDtoSource";
 import type { AttributeContractCompatibilityReportResponseDtoRequiredMode } from "./attributeContractCompatibilityReportResponseDtoRequiredMode";
+import type { AttributeContractCompatibilityReportResponseDtoSource } from "./attributeContractCompatibilityReportResponseDtoSource";
 
 export interface AttributeContractCompatibilityReportResponseDto {
-  valid: boolean;
+  authorization: AttributeContractAuthorizationResponseDto;
   issues: AttributeContractIssueResponseDto[];
   lifecycleImpacts: AttributeDefinitionImpactResponseDto[];
-  authorization: AttributeContractAuthorizationResponseDto;
-  source?: AttributeContractCompatibilityReportResponseDtoSource;
-  schemaRevisionId?: string;
   requiredMode?: AttributeContractCompatibilityReportResponseDtoRequiredMode;
+  schemaRevisionId?: string;
+  source?: AttributeContractCompatibilityReportResponseDtoSource;
+  valid: boolean;
 }

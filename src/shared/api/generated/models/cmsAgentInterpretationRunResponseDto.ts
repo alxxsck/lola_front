@@ -5,31 +5,40 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsAgentInterpretationRunResponseDtoOutcome } from "./cmsAgentInterpretationRunResponseDtoOutcome";
-import type { CmsAgentInterpretationRunResponseDtoCapabilitySetSnapshotItem } from "./cmsAgentInterpretationRunResponseDtoCapabilitySetSnapshotItem";
 import type { CmsAgentInterpretationRunResponseDtoAuthorization } from "./cmsAgentInterpretationRunResponseDtoAuthorization";
 import type { CmsAgentInterpretationRunResponseDtoCapability } from "./cmsAgentInterpretationRunResponseDtoCapability";
-import type { CmsAgentInterpretationRunResponseDtoPlan } from "./cmsAgentInterpretationRunResponseDtoPlan";
+import type { CmsAgentInterpretationRunResponseDtoCapabilitySetSnapshotItem } from "./cmsAgentInterpretationRunResponseDtoCapabilitySetSnapshotItem";
 import type { CmsAgentInterpretationRunResponseDtoClarification } from "./cmsAgentInterpretationRunResponseDtoClarification";
+import type { CmsAgentInterpretationRunResponseDtoOutcome } from "./cmsAgentInterpretationRunResponseDtoOutcome";
+import type { CmsAgentInterpretationRunResponseDtoPlan } from "./cmsAgentInterpretationRunResponseDtoPlan";
 
 export interface CmsAgentInterpretationRunResponseDto {
-  runId: string;
   /** @minimum 1 */
   attemptNumber: number;
-  outcome: CmsAgentInterpretationRunResponseDtoOutcome;
+  authorization: CmsAgentInterpretationRunResponseDtoAuthorization;
+  /** @nullable */
+  capability?: CmsAgentInterpretationRunResponseDtoCapability;
   /**
    * @minLength 64
    * @maxLength 64
    */
   capabilitySetRevision: string;
   capabilitySetSnapshot: CmsAgentInterpretationRunResponseDtoCapabilitySetSnapshotItem[];
-  authorization: CmsAgentInterpretationRunResponseDtoAuthorization;
   /** @nullable */
-  capability?: CmsAgentInterpretationRunResponseDtoCapability;
+  clarification?: CmsAgentInterpretationRunResponseDtoClarification;
+  contentAvailable: boolean;
+  createdAt: string;
+  /** @nullable */
+  effectClass?: string | null;
   /** @nullable */
   executionMode?: string | null;
   /** @nullable */
-  effectClass?: string | null;
+  model?: string | null;
+  /** @nullable */
+  modelPolicyRevision?: string | null;
+  outcome: CmsAgentInterpretationRunResponseDtoOutcome;
+  /** @nullable */
+  outcomeCode?: string | null;
   /** @nullable */
   plan?: CmsAgentInterpretationRunResponseDtoPlan;
   /** @nullable */
@@ -37,15 +46,6 @@ export interface CmsAgentInterpretationRunResponseDto {
   /** @nullable */
   provider?: string | null;
   /** @nullable */
-  model?: string | null;
-  /** @nullable */
-  modelPolicyRevision?: string | null;
-  /** @nullable */
-  clarification?: CmsAgentInterpretationRunResponseDtoClarification;
-  contentAvailable: boolean;
-  /** @nullable */
-  outcomeCode?: string | null;
-  /** @nullable */
   redactedAt?: string | null;
-  createdAt: string;
+  runId: string;
 }

@@ -8,25 +8,25 @@
 
 export interface TelegramBroadcastProgressDto {
   /** @minimum 0 */
-  total: number;
-  /** @minimum 0 */
-  pending: number;
-  /** @minimum 0 */
-  sending: number;
-  /** @minimum 0 */
-  retryWait: number;
-  /** @minimum 0 */
-  sent: number;
+  cancelled: number;
   /** @minimum 0 */
   failedPermanent: number;
   /** @minimum 0 */
   outcomeUnknown: number;
   /** @minimum 0 */
-  suppressedLink: number;
+  pending: number;
+  /** @minimum 0 */
+  retryWait: number;
+  /** @minimum 0 */
+  sending: number;
+  /** @minimum 0 */
+  sent: number;
   /** @minimum 0 */
   suppressedConsent: number;
   /** @minimum 0 */
   suppressedInstallation: number;
   /** @minimum 0 */
-  cancelled: number;
+  suppressedLink: number;
+  /** @minimum 0 */
+  total: number;
 }

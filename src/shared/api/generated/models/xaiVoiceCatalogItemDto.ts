@@ -14,12 +14,12 @@ export interface XaiVoiceCatalogItemDto {
   id: string;
   /**
    * @minLength 1
-   * @maxLength 100
-   */
-  name: string;
-  /**
-   * @minLength 1
    * @maxLength 64
    */
   language: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  name: string;
 }

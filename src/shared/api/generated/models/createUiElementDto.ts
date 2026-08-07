@@ -5,48 +5,48 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UiElementKind } from "./uiElementKind";
 import type { CreateUiElementDtoConfig } from "./createUiElementDtoConfig";
+import type { UiElementKind } from "./uiElementKind";
 
 export interface CreateUiElementDto {
-  /** @pattern ^[a-z][a-z0-9_.-]*$ */
-  code: string;
+  /** @maxItems 20 */
+  aiAliases?: string[];
   /**
-   * @minLength 1
-   * @maxLength 100
-   */
-  name: string;
-  kind: UiElementKind;
-  /** @maxLength 500 */
-  selector?: string;
-  /**
-   * Required for PAGE. Product route passed to the host router.
+   * @minLength 20
    * @maxLength 1000
    */
-  route?: string;
+  aiDescription?: string;
+  aiEnabled?: boolean;
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  auditReason?: string;
+  /** @pattern ^[a-z][a-z0-9_.-]*$ */
+  code: string;
+  config?: CreateUiElementDtoConfig;
+  enabled?: boolean;
+  /**
+   * Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.
+   * @deprecated
+   */
+  handler?: string;
+  kind: UiElementKind;
   /**
    * Required for MODAL. Stable key passed to the host modal registry.
    * @maxLength 200
    */
   modalName?: string;
   /**
-   * Legacy CMS field. Kept temporarily for backward compatibility and never used as the modal registry key.
-   * @deprecated
+   * @minLength 1
+   * @maxLength 100
    */
-  handler?: string;
-  config?: CreateUiElementDtoConfig;
-  enabled?: boolean;
-  aiEnabled?: boolean;
+  name: string;
   /**
-   * @minLength 20
+   * Required for PAGE. Product route passed to the host router.
    * @maxLength 1000
    */
-  aiDescription?: string;
-  /** @maxItems 20 */
-  aiAliases?: string[];
-  /**
-   * @minLength 10
-   * @maxLength 500
-   */
-  auditReason?: string;
+  route?: string;
+  /** @maxLength 500 */
+  selector?: string;
 }

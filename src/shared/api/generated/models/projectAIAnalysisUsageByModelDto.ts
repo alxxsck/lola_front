@@ -7,17 +7,17 @@
  */
 
 export interface ProjectAIAnalysisUsageByModelDto {
-  model: string;
+  /** @pattern ^\d+$ */
+  billedCostUsdTicks: string;
   calls: number;
+  costStatuses: string[];
   /** @pattern ^\d+$ */
-  inputTokens: string;
-  /** @pattern ^\d+$ */
-  outputTokens: string;
+  costUsdTicks: string;
   /** @pattern ^\d+$ */
   estimatedCostUsdTicks: string;
   /** @pattern ^\d+$ */
-  billedCostUsdTicks: string;
+  inputTokens: string;
+  model: string;
   /** @pattern ^\d+$ */
-  costUsdTicks: string;
-  costStatuses: string[];
+  outputTokens: string;
 }

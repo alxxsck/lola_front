@@ -8,7 +8,7 @@
 import type { ResolveAiSpendAttemptDtoResolution } from "./resolveAiSpendAttemptDtoResolution";
 
 export interface ResolveAiSpendAttemptDto {
-  resolution: ResolveAiSpendAttemptDtoResolution;
   /** @maxLength 500 */
   reason: string;
+  resolution: ResolveAiSpendAttemptDtoResolution;
 }

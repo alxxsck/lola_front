@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisBudgetPositionDtoScope } from "./projectAIAnalysisBudgetPositionDtoScope";
 import type { ProjectAIAnalysisBudgetPositionDtoKind } from "./projectAIAnalysisBudgetPositionDtoKind";
+import type { ProjectAIAnalysisBudgetPositionDtoScope } from "./projectAIAnalysisBudgetPositionDtoScope";
 
 export interface ProjectAIAnalysisBudgetPositionDto {
-  scope: ProjectAIAnalysisBudgetPositionDtoScope;
-  kind: ProjectAIAnalysisBudgetPositionDtoKind;
   /** @nullable */
   cmsUserId?: string | null;
-  periodStartedAt: string;
-  periodEndedAt: string;
-  /** @pattern ^\d+$ */
-  limitAmount: string;
   /** @pattern ^\d+$ */
   effectiveUsedAmount: string;
+  kind: ProjectAIAnalysisBudgetPositionDtoKind;
+  /** @pattern ^\d+$ */
+  limitAmount: string;
+  periodEndedAt: string;
+  periodStartedAt: string;
   /** @pattern ^\d+$ */
   remainingAmount: string;
+  scope: ProjectAIAnalysisBudgetPositionDtoScope;
 }

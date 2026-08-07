@@ -5,38 +5,38 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAdmissionDecisionResponseDtoOutcome } from "./scenarioAdmissionDecisionResponseDtoOutcome";
-import type { ScenarioAdmissionDecisionResponseDtoReason } from "./scenarioAdmissionDecisionResponseDtoReason";
-import type { ScenarioAdmissionDecisionResponseDtoImportanceClass } from "./scenarioAdmissionDecisionResponseDtoImportanceClass";
-import type { ScenarioAdmissionDecisionResponseDtoTimezoneSource } from "./scenarioAdmissionDecisionResponseDtoTimezoneSource";
-import type { ScenarioAdmissionDecisionResponseDtoPolicySnapshot } from "./scenarioAdmissionDecisionResponseDtoPolicySnapshot";
 import type { ScenarioAdmissionDecisionResponseDtoEvidence } from "./scenarioAdmissionDecisionResponseDtoEvidence";
+import type { ScenarioAdmissionDecisionResponseDtoImportanceClass } from "./scenarioAdmissionDecisionResponseDtoImportanceClass";
+import type { ScenarioAdmissionDecisionResponseDtoOutcome } from "./scenarioAdmissionDecisionResponseDtoOutcome";
+import type { ScenarioAdmissionDecisionResponseDtoPolicySnapshot } from "./scenarioAdmissionDecisionResponseDtoPolicySnapshot";
+import type { ScenarioAdmissionDecisionResponseDtoReason } from "./scenarioAdmissionDecisionResponseDtoReason";
+import type { ScenarioAdmissionDecisionResponseDtoTimezoneSource } from "./scenarioAdmissionDecisionResponseDtoTimezoneSource";
 
 export interface ScenarioAdmissionDecisionResponseDto {
-  id: string;
-  scenarioId: string;
-  scenarioCode: string;
-  scenarioName: string;
   endUserExternalId: string;
-  eventLogId: string;
-  outcome: ScenarioAdmissionDecisionResponseDtoOutcome;
-  reason: ScenarioAdmissionDecisionResponseDtoReason;
-  importanceClass: ScenarioAdmissionDecisionResponseDtoImportanceClass;
-  numericPriority: number;
-  frequencyExempt: boolean;
-  respectsQuietHours: boolean;
   evaluatedAt: string;
+  eventLogId: string;
+  evidence: ScenarioAdmissionDecisionResponseDtoEvidence;
+  frequencyExempt: boolean;
+  id: string;
+  importanceClass: ScenarioAdmissionDecisionResponseDtoImportanceClass;
+  localDate: string;
+  numericPriority: number;
+  outcome: ScenarioAdmissionDecisionResponseDtoOutcome;
+  policySnapshot: ScenarioAdmissionDecisionResponseDtoPolicySnapshot;
+  reason: ScenarioAdmissionDecisionResponseDtoReason;
+  respectsQuietHours: boolean;
+  /** @nullable */
+  retryAt?: string | null;
+  scenarioCode: string;
+  scenarioId: string;
+  scenarioName: string;
+  /** @nullable */
+  scenarioRunId?: string | null;
   timezoneSnapshot: string;
   timezoneSource: ScenarioAdmissionDecisionResponseDtoTimezoneSource;
-  localDate: string;
   /** @nullable */
   visitIdSnapshot?: string | null;
   /** @nullable */
-  scenarioRunId?: string | null;
-  /** @nullable */
   winnerScenarioId?: string | null;
-  /** @nullable */
-  retryAt?: string | null;
-  policySnapshot: ScenarioAdmissionDecisionResponseDtoPolicySnapshot;
-  evidence: ScenarioAdmissionDecisionResponseDtoEvidence;
 }

@@ -7,24 +7,24 @@
  */
 import type { EventSchemaConsumerImpactResponseDtoExposure } from "./eventSchemaConsumerImpactResponseDtoExposure";
 import type { EventSchemaConsumerImpactResponseDtoExposuresItem } from "./eventSchemaConsumerImpactResponseDtoExposuresItem";
-import type { EventSchemaConsumerImpactResponseDtoState } from "./eventSchemaConsumerImpactResponseDtoState";
-import type { EventSchemaConsumerImpactResponseDtoMatchingMode } from "./eventSchemaConsumerImpactResponseDtoMatchingMode";
 import type { EventSchemaConsumerImpactResponseDtoFieldDependenciesItem } from "./eventSchemaConsumerImpactResponseDtoFieldDependenciesItem";
+import type { EventSchemaConsumerImpactResponseDtoMatchingMode } from "./eventSchemaConsumerImpactResponseDtoMatchingMode";
 import type { EventSchemaConsumerImpactResponseDtoResolutionActionsItem } from "./eventSchemaConsumerImpactResponseDtoResolutionActionsItem";
+import type { EventSchemaConsumerImpactResponseDtoState } from "./eventSchemaConsumerImpactResponseDtoState";
 
 export interface EventSchemaConsumerImpactResponseDto {
-  type: string;
+  acceptsCurrentRevision: boolean;
   bindingId: string;
+  blocking: boolean;
+  exposure: EventSchemaConsumerImpactResponseDtoExposure;
+  exposures: EventSchemaConsumerImpactResponseDtoExposuresItem[];
+  fieldDependencies: EventSchemaConsumerImpactResponseDtoFieldDependenciesItem[];
+  matchingMode: EventSchemaConsumerImpactResponseDtoMatchingMode;
+  reasonCodes: string[];
+  resolutionActions: EventSchemaConsumerImpactResponseDtoResolutionActionsItem[];
   scenarioId: string;
   scenarioName: string;
   scenarioRevisionId: string;
-  exposure: EventSchemaConsumerImpactResponseDtoExposure;
-  exposures: EventSchemaConsumerImpactResponseDtoExposuresItem[];
   state: EventSchemaConsumerImpactResponseDtoState;
-  matchingMode: EventSchemaConsumerImpactResponseDtoMatchingMode;
-  acceptsCurrentRevision: boolean;
-  fieldDependencies: EventSchemaConsumerImpactResponseDtoFieldDependenciesItem[];
-  reasonCodes: string[];
-  blocking: boolean;
-  resolutionActions: EventSchemaConsumerImpactResponseDtoResolutionActionsItem[];
+  type: string;
 }

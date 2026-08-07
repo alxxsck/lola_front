@@ -5,28 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ChatSend200OneOfNineResponseDisposition } from "./chatSend200OneOfNineResponseDisposition";
-import type { ChatSend200OneOfNineCommandsItem } from "./chatSend200OneOfNineCommandsItem";
-import type { ChatSend200OneOfNineSourcesItem } from "./chatSend200OneOfNineSourcesItem";
 import type { ChatSend200OneOfNineAiSuspension } from "./chatSend200OneOfNineAiSuspension";
 import type { ChatSend200OneOfNineAllowanceNotice } from "./chatSend200OneOfNineAllowanceNotice";
+import type { ChatSend200OneOfNineCommandsItem } from "./chatSend200OneOfNineCommandsItem";
+import type { ChatSend200OneOfNineResponseDisposition } from "./chatSend200OneOfNineResponseDisposition";
+import type { ChatSend200OneOfNineSourcesItem } from "./chatSend200OneOfNineSourcesItem";
 
 export type ChatSend200OneOfNine = {
-  responseDisposition: ChatSend200OneOfNineResponseDisposition;
-  userMessageId: string;
-  /** */
-  assistantMessageId: string;
-  /** */
-  messageId: string;
-  threadId: string;
-  conversationId: string;
-  conversationCreated: boolean;
-  /** */
-  text: string;
-  commands: ChatSend200OneOfNineCommandsItem[];
-  sources: ChatSend200OneOfNineSourcesItem[];
   /** @nullable */
   aiSuspension: ChatSend200OneOfNineAiSuspension;
   /** @nullable */
   allowanceNotice: ChatSend200OneOfNineAllowanceNotice;
+  /** */
+  assistantMessageId: string;
+  commands: ChatSend200OneOfNineCommandsItem[];
+  conversationCreated: boolean;
+  conversationId: string;
+  /** */
+  messageId: string;
+  responseDisposition: ChatSend200OneOfNineResponseDisposition;
+  sources: ChatSend200OneOfNineSourcesItem[];
+  /** */
+  text: string;
+  threadId: string;
+  userMessageId: string;
 };

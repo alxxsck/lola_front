@@ -7,11 +7,11 @@
  */
 
 export interface SupportLeadActionableBacklogSummaryDto {
-  /** @minimum 0 */
-  unassignedCount: number;
   /**
    * @minimum 0
    * @nullable
    */
   oldestUnassignedAgeMs: number | null;
+  /** @minimum 0 */
+  unassignedCount: number;
 }

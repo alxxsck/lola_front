@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectResponseDto } from "./projectResponseDto";
 import type { ProjectCredentialsResponseDto } from "./projectCredentialsResponseDto";
+import type { ProjectResponseDto } from "./projectResponseDto";
 
 export interface CreateProjectResponseDto {
-  replayed: boolean;
-  project: ProjectResponseDto;
   credentials: ProjectCredentialsResponseDto;
+  project: ProjectResponseDto;
+  replayed: boolean;
 }

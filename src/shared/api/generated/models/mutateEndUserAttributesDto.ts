@@ -8,20 +8,20 @@
 import type { MutateEndUserAttributesDtoAttributes } from "./mutateEndUserAttributesDtoAttributes";
 
 export interface MutateEndUserAttributesDto {
+  attributes: MutateEndUserAttributesDtoAttributes;
   /** @minimum 1 */
   contractRevision: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  externalUserId: string;
   observedAt: string;
   /**
    * @maxLength 19
    * @pattern ^(?:0|[1-9]\d*)$
    */
   sourceSequence?: string;
-  attributes: MutateEndUserAttributesDtoAttributes;
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  externalUserId: string;
   /** @maxItems 50 */
   unset?: string[];
 }

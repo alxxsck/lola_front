@@ -5,33 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectStatus } from "./projectStatus";
-import type { ProjectResponseDtoSettings } from "./projectResponseDtoSettings";
-import type { OrganizationResponseDto } from "./organizationResponseDto";
 import type { ProjectCountsResponseDto } from "./projectCountsResponseDto";
+import type { OrganizationResponseDto } from "./organizationResponseDto";
+import type { ProjectResponseDtoSettings } from "./projectResponseDtoSettings";
+import type { ProjectStatus } from "./projectStatus";
 
 export interface ProjectResponseDto {
+  _count?: ProjectCountsResponseDto;
+  assistantName: string;
+  createdAt: string;
+  defaultLocale: string;
   id: string;
-  organizationId: string;
   name: string;
-  slug: string;
-  status: ProjectStatus;
-  /** @minimum 1 */
-  version: number;
+  organization?: OrganizationResponseDto;
+  organizationId: string;
   publicKey: string;
   serverKeyPrefix: string;
-  defaultLocale: string;
+  settings: ProjectResponseDtoSettings;
+  slug: string;
+  status: ProjectStatus;
   supportedLocales: string[];
-  assistantName: string;
   systemPrompt: string;
+  updatedAt: string;
+  /** @minimum 1 */
+  version: number;
   /**
    * Project-wide instructions for voice tone, pacing, emotion, and delivery.
    * @maxLength 20000
    */
   voiceInstructions: string;
-  settings: ProjectResponseDtoSettings;
-  createdAt: string;
-  updatedAt: string;
-  organization?: OrganizationResponseDto;
-  _count?: ProjectCountsResponseDto;
 }

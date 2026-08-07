@@ -10,12 +10,12 @@ import type { CmsAuthenticatedResponseDtoTokenType } from "./cmsAuthenticatedRes
 import type { CmsAuthenticatedUserResponseDto } from "./cmsAuthenticatedUserResponseDto";
 
 export interface CmsAuthenticatedResponseDto {
-  kind: CmsAuthenticatedResponseDtoKind;
-  tokenType: CmsAuthenticatedResponseDtoTokenType;
   readonly accessToken: string;
   /** @minimum 1 */
   expiresIn: number;
+  kind: CmsAuthenticatedResponseDtoKind;
   /** @minimum 1 */
   refreshExpiresIn: number;
+  tokenType: CmsAuthenticatedResponseDtoTokenType;
   user: CmsAuthenticatedUserResponseDto;
 }

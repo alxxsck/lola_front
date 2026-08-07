@@ -7,18 +7,18 @@
  */
 
 export interface AmplitudeInboundSetupReplayResponseDto {
-  replayed: boolean;
+  admissionReady: boolean;
   connectionId: string;
   /** @minimum 1 */
   connectionVersion: number;
-  /** @minimum 1 */
-  credentialRevision: number;
   /**
    * @minLength 16
    * @maxLength 16
    */
   credentialFingerprint: string;
-  admissionReady: boolean;
+  /** @minimum 1 */
+  credentialRevision: number;
   /** @nullable */
   overlapEndsAt: string | null;
+  replayed: boolean;
 }

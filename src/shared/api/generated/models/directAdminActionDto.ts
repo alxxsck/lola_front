@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { DirectAdminActionType } from "./directAdminActionType";
 import type { DirectAdminActionDtoConfig } from "./directAdminActionDtoConfig";
+import type { DirectAdminActionType } from "./directAdminActionType";
 
 export interface DirectAdminActionDto {
-  type: DirectAdminActionType;
   config: DirectAdminActionDtoConfig;
+  type: DirectAdminActionType;
 }

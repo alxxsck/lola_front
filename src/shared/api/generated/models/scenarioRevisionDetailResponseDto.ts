@@ -6,23 +6,23 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioRevisionDetailResponseDtoImportanceClass } from "./scenarioRevisionDetailResponseDtoImportanceClass";
-import type { ScenarioAuthoringSourceResponseDto } from "./scenarioAuthoringSourceResponseDto";
 import type { ScenarioRevisionDetailResponseDtoRuntime } from "./scenarioRevisionDetailResponseDtoRuntime";
+import type { ScenarioAuthoringSourceResponseDto } from "./scenarioAuthoringSourceResponseDto";
 
 export interface ScenarioRevisionDetailResponseDto {
-  id: string;
-  scenarioId: string;
-  /** @minimum 1 */
-  revisionNumber: number;
-  contentHash: string;
   catalogRevision: string;
+  contentHash: string;
+  current: boolean;
+  editable: boolean;
+  id: string;
   importanceClass: ScenarioRevisionDetailResponseDtoImportanceClass;
-  respectsQuietHours: boolean;
   publishedAt: string;
   /** @nullable */
   publishedByAdminId?: string | null;
-  current: boolean;
-  editable: boolean;
-  source: ScenarioAuthoringSourceResponseDto;
+  respectsQuietHours: boolean;
+  /** @minimum 1 */
+  revisionNumber: number;
   runtime: ScenarioRevisionDetailResponseDtoRuntime;
+  scenarioId: string;
+  source: ScenarioAuthoringSourceResponseDto;
 }

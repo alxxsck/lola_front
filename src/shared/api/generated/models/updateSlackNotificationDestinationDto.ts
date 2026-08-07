@@ -8,18 +8,18 @@
 import type { UpdateSlackNotificationDestinationDtoDesiredStatus } from "./updateSlackNotificationDestinationDtoDesiredStatus";
 
 export interface UpdateSlackNotificationDestinationDto {
-  /** @minimum 1 */
-  expectedVersion: number;
+  desiredStatus?: UpdateSlackNotificationDestinationDtoDesiredStatus;
   /**
    * @minLength 1
    * @maxLength 120
    */
   displayName?: string;
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * Write-only replacement Slack Incoming Webhook URL.
    * @minLength 20
    * @maxLength 4096
    */
   webhookUrl?: string;
-  desiredStatus?: UpdateSlackNotificationDestinationDtoDesiredStatus;
 }

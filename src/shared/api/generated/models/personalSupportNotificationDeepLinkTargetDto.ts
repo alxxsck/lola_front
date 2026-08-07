@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PersonalSupportNotificationDeepLinkTargetDtoTarget } from "./personalSupportNotificationDeepLinkTargetDtoTarget";
 import type { PersonalSupportNotificationDeepLinkTargetDtoSelection } from "./personalSupportNotificationDeepLinkTargetDtoSelection";
+import type { PersonalSupportNotificationDeepLinkTargetDtoTarget } from "./personalSupportNotificationDeepLinkTargetDtoTarget";
 
 export interface PersonalSupportNotificationDeepLinkTargetDto {
-  target: PersonalSupportNotificationDeepLinkTargetDtoTarget;
   projectId: string;
   selection: PersonalSupportNotificationDeepLinkTargetDtoSelection;
+  target: PersonalSupportNotificationDeepLinkTargetDtoTarget;
 }

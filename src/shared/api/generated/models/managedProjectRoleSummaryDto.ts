@@ -9,7 +9,7 @@
 export interface ManagedProjectRoleSummaryDto {
   id: string;
   key: string;
-  name: string;
   managed: boolean;
+  name: string;
   version: number;
 }

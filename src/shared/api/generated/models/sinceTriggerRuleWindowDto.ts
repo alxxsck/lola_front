@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SinceTriggerRuleWindowDtoKind } from "./sinceTriggerRuleWindowDtoKind";
 import type { SinceTriggerRuleWindowDtoBoundary } from "./sinceTriggerRuleWindowDtoBoundary";
+import type { SinceTriggerRuleWindowDtoKind } from "./sinceTriggerRuleWindowDtoKind";
 
 export interface SinceTriggerRuleWindowDto {
-  kind: SinceTriggerRuleWindowDtoKind;
   boundary?: SinceTriggerRuleWindowDtoBoundary;
+  kind: SinceTriggerRuleWindowDtoKind;
 }

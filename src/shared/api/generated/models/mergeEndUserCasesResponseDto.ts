@@ -8,7 +8,7 @@
 
 export interface MergeEndUserCasesResponseDto {
   caseId: string;
+  mergedCaseIds: string[];
   /** @minimum 1 */
   version: number;
-  mergedCaseIds: string[];
 }

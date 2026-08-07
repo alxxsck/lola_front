@@ -9,6 +9,7 @@ import type { EstimateProjectAIAnalysisDtoExecutionPath } from "./estimateProjec
 import type { EstimateProjectAIAnalysisDtoScopeKind } from "./estimateProjectAIAnalysisDtoScopeKind";
 
 export interface EstimateProjectAIAnalysisDto {
+  endUserId?: string;
   executionPath: EstimateProjectAIAnalysisDtoExecutionPath;
   /**
    * @minLength 1
@@ -16,5 +17,4 @@ export interface EstimateProjectAIAnalysisDto {
    */
   question: string;
   scopeKind?: EstimateProjectAIAnalysisDtoScopeKind;
-  endUserId?: string;
 }

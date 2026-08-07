@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConversationAISuspensionResponseDto } from "./conversationAISuspensionResponseDto";
 import type { ConversationAISuspensionMutationResponseDtoInFlightCancellation } from "./conversationAISuspensionMutationResponseDtoInFlightCancellation";
+import type { ConversationAISuspensionResponseDto } from "./conversationAISuspensionResponseDto";
 
 export interface ConversationAISuspensionMutationResponseDto {
+  inFlightCancellation?: ConversationAISuspensionMutationResponseDtoInFlightCancellation;
   replayed: boolean;
   state: ConversationAISuspensionResponseDto;
-  inFlightCancellation?: ConversationAISuspensionMutationResponseDtoInFlightCancellation;
 }

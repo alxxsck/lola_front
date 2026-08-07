@@ -8,13 +8,13 @@
 import type { ChatAttachmentMessageSnapshotResponseDtoContentType } from "./chatAttachmentMessageSnapshotResponseDtoContentType";
 
 export interface ChatAttachmentMessageSnapshotResponseDto {
-  id: string;
+  contentType: ChatAttachmentMessageSnapshotResponseDtoContentType;
   /**
    * @minLength 1
    * @maxLength 255
    */
   displayFilename: string;
-  contentType: ChatAttachmentMessageSnapshotResponseDtoContentType;
+  id: string;
   /**
    * @minimum 1
    * @maximum 26214400

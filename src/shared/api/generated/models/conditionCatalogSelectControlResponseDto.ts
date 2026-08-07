@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConditionCatalogSelectControlResponseDtoType } from "./conditionCatalogSelectControlResponseDtoType";
 import type { ConditionCatalogSelectControlResponseDtoOptionsItem } from "./conditionCatalogSelectControlResponseDtoOptionsItem";
+import type { ConditionCatalogSelectControlResponseDtoType } from "./conditionCatalogSelectControlResponseDtoType";
 
 export interface ConditionCatalogSelectControlResponseDto {
-  type: ConditionCatalogSelectControlResponseDtoType;
   options: ConditionCatalogSelectControlResponseDtoOptionsItem[];
+  type: ConditionCatalogSelectControlResponseDtoType;
 }

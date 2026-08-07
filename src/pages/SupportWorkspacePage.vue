@@ -42,6 +42,15 @@ import { createSupportConversationController } from "@/features/support-conversa
 import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import SupportInboxPane from "@/features/support-inbox/ui/SupportInboxPane.vue";
+import { supportSearchSource, type SupportSearchResult } from "@/features/support-search/api/support-search-source";
+import {
+  hasSupportSearchCriteria,
+  normalizeSupportSearchState,
+  readSupportSearchRoute,
+  writeSupportSearchRoute,
+  type SupportSearchRouteState,
+} from "@/features/support-search/model/support-search-route";
+import { createSupportSearchController } from "@/features/support-search/model/use-support-search";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
 import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
@@ -92,6 +101,12 @@ const router = useRouter();
 const canReadInbox = computed(() =>
   canReadSupportWorkspace(auth.project?.effectivePermissionCodes ?? []),
 );
+const canSearchSupport = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.support.search.read",
+  ),
+);
 const routeCaseId = computed(() => {
   const routeId = route.params.caseId;
   return typeof routeId === "string" ? routeId : undefined;
@@ -120,6 +135,59 @@ const inbox = createSupportInboxController(
   },
   supportWorkspaceSource,
 );
+const searchState = ref<SupportSearchRouteState>(
+  readSupportSearchRoute(route.query),
+);
+const searchOpen = ref(hasSupportSearchCriteria(searchState.value));
+const searchActive = computed(
+  () =>
+    canSearchSupport.value &&
+    (searchOpen.value || hasSupportSearchCriteria(searchState.value)),
+);
+const supportSearch = createSupportSearchController(
+  {
+    projectId: () => auth.project?.id,
+    canSearch: () => canSearchSupport.value,
+    request: () => normalizeSupportSearchState(searchState.value),
+    async onForbidden() {
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Search results are already purged; renewed permissions own recovery.
+      }
+    },
+  },
+  supportSearchSource,
+);
+const supportSearchRouteKeys = new Set([
+  "search",
+  "scope",
+  "status",
+  "waiting",
+  "assignment",
+  "priority",
+  "sla",
+  "channel",
+  "queue",
+  "topic",
+  "category",
+  "language",
+  "team",
+  "assignee",
+  "unread",
+  "draft",
+  "delivery",
+  "from",
+  "to",
+  "sort",
+  "direction",
+  "caseId",
+  "conversationId",
+  "messageId",
+  "endUserId",
+  "externalEndUserId",
+]);
+let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
 const caseDialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
 const workspaceFullscreen = ref(true);
@@ -769,6 +837,92 @@ async function changeInboxMode(mode: SupportInboxMode): Promise<void> {
   await router.push({ name: "support-inbox", query });
 }
 
+function clearSupportSearchTimer(): void {
+  if (supportSearchTimer === undefined) return;
+  window.clearTimeout(supportSearchTimer);
+  supportSearchTimer = undefined;
+}
+
+async function syncSupportSearchRoute(
+  state: SupportSearchRouteState,
+): Promise<void> {
+  const query = Object.fromEntries(
+    Object.entries(route.query).filter(
+      ([key]) => !supportSearchRouteKeys.has(key),
+    ),
+  );
+  await router.replace({ query: { ...query, ...writeSupportSearchRoute(state) } });
+}
+
+function runSupportSearch(state: SupportSearchRouteState): void {
+  clearSupportSearchTimer();
+  searchState.value = normalizeSupportSearchState(state);
+  searchOpen.value = true;
+  void syncSupportSearchRoute(searchState.value);
+  if (!hasSupportSearchCriteria(searchState.value)) {
+    supportSearch.reset();
+    return;
+  }
+  void supportSearch.search();
+}
+
+function changeSupportSearch(state: SupportSearchRouteState): void {
+  const normalized = normalizeSupportSearchState(state);
+  searchState.value = state;
+  searchOpen.value = true;
+  void syncSupportSearchRoute(normalized);
+  clearSupportSearchTimer();
+  if (!hasSupportSearchCriteria(normalized)) {
+    supportSearch.reset();
+    return;
+  }
+  supportSearch.reset();
+  supportSearchTimer = window.setTimeout(() => {
+    supportSearchTimer = undefined;
+    void supportSearch.search();
+  }, 250);
+}
+
+async function closeSupportSearch(): Promise<void> {
+  clearSupportSearchTimer();
+  searchOpen.value = false;
+  supportSearch.reset();
+  searchState.value = readSupportSearchRoute({});
+  const query = Object.fromEntries(
+    Object.entries(route.query).filter(
+      ([key]) => !supportSearchRouteKeys.has(key),
+    ),
+  );
+  await router.replace({ query });
+  await nextTick();
+  const selected = document.querySelector<HTMLElement>(
+    '.inbox-row[aria-current="true"]',
+  );
+  selected?.focus({ preventScroll: true });
+}
+
+async function openSupportSearchResult(item: SupportSearchResult): Promise<void> {
+  const query = { ...route.query };
+  delete query.panel;
+  if (item.selection.kind === "CASE") {
+    await router.push({
+      name: "support-inbox-case",
+      params: { caseId: item.selection.id },
+      query,
+    });
+    return;
+  }
+  if (item.selection.kind === "CONVERSATION") {
+    await router.push({
+      name: "support-inbox-conversation",
+      params: { conversationId: item.selection.id },
+      query,
+    });
+    return;
+  }
+  await router.push({ name: "users", params: { endUserId: item.selection.id } });
+}
+
 async function classifySelectedCase(): Promise<void> {
   const caseId = conversation.selection.value?.case?.id;
   if (!caseId || !canManageSelectedCase.value) return;
@@ -949,6 +1103,23 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault();
     void setWorkspaceFullscreen(false);
+    return;
+  }
+  if (
+    canSearchSupport.value &&
+    !event.altKey &&
+    !event.shiftKey &&
+    (event.metaKey || event.ctrlKey) &&
+    event.key.toLowerCase() === "k" &&
+    !document.querySelector("[role='dialog'][aria-modal='true']")
+  ) {
+    event.preventDefault();
+    searchOpen.value = true;
+    void nextTick(() =>
+      document
+        .querySelector<HTMLInputElement>("[data-support-search-input]")
+        ?.focus({ preventScroll: true }),
+    );
     return;
   }
   if (
@@ -1288,6 +1459,7 @@ onMounted(async () => {
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
   await inbox.load();
+  if (hasSupportSearchCriteria(searchState.value)) await supportSearch.search();
   if (canReadAvailability.value) {
     await availability.load();
     availability.startHeartbeat();
@@ -1297,9 +1469,17 @@ onMounted(async () => {
 
 watch(
   () => auth.project?.id,
-  (_projectId, previousProjectId) => {
+  (projectId, previousProjectId) => {
+    const projectChanged =
+      previousProjectId !== undefined && projectId !== previousProjectId;
     if (previousProjectId)
       clearConversationSurfaceProjectSession(previousProjectId);
+    if (projectChanged) {
+      clearSupportSearchTimer();
+      searchOpen.value = false;
+      searchState.value = readSupportSearchRoute({});
+      void syncSupportSearchRoute(searchState.value);
+    }
     lastInboxSelectionKey.value = "";
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
@@ -1325,8 +1505,11 @@ watch(
     translation.reset();
     conversation.reset();
     inbox.reset();
+    supportSearch.reset();
     void (async () => {
       await inbox.load();
+      if (!projectChanged && hasSupportSearchCriteria(searchState.value))
+        await supportSearch.search();
       if (canReadAvailability.value) {
         await availability.load();
         availability.startHeartbeat();
@@ -1341,6 +1524,14 @@ watch(canReadAvailability, (allowed) => {
     return;
   }
   void availability.load().then(() => availability.startHeartbeat());
+});
+
+watch(canSearchSupport, (allowed) => {
+  if (allowed) return;
+  clearSupportSearchTimer();
+  searchOpen.value = false;
+  supportSearch.reset();
+  searchState.value = readSupportSearchRoute({});
 });
 
 watch(canManageRoutingOffers, (allowed) => {
@@ -1420,6 +1611,24 @@ watch(inboxMode, async () => {
   inbox.reset();
   await inbox.load();
 });
+
+watch(
+  () => route.query,
+  (query) => {
+    const next = readSupportSearchRoute(query);
+    if (
+      JSON.stringify(writeSupportSearchRoute(next)) ===
+      JSON.stringify(writeSupportSearchRoute(searchState.value))
+    )
+      return;
+    clearSupportSearchTimer();
+    searchState.value = next;
+    searchOpen.value = hasSupportSearchCriteria(next);
+    supportSearch.reset();
+    if (searchOpen.value) void supportSearch.search();
+  },
+  { deep: true },
+);
 
 watch(
   requestedSelectionKey,
@@ -1541,6 +1750,7 @@ watch(canReadProfile, (allowed) => {
 });
 
 onBeforeUnmount(() => {
+  clearSupportSearchTimer();
   window.removeEventListener("keydown", handleWorkspaceKeydown);
   mobileWorkspaceMedia?.removeEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia?.removeEventListener("change", syncCompactWorkspace);
@@ -1560,6 +1770,7 @@ onBeforeUnmount(() => {
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
   inbox.reset();
+  supportSearch.reset();
   conversation.reset();
 });
 </script>
@@ -1643,10 +1854,24 @@ onBeforeUnmount(() => {
           :has-more="Boolean(inbox.nextCursor.value)"
           :can-read-cases="canReadInbox"
           :can-read-conversations="canReadInbox"
+          :can-search="canSearchSupport"
+          :search-state="searchState"
+          :search-active="searchActive"
+          :search-items="supportSearch.items.value"
+          :search-loading="supportSearch.loading.value"
+          :search-error="supportSearch.error.value"
+          :search-failure="supportSearch.failure.value"
+          :search-freshness="supportSearch.freshness.value"
+          :search-has-more="Boolean(supportSearch.nextCursor.value)"
           @select="openInboxItem"
           @change-mode="changeInboxMode"
           @load-more="inbox.loadMore"
           @retry="inbox.load"
+          @change-search="changeSupportSearch"
+          @submit-search="runSupportSearch"
+          @close-search="closeSupportSearch"
+          @select-search="openSupportSearchResult"
+          @load-more-search="supportSearch.loadMore"
         />
 
         <main class="conversation-pane" aria-label="Выбранный диалог">

@@ -8,17 +8,17 @@
 import type { SupportExternalMappingDefinitionDto } from "./supportExternalMappingDefinitionDto";
 
 export interface CreateSupportExternalMappingDto {
+  catalogSnapshotId: string;
   connectionId: string;
+  definition: SupportExternalMappingDefinitionDto;
   /**
    * @minLength 1
    * @maxLength 120
    */
   displayName: string;
-  catalogSnapshotId: string;
   /**
    * @minLength 1
    * @maxLength 128
    */
   formRevision: string;
-  definition: SupportExternalMappingDefinitionDto;
 }

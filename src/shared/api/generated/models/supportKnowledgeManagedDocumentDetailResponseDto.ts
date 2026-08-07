@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentDetailResponseDtoLifecycle";
 import type { SupportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision } from "./supportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision";
 import type { SupportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision } from "./supportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision";
-import type { SupportKnowledgeManagedRevisionResponseDto } from "./supportKnowledgeManagedRevisionResponseDto";
 import type { SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft } from "./supportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft";
+import type { SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentDetailResponseDtoLifecycle";
+import type { SupportKnowledgeManagedRevisionResponseDto } from "./supportKnowledgeManagedRevisionResponseDto";
 
 export interface SupportKnowledgeManagedDocumentDetailResponseDto {
-  documentId: string;
-  lifecycle: SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle;
+  /** @nullable */
+  archivedAt?: string | null;
+  createdAt: string;
   /** @nullable */
   currentDraftRevision: SupportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision;
   /** @nullable */
   currentPublishedRevision: SupportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision;
-  /** @nullable */
-  archivedAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  revisions: SupportKnowledgeManagedRevisionResponseDto[];
-  revisionsTruncated: boolean;
+  documentId: string;
   /** @nullable */
   editableTextDraft: SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft;
+  lifecycle: SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle;
+  revisions: SupportKnowledgeManagedRevisionResponseDto[];
+  revisionsTruncated: boolean;
+  updatedAt: string;
 }

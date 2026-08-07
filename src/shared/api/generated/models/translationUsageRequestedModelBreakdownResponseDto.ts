@@ -7,28 +7,31 @@
  */
 
 export interface TranslationUsageRequestedModelBreakdownResponseDto {
-  requests: number;
-  successes: number;
-  /** Terminal attempts that did not succeed. ADMITTED attempts are not errors. */
-  errors: number;
-  /** Financially admitted provider attempts that have not reached a terminal state. */
-  admitted: number;
-  inputCharacters: number;
-  outputCharacters: number;
-  billableCharacters: number;
-  inputTokens: number;
-  cachedInputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  reasoningTokens: number;
-  cacheHits: number;
-  estimatedCostMicros: string;
-  estimatedSavingsMicros: string;
   /** @nullable */
   actualCostMicros: string | null;
   /** @nullable */
   actualCostTicks: string | null;
+  /** Financially admitted provider attempts that have not reached a terminal state. */
+  admitted: number;
+  billableCharacters: number;
   billingCurrency: string;
+  cachedInputTokens: number;
+  cacheHits: number;
+  /** Terminal attempts that did not succeed. ADMITTED attempts are not errors. */
+  errors: number;
+  estimatedCostMicros: string;
+  estimatedSavingsMicros: string;
+  /**
+   * Terminal failure percentage. ADMITTED attempts are excluded from the denominator.
+   * @minimum 0
+   * @maximum 100
+   * @nullable
+   */
+  failureRatePercent: number | null;
+  inputCharacters: number;
+  inputTokens: number;
+  /** True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows. */
+  isOther: boolean;
   /**
    * P50 latency over terminal attempts only.
    * @nullable
@@ -39,15 +42,12 @@ export interface TranslationUsageRequestedModelBreakdownResponseDto {
    * @nullable
    */
   latencyP95Ms: number | null;
-  /**
-   * Terminal failure percentage. ADMITTED attempts are excluded from the denominator.
-   * @minimum 0
-   * @maximum 100
-   * @nullable
-   */
-  failureRatePercent: number | null;
-  /** True when this row aggregates lower-volume keys outside the deterministic top 100. Identity fields are null for OTHER rows. */
-  isOther: boolean;
+  outputCharacters: number;
+  outputTokens: number;
   /** @nullable */
   providerModel: string | null;
+  reasoningTokens: number;
+  requests: number;
+  successes: number;
+  totalTokens: number;
 }

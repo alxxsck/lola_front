@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryResultResponseDtoStatus } from "./eventQueryResultResponseDtoStatus";
-import type { EventQueryResultResponseDtoRange } from "./eventQueryResultResponseDtoRange";
-import type { EventQueryProvenanceResponseDto } from "./eventQueryProvenanceResponseDto";
-import type { EventQueryResultResponseDtoSummariesItem } from "./eventQueryResultResponseDtoSummariesItem";
 import type { EventQueryResultResponseDtoGroupsItem } from "./eventQueryResultResponseDtoGroupsItem";
+import type { EventQueryProvenanceResponseDto } from "./eventQueryProvenanceResponseDto";
+import type { EventQueryResultResponseDtoRange } from "./eventQueryResultResponseDtoRange";
 import type { EventQueryResultResponseDtoRowsItem } from "./eventQueryResultResponseDtoRowsItem";
+import type { EventQueryResultResponseDtoStatus } from "./eventQueryResultResponseDtoStatus";
+import type { EventQueryResultResponseDtoSummariesItem } from "./eventQueryResultResponseDtoSummariesItem";
 
 export interface EventQueryResultResponseDto {
-  status: EventQueryResultResponseDtoStatus;
-  errorCode?: string;
   complete: boolean;
-  truncated: boolean;
+  errorCode?: string;
+  estimatedAddedInputTokens?: number;
+  excludedCount: number;
+  groups?: EventQueryResultResponseDtoGroupsItem[];
   limitations: string[];
-  /** @nullable */
-  range: EventQueryResultResponseDtoRange;
+  matchedCount?: number;
   /** @nullable */
   policyRevisionId: string | null;
+  provenance: EventQueryProvenanceResponseDto;
+  /** @nullable */
+  range: EventQueryResultResponseDtoRange;
+  rows?: EventQueryResultResponseDtoRowsItem[];
+  serializedBytes?: number;
   /** @nullable */
   snapshotReceivedAt: string | null;
-  matchedCount?: number;
-  excludedCount: number;
-  provenance: EventQueryProvenanceResponseDto;
-  serializedBytes?: number;
-  estimatedAddedInputTokens?: number;
+  status: EventQueryResultResponseDtoStatus;
   summaries?: EventQueryResultResponseDtoSummariesItem[];
-  groups?: EventQueryResultResponseDtoGroupsItem[];
-  rows?: EventQueryResultResponseDtoRowsItem[];
+  truncated: boolean;
 }

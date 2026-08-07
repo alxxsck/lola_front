@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeContractDraftResponseDto } from "./attributeContractDraftResponseDto";
-import type { AttributeContractWorkspaceResponseDtoCurrentPublication } from "./attributeContractWorkspaceResponseDtoCurrentPublication";
-import type { AttributeContractWorkspaceResponseDtoCurrentContractRevision } from "./attributeContractWorkspaceResponseDtoCurrentContractRevision";
 import type { AttributePublicationChangesResponseDto } from "./attributePublicationChangesResponseDto";
+import type { AttributeContractWorkspaceResponseDtoCurrentContractRevision } from "./attributeContractWorkspaceResponseDtoCurrentContractRevision";
+import type { AttributeContractWorkspaceResponseDtoCurrentPublication } from "./attributeContractWorkspaceResponseDtoCurrentPublication";
+import type { AttributeContractDraftResponseDto } from "./attributeContractDraftResponseDto";
 import type { AttributeContractValidationResponseDto } from "./attributeContractValidationResponseDto";
 
 export interface AttributeContractWorkspaceResponseDto {
-  draft: AttributeContractDraftResponseDto;
-  /** @nullable */
-  currentPublication?: AttributeContractWorkspaceResponseDtoCurrentPublication;
+  changes: AttributePublicationChangesResponseDto;
   /** @nullable */
   currentContractRevision?: AttributeContractWorkspaceResponseDtoCurrentContractRevision;
-  changes: AttributePublicationChangesResponseDto;
+  /** @nullable */
+  currentPublication?: AttributeContractWorkspaceResponseDtoCurrentPublication;
+  draft: AttributeContractDraftResponseDto;
   validation: AttributeContractValidationResponseDto;
 }

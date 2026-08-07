@@ -7,22 +7,22 @@
  */
 
 export interface ProjectAIAnalysisUsageByAnalysisDto {
-  analysisId: string;
-  runId: string;
-  rootAiOperationId: string;
-  cmsUserId: string;
-  title: string;
-  status: string;
-  /** @pattern ^\d+$ */
-  reservedAiCostUsdTicks: string;
-  /** @pattern ^\d+$ */
-  estimatedAiCostUsdTicks: string;
-  /** @pattern ^\d+$ */
-  billedAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualDbWorkUnits: string;
-  resultPath: string;
+  analysisId: string;
+  /** @pattern ^\d+$ */
+  billedAiCostUsdTicks: string;
+  cmsUserId: string;
   createdAt: string;
+  /** @pattern ^\d+$ */
+  estimatedAiCostUsdTicks: string;
+  /** @pattern ^\d+$ */
+  reservedAiCostUsdTicks: string;
+  resultPath: string;
+  rootAiOperationId: string;
+  runId: string;
+  status: string;
+  title: string;
 }

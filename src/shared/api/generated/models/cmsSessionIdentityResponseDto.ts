@@ -7,13 +7,13 @@
  */
 
 export interface CmsSessionIdentityResponseDto {
-  id: string;
-  email: string;
   displayName: string;
-  /** @nullable */
-  emailVerifiedAt: string | null;
-  /** @nullable */
-  pendingEmail: string | null;
+  email: string;
   /** @minimum 0 */
   emailVerificationRetryAfterSeconds: number;
+  /** @nullable */
+  emailVerifiedAt: string | null;
+  id: string;
+  /** @nullable */
+  pendingEmail: string | null;
 }

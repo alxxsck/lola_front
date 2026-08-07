@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalMappingRootResponseDto } from "./supportExternalMappingRootResponseDto";
 import type { SupportExternalMappingRevisionResponseDto } from "./supportExternalMappingRevisionResponseDto";
+import type { SupportExternalMappingRootResponseDto } from "./supportExternalMappingRootResponseDto";
 
 export interface SupportExternalMappingDraftResponseDto {
-  root: SupportExternalMappingRootResponseDto;
   draft: SupportExternalMappingRevisionResponseDto;
+  root: SupportExternalMappingRootResponseDto;
 }

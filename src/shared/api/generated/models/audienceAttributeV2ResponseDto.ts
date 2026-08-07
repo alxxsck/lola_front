@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceAttributeV2ResponseDtoValueType } from "./audienceAttributeV2ResponseDtoValueType";
-import type { AudienceAttributeConstraintsV2ResponseDto } from "./audienceAttributeConstraintsV2ResponseDto";
-import type { AudienceAttributeV2ResponseDtoClassification } from "./audienceAttributeV2ResponseDtoClassification";
-import type { AudienceAttributeV2ResponseDtoLifecycle } from "./audienceAttributeV2ResponseDtoLifecycle";
-import type { AudienceAttributeV2ResponseDtoReplacement } from "./audienceAttributeV2ResponseDtoReplacement";
-import type { AudienceFreshnessSelectionV2ResponseDto } from "./audienceFreshnessSelectionV2ResponseDto";
-import type { AudienceAttributeV2ResponseDtoControl } from "./audienceAttributeV2ResponseDtoControl";
 import type { AudienceAttributeV2ResponseDtoAllowedValuesItem } from "./audienceAttributeV2ResponseDtoAllowedValuesItem";
 import type { AudienceAttributeV2ResponseDtoAuthoringAvailability } from "./audienceAttributeV2ResponseDtoAuthoringAvailability";
+import type { AudienceAttributeV2ResponseDtoClassification } from "./audienceAttributeV2ResponseDtoClassification";
+import type { AudienceAttributeConstraintsV2ResponseDto } from "./audienceAttributeConstraintsV2ResponseDto";
+import type { AudienceAttributeV2ResponseDtoControl } from "./audienceAttributeV2ResponseDtoControl";
+import type { AudienceFreshnessSelectionV2ResponseDto } from "./audienceFreshnessSelectionV2ResponseDto";
+import type { AudienceAttributeV2ResponseDtoLifecycle } from "./audienceAttributeV2ResponseDtoLifecycle";
+import type { AudienceAttributeV2ResponseDtoReplacement } from "./audienceAttributeV2ResponseDtoReplacement";
+import type { AudienceAttributeV2ResponseDtoValueType } from "./audienceAttributeV2ResponseDtoValueType";
 
 export interface AudienceAttributeV2ResponseDto {
+  allowedValues?: AudienceAttributeV2ResponseDtoAllowedValuesItem[];
+  audienceRead: boolean;
+  authoringAvailability: AudienceAttributeV2ResponseDtoAuthoringAvailability;
+  classification: AudienceAttributeV2ResponseDtoClassification;
+  constraints: AudienceAttributeConstraintsV2ResponseDto;
+  control: AudienceAttributeV2ResponseDtoControl;
+  defaultFreshnessHint: AudienceFreshnessSelectionV2ResponseDto;
   definitionId: string;
   definitionRevisionId: string;
-  /** @minimum 1 */
-  revision: number;
-  key: string;
-  label: string;
   /** @nullable */
   description?: string | null;
-  valueType: AudienceAttributeV2ResponseDtoValueType;
-  constraints: AudienceAttributeConstraintsV2ResponseDto;
-  /** @nullable */
-  semanticRole?: string | null;
-  classification: AudienceAttributeV2ResponseDtoClassification;
+  key: string;
+  label: string;
   lifecycle: AudienceAttributeV2ResponseDtoLifecycle;
+  operators: string[];
   /** @nullable */
   replacement?: AudienceAttributeV2ResponseDtoReplacement;
-  audienceRead: boolean;
-  defaultFreshnessHint: AudienceFreshnessSelectionV2ResponseDto;
-  operators: string[];
-  control: AudienceAttributeV2ResponseDtoControl;
-  allowedValues?: AudienceAttributeV2ResponseDtoAllowedValuesItem[];
-  authoringAvailability: AudienceAttributeV2ResponseDtoAuthoringAvailability;
+  /** @minimum 1 */
+  revision: number;
+  /** @nullable */
+  semanticRole?: string | null;
   /** @nullable */
   unsupportedReason?: string | null;
+  valueType: AudienceAttributeV2ResponseDtoValueType;
 }

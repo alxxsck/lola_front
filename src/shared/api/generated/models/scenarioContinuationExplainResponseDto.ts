@@ -7,16 +7,16 @@
  */
 
 export interface ScenarioContinuationExplainResponseDto {
-  id: string;
-  stepId: string;
-  outcome: string;
-  /** @nullable */
-  targetNodeKey?: string | null;
-  status: string;
   attemptCount: number;
   /** @nullable */
-  lastErrorCode?: string | null;
-  createdAt: string;
-  /** @nullable */
   completedAt?: string | null;
+  createdAt: string;
+  id: string;
+  /** @nullable */
+  lastErrorCode?: string | null;
+  outcome: string;
+  status: string;
+  stepId: string;
+  /** @nullable */
+  targetNodeKey?: string | null;
 }

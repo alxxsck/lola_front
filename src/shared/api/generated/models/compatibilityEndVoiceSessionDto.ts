@@ -7,7 +7,7 @@
  */
 
 export interface CompatibilityEndVoiceSessionDto {
-  voiceSessionId: string;
   /** @maxLength 100 */
   reason?: string;
+  voiceSessionId: string;
 }

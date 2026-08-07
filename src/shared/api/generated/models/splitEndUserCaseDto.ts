@@ -7,29 +7,29 @@
  */
 
 export interface SplitEndUserCaseDto {
+  /** @maxItems 100 */
+  evidenceIds?: string[];
   /** @minimum 1 */
   expectedVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  groupCode?: string;
   idempotencyKey: string;
   /**
    * @minItems 1
    * @maxItems 100
    */
   messageIds: string[];
-  /** @maxItems 100 */
-  evidenceIds?: string[];
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  title: string;
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
-  groupCode?: string;
   /**
    * @minLength 1
    * @maxLength 2000
    */
   reason: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
 }

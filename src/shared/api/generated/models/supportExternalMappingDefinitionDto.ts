@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportExternalMappingRuleDto } from "./supportExternalMappingRuleDto";
 import type { SupportExternalMappingDestinationDto } from "./supportExternalMappingDestinationDto";
+import type { SupportExternalMappingRuleDto } from "./supportExternalMappingRuleDto";
 
 export interface SupportExternalMappingDefinitionDto {
+  fallback: SupportExternalMappingDestinationDto;
   /** @maxItems 50 */
   rules: SupportExternalMappingRuleDto[];
-  fallback: SupportExternalMappingDestinationDto;
 }

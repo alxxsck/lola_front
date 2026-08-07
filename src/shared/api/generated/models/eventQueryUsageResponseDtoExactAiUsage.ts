@@ -7,12 +7,12 @@
  */
 
 export type EventQueryUsageResponseDtoExactAiUsage = {
-  records: number;
-  totalTokens: number;
-  inputTokens: number;
-  outputTokens: number;
-  /** @nullable */
-  estimatedCostUsd: string | null;
   /** @nullable */
   billedCostUsd: string | null;
+  /** @nullable */
+  estimatedCostUsd: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  records: number;
+  totalTokens: number;
 };

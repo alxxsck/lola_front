@@ -7,18 +7,18 @@
  */
 
 export interface CreateKnowledgeTextDto {
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  title: string;
+  /** @maxLength 80 */
+  category?: string;
+  /** @maxLength 20 */
+  locale?: string;
   /**
    * @minLength 1
    * @maxLength 500000
    */
   text: string;
-  /** @maxLength 20 */
-  locale?: string;
-  /** @maxLength 80 */
-  category?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
 }

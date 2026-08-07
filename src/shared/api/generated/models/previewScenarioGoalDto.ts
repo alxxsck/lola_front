@@ -10,10 +10,10 @@ import type { PreviewScenarioScopeDto } from "./previewScenarioScopeDto";
 
 export interface PreviewScenarioGoalDto {
   goal: ScenarioGoalDto;
+  scope: PreviewScenarioScopeDto;
   /**
    * @minimum 1000
    * @maximum 7776000000
    */
   timeoutMs: number;
-  scope: PreviewScenarioScopeDto;
 }

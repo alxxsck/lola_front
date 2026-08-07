@@ -10,7 +10,7 @@ import type { ScenarioRunEligibilityRecheckResponseDtoFidelity } from "./scenari
 
 export interface ScenarioRunEligibilityRecheckResponseDto {
   decision: ScenarioRunEligibilityRecheckResponseDtoDecision;
-  fidelity: ScenarioRunEligibilityRecheckResponseDtoFidelity;
   /** @nullable */
   evaluatedAt?: string | null;
+  fidelity: ScenarioRunEligibilityRecheckResponseDtoFidelity;
 }

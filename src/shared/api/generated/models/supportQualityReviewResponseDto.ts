@@ -10,19 +10,19 @@ import type { SupportQualityReviewResponseDtoState } from "./supportQualityRevie
 import type { SupportQualityReviewResponseDtoSubmittedAt } from "./supportQualityReviewResponseDtoSubmittedAt";
 
 export interface SupportQualityReviewResponseDto {
+  caseId: string;
+  conversationId: string;
   id: string;
   kind: SupportQualityReviewResponseDtoKind;
+  /** @minimum 1 */
+  maximumScore: number;
+  operatorCmsUserId: string;
+  reviewerCmsUserId: string;
   state: SupportQualityReviewResponseDtoState;
+  /** @nullable */
+  submittedAt?: SupportQualityReviewResponseDtoSubmittedAt;
   /** @minimum 0 */
   totalScore: number;
   /** @minimum 1 */
-  maximumScore: number;
-  /** @minimum 1 */
   version: number;
-  operatorCmsUserId: string;
-  reviewerCmsUserId: string;
-  caseId: string;
-  conversationId: string;
-  /** @nullable */
-  submittedAt?: SupportQualityReviewResponseDtoSubmittedAt;
 }

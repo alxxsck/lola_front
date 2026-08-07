@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportLeadInvestigationActionTokensDto } from "./supportLeadInvestigationActionTokensDto";
 import type { SupportLeadInvestigationDataDtoEvidenceSource } from "./supportLeadInvestigationDataDtoEvidenceSource";
+import type { SupportLeadSafeFactDto } from "./supportLeadSafeFactDto";
+import type { SupportLeadInvestigationPinnedDto } from "./supportLeadInvestigationPinnedDto";
 import type { SupportLeadInvestigationDataDtoRoutingFactsState } from "./supportLeadInvestigationDataDtoRoutingFactsState";
 import type { SupportLeadInvestigationTimelineSourcesDto } from "./supportLeadInvestigationTimelineSourcesDto";
-import type { SupportLeadInvestigationPinnedDto } from "./supportLeadInvestigationPinnedDto";
-import type { SupportLeadInvestigationActionTokensDto } from "./supportLeadInvestigationActionTokensDto";
-import type { SupportLeadSafeFactDto } from "./supportLeadSafeFactDto";
 
 export interface SupportLeadInvestigationDataDto {
-  evidenceSource: SupportLeadInvestigationDataDtoEvidenceSource;
-  routingFactsState: SupportLeadInvestigationDataDtoRoutingFactsState;
-  timelineSources: SupportLeadInvestigationTimelineSourcesDto;
-  pinned: SupportLeadInvestigationPinnedDto;
   actionTokens: SupportLeadInvestigationActionTokensDto;
+  evidenceSource: SupportLeadInvestigationDataDtoEvidenceSource;
   /** @maxItems 500 */
   facts: SupportLeadSafeFactDto[];
+  pinned: SupportLeadInvestigationPinnedDto;
+  routingFactsState: SupportLeadInvestigationDataDtoRoutingFactsState;
+  timelineSources: SupportLeadInvestigationTimelineSourcesDto;
 }

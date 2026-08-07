@@ -8,13 +8,13 @@
 import type { SupportKnowledgeTextDocumentResponseDtoSourceType } from "./supportKnowledgeTextDocumentResponseDtoSourceType";
 
 export interface SupportKnowledgeTextDocumentResponseDto {
+  /** @maxLength 1048576 */
+  contentText: string;
   documentId: string;
-  revisionId: string;
-  sourceType: SupportKnowledgeTextDocumentResponseDtoSourceType;
-  title: string;
   /** @nullable */
   language?: string | null;
   publishedAt: string;
-  /** @maxLength 1048576 */
-  contentText: string;
+  revisionId: string;
+  sourceType: SupportKnowledgeTextDocumentResponseDtoSourceType;
+  title: string;
 }

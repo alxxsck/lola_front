@@ -8,8 +8,8 @@
 
 export interface ScenarioTimelineEntryResponseDto {
   id: string;
+  occurredAt: string;
   /** @nullable */
   stepId?: string | null;
   type: string;
-  occurredAt: string;
 }

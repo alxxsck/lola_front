@@ -8,27 +8,27 @@
 import type { SupportLeadCaseRiskItemDtoRiskType } from "./supportLeadCaseRiskItemDtoRiskType";
 
 export interface SupportLeadCaseRiskItemDto {
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  assignmentVersion: number | null;
   caseId: string;
-  riskType: SupportLeadCaseRiskItemDtoRiskType;
-  riskSortAt: string;
-  detectedAt: string;
-  /** @nullable */
-  dueAt: string | null;
   /** @minimum 0 */
   caseVersion: number;
   /**
    * @minimum 0
    * @nullable
    */
-  assignmentVersion: number | null;
+  deliveryVersion: number | null;
+  detectedAt: string;
+  /** @nullable */
+  dueAt: string | null;
+  riskSortAt: string;
+  riskType: SupportLeadCaseRiskItemDtoRiskType;
   /**
    * @minimum 0
    * @nullable
    */
   slaClockVersion: number | null;
-  /**
-   * @minimum 0
-   * @nullable
-   */
-  deliveryVersion: number | null;
 }

@@ -8,9 +8,9 @@
 import type { ConversationContentRolloutResponseDtoEnabledCapabilitiesItem } from "./conversationContentRolloutResponseDtoEnabledCapabilitiesItem";
 
 export interface ConversationContentRolloutResponseDto {
-  version: number;
-  hardOff: boolean;
-  enabledCapabilities: ConversationContentRolloutResponseDtoEnabledCapabilitiesItem[];
   /** @pattern ^"ccr1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
+  enabledCapabilities: ConversationContentRolloutResponseDtoEnabledCapabilitiesItem[];
+  hardOff: boolean;
+  version: number;
 }

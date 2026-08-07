@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryUsageResponseDtoScope } from "./eventQueryUsageResponseDtoScope";
-import type { EventQueryUsageResponseDtoExactAiUsage } from "./eventQueryUsageResponseDtoExactAiUsage";
-import type { EventQueryUsageResponseDtoByOrigin } from "./eventQueryUsageResponseDtoByOrigin";
 import type { EventQueryUsageResponseDtoByAudience } from "./eventQueryUsageResponseDtoByAudience";
+import type { EventQueryUsageResponseDtoByOrigin } from "./eventQueryUsageResponseDtoByOrigin";
+import type { EventQueryUsageResponseDtoExactAiUsage } from "./eventQueryUsageResponseDtoExactAiUsage";
+import type { EventQueryUsageResponseDtoScope } from "./eventQueryUsageResponseDtoScope";
 
 export interface EventQueryUsageResponseDto {
-  from: string;
-  to: string;
-  scope: EventQueryUsageResponseDtoScope;
+  byAudience: EventQueryUsageResponseDtoByAudience;
+  byOrigin: EventQueryUsageResponseDtoByOrigin;
   calls: number;
   estimatedAddedInputTokens: number;
-  resultBytes: number;
   exactAiUsage?: EventQueryUsageResponseDtoExactAiUsage;
-  byOrigin: EventQueryUsageResponseDtoByOrigin;
-  byAudience: EventQueryUsageResponseDtoByAudience;
+  from: string;
+  resultBytes: number;
+  scope: EventQueryUsageResponseDtoScope;
+  to: string;
 }

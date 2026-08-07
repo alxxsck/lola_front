@@ -8,8 +8,8 @@
 import type { EndUserCaseEscalationResponseDto } from "./endUserCaseEscalationResponseDto";
 
 export interface EndUserCaseEscalationCommandResponseDto {
-  escalation: EndUserCaseEscalationResponseDto;
   /** @minimum 1 */
   caseVersion: number;
+  escalation: EndUserCaseEscalationResponseDto;
   replayed: boolean;
 }

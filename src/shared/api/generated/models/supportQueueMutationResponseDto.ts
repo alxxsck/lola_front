@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueMutationResponseDtoIntent } from "./supportQueueMutationResponseDtoIntent";
-import type { SupportQueueIdentityResponseDto } from "./supportQueueIdentityResponseDto";
 import type { SupportQueueMutationResponseDtoDraft } from "./supportQueueMutationResponseDtoDraft";
+import type { SupportQueueMutationResponseDtoIntent } from "./supportQueueMutationResponseDtoIntent";
 import type { SupportQueueRevisionResponseDto } from "./supportQueueRevisionResponseDto";
+import type { SupportQueueIdentityResponseDto } from "./supportQueueIdentityResponseDto";
 
 export interface SupportQueueMutationResponseDto {
-  intent: SupportQueueMutationResponseDtoIntent;
-  queue: SupportQueueIdentityResponseDto;
   /** @pattern ^"sq1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
   /** @nullable */
   draft?: SupportQueueMutationResponseDtoDraft;
+  intent: SupportQueueMutationResponseDtoIntent;
   publishedRevision?: SupportQueueRevisionResponseDto;
+  queue: SupportQueueIdentityResponseDto;
 }

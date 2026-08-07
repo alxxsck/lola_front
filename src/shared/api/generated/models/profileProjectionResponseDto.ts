@@ -5,33 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileProjectionFieldResponseDto } from "./profileProjectionFieldResponseDto";
+import type { ProfileProjectionResponseDtoLastRejectedSync } from "./profileProjectionResponseDtoLastRejectedSync";
 import type { ProfileProjectionResponseDtoProvenance } from "./profileProjectionResponseDtoProvenance";
 import type { ProfileProjectionResponseDtoSyncStatus } from "./profileProjectionResponseDtoSyncStatus";
-import type { ProfileProjectionResponseDtoLastRejectedSync } from "./profileProjectionResponseDtoLastRejectedSync";
-import type { ProfileProjectionFieldResponseDto } from "./profileProjectionFieldResponseDto";
 
 export interface ProfileProjectionResponseDto {
-  endUserId: string;
-  externalUserId: string;
-  /** @pattern ^\d+$ */
-  profileVersion: string;
-  /** @nullable */
-  contractRevision?: number | null;
-  /** @nullable */
-  publicationId?: string | null;
-  /** @nullable */
-  publicationSequence?: number | null;
-  /** @nullable */
-  observedAt?: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   ageSeconds?: number | null;
   /** @nullable */
-  receivedAt?: string | null;
-  provenance: ProfileProjectionResponseDtoProvenance;
-  syncStatus: ProfileProjectionResponseDtoSyncStatus;
-  lastRejectedSync?: ProfileProjectionResponseDtoLastRejectedSync;
+  contractRevision?: number | null;
+  endUserId: string;
+  externalUserId: string;
   fields: ProfileProjectionFieldResponseDto[];
+  lastRejectedSync?: ProfileProjectionResponseDtoLastRejectedSync;
+  /** @nullable */
+  observedAt?: string | null;
+  /** @pattern ^\d+$ */
+  profileVersion: string;
+  provenance: ProfileProjectionResponseDtoProvenance;
+  /** @nullable */
+  publicationId?: string | null;
+  /** @nullable */
+  publicationSequence?: number | null;
+  /** @nullable */
+  receivedAt?: string | null;
+  syncStatus: ProfileProjectionResponseDtoSyncStatus;
 }

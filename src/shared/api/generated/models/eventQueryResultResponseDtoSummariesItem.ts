@@ -7,8 +7,8 @@
  */
 
 export type EventQueryResultResponseDtoSummariesItem = {
-  eventCode: string;
   count: number;
+  eventCode: string;
   firstOccurredAt: string;
   lastOccurredAt: string;
 };

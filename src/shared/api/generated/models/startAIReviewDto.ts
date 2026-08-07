@@ -7,15 +7,15 @@
  */
 
 export interface StartAIReviewDto {
+  confirmedExpensive: boolean;
   endUserId: string;
-  localDate: string;
   /**
    * @minItems 1
    * @maxItems 20
    */
   eventCodes: string[];
+  idempotencyKey: string;
   /** @maxLength 500 */
   instruction?: string;
-  idempotencyKey: string;
-  confirmedExpensive: boolean;
+  localDate: string;
 }

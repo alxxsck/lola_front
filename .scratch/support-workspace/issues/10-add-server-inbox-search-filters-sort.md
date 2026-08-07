@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 09 — Объединить Cases и Conversations в одном inbox.
 
-**Status:** blocked-by-backend
+**Status:** complete
 
 **Backend gate (audit 2026-08-07):** полный blocker — response schemas, Users search и
 closed filter/sort grammar не опубликованы. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#10--server-search-filters-и-sort).
@@ -13,9 +13,10 @@ closed filter/sort grammar не опубликованы. См. [аудит 01�
 условия снятия блокировки зафиксированы в
 [contract gate](../../../docs/specs/support-workspace-frontend/15-search-saved-views-contract-blockers.ru.md#ticket-10--server-search-filters-и-sort).
 
-- [ ] URL хранит нормализованные shareable query/filter/sort параметры.
-- [ ] Search поддерживает разрешённые scopes и не раскрывает hidden targets.
-- [ ] Filter/sort отправляются серверу вместе с cursor и не применяются к одной загруженной странице.
-- [ ] Быстрая смена query отменяет или игнорирует stale responses.
-- [ ] Empty, no-results, degraded index и validation errors имеют отдельные состояния.
-- [ ] Keyboard search и возврат к inbox selection работают без pointer.
+- [x] URL хранит нормализованные shareable scope/filter/sort параметры; free-text и
+  raw external user ID остаются memory-only по запрету PII из master-spec.
+- [x] Search поддерживает разрешённые scopes и не раскрывает hidden targets.
+- [x] Filter/sort отправляются серверу вместе с cursor и не применяются к одной загруженной странице.
+- [x] Быстрая смена query отменяет или игнорирует stale responses.
+- [x] Empty, no-results, degraded index и validation errors имеют отдельные состояния.
+- [x] Keyboard search и возврат к inbox selection работают без pointer.

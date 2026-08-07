@@ -8,10 +8,10 @@
 import type { SupportLeadCapacityRisksDataDtoState } from "./supportLeadCapacityRisksDataDtoState";
 
 export interface SupportLeadCapacityRisksDataDto {
-  state: SupportLeadCapacityRisksDataDtoState;
   /**
    * Empty until routing Ticket 13.
    * @maxItems 0
    */
   items: string[];
+  state: SupportLeadCapacityRisksDataDtoState;
 }

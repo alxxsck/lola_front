@@ -7,6 +7,6 @@
  */
 
 export interface AiAllowanceRuntimeGatesDto {
-  hardEnforcementApproved: boolean;
   emergencyDisabled: boolean;
+  hardEnforcementApproved: boolean;
 }

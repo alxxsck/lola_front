@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkforceIdentityResponseDto } from "./supportWorkforceIdentityResponseDto";
 import type { SupportWorkforceMutationResponseDtoDraft } from "./supportWorkforceMutationResponseDtoDraft";
 import type { SupportWorkforcePublishedRevisionResponseDto } from "./supportWorkforcePublishedRevisionResponseDto";
+import type { SupportWorkforceIdentityResponseDto } from "./supportWorkforceIdentityResponseDto";
 
 export interface SupportWorkforceMutationResponseDto {
-  intent: string;
-  /** @minimum 1 */
-  rootVersion: number;
   actionEtag: string;
-  team?: SupportWorkforceIdentityResponseDto;
-  skill?: SupportWorkforceIdentityResponseDto;
   /** @nullable */
   draft?: SupportWorkforceMutationResponseDtoDraft;
+  intent: string;
   publishedRevision?: SupportWorkforcePublishedRevisionResponseDto;
+  /** @minimum 1 */
+  rootVersion: number;
+  skill?: SupportWorkforceIdentityResponseDto;
+  team?: SupportWorkforceIdentityResponseDto;
 }

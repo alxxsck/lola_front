@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { NotificationOperationsQueueHealthDto } from "./notificationOperationsQueueHealthDto";
 import type { NotificationOperationsProviderHealthDto } from "./notificationOperationsProviderHealthDto";
-import type { NotificationOperationsAdmissionHealthDto } from "./notificationOperationsAdmissionHealthDto";
+import type { NotificationOperationsQueueHealthDto } from "./notificationOperationsQueueHealthDto";
 import type { NotificationOperationsRetentionHealthDto } from "./notificationOperationsRetentionHealthDto";
+import type { NotificationOperationsAdmissionHealthDto } from "./notificationOperationsAdmissionHealthDto";
 
 export interface NotificationOperationsHealthResponseDto {
-  observedAt: string;
-  queues: NotificationOperationsQueueHealthDto[];
-  /** @minimum 0 */
-  permanentCount: number;
   /** @minimum 0 */
   ambiguousCount: number;
   /** @minimum 0 */
-  suppressedCount: number;
-  /** @minimum 0 */
   deadLetterCount: number;
+  observedAt: string;
+  /** @minimum 0 */
+  permanentCount: number;
   providers: NotificationOperationsProviderHealthDto[];
-  telegramProductAdmission: NotificationOperationsAdmissionHealthDto[];
+  queues: NotificationOperationsQueueHealthDto[];
   retention: NotificationOperationsRetentionHealthDto;
+  /** @minimum 0 */
+  suppressedCount: number;
+  telegramProductAdmission: NotificationOperationsAdmissionHealthDto[];
 }

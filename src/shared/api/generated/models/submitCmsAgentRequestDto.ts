@@ -7,6 +7,13 @@
  */
 
 export interface SubmitCmsAgentRequestDto {
+  /** Trusted End User context selected by the CMS route, never inferred by the model. */
+  endUserId?: string;
+  /**
+   * @minLength 40
+   * @maxLength 4096
+   */
+  highCostConfirmationToken?: string;
   /**
    * @minLength 1
    * @maxLength 128
@@ -17,11 +24,4 @@ export interface SubmitCmsAgentRequestDto {
    * @maxLength 10000
    */
   text: string;
-  /** Trusted End User context selected by the CMS route, never inferred by the model. */
-  endUserId?: string;
-  /**
-   * @minLength 40
-   * @maxLength 4096
-   */
-  highCostConfirmationToken?: string;
 }

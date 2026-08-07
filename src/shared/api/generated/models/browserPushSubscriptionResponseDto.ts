@@ -8,14 +8,14 @@
 import type { BrowserPushSubscriptionResponseDtoStatus } from "./browserPushSubscriptionResponseDtoStatus";
 
 export interface BrowserPushSubscriptionResponseDto {
-  id: string;
-  /** @maxLength 64 */
-  userAgentClass: string;
-  status: BrowserPushSubscriptionResponseDtoStatus;
-  /** @minimum 0 */
-  version: number;
   createdAt: string;
+  id: string;
   lastSeenAt: string;
   /** @nullable */
   revokedAt?: string | null;
+  status: BrowserPushSubscriptionResponseDtoStatus;
+  /** @maxLength 64 */
+  userAgentClass: string;
+  /** @minimum 0 */
+  version: number;
 }

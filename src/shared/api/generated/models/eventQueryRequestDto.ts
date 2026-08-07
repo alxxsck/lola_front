@@ -5,9 +5,9 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventQueryMetricDto } from "./eventQueryMetricDto";
 import type { EventQueryRequestDtoMode } from "./eventQueryRequestDtoMode";
 import type { EventQueryTimeRangeDto } from "./eventQueryTimeRangeDto";
-import type { EventQueryMetricDto } from "./eventQueryMetricDto";
 
 export interface EventQueryRequestDto {
   /**
@@ -15,17 +15,17 @@ export interface EventQueryRequestDto {
    * @maxItems 5
    */
   eventCodes: string[];
-  mode: EventQueryRequestDtoMode;
-  timeRange: EventQueryTimeRangeDto;
   /** @maxItems 10 */
   fields?: string[];
   /** @maxItems 2 */
   groupBy?: string[];
-  /** @maxItems 5 */
-  metrics?: EventQueryMetricDto[];
   /**
    * @minimum 1
    * @maximum 20
    */
   limit?: number;
+  /** @maxItems 5 */
+  metrics?: EventQueryMetricDto[];
+  mode: EventQueryRequestDtoMode;
+  timeRange: EventQueryTimeRangeDto;
 }

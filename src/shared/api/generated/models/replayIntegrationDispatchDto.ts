@@ -8,11 +8,11 @@
 import type { ReplayIntegrationDispatchDtoExpectedState } from "./replayIntegrationDispatchDtoExpectedState";
 
 export interface ReplayIntegrationDispatchDto {
+  /** Required when the prior outcome is unknown. */
+  acknowledgeDuplicateRisk: boolean;
   /** @minimum 1 */
   expectedOperationsVersion: number;
   expectedState: ReplayIntegrationDispatchDtoExpectedState;
-  /** Required when the prior outcome is unknown. */
-  acknowledgeDuplicateRisk: boolean;
   /**
    * @minLength 1
    * @maxLength 500

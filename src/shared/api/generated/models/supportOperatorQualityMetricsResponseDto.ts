@@ -7,17 +7,17 @@
  */
 
 export interface SupportOperatorQualityMetricsResponseDto {
+  /** @minimum 0 */
+  averagePercent: number;
+  /** @minimum 0 */
+  maximumScore: number;
+  /** @minimum 0 */
+  openDisputeCount: number;
   operatorCmsUserId: string;
+  /** @minimum 0 */
+  resolvedDisputeCount: number;
   /** @minimum 0 */
   submittedReviewCount: number;
   /** @minimum 0 */
   totalScore: number;
-  /** @minimum 0 */
-  maximumScore: number;
-  /** @minimum 0 */
-  averagePercent: number;
-  /** @minimum 0 */
-  openDisputeCount: number;
-  /** @minimum 0 */
-  resolvedDisputeCount: number;
 }

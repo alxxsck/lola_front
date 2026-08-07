@@ -5,37 +5,37 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventCatalogDefinitionResponseDtoPayloadSchema } from "./eventCatalogDefinitionResponseDtoPayloadSchema";
-import type { EventCatalogDefinitionResponseDtoOrigin } from "./eventCatalogDefinitionResponseDtoOrigin";
 import type { EventCatalogDefinitionResponseDtoLifecycle } from "./eventCatalogDefinitionResponseDtoLifecycle";
+import type { EventCatalogDefinitionResponseDtoOrigin } from "./eventCatalogDefinitionResponseDtoOrigin";
+import type { EventCatalogDefinitionResponseDtoPayloadSchema } from "./eventCatalogDefinitionResponseDtoPayloadSchema";
 
 export interface EventCatalogDefinitionResponseDto {
-  id: string;
-  revisionId: string;
-  projectId: string;
-  code: string;
-  name: string;
-  /** @nullable */
-  description?: string | null;
-  /** @minimum 1 */
-  version: number;
-  payloadSchema: EventCatalogDefinitionResponseDtoPayloadSchema;
-  enabled: boolean;
-  clientIngestible: boolean;
-  countsAsActivity: boolean;
-  /** @minimum 1 */
-  policyVersion: number;
-  policyUpdatedAt: string;
-  metadataUpdatedAt: string;
-  definitionKeyId: string;
-  /** @nullable */
-  currentRevisionId?: string | null;
-  isCurrent: boolean;
-  origin: EventCatalogDefinitionResponseDtoOrigin;
-  readOnly: boolean;
-  lifecycle: EventCatalogDefinitionResponseDtoLifecycle;
   /** @nullable */
   archivedAt?: string | null;
+  clientIngestible: boolean;
+  code: string;
+  countsAsActivity: boolean;
   createdAt: string;
+  /** @nullable */
+  currentRevisionId?: string | null;
+  definitionKeyId: string;
+  /** @nullable */
+  description?: string | null;
+  enabled: boolean;
+  id: string;
+  isCurrent: boolean;
+  lifecycle: EventCatalogDefinitionResponseDtoLifecycle;
+  metadataUpdatedAt: string;
+  name: string;
+  origin: EventCatalogDefinitionResponseDtoOrigin;
+  payloadSchema: EventCatalogDefinitionResponseDtoPayloadSchema;
+  policyUpdatedAt: string;
+  /** @minimum 1 */
+  policyVersion: number;
+  projectId: string;
+  readOnly: boolean;
+  revisionId: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

@@ -8,9 +8,9 @@
 import type { EventQueryResultResponseDtoRowsItemFields } from "./eventQueryResultResponseDtoRowsItemFields";
 
 export type EventQueryResultResponseDtoRowsItem = {
-  id: string;
   eventCode: string;
+  fields: EventQueryResultResponseDtoRowsItemFields;
+  id: string;
   occurredAt: string;
   receivedAt: string;
-  fields: EventQueryResultResponseDtoRowsItemFields;
 };

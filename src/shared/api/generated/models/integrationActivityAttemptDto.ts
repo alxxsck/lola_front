@@ -9,11 +9,11 @@
 export interface IntegrationActivityAttemptDto {
   /** @minimum 1 */
   attemptNumber: number;
-  outcome: string;
   /** @nullable */
   errorCode?: string | null;
+  finishedAt: string;
+  outcome: string;
   /** @nullable */
   retryAfterMs?: number | null;
   startedAt: string;
-  finishedAt: string;
 }

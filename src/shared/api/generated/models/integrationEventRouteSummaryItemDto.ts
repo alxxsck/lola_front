@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { IntegrationEventRouteSummaryItemDtoConnectionHealth } from "./integrationEventRouteSummaryItemDtoConnectionHealth";
+import type { IntegrationEventRouteSummaryItemDtoConnectionLifecycle } from "./integrationEventRouteSummaryItemDtoConnectionLifecycle";
 import type { IntegrationEventRouteSummaryItemDtoDirection } from "./integrationEventRouteSummaryItemDtoDirection";
 import type { IntegrationEventRouteSummaryItemDtoProvider } from "./integrationEventRouteSummaryItemDtoProvider";
-import type { IntegrationEventRouteSummaryItemDtoConnectionLifecycle } from "./integrationEventRouteSummaryItemDtoConnectionLifecycle";
-import type { IntegrationEventRouteSummaryItemDtoConnectionHealth } from "./integrationEventRouteSummaryItemDtoConnectionHealth";
 import type { IntegrationEventRouteSummaryItemDtoRouteLifecycle } from "./integrationEventRouteSummaryItemDtoRouteLifecycle";
 import type { IntegrationEventRouteSummaryItemDtoSchemaCompatibility } from "./integrationEventRouteSummaryItemDtoSchemaCompatibility";
 import type { IntegrationEventRouteSummaryItemDtoWarningsItem } from "./integrationEventRouteSummaryItemDtoWarningsItem";
 
 export interface IntegrationEventRouteSummaryItemDto {
-  routeId: string;
-  connectionId: string;
-  direction: IntegrationEventRouteSummaryItemDtoDirection;
-  provider: IntegrationEventRouteSummaryItemDtoProvider;
   connectionDisplayName: string;
-  connectionLifecycle: IntegrationEventRouteSummaryItemDtoConnectionLifecycle;
   connectionHealth: IntegrationEventRouteSummaryItemDtoConnectionHealth;
-  routeLifecycle: IntegrationEventRouteSummaryItemDtoRouteLifecycle;
+  connectionId: string;
+  connectionLifecycle: IntegrationEventRouteSummaryItemDtoConnectionLifecycle;
+  direction: IntegrationEventRouteSummaryItemDtoDirection;
   enabled: boolean;
+  provider: IntegrationEventRouteSummaryItemDtoProvider;
   /**
    * @minimum 1
    * @nullable
    */
   publishedRevision: number | null;
+  routeId: string;
+  routeLifecycle: IntegrationEventRouteSummaryItemDtoRouteLifecycle;
   schemaCompatibility: IntegrationEventRouteSummaryItemDtoSchemaCompatibility;
   warnings: IntegrationEventRouteSummaryItemDtoWarningsItem[];
 }

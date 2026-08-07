@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioRuleIssueResponseDto } from "./scenarioRuleIssueResponseDto";
-import type { PreviewScenarioGoalResponseDtoDependency } from "./previewScenarioGoalResponseDtoDependency";
 import type { ScenarioGoalActualResponseDto } from "./scenarioGoalActualResponseDto";
-import type { ScenarioGoalWindowResponseDto } from "./scenarioGoalWindowResponseDto";
+import type { PreviewScenarioGoalResponseDtoDependency } from "./previewScenarioGoalResponseDtoDependency";
 import type { ScenarioGoalExplanationResponseDto } from "./scenarioGoalExplanationResponseDto";
+import type { ScenarioRuleIssueResponseDto } from "./scenarioRuleIssueResponseDto";
+import type { ScenarioGoalWindowResponseDto } from "./scenarioGoalWindowResponseDto";
 
 export interface PreviewScenarioGoalResponseDto {
-  valid: boolean;
-  matched: boolean;
-  issues: ScenarioRuleIssueResponseDto[];
+  actual?: ScenarioGoalActualResponseDto;
   /** @nullable */
   dependency?: PreviewScenarioGoalResponseDtoDependency;
-  matchedCount?: string;
-  actual?: ScenarioGoalActualResponseDto;
-  window?: ScenarioGoalWindowResponseDto;
   explanation?: ScenarioGoalExplanationResponseDto;
+  issues: ScenarioRuleIssueResponseDto[];
+  matched: boolean;
+  matchedCount?: string;
+  valid: boolean;
+  window?: ScenarioGoalWindowResponseDto;
 }

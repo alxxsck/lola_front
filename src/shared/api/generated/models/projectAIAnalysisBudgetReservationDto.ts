@@ -10,16 +10,16 @@ import type { ProjectAIAnalysisBudgetReservationDtoScope } from "./projectAIAnal
 import type { ProjectAIAnalysisBudgetReservationDtoState } from "./projectAIAnalysisBudgetReservationDtoState";
 
 export interface ProjectAIAnalysisBudgetReservationDto {
-  id: string;
-  /** @nullable */
-  runId?: string | null;
-  kind: ProjectAIAnalysisBudgetReservationDtoKind;
-  scope: ProjectAIAnalysisBudgetReservationDtoScope;
-  /** @pattern ^\d+$ */
-  reservedAmount: string;
   /** @pattern ^\d+$ */
   consumedAmount: string;
+  id: string;
+  kind: ProjectAIAnalysisBudgetReservationDtoKind;
   /** @pattern ^\d+$ */
   releasedAmount: string;
+  /** @pattern ^\d+$ */
+  reservedAmount: string;
+  /** @nullable */
+  runId?: string | null;
+  scope: ProjectAIAnalysisBudgetReservationDtoScope;
   state: ProjectAIAnalysisBudgetReservationDtoState;
 }

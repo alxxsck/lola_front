@@ -8,8 +8,8 @@
 import type { SupportWorkforceSkillSnapshotResponseDtoKind } from "./supportWorkforceSkillSnapshotResponseDtoKind";
 
 export interface SupportWorkforceSkillSnapshotResponseDto {
-  id: string;
   code: string;
-  name: string;
+  id: string;
   kind: SupportWorkforceSkillSnapshotResponseDtoKind;
+  name: string;
 }

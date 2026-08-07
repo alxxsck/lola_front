@@ -10,8 +10,8 @@ import type { AudienceProfileAttributeNodeDtoOperator } from "./audienceProfileA
 import type { AudienceProfileAttributeNodeDtoValue } from "./audienceProfileAttributeNodeDtoValue";
 
 export interface AudienceProfileAttributeNodeDto {
-  kind: AudienceProfileAttributeNodeDtoKind;
   definitionId: string;
+  kind: AudienceProfileAttributeNodeDtoKind;
   operator: AudienceProfileAttributeNodeDtoOperator;
   value?: AudienceProfileAttributeNodeDtoValue;
 }

@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsProfileSummaryResponseDtoSyncStatus } from "./cmsProfileSummaryResponseDtoSyncStatus";
+import type { CmsConversationAISuspensionSummaryResponseDto } from "./cmsConversationAISuspensionSummaryResponseDto";
 import type { ProfileProjectionFieldResponseDto } from "./profileProjectionFieldResponseDto";
 import type { CmsProfileSummaryResponseDtoLastRejectedSync } from "./cmsProfileSummaryResponseDtoLastRejectedSync";
-import type { CmsConversationAISuspensionSummaryResponseDto } from "./cmsConversationAISuspensionSummaryResponseDto";
+import type { CmsProfileSummaryResponseDtoSyncStatus } from "./cmsProfileSummaryResponseDtoSyncStatus";
 
 export interface CmsProfileSummaryResponseDto {
+  conversationAiSuspensionSummary: CmsConversationAISuspensionSummaryResponseDto;
   endUserId: string;
   externalUserId: string;
-  /** @nullable */
-  locale?: string | null;
-  lastSeenAt: string;
-  /** @pattern ^\d+$ */
-  profileVersion: string;
-  /** @nullable */
-  observedAt?: string | null;
-  syncStatus: CmsProfileSummaryResponseDtoSyncStatus;
   fields: ProfileProjectionFieldResponseDto[];
   /** @nullable */
   lastRejectedSync?: CmsProfileSummaryResponseDtoLastRejectedSync;
-  conversationAiSuspensionSummary: CmsConversationAISuspensionSummaryResponseDto;
+  lastSeenAt: string;
+  /** @nullable */
+  locale?: string | null;
+  /** @nullable */
+  observedAt?: string | null;
+  /** @pattern ^\d+$ */
+  profileVersion: string;
+  syncStatus: CmsProfileSummaryResponseDtoSyncStatus;
 }

@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseAssignmentCandidatesResponseDtoWorkforceRevision } from "./supportCaseAssignmentCandidatesResponseDtoWorkforceRevision";
-import type { SupportCaseAssignmentCandidatesResponseDtoCurrentAssignment } from "./supportCaseAssignmentCandidatesResponseDtoCurrentAssignment";
 import type { SupportCaseAssignmentCandidateActionsResponseDto } from "./supportCaseAssignmentCandidateActionsResponseDto";
+import type { SupportCaseAssignmentCandidatesResponseDtoCurrentAssignment } from "./supportCaseAssignmentCandidatesResponseDtoCurrentAssignment";
 import type { SupportCaseAssignmentCandidateTeamResponseDto } from "./supportCaseAssignmentCandidateTeamResponseDto";
+import type { SupportCaseAssignmentCandidatesResponseDtoWorkforceRevision } from "./supportCaseAssignmentCandidatesResponseDtoWorkforceRevision";
 
 export interface SupportCaseAssignmentCandidatesResponseDto {
+  actions: SupportCaseAssignmentCandidateActionsResponseDto;
   caseId: string;
-  /** @minimum 1 */
-  caseVersion: number;
   /** @pattern ^"sc1\.[A-Za-z0-9_-]{43}"$ */
   caseReadToken: string;
-  /** @nullable */
-  workforceRevision?: SupportCaseAssignmentCandidatesResponseDtoWorkforceRevision;
+  /** @minimum 1 */
+  caseVersion: number;
   /** @nullable */
   currentAssignment?: SupportCaseAssignmentCandidatesResponseDtoCurrentAssignment;
-  actions: SupportCaseAssignmentCandidateActionsResponseDto;
   teams: SupportCaseAssignmentCandidateTeamResponseDto[];
+  /** @nullable */
+  workforceRevision?: SupportCaseAssignmentCandidatesResponseDtoWorkforceRevision;
 }

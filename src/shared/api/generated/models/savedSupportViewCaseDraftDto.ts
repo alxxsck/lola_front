@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SavedSupportViewCaseDraftDtoSchemaVersion } from "./savedSupportViewCaseDraftDtoSchemaVersion";
 import type { SavedSupportViewCaseDraftDtoColumnsItem } from "./savedSupportViewCaseDraftDtoColumnsItem";
-import type { SavedSupportViewCaseDraftDtoSurface } from "./savedSupportViewCaseDraftDtoSurface";
 import type { SavedSupportViewCaseFiltersDto } from "./savedSupportViewCaseFiltersDto";
+import type { SavedSupportViewCaseDraftDtoSchemaVersion } from "./savedSupportViewCaseDraftDtoSchemaVersion";
 import type { SupportCaseSearchSortDto } from "./supportCaseSearchSortDto";
+import type { SavedSupportViewCaseDraftDtoSurface } from "./savedSupportViewCaseDraftDtoSurface";
 
 export interface SavedSupportViewCaseDraftDto {
-  schemaVersion: SavedSupportViewCaseDraftDtoSchemaVersion;
+  /** @maxItems 13 */
+  columns: SavedSupportViewCaseDraftDtoColumnsItem[];
   /**
    * @minLength 2
    * @maxLength 120
    */
   displayName: string;
-  /** @maxItems 5 */
-  columns: SavedSupportViewCaseDraftDtoColumnsItem[];
-  surface: SavedSupportViewCaseDraftDtoSurface;
+  filters: SavedSupportViewCaseFiltersDto;
   /** @nullable */
   queueId?: string | null;
-  filters: SavedSupportViewCaseFiltersDto;
+  schemaVersion: SavedSupportViewCaseDraftDtoSchemaVersion;
   sort: SupportCaseSearchSortDto;
+  surface: SavedSupportViewCaseDraftDtoSurface;
 }

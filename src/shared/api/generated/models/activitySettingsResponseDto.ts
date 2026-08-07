@@ -9,11 +9,11 @@ import type { ActivitySettingsLimitsResponseDto } from "./activitySettingsLimits
 import type { ActivitySettingsSemanticsResponseDto } from "./activitySettingsSemanticsResponseDto";
 
 export interface ActivitySettingsResponseDto {
+  limits: ActivitySettingsLimitsResponseDto;
   /** @minimum 1 */
   projectVersion: number;
+  reconnectGraceSeconds: number;
+  semantics: ActivitySettingsSemanticsResponseDto;
   timezone: string;
   visitInactivitySeconds: number;
-  reconnectGraceSeconds: number;
-  limits: ActivitySettingsLimitsResponseDto;
-  semantics: ActivitySettingsSemanticsResponseDto;
 }

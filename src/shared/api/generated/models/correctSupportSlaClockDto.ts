@@ -9,13 +9,13 @@ import type { CorrectSupportSlaClockDtoCorrectionIntent } from "./correctSupport
 
 export interface CorrectSupportSlaClockDto {
   clockId: string;
+  correctionIntent: CorrectSupportSlaClockDtoCorrectionIntent;
   /** @minimum 1 */
   expectedClockVersion: number;
-  correctionIntent: CorrectSupportSlaClockDtoCorrectionIntent;
-  replacementDeadline?: string;
   /**
    * @minLength 1
    * @maxLength 500
    */
   reason: string;
+  replacementDeadline?: string;
 }

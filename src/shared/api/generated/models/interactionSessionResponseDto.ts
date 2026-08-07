@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { InteractionSessionUserResponseDto } from "./interactionSessionUserResponseDto";
+import type { ProfileSyncResponseDto } from "./profileSyncResponseDto";
 import type { InteractionSessionProjectResponseDto } from "./interactionSessionProjectResponseDto";
 import type { InteractionSessionRealtimeResponseDto } from "./interactionSessionRealtimeResponseDto";
 import type { UpgradedGuestResponseDto } from "./upgradedGuestResponseDto";
-import type { ProfileSyncResponseDto } from "./profileSyncResponseDto";
+import type { InteractionSessionUserResponseDto } from "./interactionSessionUserResponseDto";
 
 export interface InteractionSessionResponseDto {
   accessToken: string;
   chatId: string;
-  sessionId: string;
   expiresAt: string;
-  user: InteractionSessionUserResponseDto;
+  profileSync?: ProfileSyncResponseDto;
   project: InteractionSessionProjectResponseDto;
   realtime: InteractionSessionRealtimeResponseDto;
+  sessionId: string;
   upgradedFrom?: UpgradedGuestResponseDto;
-  profileSync?: ProfileSyncResponseDto;
+  user: InteractionSessionUserResponseDto;
 }

@@ -7,8 +7,8 @@
  */
 
 export interface TranslationJobAcceptedResponseDto {
-  jobId: string;
-  status: string;
-  sourceHash: string;
   createdAt: string;
+  jobId: string;
+  sourceHash: string;
+  status: string;
 }

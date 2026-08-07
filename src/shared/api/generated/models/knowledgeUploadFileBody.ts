@@ -7,11 +7,11 @@
  */
 
 export type KnowledgeUploadFileBody = {
-  file: Blob;
-  /** @maxLength 200 */
-  title?: string;
-  /** @maxLength 20 */
-  locale?: string;
   /** @maxLength 80 */
   category?: string;
+  file: Blob;
+  /** @maxLength 20 */
+  locale?: string;
+  /** @maxLength 200 */
+  title?: string;
 };

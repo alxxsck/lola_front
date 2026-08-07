@@ -5,46 +5,46 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateScenarioAuthoringMetadataDtoStatus } from "./updateScenarioAuthoringMetadataDtoStatus";
 import type { UpdateScenarioAuthoringMetadataDtoConversationPolicy } from "./updateScenarioAuthoringMetadataDtoConversationPolicy";
 import type { UpdateScenarioAuthoringMetadataDtoImportanceClass } from "./updateScenarioAuthoringMetadataDtoImportanceClass";
+import type { UpdateScenarioAuthoringMetadataDtoStatus } from "./updateScenarioAuthoringMetadataDtoStatus";
 
 export interface UpdateScenarioAuthoringMetadataDto {
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  name?: string;
+  /** @nullable */
+  activeFrom?: string | null;
+  /** @nullable */
+  activeTo?: string | null;
+  conversationPolicy?: UpdateScenarioAuthoringMetadataDtoConversationPolicy;
+  /** @minimum 0 */
+  cooldownSeconds?: number;
   /**
    * @maxLength 2000
    * @nullable
    */
   description?: string | null;
   eventDefinitionId?: string;
-  status?: UpdateScenarioAuthoringMetadataDtoStatus;
-  conversationPolicy?: UpdateScenarioAuthoringMetadataDtoConversationPolicy;
-  /**
-   * @minimum -1000
-   * @maximum 1000
-   */
-  priority?: number;
+  expectedUpdatedAt: string;
   importanceClass?: UpdateScenarioAuthoringMetadataDtoImportanceClass;
-  respectsQuietHours?: boolean;
-  /** @minimum 0 */
-  cooldownSeconds?: number;
   /**
    * @minimum 1
    * @nullable
    */
   maxRunsPerUser?: number | null;
-  /** @nullable */
-  activeFrom?: string | null;
-  /** @nullable */
-  activeTo?: string | null;
-  expectedUpdatedAt: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name?: string;
+  /**
+   * @minimum -1000
+   * @maximum 1000
+   */
+  priority?: number;
   /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
+  respectsQuietHours?: boolean;
+  status?: UpdateScenarioAuthoringMetadataDtoStatus;
 }

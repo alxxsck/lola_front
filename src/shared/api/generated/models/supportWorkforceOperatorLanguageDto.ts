@@ -13,6 +13,6 @@ export interface SupportWorkforceOperatorLanguageDto {
    * @maxLength 35
    */
   languageTag: string;
-  proficiency: SupportWorkforceOperatorLanguageDtoProficiency;
   preferred?: boolean;
+  proficiency: SupportWorkforceOperatorLanguageDtoProficiency;
 }

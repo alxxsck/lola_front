@@ -5,41 +5,41 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadCaseRisksResponseDtoFreshnessState } from "./supportLeadCaseRisksResponseDtoFreshnessState";
-import type { SupportLeadCaseRisksResponseDtoEffectiveWindow } from "./supportLeadCaseRisksResponseDtoEffectiveWindow";
-import type { SupportLeadCaseRisksResponseDtoSlaRolloutState } from "./supportLeadCaseRisksResponseDtoSlaRolloutState";
 import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportLeadCaseRisksResponseDtoKind } from "./supportLeadCaseRisksResponseDtoKind";
-import type { SupportLeadCaseRisksResponseDtoView } from "./supportLeadCaseRisksResponseDtoView";
-import type { SupportLeadCaseRisksResponseDtoRiskType } from "./supportLeadCaseRisksResponseDtoRiskType";
 import type { SupportLeadCaseRisksDataDto } from "./supportLeadCaseRisksDataDto";
+import type { SupportLeadCaseRisksResponseDtoEffectiveWindow } from "./supportLeadCaseRisksResponseDtoEffectiveWindow";
+import type { SupportLeadCaseRisksResponseDtoFreshnessState } from "./supportLeadCaseRisksResponseDtoFreshnessState";
+import type { SupportLeadCaseRisksResponseDtoKind } from "./supportLeadCaseRisksResponseDtoKind";
+import type { SupportLeadCaseRisksResponseDtoRiskType } from "./supportLeadCaseRisksResponseDtoRiskType";
+import type { SupportLeadCaseRisksResponseDtoSlaRolloutState } from "./supportLeadCaseRisksResponseDtoSlaRolloutState";
+import type { SupportLeadCaseRisksResponseDtoView } from "./supportLeadCaseRisksResponseDtoView";
 
 export interface SupportLeadCaseRisksResponseDto {
-  /** @minimum 1 */
-  projectionGeneration: number;
+  capabilities: SupportLeadCapabilitiesDto;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  /**
-   * @nullable
-   * @pattern ^(0|[1-9][0-9]*)$
-   */
-  sourceHighWater: string | null;
-  freshnessState: SupportLeadCaseRisksResponseDtoFreshnessState;
   computedAt: string;
+  data: SupportLeadCaseRisksDataDto;
+  /** @nullable */
+  effectiveWindow: SupportLeadCaseRisksResponseDtoEffectiveWindow;
+  freshnessState: SupportLeadCaseRisksResponseDtoFreshnessState;
+  kind: SupportLeadCaseRisksResponseDtoKind;
   /**
    * @maxLength 2048
    * @nullable
    */
   nextCursor: string | null;
-  /** @nullable */
-  effectiveWindow: SupportLeadCaseRisksResponseDtoEffectiveWindow;
-  slaRolloutState: SupportLeadCaseRisksResponseDtoSlaRolloutState;
-  capabilities: SupportLeadCapabilitiesDto;
-  kind: SupportLeadCaseRisksResponseDtoKind;
-  view: SupportLeadCaseRisksResponseDtoView;
+  /** @minimum 1 */
+  projectionGeneration: number;
   riskType: SupportLeadCaseRisksResponseDtoRiskType;
-  data: SupportLeadCaseRisksDataDto;
+  slaRolloutState: SupportLeadCaseRisksResponseDtoSlaRolloutState;
+  /**
+   * @nullable
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  sourceHighWater: string | null;
+  view: SupportLeadCaseRisksResponseDtoView;
 }

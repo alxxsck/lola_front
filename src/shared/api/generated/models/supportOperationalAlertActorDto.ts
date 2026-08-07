@@ -8,7 +8,6 @@
 import type { SupportOperationalAlertActorDtoType } from "./supportOperationalAlertActorDtoType";
 
 export interface SupportOperationalAlertActorDto {
-  type: SupportOperationalAlertActorDtoType;
   /** @nullable */
   cmsUserId: string | null;
   /**
@@ -16,4 +15,5 @@ export interface SupportOperationalAlertActorDto {
    * @nullable
    */
   systemCode: string | null;
+  type: SupportOperationalAlertActorDtoType;
 }

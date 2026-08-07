@@ -7,11 +7,11 @@
  */
 
 export interface SupportExternalWorkImportPreviewItemDto {
+  /** Required if several published mappings allow the ticket team. */
+  mappingRevisionId?: string;
   /**
    * @minLength 1
    * @maxLength 255
    */
   remoteItemId: string;
-  /** Required if several published mappings allow the ticket team. */
-  mappingRevisionId?: string;
 }

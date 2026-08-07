@@ -5,8 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkforceTeamLanguageDtoRequirement } from "./supportWorkforceTeamLanguageDtoRequirement";
 import type { SupportWorkforceTeamLanguageDtoMinimumProficiency } from "./supportWorkforceTeamLanguageDtoMinimumProficiency";
+import type { SupportWorkforceTeamLanguageDtoRequirement } from "./supportWorkforceTeamLanguageDtoRequirement";
 
 export interface SupportWorkforceTeamLanguageDto {
   /**
@@ -14,6 +14,6 @@ export interface SupportWorkforceTeamLanguageDto {
    * @maxLength 35
    */
   languageTag: string;
-  requirement: SupportWorkforceTeamLanguageDtoRequirement;
   minimumProficiency?: SupportWorkforceTeamLanguageDtoMinimumProficiency;
+  requirement: SupportWorkforceTeamLanguageDtoRequirement;
 }

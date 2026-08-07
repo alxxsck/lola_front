@@ -8,10 +8,10 @@
 import type { SupportMacroCompiledDraftDto } from "./supportMacroCompiledDraftDto";
 
 export interface SupportMacroPublishedRevisionDto {
+  configuration: SupportMacroCompiledDraftDto;
+  contentHash: string;
   id: string;
+  publishedAt: string;
   /** @minimum 1 */
   revisionNumber: number;
-  contentHash: string;
-  publishedAt: string;
-  configuration: SupportMacroCompiledDraftDto;
 }

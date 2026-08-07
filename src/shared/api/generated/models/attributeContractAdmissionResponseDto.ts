@@ -8,7 +8,7 @@
 import type { AttributeContractAdmissionRevisionResponseDto } from "./attributeContractAdmissionRevisionResponseDto";
 
 export interface AttributeContractAdmissionResponseDto {
-  currentRevisionId: string;
   acceptedRevisions: AttributeContractAdmissionRevisionResponseDto[];
+  currentRevisionId: string;
   outdatedRevisions: AttributeContractAdmissionRevisionResponseDto[];
 }

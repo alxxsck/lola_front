@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportRoutingRolloutResponseDtoHardCeiling } from "./supportRoutingRolloutResponseDtoHardCeiling";
 import type { SupportRoutingQueueActivationResponseDto } from "./supportRoutingQueueActivationResponseDto";
+import type { SupportRoutingRolloutResponseDtoHardCeiling } from "./supportRoutingRolloutResponseDtoHardCeiling";
 
 export interface SupportRoutingRolloutResponseDto {
-  hardCeiling: SupportRoutingRolloutResponseDtoHardCeiling;
-  emergencyDisabled: boolean;
-  /** @minimum 1 */
-  version: number;
   actionEtag: string;
   /** @maxItems 100 */
   activations: SupportRoutingQueueActivationResponseDto[];
+  emergencyDisabled: boolean;
+  hardCeiling: SupportRoutingRolloutResponseDtoHardCeiling;
+  /** @minimum 1 */
+  version: number;
 }

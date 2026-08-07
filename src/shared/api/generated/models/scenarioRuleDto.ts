@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioRuleDtoVersion } from "./scenarioRuleDtoVersion";
 import type { ScenarioRuleDtoRoot } from "./scenarioRuleDtoRoot";
+import type { ScenarioRuleDtoVersion } from "./scenarioRuleDtoVersion";
 
 export interface ScenarioRuleDto {
-  version: ScenarioRuleDtoVersion;
   root: ScenarioRuleDtoRoot;
+  version: ScenarioRuleDtoVersion;
 }

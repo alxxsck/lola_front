@@ -8,6 +8,6 @@
 
 export interface ApiErrorIssueResponseDto {
   code: string;
-  path: string;
   message: string;
+  path: string;
 }

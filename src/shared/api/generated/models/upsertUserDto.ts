@@ -5,11 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UpsertUserDtoProfile } from "./upsertUserDtoProfile";
 import type { UpsertUserDtoAttributes } from "./upsertUserDtoAttributes";
 import type { UpsertUserDtoPreferences } from "./upsertUserDtoPreferences";
+import type { UpsertUserDtoProfile } from "./upsertUserDtoProfile";
 
 export interface UpsertUserDto {
+  attributes?: UpsertUserDtoAttributes;
   /**
    * @minLength 1
    * @maxLength 200
@@ -17,9 +18,8 @@ export interface UpsertUserDto {
   externalId: string;
   isGuest?: boolean;
   locale?: string;
+  preferences?: UpsertUserDtoPreferences;
+  profile?: UpsertUserDtoProfile;
   /** @maxLength 100 */
   segment?: string;
-  profile?: UpsertUserDtoProfile;
-  attributes?: UpsertUserDtoAttributes;
-  preferences?: UpsertUserDtoPreferences;
 }

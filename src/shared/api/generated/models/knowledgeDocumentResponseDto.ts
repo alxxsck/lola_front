@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { KnowledgeDocumentResponseDtoCategory } from "./knowledgeDocumentResponseDtoCategory";
+import type { KnowledgeDocumentResponseDtoError } from "./knowledgeDocumentResponseDtoError";
+import type { KnowledgeDocumentResponseDtoErrorCode } from "./knowledgeDocumentResponseDtoErrorCode";
+import type { KnowledgeDocumentResponseDtoLocale } from "./knowledgeDocumentResponseDtoLocale";
 import type { KnowledgeSourceType } from "./knowledgeSourceType";
 import type { KnowledgeDocumentStatus } from "./knowledgeDocumentStatus";
-import type { KnowledgeDocumentResponseDtoLocale } from "./knowledgeDocumentResponseDtoLocale";
-import type { KnowledgeDocumentResponseDtoCategory } from "./knowledgeDocumentResponseDtoCategory";
-import type { KnowledgeDocumentResponseDtoErrorCode } from "./knowledgeDocumentResponseDtoErrorCode";
-import type { KnowledgeDocumentResponseDtoError } from "./knowledgeDocumentResponseDtoError";
 
 export interface KnowledgeDocumentResponseDto {
-  id: string;
-  projectId: string;
-  sourceType: KnowledgeSourceType;
-  title: string;
-  filename: string;
-  mimeType: string;
-  sizeBytes: number;
-  status: KnowledgeDocumentStatus;
-  /** @nullable */
-  locale?: KnowledgeDocumentResponseDtoLocale;
   /** @nullable */
   category?: KnowledgeDocumentResponseDtoCategory;
-  /** @nullable */
-  errorCode?: KnowledgeDocumentResponseDtoErrorCode;
+  createdAt: string;
   /** @nullable */
   error?: KnowledgeDocumentResponseDtoError;
-  createdAt: string;
+  /** @nullable */
+  errorCode?: KnowledgeDocumentResponseDtoErrorCode;
+  filename: string;
+  id: string;
+  /** @nullable */
+  locale?: KnowledgeDocumentResponseDtoLocale;
+  mimeType: string;
+  projectId: string;
+  sizeBytes: number;
+  sourceType: KnowledgeSourceType;
+  status: KnowledgeDocumentStatus;
+  title: string;
   updatedAt: string;
 }

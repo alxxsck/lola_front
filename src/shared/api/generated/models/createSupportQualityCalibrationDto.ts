@@ -7,10 +7,10 @@
  */
 
 export interface CreateSupportQualityCalibrationDto {
-  scorecardId: string;
-  /** @minimum 1 */
-  scorecardRevisionNumber: number;
   caseId: string;
   conversationId: string;
   operatorCmsUserId: string;
+  scorecardId: string;
+  /** @minimum 1 */
+  scorecardRevisionNumber: number;
 }

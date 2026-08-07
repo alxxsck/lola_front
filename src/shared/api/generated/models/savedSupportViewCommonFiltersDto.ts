@@ -8,7 +8,7 @@
 import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
 
 export interface SavedSupportViewCommonFiltersDto {
-  timeRange?: SupportSearchTimeRangeDto;
   /** @maxItems 50 */
   endUserIds?: string[];
+  timeRange?: SupportSearchTimeRangeDto;
 }

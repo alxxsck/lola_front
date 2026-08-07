@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAiUsageWorkloadProjectionResponseDtoRange } from "./projectAiUsageWorkloadProjectionResponseDtoRange";
 import type { ProjectAiUsageWorkloadBreakdownResponseDto } from "./projectAiUsageWorkloadBreakdownResponseDto";
+import type { ProjectAiUsageWorkloadProjectionResponseDtoRange } from "./projectAiUsageWorkloadProjectionResponseDtoRange";
 
 export interface ProjectAiUsageWorkloadProjectionResponseDto {
-  range?: ProjectAiUsageWorkloadProjectionResponseDtoRange;
   /** @maxItems 104 */
   items: ProjectAiUsageWorkloadBreakdownResponseDto[];
+  range?: ProjectAiUsageWorkloadProjectionResponseDtoRange;
 }

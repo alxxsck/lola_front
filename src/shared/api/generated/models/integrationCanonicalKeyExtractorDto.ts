@@ -8,10 +8,10 @@
 import type { IntegrationCanonicalKeyExtractorDtoNormalization } from "./integrationCanonicalKeyExtractorDtoNormalization";
 
 export interface IntegrationCanonicalKeyExtractorDto {
+  normalization: IntegrationCanonicalKeyExtractorDtoNormalization;
   /**
    * @minItems 1
    * @maxItems 8
    */
   sourcePath: string[];
-  normalization: IntegrationCanonicalKeyExtractorDtoNormalization;
 }

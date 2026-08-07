@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConditionCatalogFieldResponseDtoOperatorsItem } from "./conditionCatalogFieldResponseDtoOperatorsItem";
 import type { ConditionCatalogFieldResponseDtoAggregationsItem } from "./conditionCatalogFieldResponseDtoAggregationsItem";
-import type { ConditionCatalogFieldCapabilitiesResponseDto } from "./conditionCatalogFieldCapabilitiesResponseDto";
-import type { ConditionCatalogDisplayResponseDto } from "./conditionCatalogDisplayResponseDto";
 import type { ConditionCatalogFieldResponseDtoAllowedValuesItem } from "./conditionCatalogFieldResponseDtoAllowedValuesItem";
+import type { ConditionCatalogFieldCapabilitiesResponseDto } from "./conditionCatalogFieldCapabilitiesResponseDto";
 import type { ConditionCatalogFieldResponseDtoControl } from "./conditionCatalogFieldResponseDtoControl";
+import type { ConditionCatalogDisplayResponseDto } from "./conditionCatalogDisplayResponseDto";
+import type { ConditionCatalogFieldResponseDtoOperatorsItem } from "./conditionCatalogFieldResponseDtoOperatorsItem";
 
 export interface ConditionCatalogFieldResponseDto {
-  fieldKey: string;
-  path: string;
-  label: string;
+  aggregations: ConditionCatalogFieldResponseDtoAggregationsItem[];
+  allowedValues?: ConditionCatalogFieldResponseDtoAllowedValuesItem[];
+  authoringUnsupportedReason?: string;
+  capabilities: ConditionCatalogFieldCapabilitiesResponseDto;
+  control: ConditionCatalogFieldResponseDtoControl;
   /** @nullable */
   description?: string | null;
-  valueType: string;
+  display: ConditionCatalogDisplayResponseDto;
+  fieldKey: string;
+  label: string;
+  operators: ConditionCatalogFieldResponseDtoOperatorsItem[];
+  path: string;
+  required: boolean;
   /** @nullable */
   semanticType?: string | null;
-  unit?: string;
-  required: boolean;
-  operators: ConditionCatalogFieldResponseDtoOperatorsItem[];
-  aggregations: ConditionCatalogFieldResponseDtoAggregationsItem[];
-  capabilities: ConditionCatalogFieldCapabilitiesResponseDto;
-  display: ConditionCatalogDisplayResponseDto;
-  allowedValues?: ConditionCatalogFieldResponseDtoAllowedValuesItem[];
   sensitive?: boolean;
-  authoringUnsupportedReason?: string;
-  control: ConditionCatalogFieldResponseDtoControl;
+  unit?: string;
+  valueType: string;
 }

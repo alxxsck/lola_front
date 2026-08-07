@@ -8,20 +8,20 @@
 
 export interface RegisterBrowserPushSubscriptionDto {
   /**
+   * @minLength 8
+   * @maxLength 512
+   */
+  auth: string;
+  /**
    * @minLength 1
    * @maxLength 4096
    */
   endpoint: string;
+  /** @minimum 1 */
+  expectedVersion?: number;
   /**
    * @minLength 16
    * @maxLength 1024
    */
   p256dh: string;
-  /**
-   * @minLength 8
-   * @maxLength 512
-   */
-  auth: string;
-  /** @minimum 1 */
-  expectedVersion?: number;
 }

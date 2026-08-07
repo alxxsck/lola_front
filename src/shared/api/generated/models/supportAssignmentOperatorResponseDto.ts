@@ -7,8 +7,8 @@
  */
 
 export interface SupportAssignmentOperatorResponseDto {
-  id: string;
-  displayName: string;
   /** @nullable */
   avatarUrl: string | null;
+  displayName: string;
+  id: string;
 }

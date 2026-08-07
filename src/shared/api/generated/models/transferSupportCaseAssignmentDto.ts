@@ -11,7 +11,6 @@ export interface TransferSupportCaseAssignmentDto {
   assignmentId: string;
   /** @minimum 1 */
   expectedAssignmentVersion: number;
-  teamId: string;
   operatorCmsUserId: string;
   reasonCode: TransferSupportCaseAssignmentDtoReasonCode;
   /**
@@ -19,4 +18,5 @@ export interface TransferSupportCaseAssignmentDto {
    * @maxLength 500
    */
   reasonNote?: string;
+  teamId: string;
 }

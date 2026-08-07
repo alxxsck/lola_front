@@ -5,28 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceAttributeResponseDtoValueType } from "./audienceAttributeResponseDtoValueType";
-import type { AudienceAttributeResponseDtoControl } from "./audienceAttributeResponseDtoControl";
 import type { AudienceAttributeResponseDtoAllowedValuesItem } from "./audienceAttributeResponseDtoAllowedValuesItem";
 import type { AudienceAttributeResponseDtoAuthoringAvailability } from "./audienceAttributeResponseDtoAuthoringAvailability";
+import type { AudienceAttributeResponseDtoControl } from "./audienceAttributeResponseDtoControl";
+import type { AudienceAttributeResponseDtoValueType } from "./audienceAttributeResponseDtoValueType";
 
 export interface AudienceAttributeResponseDto {
-  definitionId: string;
-  definitionRevisionId: string;
-  /** @minimum 1 */
-  revision: number;
-  key: string;
-  label: string;
-  /** @nullable */
-  description?: string | null;
-  valueType: AudienceAttributeResponseDtoValueType;
-  required: boolean;
-  /** Non-client-visible attributes are redacted by default. */
-  sensitive: boolean;
-  operators: string[];
-  control: AudienceAttributeResponseDtoControl;
   allowedValues?: AudienceAttributeResponseDtoAllowedValuesItem[];
   authoringAvailability: AudienceAttributeResponseDtoAuthoringAvailability;
+  control: AudienceAttributeResponseDtoControl;
+  definitionId: string;
+  definitionRevisionId: string;
+  /** @nullable */
+  description?: string | null;
+  key: string;
+  label: string;
+  operators: string[];
+  required: boolean;
+  /** @minimum 1 */
+  revision: number;
+  /** Non-client-visible attributes are redacted by default. */
+  sensitive: boolean;
   /** @nullable */
   unsupportedReason?: string | null;
+  valueType: AudienceAttributeResponseDtoValueType;
 }

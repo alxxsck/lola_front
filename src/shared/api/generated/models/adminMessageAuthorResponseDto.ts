@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminMessageAuthorResponseDtoType } from "./adminMessageAuthorResponseDtoType";
 import type { AdminMessageAuthorResponseDtoAvatarAsset } from "./adminMessageAuthorResponseDtoAvatarAsset";
+import type { AdminMessageAuthorResponseDtoType } from "./adminMessageAuthorResponseDtoType";
 
 export interface AdminMessageAuthorResponseDto {
-  type: AdminMessageAuthorResponseDtoType;
   /** @nullable */
-  cmsUserId: string | null;
-  displayName: string;
+  avatarAsset?: AdminMessageAuthorResponseDtoAvatarAsset;
   /** @nullable */
   avatarUrl: string | null;
   /** @nullable */
-  avatarAsset?: AdminMessageAuthorResponseDtoAvatarAsset;
+  cmsUserId: string | null;
+  displayName: string;
   /**
    * @minimum 1
    * @nullable
    */
   presentationVersion?: number | null;
+  type: AdminMessageAuthorResponseDtoType;
 }

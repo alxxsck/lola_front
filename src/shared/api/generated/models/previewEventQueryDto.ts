@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryRequestDto } from "./eventQueryRequestDto";
 import type { PreviewEventQueryDtoAudience } from "./previewEventQueryDtoAudience";
+import type { EventQueryRequestDto } from "./eventQueryRequestDto";
 
 export interface PreviewEventQueryDto {
+  audience?: PreviewEventQueryDtoAudience;
   endUserId: string;
   query: EventQueryRequestDto;
-  audience?: PreviewEventQueryDtoAudience;
 }

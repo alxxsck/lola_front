@@ -9,9 +9,10 @@ import type { UpdateScenarioAdmissionSettingsDtoMode } from "./updateScenarioAdm
 import type { QuietHoursSettingsDto } from "./quietHoursSettingsDto";
 
 export interface UpdateScenarioAdmissionSettingsDto {
+  /** Required when global mode replaces active legacy Scenario limits. */
+  acknowledgeLegacyScenarioLimits?: boolean;
   /** @minimum 1 */
   expectedVersion: number;
-  mode: UpdateScenarioAdmissionSettingsDtoMode;
   /**
    * @minimum 1
    * @nullable
@@ -24,9 +25,8 @@ export interface UpdateScenarioAdmissionSettingsDto {
   maxStartsPerVisit: number | null;
   /** @minimum 0 */
   minimumIntervalSeconds: number;
+  mode: UpdateScenarioAdmissionSettingsDtoMode;
   quietHours: QuietHoursSettingsDto;
-  /** Required when global mode replaces active legacy Scenario limits. */
-  acknowledgeLegacyScenarioLimits?: boolean;
   /**
    * @minLength 10
    * @maxLength 500

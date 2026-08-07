@@ -8,11 +8,11 @@
 import type { AiOperationProtectedAccessActorDtoType } from "./aiOperationProtectedAccessActorDtoType";
 
 export interface AiOperationProtectedAccessActorDto {
-  type: AiOperationProtectedAccessActorDtoType;
   /** @nullable */
   cmsUserId?: string | null;
   /** @nullable */
   displayName?: string | null;
   /** @nullable */
   externalId?: string | null;
+  type: AiOperationProtectedAccessActorDtoType;
 }

@@ -9,8 +9,8 @@ import type { TelegramBroadcastOutcomeDto } from "./telegramBroadcastOutcomeDto"
 
 export interface TelegramBroadcastOutcomeListResponseDto {
   items: TelegramBroadcastOutcomeDto[];
-  /** @minimum 0 */
-  total: number;
   /** @nullable */
   nextCursor?: string | null;
+  /** @minimum 0 */
+  total: number;
 }

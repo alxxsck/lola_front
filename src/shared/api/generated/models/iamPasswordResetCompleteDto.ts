@@ -8,11 +8,6 @@
 
 export interface IamPasswordResetCompleteDto {
   /**
-   * @minLength 49
-   * @maxLength 96
-   */
-  token: string;
-  /**
    * @minLength 1
    * @maxLength 512
    */
@@ -22,4 +17,9 @@ export interface IamPasswordResetCompleteDto {
    * @maxLength 512
    */
   passwordConfirmation: string;
+  /**
+   * @minLength 49
+   * @maxLength 96
+   */
+  token: string;
 }

@@ -8,10 +8,10 @@
 import type { AudienceFreshnessSelectionV2ResponseDtoMode } from "./audienceFreshnessSelectionV2ResponseDtoMode";
 
 export interface AudienceFreshnessSelectionV2ResponseDto {
-  mode: AudienceFreshnessSelectionV2ResponseDtoMode;
   /**
    * @minimum 1
    * @maximum 31536000
    */
   maxAgeSeconds?: number;
+  mode: AudienceFreshnessSelectionV2ResponseDtoMode;
 }

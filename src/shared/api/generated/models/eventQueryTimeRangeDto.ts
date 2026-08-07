@@ -8,9 +8,9 @@
 import type { EventQueryTimeRangeDtoKind } from "./eventQueryTimeRangeDtoKind";
 
 export interface EventQueryTimeRangeDto {
-  kind: EventQueryTimeRangeDtoKind;
   /** Required only for EXPLICIT. */
   from?: string;
+  kind: EventQueryTimeRangeDtoKind;
   /** Required only for EXPLICIT. */
   to?: string;
 }

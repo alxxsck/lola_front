@@ -10,10 +10,10 @@ import type { SupportSearchEndUserResultResponseDto } from "./supportSearchEndUs
 
 export interface SupportSearchEndUserPageResponseDto {
   freshness: SupportSearchFreshnessResponseDto;
+  items: SupportSearchEndUserResultResponseDto[];
   /**
    * @maxLength 2048
    * @nullable
    */
   nextCursor?: string | null;
-  items: SupportSearchEndUserResultResponseDto[];
 }

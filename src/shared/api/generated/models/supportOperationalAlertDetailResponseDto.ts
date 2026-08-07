@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportOperationalAlertDetailResponseDtoKind } from "./supportOperationalAlertDetailResponseDtoKind";
 import type { SupportOperationalAlertItemDto } from "./supportOperationalAlertItemDto";
-import type { SupportOperationalAlertGenerationDto } from "./supportOperationalAlertGenerationDto";
-import type { SupportOperationalAlertTimelineDto } from "./supportOperationalAlertTimelineDto";
 import type { SupportOperationalAlertEffectiveWindowDto } from "./supportOperationalAlertEffectiveWindowDto";
+import type { SupportOperationalAlertGenerationDto } from "./supportOperationalAlertGenerationDto";
+import type { SupportOperationalAlertDetailResponseDtoKind } from "./supportOperationalAlertDetailResponseDtoKind";
 import type { SupportOperationalAlertMaterializationDto } from "./supportOperationalAlertMaterializationDto";
+import type { SupportOperationalAlertTimelineDto } from "./supportOperationalAlertTimelineDto";
 
 export interface SupportOperationalAlertDetailResponseDto {
-  kind: SupportOperationalAlertDetailResponseDtoKind;
   alert: SupportOperationalAlertItemDto;
-  generation: SupportOperationalAlertGenerationDto;
-  timeline: SupportOperationalAlertTimelineDto;
   effectiveWindow: SupportOperationalAlertEffectiveWindowDto;
+  generation: SupportOperationalAlertGenerationDto;
+  kind: SupportOperationalAlertDetailResponseDtoKind;
   materialization: SupportOperationalAlertMaterializationDto;
+  timeline: SupportOperationalAlertTimelineDto;
 }

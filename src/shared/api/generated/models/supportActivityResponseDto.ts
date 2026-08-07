@@ -5,37 +5,37 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportActivityResponseDtoFreshnessState } from "./supportActivityResponseDtoFreshnessState";
-import type { SupportActivityResponseDtoEffectiveWindow } from "./supportActivityResponseDtoEffectiveWindow";
-import type { SupportActivityResponseDtoSlaRolloutState } from "./supportActivityResponseDtoSlaRolloutState";
 import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportActivityResponseDtoKind } from "./supportActivityResponseDtoKind";
 import type { SupportLeadActivityDataDto } from "./supportLeadActivityDataDto";
+import type { SupportActivityResponseDtoEffectiveWindow } from "./supportActivityResponseDtoEffectiveWindow";
+import type { SupportActivityResponseDtoFreshnessState } from "./supportActivityResponseDtoFreshnessState";
+import type { SupportActivityResponseDtoKind } from "./supportActivityResponseDtoKind";
+import type { SupportActivityResponseDtoSlaRolloutState } from "./supportActivityResponseDtoSlaRolloutState";
 
 export interface SupportActivityResponseDto {
-  /** @minimum 1 */
-  projectionGeneration: number;
+  capabilities: SupportLeadCapabilitiesDto;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  /**
-   * @nullable
-   * @pattern ^(0|[1-9][0-9]*)$
-   */
-  sourceHighWater: string | null;
-  freshnessState: SupportActivityResponseDtoFreshnessState;
   computedAt: string;
+  data: SupportLeadActivityDataDto;
+  /** @nullable */
+  effectiveWindow: SupportActivityResponseDtoEffectiveWindow;
+  freshnessState: SupportActivityResponseDtoFreshnessState;
+  kind: SupportActivityResponseDtoKind;
   /**
    * @maxLength 2048
    * @nullable
    */
   nextCursor: string | null;
-  /** @nullable */
-  effectiveWindow: SupportActivityResponseDtoEffectiveWindow;
+  /** @minimum 1 */
+  projectionGeneration: number;
   slaRolloutState: SupportActivityResponseDtoSlaRolloutState;
-  capabilities: SupportLeadCapabilitiesDto;
-  kind: SupportActivityResponseDtoKind;
-  data: SupportLeadActivityDataDto;
+  /**
+   * @nullable
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  sourceHighWater: string | null;
 }

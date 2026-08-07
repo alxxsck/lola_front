@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActiveUserResponseDtoProfile } from "./activeUserResponseDtoProfile";
-import type { ActiveUserResponseDtoPresence } from "./activeUserResponseDtoPresence";
 import type { ActiveConnectionResponseDto } from "./activeConnectionResponseDto";
+import type { ActiveUserResponseDtoPresence } from "./activeUserResponseDtoPresence";
+import type { ActiveUserResponseDtoProfile } from "./activeUserResponseDtoProfile";
 
 export interface ActiveUserResponseDto {
-  id: string;
-  externalId: string;
-  isGuest: boolean;
-  /** @nullable */
-  locale?: string | null;
-  /** @nullable */
-  segment?: string | null;
-  profile: ActiveUserResponseDtoProfile;
-  lastSeenAt: string;
-  presence: ActiveUserResponseDtoPresence;
   activeConnectionCount: number;
   activeSessionCount: number;
   connections: ActiveConnectionResponseDto[];
+  externalId: string;
+  id: string;
+  isGuest: boolean;
+  lastSeenAt: string;
+  /** @nullable */
+  locale?: string | null;
+  presence: ActiveUserResponseDtoPresence;
+  profile: ActiveUserResponseDtoProfile;
+  /** @nullable */
+  segment?: string | null;
 }

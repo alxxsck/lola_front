@@ -9,10 +9,10 @@ import type { ResolveSupportExternalWorkCommandDtoDecision } from "./resolveSupp
 
 export interface ResolveSupportExternalWorkCommandDto {
   decision: ResolveSupportExternalWorkCommandDtoDecision;
-  /** @maxLength 255 */
-  remoteItemId?: string;
-  /** @maxLength 255 */
-  providerCorrelation?: string;
   /** @maxLength 2000 */
   evidenceNote?: string;
+  /** @maxLength 255 */
+  providerCorrelation?: string;
+  /** @maxLength 255 */
+  remoteItemId?: string;
 }

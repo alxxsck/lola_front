@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportQualityDisputeResponseDto } from "./supportQualityDisputeResponseDto";
+import type { SupportQualityReviewEvidenceResponseDto } from "./supportQualityReviewEvidenceResponseDto";
 import type { SupportQualityReviewDetailResponseDtoKind } from "./supportQualityReviewDetailResponseDtoKind";
+import type { SupportQualityReviewItemScoreResponseDto } from "./supportQualityReviewItemScoreResponseDto";
 import type { SupportQualityReviewDetailResponseDtoState } from "./supportQualityReviewDetailResponseDtoState";
 import type { SupportQualityReviewDetailResponseDtoSubmittedAt } from "./supportQualityReviewDetailResponseDtoSubmittedAt";
-import type { SupportQualityReviewItemScoreResponseDto } from "./supportQualityReviewItemScoreResponseDto";
-import type { SupportQualityReviewEvidenceResponseDto } from "./supportQualityReviewEvidenceResponseDto";
-import type { SupportQualityDisputeResponseDto } from "./supportQualityDisputeResponseDto";
 
 export interface SupportQualityReviewDetailResponseDto {
+  caseId: string;
+  conversationId: string;
+  disputes: SupportQualityDisputeResponseDto[];
+  evidence: SupportQualityReviewEvidenceResponseDto[];
   id: string;
   kind: SupportQualityReviewDetailResponseDtoKind;
+  /** @minimum 1 */
+  maximumScore: number;
+  operatorCmsUserId: string;
+  reviewerCmsUserId: string;
+  scores: SupportQualityReviewItemScoreResponseDto[];
   state: SupportQualityReviewDetailResponseDtoState;
+  /** @nullable */
+  submittedAt?: SupportQualityReviewDetailResponseDtoSubmittedAt;
   /** @minimum 0 */
   totalScore: number;
   /** @minimum 1 */
-  maximumScore: number;
-  /** @minimum 1 */
   version: number;
-  operatorCmsUserId: string;
-  reviewerCmsUserId: string;
-  caseId: string;
-  conversationId: string;
-  /** @nullable */
-  submittedAt?: SupportQualityReviewDetailResponseDtoSubmittedAt;
-  scores: SupportQualityReviewItemScoreResponseDto[];
-  evidence: SupportQualityReviewEvidenceResponseDto[];
-  disputes: SupportQualityDisputeResponseDto[];
 }

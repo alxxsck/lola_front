@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ClassifyEndUserCaseDtoType } from "./classifyEndUserCaseDtoType";
 import type { ClassifyEndUserCaseDtoImpact } from "./classifyEndUserCaseDtoImpact";
-import type { ClassifyEndUserCaseDtoUrgency } from "./classifyEndUserCaseDtoUrgency";
 import type { ClassifyEndUserCaseDtoPriority } from "./classifyEndUserCaseDtoPriority";
+import type { ClassifyEndUserCaseDtoType } from "./classifyEndUserCaseDtoType";
+import type { ClassifyEndUserCaseDtoUrgency } from "./classifyEndUserCaseDtoUrgency";
 
 export interface ClassifyEndUserCaseDto {
   /** @minimum 1 */
   expectedVersion: number;
-  idempotencyKey: string;
-  type?: ClassifyEndUserCaseDtoType;
   /**
    * @minLength 1
    * @maxLength 64
    */
   groupCode?: string;
+  idempotencyKey: string;
   impact?: ClassifyEndUserCaseDtoImpact;
-  urgency?: ClassifyEndUserCaseDtoUrgency;
   priority?: ClassifyEndUserCaseDtoPriority;
   /**
    * @minLength 1
    * @maxLength 2000
    */
   reason: string;
+  type?: ClassifyEndUserCaseDtoType;
+  urgency?: ClassifyEndUserCaseDtoUrgency;
 }

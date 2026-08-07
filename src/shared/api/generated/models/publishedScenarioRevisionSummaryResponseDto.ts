@@ -7,12 +7,12 @@
  */
 
 export interface PublishedScenarioRevisionSummaryResponseDto {
+  catalogRevision: string;
+  contentHash: string;
   id: string;
-  scenarioId: string;
+  publishedAt: string;
   /** @minimum 1 */
   revisionNumber: number;
-  contentHash: string;
-  catalogRevision: string;
+  scenarioId: string;
   triggerEventDefinitionRevisionId: string;
-  publishedAt: string;
 }

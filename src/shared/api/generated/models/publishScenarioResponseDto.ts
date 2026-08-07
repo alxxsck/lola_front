@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PublishedScenarioRevisionSummaryResponseDto } from "./publishedScenarioRevisionSummaryResponseDto";
-import type { PublishedScenarioDependenciesResponseDto } from "./publishedScenarioDependenciesResponseDto";
-import type { ScenarioRuleCostResponseDto } from "./scenarioRuleCostResponseDto";
-import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
-import type { PublishConflictMetadataResponseDto } from "./publishConflictMetadataResponseDto";
-import type { PublishScenarioResponseDtoDeliveryPolicy } from "./publishScenarioResponseDtoDeliveryPolicy";
 import type { AudienceCostResponseDto } from "./audienceCostResponseDto";
 import type { AudienceSnapshotPolicyResponseDto } from "./audienceSnapshotPolicyResponseDto";
+import type { PublishConflictMetadataResponseDto } from "./publishConflictMetadataResponseDto";
+import type { ScenarioRuleCostResponseDto } from "./scenarioRuleCostResponseDto";
+import type { PublishScenarioResponseDtoDeliveryPolicy } from "./publishScenarioResponseDtoDeliveryPolicy";
+import type { PublishedScenarioDependenciesResponseDto } from "./publishedScenarioDependenciesResponseDto";
+import type { PublishedScenarioRevisionSummaryResponseDto } from "./publishedScenarioRevisionSummaryResponseDto";
+import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
 
 export interface PublishScenarioResponseDto {
-  revision: PublishedScenarioRevisionSummaryResponseDto;
-  dependencies: PublishedScenarioDependenciesResponseDto;
-  cost: ScenarioRuleCostResponseDto;
-  warnings: ScenarioWarningResponseDto[];
-  conflictMetadata: PublishConflictMetadataResponseDto;
-  deliveryPolicy: PublishScenarioResponseDtoDeliveryPolicy;
   audienceCost?: AudienceCostResponseDto;
   audiencePolicy?: AudienceSnapshotPolicyResponseDto;
+  conflictMetadata: PublishConflictMetadataResponseDto;
+  cost: ScenarioRuleCostResponseDto;
+  deliveryPolicy: PublishScenarioResponseDtoDeliveryPolicy;
+  dependencies: PublishedScenarioDependenciesResponseDto;
+  revision: PublishedScenarioRevisionSummaryResponseDto;
+  warnings: ScenarioWarningResponseDto[];
 }

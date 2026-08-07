@@ -11,8 +11,8 @@ export interface ProjectAIAnalysisReceiptDto {
   analysisId: string;
   /** @nullable */
   runId?: string | null;
+  scheduledAt?: string;
   status: ProjectAIAnalysisReceiptDtoStatus;
   /** @minimum 1 */
   version: number;
-  scheduledAt?: string;
 }

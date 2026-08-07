@@ -7,6 +7,6 @@
  */
 
 export interface RangeDto {
-  start: string;
   end: string;
+  start: string;
 }

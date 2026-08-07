@@ -8,7 +8,7 @@
 import type { ConversationMessageTranslationItemResponseDto } from "./conversationMessageTranslationItemResponseDto";
 
 export interface ConversationMessageTranslationsResponseDto {
+  items: ConversationMessageTranslationItemResponseDto[];
   /** True while at least one requested translation is pending or running. */
   queued: boolean;
-  items: ConversationMessageTranslationItemResponseDto[];
 }

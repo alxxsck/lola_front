@@ -5,62 +5,62 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { NotificationDestinationResponseDtoTopic } from "./notificationDestinationResponseDtoTopic";
 import type { NotificationDestinationResponseDtoChannel } from "./notificationDestinationResponseDtoChannel";
 import type { NotificationDestinationResponseDtoStatus } from "./notificationDestinationResponseDtoStatus";
 import type { NotificationDestinationResponseDtoTelegramInstallationStatus } from "./notificationDestinationResponseDtoTelegramInstallationStatus";
 import type { NotificationDestinationResponseDtoTelegramWebhookSetupStatus } from "./notificationDestinationResponseDtoTelegramWebhookSetupStatus";
+import type { NotificationDestinationResponseDtoTopic } from "./notificationDestinationResponseDtoTopic";
 
 export interface NotificationDestinationResponseDto {
-  id: string;
-  projectId: string;
-  topic: NotificationDestinationResponseDtoTopic;
+  /** @nullable */
+  botUsername?: string | null;
   channel: NotificationDestinationResponseDtoChannel;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  displayName: string;
-  status: NotificationDestinationResponseDtoStatus;
   /**
    * Non-secret keyed fingerprint; never a webhook fragment.
    * @minLength 16
    * @maxLength 16
    */
   credentialFingerprint: string;
-  /** @minimum 1 */
-  secretRevision: number;
+  /** @nullable */
+  destinationChatId?: string | null;
+  /** @nullable */
+  destinationTitle?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  displayName: string;
+  id: string;
+  /** @nullable */
+  lastFailureCategory: string | null;
+  /** @nullable */
+  lastSuccessfulTestAt: string | null;
+  projectId: string;
   /** @minimum 1 */
   routingRevision: number;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  testedSecretRevision: number | null;
+  /** @minimum 1 */
+  secretRevision: number;
+  status: NotificationDestinationResponseDtoStatus;
+  /** @nullable */
+  telegramBotId?: string | null;
+  /** @nullable */
+  telegramInstallationStatus?: NotificationDestinationResponseDtoTelegramInstallationStatus;
+  /** @nullable */
+  telegramWebhookSetupStatus?: NotificationDestinationResponseDtoTelegramWebhookSetupStatus;
   /**
    * @minimum 1
    * @nullable
    */
   testedRoutingRevision: number | null;
-  /** @nullable */
-  lastSuccessfulTestAt: string | null;
-  /** @nullable */
-  lastFailureCategory: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  testedSecretRevision: number | null;
+  topic: NotificationDestinationResponseDtoTopic;
+  updatedAt: string;
+  updatedByActorId: string;
+  updatedByActorType: string;
   /** @minimum 1 */
   version: number;
-  updatedByActorType: string;
-  updatedByActorId: string;
-  updatedAt: string;
-  /** @nullable */
-  botUsername?: string | null;
-  /** @nullable */
-  telegramBotId?: string | null;
-  /** @nullable */
-  destinationChatId?: string | null;
-  /** @nullable */
-  destinationTitle?: string | null;
-  /** @nullable */
-  telegramInstallationStatus?: NotificationDestinationResponseDtoTelegramInstallationStatus;
-  /** @nullable */
-  telegramWebhookSetupStatus?: NotificationDestinationResponseDtoTelegramWebhookSetupStatus;
 }

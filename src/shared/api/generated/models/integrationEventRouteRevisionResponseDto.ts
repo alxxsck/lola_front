@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationEventRouteRevisionResponseDtoState } from "./integrationEventRouteRevisionResponseDtoState";
-import type { IntegrationEventRouteRevisionResponseDtoProvider } from "./integrationEventRouteRevisionResponseDtoProvider";
-import type { IntegrationEventRouteRevisionResponseDtoRegion } from "./integrationEventRouteRevisionResponseDtoRegion";
-import type { IntegrationEventRouteRevisionResponseDtoProviderCallType } from "./integrationEventRouteRevisionResponseDtoProviderCallType";
-import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
 import type { IntegrationEventRouteRevisionResponseDtoCanonicalKeyExtractor } from "./integrationEventRouteRevisionResponseDtoCanonicalKeyExtractor";
+import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
+import type { IntegrationEventRouteRevisionResponseDtoProvider } from "./integrationEventRouteRevisionResponseDtoProvider";
+import type { IntegrationEventRouteRevisionResponseDtoProviderCallType } from "./integrationEventRouteRevisionResponseDtoProviderCallType";
+import type { IntegrationEventRouteRevisionResponseDtoRegion } from "./integrationEventRouteRevisionResponseDtoRegion";
+import type { IntegrationEventRouteRevisionResponseDtoState } from "./integrationEventRouteRevisionResponseDtoState";
 
 export interface IntegrationEventRouteRevisionResponseDto {
-  id: string;
-  /** @minimum 1 */
-  revision: number;
-  state: IntegrationEventRouteRevisionResponseDtoState;
-  provider: IntegrationEventRouteRevisionResponseDtoProvider;
-  region: IntegrationEventRouteRevisionResponseDtoRegion;
-  eventDefinitionKeyId: string;
-  eventDefinitionRevisionId: string;
-  providerEventName: string;
-  providerCallType: IntegrationEventRouteRevisionResponseDtoProviderCallType;
-  propertyBindings: IntegrationEventPropertyBindingDto[];
   /** @nullable */
   canonicalKeyExtractor?: IntegrationEventRouteRevisionResponseDtoCanonicalKeyExtractor;
   compiledHash: string;
   compilerVersion: string;
   createdAt: string;
+  eventDefinitionKeyId: string;
+  eventDefinitionRevisionId: string;
+  id: string;
+  propertyBindings: IntegrationEventPropertyBindingDto[];
+  provider: IntegrationEventRouteRevisionResponseDtoProvider;
+  providerCallType: IntegrationEventRouteRevisionResponseDtoProviderCallType;
+  providerEventName: string;
   /** @nullable */
   publishedAt: string | null;
+  region: IntegrationEventRouteRevisionResponseDtoRegion;
+  /** @minimum 1 */
+  revision: number;
+  state: IntegrationEventRouteRevisionResponseDtoState;
 }

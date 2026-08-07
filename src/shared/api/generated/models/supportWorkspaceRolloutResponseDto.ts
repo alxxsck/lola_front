@@ -7,9 +7,9 @@
  */
 
 export interface SupportWorkspaceRolloutResponseDto {
-  version: number;
-  enabled: boolean;
-  hardOff: boolean;
   /** @pattern ^"swr1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
+  enabled: boolean;
+  hardOff: boolean;
+  version: number;
 }

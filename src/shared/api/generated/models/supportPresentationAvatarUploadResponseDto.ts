@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportPresentationAvatarUploadResponseDtoState } from "./supportPresentationAvatarUploadResponseDtoState";
 import type { SupportPresentationAvatarUploadResponseDtoRequiredHeaders } from "./supportPresentationAvatarUploadResponseDtoRequiredHeaders";
+import type { SupportPresentationAvatarUploadResponseDtoState } from "./supportPresentationAvatarUploadResponseDtoState";
 
 export interface SupportPresentationAvatarUploadResponseDto {
   assetId: string;
   assetVersion: number;
+  expiresAt: string;
+  replayed: boolean;
+  requiredHeaders: SupportPresentationAvatarUploadResponseDtoRequiredHeaders;
   state: SupportPresentationAvatarUploadResponseDtoState;
   uploadUrl: string;
-  expiresAt: string;
-  requiredHeaders: SupportPresentationAvatarUploadResponseDtoRequiredHeaders;
-  replayed: boolean;
 }

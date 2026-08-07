@@ -5,38 +5,38 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadInvestigationResponseDtoFreshnessState } from "./supportLeadInvestigationResponseDtoFreshnessState";
-import type { SupportLeadInvestigationResponseDtoEffectiveWindow } from "./supportLeadInvestigationResponseDtoEffectiveWindow";
-import type { SupportLeadInvestigationResponseDtoSlaRolloutState } from "./supportLeadInvestigationResponseDtoSlaRolloutState";
 import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportLeadInvestigationResponseDtoKind } from "./supportLeadInvestigationResponseDtoKind";
 import type { SupportLeadInvestigationDataDto } from "./supportLeadInvestigationDataDto";
+import type { SupportLeadInvestigationResponseDtoEffectiveWindow } from "./supportLeadInvestigationResponseDtoEffectiveWindow";
+import type { SupportLeadInvestigationResponseDtoFreshnessState } from "./supportLeadInvestigationResponseDtoFreshnessState";
+import type { SupportLeadInvestigationResponseDtoKind } from "./supportLeadInvestigationResponseDtoKind";
+import type { SupportLeadInvestigationResponseDtoSlaRolloutState } from "./supportLeadInvestigationResponseDtoSlaRolloutState";
 
 export interface SupportLeadInvestigationResponseDto {
-  /** @minimum 1 */
-  projectionGeneration: number;
+  capabilities: SupportLeadCapabilitiesDto;
+  caseId: string;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  /**
-   * @nullable
-   * @pattern ^(0|[1-9][0-9]*)$
-   */
-  sourceHighWater: string | null;
-  freshnessState: SupportLeadInvestigationResponseDtoFreshnessState;
   computedAt: string;
+  data: SupportLeadInvestigationDataDto;
+  /** @nullable */
+  effectiveWindow: SupportLeadInvestigationResponseDtoEffectiveWindow;
+  freshnessState: SupportLeadInvestigationResponseDtoFreshnessState;
+  kind: SupportLeadInvestigationResponseDtoKind;
   /**
    * @maxLength 2048
    * @nullable
    */
   nextCursor: string | null;
-  /** @nullable */
-  effectiveWindow: SupportLeadInvestigationResponseDtoEffectiveWindow;
+  /** @minimum 1 */
+  projectionGeneration: number;
   slaRolloutState: SupportLeadInvestigationResponseDtoSlaRolloutState;
-  capabilities: SupportLeadCapabilitiesDto;
-  kind: SupportLeadInvestigationResponseDtoKind;
-  caseId: string;
-  data: SupportLeadInvestigationDataDto;
+  /**
+   * @nullable
+   * @pattern ^(0|[1-9][0-9]*)$
+   */
+  sourceHighWater: string | null;
 }

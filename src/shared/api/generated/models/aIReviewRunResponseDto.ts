@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AIReviewRunResponseDtoStatus } from "./aIReviewRunResponseDtoStatus";
 import type { AIReviewRunResponseDtoCostLevel } from "./aIReviewRunResponseDtoCostLevel";
+import type { AIReviewRunResponseDtoStatus } from "./aIReviewRunResponseDtoStatus";
 
 export interface AIReviewRunResponseDto {
-  id: string;
   analysisId?: string;
+  completedAt?: string;
+  costLevel: AIReviewRunResponseDtoCostLevel;
+  createdAt: string;
+  errorCode?: string;
+  estimatedInputTokens: number;
+  eventCount: number;
+  id: string;
+  limitations: string[];
+  policyRevisionId?: string;
+  redactedBytes: number;
   /** @nullable */
   runId?: string | null;
   status: AIReviewRunResponseDtoStatus;
-  costLevel: AIReviewRunResponseDtoCostLevel;
-  eventCount: number;
-  redactedBytes: number;
-  estimatedInputTokens: number;
-  policyRevisionId?: string;
-  limitations: string[];
-  errorCode?: string;
-  createdAt: string;
-  completedAt?: string;
 }

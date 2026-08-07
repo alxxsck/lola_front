@@ -107,6 +107,7 @@ export const PROJECT_PERMISSION_CODES = [
   "project.support.internal_notes.write",
   "project.support.internal_notes.history_read",
   "project.support.internal_notes.redact",
+  "project.support.search.read",
   "project.support.macros.read",
   "project.support.macros.use",
   "project.support.macros.manage",

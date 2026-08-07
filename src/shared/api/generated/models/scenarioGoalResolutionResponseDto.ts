@@ -5,33 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioGoalResolutionResponseDtoOutcome } from "./scenarioGoalResolutionResponseDtoOutcome";
-import type { ScenarioGoalResolutionResponseDtoWinner } from "./scenarioGoalResolutionResponseDtoWinner";
 import type { ScenarioGoalResolutionResponseDtoMatchEvidence } from "./scenarioGoalResolutionResponseDtoMatchEvidence";
+import type { ScenarioGoalResolutionResponseDtoOutcome } from "./scenarioGoalResolutionResponseDtoOutcome";
 import type { ScenarioGoalSubscriptionExplainResponseDto } from "./scenarioGoalSubscriptionExplainResponseDto";
+import type { ScenarioGoalResolutionResponseDtoWinner } from "./scenarioGoalResolutionResponseDtoWinner";
 
 export interface ScenarioGoalResolutionResponseDto {
-  waitId: string;
-  /** @nullable */
-  stepId?: string | null;
   /** @nullable */
   deadlineAt?: string | null;
-  outcome: ScenarioGoalResolutionResponseDtoOutcome;
   /** @nullable */
-  winner?: ScenarioGoalResolutionResponseDtoWinner;
+  matchEvidence?: ScenarioGoalResolutionResponseDtoMatchEvidence;
+  outcome: ScenarioGoalResolutionResponseDtoOutcome;
   /** @nullable */
   resolvedAt?: string | null;
   /** @nullable */
   selectedBranch?: string | null;
   /** @nullable */
-  targetNodeKey?: string | null;
+  stepId?: string | null;
+  subscriptions: ScenarioGoalSubscriptionExplainResponseDto[];
   /** @nullable */
-  winningEventLogId?: string | null;
+  targetNodeKey?: string | null;
+  waitId: string;
+  /** @nullable */
+  winner?: ScenarioGoalResolutionResponseDtoWinner;
   /** @nullable */
   winningDefinitionKeyId?: string | null;
   /** @nullable */
   winningDefinitionRevisionId?: string | null;
   /** @nullable */
-  matchEvidence?: ScenarioGoalResolutionResponseDtoMatchEvidence;
-  subscriptions: ScenarioGoalSubscriptionExplainResponseDto[];
+  winningEventLogId?: string | null;
 }

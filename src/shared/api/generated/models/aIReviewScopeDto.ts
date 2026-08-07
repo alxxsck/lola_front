@@ -8,7 +8,6 @@
 
 export interface AIReviewScopeDto {
   endUserId: string;
-  localDate: string;
   /**
    * @minItems 1
    * @maxItems 20
@@ -16,4 +15,5 @@ export interface AIReviewScopeDto {
   eventCodes: string[];
   /** @maxLength 500 */
   instruction?: string;
+  localDate: string;
 }

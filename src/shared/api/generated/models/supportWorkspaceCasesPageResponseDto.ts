@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkspaceCasesPageResponseDtoMode } from "./supportWorkspaceCasesPageResponseDtoMode";
 import type { SupportWorkspaceCaseRowResponseDto } from "./supportWorkspaceCaseRowResponseDto";
+import type { SupportWorkspaceCasesPageResponseDtoMode } from "./supportWorkspaceCasesPageResponseDtoMode";
 
 export interface SupportWorkspaceCasesPageResponseDto {
-  mode: SupportWorkspaceCasesPageResponseDtoMode;
   items: SupportWorkspaceCaseRowResponseDto[];
+  mode: SupportWorkspaceCasesPageResponseDtoMode;
   /** @nullable */
   nextCursor?: string | null;
 }

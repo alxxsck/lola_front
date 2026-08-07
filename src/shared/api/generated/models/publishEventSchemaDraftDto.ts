@@ -7,16 +7,16 @@
  */
 
 export interface PublishEventSchemaDraftDto {
+  /** Required after every blocking consumer has been migrated, republished, drained, or cancelled. */
+  confirmBreakingChange?: boolean;
+  expectedBaseRevisionId: string;
   /** @minimum 1 */
   expectedDraftVersion: number;
-  expectedBaseRevisionId: string;
+  /** Required for producer-breaking changes after the producer rollout is complete. */
+  producerMigrationConfirmed?: boolean;
   /**
    * @minLength 1
    * @maxLength 500
    */
   reason: string;
-  /** Required after every blocking consumer has been migrated, republished, drained, or cancelled. */
-  confirmBreakingChange?: boolean;
-  /** Required for producer-breaking changes after the producer rollout is complete. */
-  producerMigrationConfirmed?: boolean;
 }

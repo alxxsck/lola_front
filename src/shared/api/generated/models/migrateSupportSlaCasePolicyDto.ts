@@ -8,7 +8,6 @@
 import type { MigrateSupportSlaCasePolicyDtoMode } from "./migrateSupportSlaCasePolicyDtoMode";
 
 export interface MigrateSupportSlaCasePolicyDto {
-  targetPolicyRevisionId: string;
   /** @minimum 1 */
   expectedOccurrenceVersion: number;
   mode: MigrateSupportSlaCasePolicyDtoMode;
@@ -17,4 +16,5 @@ export interface MigrateSupportSlaCasePolicyDto {
    * @maxLength 500
    */
   reason: string;
+  targetPolicyRevisionId: string;
 }

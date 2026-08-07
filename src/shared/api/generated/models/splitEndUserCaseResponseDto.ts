@@ -7,10 +7,10 @@
  */
 
 export interface SplitEndUserCaseResponseDto {
-  sourceCaseId: string;
-  /** @minimum 1 */
-  sourceVersion: number;
   newCaseId: string;
   /** @minimum 1 */
   newCaseVersion: number;
+  sourceCaseId: string;
+  /** @minimum 1 */
+  sourceVersion: number;
 }

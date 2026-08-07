@@ -8,8 +8,8 @@
 import type { EventDefinitionUsageScenarioResponseDto } from "./eventDefinitionUsageScenarioResponseDto";
 
 export interface EventDefinitionUsageScenarioPageResponseDto {
+  items: EventDefinitionUsageScenarioResponseDto[];
   /** @minimum 0 */
   total: number;
-  items: EventDefinitionUsageScenarioResponseDto[];
   truncated: boolean;
 }

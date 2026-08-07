@@ -13,12 +13,6 @@ export interface CreateAmplitudeConnectionDto {
    * @maxLength 120
    */
   displayName: string;
-  region: CreateAmplitudeConnectionDtoRegion;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  remoteProjectLabel?: string;
   /**
    * Write-only Amplitude Project API Key. It is encrypted and never returned.
    * @minLength 32
@@ -26,4 +20,10 @@ export interface CreateAmplitudeConnectionDto {
    * @pattern ^[a-fA-F0-9]{32}$
    */
   projectApiKey: string;
+  region: CreateAmplitudeConnectionDtoRegion;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  remoteProjectLabel?: string;
 }

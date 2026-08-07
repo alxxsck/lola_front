@@ -8,10 +8,10 @@
 import type { ConversationAISuspensionMutationResponseDtoInFlightCancellationStatus } from "./conversationAISuspensionMutationResponseDtoInFlightCancellationStatus";
 
 export type ConversationAISuspensionMutationResponseDtoInFlightCancellation = {
-  status?: ConversationAISuspensionMutationResponseDtoInFlightCancellationStatus;
   activeTextAttempts?: number;
-  messageIds?: string[];
   activeVoiceSessions?: number;
-  voiceSessionIds?: string[];
   failedVoiceSessionIds?: string[];
+  messageIds?: string[];
+  status?: ConversationAISuspensionMutationResponseDtoInFlightCancellationStatus;
+  voiceSessionIds?: string[];
 };

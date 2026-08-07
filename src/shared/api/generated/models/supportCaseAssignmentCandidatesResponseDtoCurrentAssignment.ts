@@ -10,9 +10,9 @@
  * @nullable
  */
 export type SupportCaseAssignmentCandidatesResponseDtoCurrentAssignment = {
+  /** @pattern ^"sa1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag?: string;
   id?: string;
   /** @minimum 1 */
   version?: number;
-  /** @pattern ^"sa1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag?: string;
 } | null;

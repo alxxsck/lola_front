@@ -5,38 +5,38 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportRoutingDecisionResponseDtoQueueId } from "./supportRoutingDecisionResponseDtoQueueId";
-import type { SupportRoutingDecisionResponseDtoQueueRevisionId } from "./supportRoutingDecisionResponseDtoQueueRevisionId";
-import type { SupportRoutingDecisionResponseDtoQueueGenerationId } from "./supportRoutingDecisionResponseDtoQueueGenerationId";
+import type { SupportRoutingDecisionResponseDtoExclusionCounts } from "./supportRoutingDecisionResponseDtoExclusionCounts";
 import type { SupportRoutingDecisionResponseDtoPolicyId } from "./supportRoutingDecisionResponseDtoPolicyId";
 import type { SupportRoutingDecisionResponseDtoPolicyRevisionId } from "./supportRoutingDecisionResponseDtoPolicyRevisionId";
-import type { SupportRoutingDecisionResponseDtoWorkforceRevisionId } from "./supportRoutingDecisionResponseDtoWorkforceRevisionId";
+import type { SupportRoutingDecisionResponseDtoQueueGenerationId } from "./supportRoutingDecisionResponseDtoQueueGenerationId";
+import type { SupportRoutingDecisionResponseDtoQueueId } from "./supportRoutingDecisionResponseDtoQueueId";
+import type { SupportRoutingDecisionResponseDtoQueueRevisionId } from "./supportRoutingDecisionResponseDtoQueueRevisionId";
 import type { SupportRoutingDecisionResponseDtoSelectedOperatorId } from "./supportRoutingDecisionResponseDtoSelectedOperatorId";
-import type { SupportRoutingDecisionResponseDtoExclusionCounts } from "./supportRoutingDecisionResponseDtoExclusionCounts";
+import type { SupportRoutingDecisionResponseDtoWorkforceRevisionId } from "./supportRoutingDecisionResponseDtoWorkforceRevisionId";
 
 export interface SupportRoutingDecisionResponseDto {
-  id: string;
+  algorithmRevision: string;
+  candidateCount: number;
   caseId: string;
+  evaluatedAt: string;
+  evaluationFingerprint: string;
+  exclusionCounts: SupportRoutingDecisionResponseDtoExclusionCounts;
+  id: string;
+  latencyMs: number;
   outcome: string;
-  /** @nullable */
-  queueId: SupportRoutingDecisionResponseDtoQueueId;
-  /** @nullable */
-  queueRevisionId: SupportRoutingDecisionResponseDtoQueueRevisionId;
-  /** @nullable */
-  queueGenerationId: SupportRoutingDecisionResponseDtoQueueGenerationId;
   /** @nullable */
   policyId: SupportRoutingDecisionResponseDtoPolicyId;
   /** @nullable */
   policyRevisionId: SupportRoutingDecisionResponseDtoPolicyRevisionId;
   /** @nullable */
-  workforceRevisionId: SupportRoutingDecisionResponseDtoWorkforceRevisionId;
+  queueGenerationId: SupportRoutingDecisionResponseDtoQueueGenerationId;
+  /** @nullable */
+  queueId: SupportRoutingDecisionResponseDtoQueueId;
+  /** @nullable */
+  queueRevisionId: SupportRoutingDecisionResponseDtoQueueRevisionId;
+  resultHash: string;
   /** @nullable */
   selectedOperatorId: SupportRoutingDecisionResponseDtoSelectedOperatorId;
-  candidateCount: number;
-  exclusionCounts: SupportRoutingDecisionResponseDtoExclusionCounts;
-  latencyMs: number;
-  algorithmRevision: string;
-  resultHash: string;
-  evaluationFingerprint: string;
-  evaluatedAt: string;
+  /** @nullable */
+  workforceRevisionId: SupportRoutingDecisionResponseDtoWorkforceRevisionId;
 }

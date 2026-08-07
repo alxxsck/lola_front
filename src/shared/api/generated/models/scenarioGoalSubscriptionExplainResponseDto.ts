@@ -8,8 +8,8 @@
 import type { ScenarioGoalSubscriptionExplainResponseDtoMatchingMode } from "./scenarioGoalSubscriptionExplainResponseDtoMatchingMode";
 
 export interface ScenarioGoalSubscriptionExplainResponseDto {
-  definitionKeyId: string;
-  compiledRevisionId: string;
-  matchingMode: ScenarioGoalSubscriptionExplainResponseDtoMatchingMode;
   acceptedRevisionIds: string[];
+  compiledRevisionId: string;
+  definitionKeyId: string;
+  matchingMode: ScenarioGoalSubscriptionExplainResponseDtoMatchingMode;
 }

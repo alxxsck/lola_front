@@ -8,7 +8,6 @@
 import type { ConfigureProjectActionDtoConfiguration } from "./configureProjectActionDtoConfiguration";
 
 export interface ConfigureProjectActionDto {
-  scenarioEnabled?: boolean;
   aiEnabled?: boolean;
   /**
    * @minLength 20
@@ -16,11 +15,12 @@ export interface ConfigureProjectActionDto {
    * @nullable
    */
   aiUsageDescription?: string | null;
-  configuration?: ConfigureProjectActionDtoConfiguration;
   /**
    * Required when AI authority is enabled or broadened.
    * @minLength 10
    * @maxLength 500
    */
   auditReason?: string;
+  configuration?: ConfigureProjectActionDtoConfiguration;
+  scenarioEnabled?: boolean;
 }

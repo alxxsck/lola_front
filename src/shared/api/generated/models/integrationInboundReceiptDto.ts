@@ -8,7 +8,7 @@
 import type { IntegrationInboundReceiptDtoStatus } from "./integrationInboundReceiptDtoStatus";
 
 export interface IntegrationInboundReceiptDto {
+  duplicate: boolean;
   receiptId: string;
   status: IntegrationInboundReceiptDtoStatus;
-  duplicate: boolean;
 }

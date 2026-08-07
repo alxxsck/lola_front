@@ -8,11 +8,11 @@
 import type { WaitUntilOnlineDeliveryPolicyDtoKind } from "./waitUntilOnlineDeliveryPolicyDtoKind";
 
 export interface WaitUntilOnlineDeliveryPolicyDto {
-  kind: WaitUntilOnlineDeliveryPolicyDtoKind;
   /**
    * @minimum 1000
    * @maximum 604800000
    */
   expiryMs: number;
+  kind: WaitUntilOnlineDeliveryPolicyDtoKind;
   recheckEligibility?: boolean;
 }

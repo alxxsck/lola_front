@@ -9,14 +9,14 @@ import type { SupportExternalMappingRootResponseDtoDraftRevisionId } from "./sup
 import type { SupportExternalMappingRootResponseDtoPublishedRevisionId } from "./supportExternalMappingRootResponseDtoPublishedRevisionId";
 
 export interface SupportExternalMappingRootResponseDto {
-  id: string;
   connectionId: string;
   /** @maxLength 120 */
   displayName: string;
-  /** @minimum 1 */
-  version: number;
   /** @nullable */
   draftRevisionId?: SupportExternalMappingRootResponseDtoDraftRevisionId;
+  id: string;
   /** @nullable */
   publishedRevisionId?: SupportExternalMappingRootResponseDtoPublishedRevisionId;
+  /** @minimum 1 */
+  version: number;
 }

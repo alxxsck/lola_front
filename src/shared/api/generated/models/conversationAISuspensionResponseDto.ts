@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConversationAISuspensionResponseDtoMode } from "./conversationAISuspensionResponseDtoMode";
 import type { ConversationAISuspensionResponseDtoLifecycle } from "./conversationAISuspensionResponseDtoLifecycle";
-import type { ConversationAISuspensionResponseDtoStartedBy } from "./conversationAISuspensionResponseDtoStartedBy";
+import type { ConversationAISuspensionResponseDtoMode } from "./conversationAISuspensionResponseDtoMode";
 import type { ConversationAISuspensionResponseDtoReason } from "./conversationAISuspensionResponseDtoReason";
 import type { ConversationAISuspensionResponseDtoResumedBy } from "./conversationAISuspensionResponseDtoResumedBy";
+import type { ConversationAISuspensionResponseDtoStartedBy } from "./conversationAISuspensionResponseDtoStartedBy";
 
 export interface ConversationAISuspensionResponseDto {
-  mode: ConversationAISuspensionResponseDtoMode;
   lifecycle: ConversationAISuspensionResponseDtoLifecycle;
-  version: string;
-  serverTime: string;
-  /** @nullable */
-  startedAt: string | null;
-  /** @nullable */
-  suspendedUntil: string | null;
-  /** @nullable */
-  startedBy: ConversationAISuspensionResponseDtoStartedBy;
-  /** @nullable */
-  reason: ConversationAISuspensionResponseDtoReason;
+  mode: ConversationAISuspensionResponseDtoMode;
   /** @nullable */
   note: string | null;
+  /** @nullable */
+  reason: ConversationAISuspensionResponseDtoReason;
   /** @nullable */
   resumedAt: string | null;
   /** @nullable */
   resumedBy: ConversationAISuspensionResponseDtoResumedBy;
+  serverTime: string;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  startedBy: ConversationAISuspensionResponseDtoStartedBy;
+  /** @nullable */
+  suspendedUntil: string | null;
+  version: string;
 }

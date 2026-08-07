@@ -8,9 +8,9 @@
 
 export interface IntegrationIngressStorageMetricsDto {
   /** @minimum 0 */
-  retainedItems: number;
-  /** @minimum 0 */
   retainedBytes: number;
+  /** @minimum 0 */
+  retainedItems: number;
   /** @nullable */
   usageUpdatedAt: string | null;
 }

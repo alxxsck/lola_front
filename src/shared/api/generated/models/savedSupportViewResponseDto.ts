@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SavedSupportViewResponseDtoScope } from "./savedSupportViewResponseDtoScope";
-import type { SavedSupportViewResponseDtoLifecycle } from "./savedSupportViewResponseDtoLifecycle";
-import type { SavedSupportViewResponseDtoDraft } from "./savedSupportViewResponseDtoDraft";
-import type { SavedSupportViewResponseDtoPublishedRevision } from "./savedSupportViewResponseDtoPublishedRevision";
-import type { SavedSupportViewPermissionsResponseDto } from "./savedSupportViewPermissionsResponseDto";
 import type { SavedSupportViewCountResponseDto } from "./savedSupportViewCountResponseDto";
+import type { SavedSupportViewResponseDtoDraft } from "./savedSupportViewResponseDtoDraft";
 import type { SupportSearchFreshnessResponseDto } from "./supportSearchFreshnessResponseDto";
+import type { SavedSupportViewResponseDtoLifecycle } from "./savedSupportViewResponseDtoLifecycle";
+import type { SavedSupportViewPermissionsResponseDto } from "./savedSupportViewPermissionsResponseDto";
+import type { SavedSupportViewResponseDtoPublishedRevision } from "./savedSupportViewResponseDtoPublishedRevision";
+import type { SavedSupportViewResponseDtoScope } from "./savedSupportViewResponseDtoScope";
 
 export interface SavedSupportViewResponseDto {
-  id: string;
   code: string;
-  scope: SavedSupportViewResponseDtoScope;
-  lifecycle: SavedSupportViewResponseDtoLifecycle;
-  /** @minimum 1 */
-  version: number;
-  /** @nullable */
-  ownerTeamId?: string | null;
+  count: SavedSupportViewCountResponseDto;
   draft: SavedSupportViewResponseDtoDraft;
-  /** @nullable */
-  publishedRevision?: SavedSupportViewResponseDtoPublishedRevision;
   /** Strong action ETag for the next versioned mutation. */
   etag: string;
-  permissions: SavedSupportViewPermissionsResponseDto;
-  count: SavedSupportViewCountResponseDto;
   freshness: SupportSearchFreshnessResponseDto;
+  id: string;
+  lifecycle: SavedSupportViewResponseDtoLifecycle;
+  /** @nullable */
+  ownerTeamId?: string | null;
+  permissions: SavedSupportViewPermissionsResponseDto;
+  /** @nullable */
+  publishedRevision?: SavedSupportViewResponseDtoPublishedRevision;
+  scope: SavedSupportViewResponseDtoScope;
+  /** @minimum 1 */
+  version: number;
 }

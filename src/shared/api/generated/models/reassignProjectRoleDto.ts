@@ -7,8 +7,6 @@
  */
 
 export interface ReassignProjectRoleDto {
-  /** @minimum 1 */
-  version: number;
   /**
    * @minimum 0
    * @maximum 1000
@@ -25,4 +23,6 @@ export interface ReassignProjectRoleDto {
    * @maxItems 5
    */
   replacementRoleIds: string[];
+  /** @minimum 1 */
+  version: number;
 }

@@ -8,19 +8,19 @@
 import type { SupportRoutingQueueActivationResponseDtoRequestedMode } from "./supportRoutingQueueActivationResponseDtoRequestedMode";
 
 export interface SupportRoutingQueueActivationResponseDto {
+  activatedAt: string;
+  admissionReceiptId: string;
+  algorithmRevision: string;
   id: string;
+  liveRoutePriority: number;
+  policyId: string;
+  policyRevisionId: string;
+  queueGenerationId: string;
   queueId: string;
+  queueRevisionId: string;
+  reasonCode: string;
   requestedMode: SupportRoutingQueueActivationResponseDtoRequestedMode;
   /** @minimum 1 */
   version: number;
-  queueRevisionId: string;
-  queueGenerationId: string;
-  policyId: string;
-  policyRevisionId: string;
   workforceRevisionId: string;
-  admissionReceiptId: string;
-  algorithmRevision: string;
-  liveRoutePriority: number;
-  reasonCode: string;
-  activatedAt: string;
 }

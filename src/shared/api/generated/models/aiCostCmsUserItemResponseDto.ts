@@ -7,16 +7,16 @@
  */
 
 export interface AiCostCmsUserItemResponseDto {
-  /** @nullable */
-  providerReportedCostUsd: string | null;
-  /** @nullable */
-  estimatedFallbackCostUsd: string | null;
+  cmsUserId: string;
   /** @nullable */
   effectiveCostUsd: string | null;
+  email: string;
+  /** @nullable */
+  estimatedFallbackCostUsd: string | null;
   /** Records with a concrete cost amount. */
   pricedCostRecords: number;
-  cmsUserId: string;
-  email: string;
+  /** @nullable */
+  providerReportedCostUsd: string | null;
   records: number;
   unpricedRecords: number;
 }

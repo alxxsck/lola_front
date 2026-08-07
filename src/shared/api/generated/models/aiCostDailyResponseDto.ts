@@ -7,14 +7,14 @@
  */
 
 export interface AiCostDailyResponseDto {
-  /** @nullable */
-  providerReportedCostUsd: string | null;
-  /** @nullable */
-  estimatedFallbackCostUsd: string | null;
+  day: string;
   /** @nullable */
   effectiveCostUsd: string | null;
+  /** @nullable */
+  estimatedFallbackCostUsd: string | null;
   /** Records with a concrete cost amount. */
   pricedCostRecords: number;
-  day: string;
+  /** @nullable */
+  providerReportedCostUsd: string | null;
   records: number;
 }

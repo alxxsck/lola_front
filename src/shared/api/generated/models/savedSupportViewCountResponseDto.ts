@@ -8,15 +8,15 @@
 import type { SavedSupportViewCountResponseDtoState } from "./savedSupportViewCountResponseDtoState";
 
 export interface SavedSupportViewCountResponseDto {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  cappedAt: number;
   state: SavedSupportViewCountResponseDtoState;
   /**
    * @minimum 0
    * @nullable
    */
   value?: number | null;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  cappedAt: number;
 }

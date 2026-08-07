@@ -8,8 +8,8 @@
 import type { AIReviewSettingsLimitsResponseDto } from "./aIReviewSettingsLimitsResponseDto";
 
 export interface AIReviewSettingsResponseDto {
-  projectVersion: number;
-  enabled: boolean;
   dailyRunLimit: number;
+  enabled: boolean;
   limits: AIReviewSettingsLimitsResponseDto;
+  projectVersion: number;
 }

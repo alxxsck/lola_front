@@ -9,8 +9,8 @@
 export interface SupportQualityReviewItemScoreResponseDto {
   itemCode: string;
   itemLabel: string;
-  /** @minimum 0 */
-  score: number;
   /** @minimum 1 */
   maximumScore: number;
+  /** @minimum 0 */
+  score: number;
 }

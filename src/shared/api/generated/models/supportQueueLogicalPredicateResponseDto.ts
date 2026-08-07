@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueLogicalPredicateResponseDtoKind } from "./supportQueueLogicalPredicateResponseDtoKind";
 import type { SupportQueueLogicalPredicateResponseDtoChildrenItem } from "./supportQueueLogicalPredicateResponseDtoChildrenItem";
+import type { SupportQueueLogicalPredicateResponseDtoKind } from "./supportQueueLogicalPredicateResponseDtoKind";
 
 export interface SupportQueueLogicalPredicateResponseDto {
-  kind: SupportQueueLogicalPredicateResponseDtoKind;
   /**
    * Nested Support Queue predicate union (same discriminator: kind).
    * @minItems 1
    * @maxItems 16
    */
   children: SupportQueueLogicalPredicateResponseDtoChildrenItem[];
+  kind: SupportQueueLogicalPredicateResponseDtoKind;
 }

@@ -7,6 +7,6 @@
  */
 
 export interface ActivitySettingLimitResponseDto {
-  min: number;
   max: number;
+  min: number;
 }

@@ -7,13 +7,13 @@
  */
 
 export interface UpdateAmplitudeConnectionDto {
-  /** @minimum 1 */
-  expectedVersion: number;
   /**
    * @minLength 1
    * @maxLength 120
    */
   displayName: string;
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * @minLength 1
    * @maxLength 120

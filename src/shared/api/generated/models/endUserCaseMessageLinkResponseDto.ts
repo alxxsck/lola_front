@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseMessageLinkResponseDtoRelation } from "./endUserCaseMessageLinkResponseDtoRelation";
 import type { EndUserCaseMessageLinkResponseDtoLinkedBy } from "./endUserCaseMessageLinkResponseDtoLinkedBy";
 import type { EndUserCaseMessageResponseDto } from "./endUserCaseMessageResponseDto";
+import type { EndUserCaseMessageLinkResponseDtoRelation } from "./endUserCaseMessageLinkResponseDtoRelation";
 
 export interface EndUserCaseMessageLinkResponseDto {
+  linkedAt: string;
+  linkedBy: EndUserCaseMessageLinkResponseDtoLinkedBy;
+  message: EndUserCaseMessageResponseDto;
   relation: EndUserCaseMessageLinkResponseDtoRelation;
   relevance: string;
-  linkedBy: EndUserCaseMessageLinkResponseDtoLinkedBy;
-  linkedAt: string;
-  message: EndUserCaseMessageResponseDto;
 }

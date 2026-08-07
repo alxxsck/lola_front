@@ -8,12 +8,12 @@
 import type { ScenarioSourceActionDtoConfig } from "./scenarioSourceActionDtoConfig";
 
 export interface ScenarioSourceActionDto {
-  /** @minimum 0 */
-  position: number;
-  /** @nullable */
-  nodeKey?: string | null;
+  config: ScenarioSourceActionDtoConfig;
   /** @nullable */
   nextNodeKey?: string | null;
+  /** @nullable */
+  nodeKey?: string | null;
+  /** @minimum 0 */
+  position: number;
   type: string;
-  config: ScenarioSourceActionDtoConfig;
 }

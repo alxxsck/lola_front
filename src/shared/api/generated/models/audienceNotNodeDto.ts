@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceNotNodeDtoKind } from "./audienceNotNodeDtoKind";
 import type { AudienceNotNodeDtoChild } from "./audienceNotNodeDtoChild";
+import type { AudienceNotNodeDtoKind } from "./audienceNotNodeDtoKind";
 
 export interface AudienceNotNodeDto {
-  kind: AudienceNotNodeDtoKind;
   child: AudienceNotNodeDtoChild;
+  kind: AudienceNotNodeDtoKind;
 }

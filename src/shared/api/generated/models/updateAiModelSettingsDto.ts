@@ -8,8 +8,8 @@
 import type { AiModelProfileDto } from "./aiModelProfileDto";
 
 export interface UpdateAiModelSettingsDto {
+  assistant: AiModelProfileDto;
   /** @minimum 1 */
   expectedProjectVersion: number;
-  assistant: AiModelProfileDto;
   translation: AiModelProfileDto;
 }

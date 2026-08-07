@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadSlaSummaryDto } from "./supportLeadSlaSummaryDto";
 import type { SupportLeadActionableBacklogSummaryDto } from "./supportLeadActionableBacklogSummaryDto";
-import type { SupportLeadWorkforceSummaryDto } from "./supportLeadWorkforceSummaryDto";
 import type { SupportLeadDeliverySummaryDto } from "./supportLeadDeliverySummaryDto";
 import type { SupportLeadProjectionHealthSummaryDto } from "./supportLeadProjectionHealthSummaryDto";
+import type { SupportLeadSlaSummaryDto } from "./supportLeadSlaSummaryDto";
+import type { SupportLeadWorkforceSummaryDto } from "./supportLeadWorkforceSummaryDto";
 
 export interface SupportLeadSummaryDataDto {
-  sla: SupportLeadSlaSummaryDto;
   actionableBacklog: SupportLeadActionableBacklogSummaryDto;
-  workforce: SupportLeadWorkforceSummaryDto;
   delivery: SupportLeadDeliverySummaryDto;
   projectionHealth: SupportLeadProjectionHealthSummaryDto;
+  sla: SupportLeadSlaSummaryDto;
+  workforce: SupportLeadWorkforceSummaryDto;
 }

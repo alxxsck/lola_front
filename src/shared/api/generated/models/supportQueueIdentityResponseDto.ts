@@ -10,24 +10,24 @@ import type { SupportQueueIdentityResponseDtoLifecycle } from "./supportQueueIde
 import type { SupportQueueIdentityResponseDtoVisibility } from "./supportQueueIdentityResponseDtoVisibility";
 
 export interface SupportQueueIdentityResponseDto {
-  id: string;
-  /** @pattern ^[a-z][a-z0-9-]{1,63}$ */
-  stableCode: string;
-  kind: SupportQueueIdentityResponseDtoKind;
-  lifecycle: SupportQueueIdentityResponseDtoLifecycle;
-  /** @minimum 1 */
-  version: number;
-  /**
-   * @minLength 2
-   * @maxLength 120
-   */
-  displayName: string;
+  createdAt: string;
   /**
    * @maxLength 1000
    * @nullable
    */
   description: string | null;
-  visibility: SupportQueueIdentityResponseDtoVisibility;
-  createdAt: string;
+  /**
+   * @minLength 2
+   * @maxLength 120
+   */
+  displayName: string;
+  id: string;
+  kind: SupportQueueIdentityResponseDtoKind;
+  lifecycle: SupportQueueIdentityResponseDtoLifecycle;
+  /** @pattern ^[a-z][a-z0-9-]{1,63}$ */
+  stableCode: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
+  visibility: SupportQueueIdentityResponseDtoVisibility;
 }

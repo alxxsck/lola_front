@@ -7,6 +7,6 @@
  */
 
 export interface ScenarioRunUserSummaryDto {
-  id: string;
   externalId: string;
+  id: string;
 }

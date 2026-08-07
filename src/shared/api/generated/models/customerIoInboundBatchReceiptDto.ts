@@ -8,8 +8,11 @@
 import type { CustomerIoInboundBatchReceiptDtoStatus } from "./customerIoInboundBatchReceiptDtoStatus";
 
 export interface CustomerIoInboundBatchReceiptDto {
-  receiptId: string;
-  status: CustomerIoInboundBatchReceiptDtoStatus;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  duplicateCount: number;
   /**
    * @minimum 1
    * @maximum 1000
@@ -19,10 +22,7 @@ export interface CustomerIoInboundBatchReceiptDto {
    * @minimum 0
    * @maximum 1000
    */
-  duplicateCount: number;
-  /**
-   * @minimum 0
-   * @maximum 1000
-   */
   quarantinedCount: number;
+  receiptId: string;
+  status: CustomerIoInboundBatchReceiptDtoStatus;
 }

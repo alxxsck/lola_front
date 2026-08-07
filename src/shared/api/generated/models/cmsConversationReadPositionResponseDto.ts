@@ -9,13 +9,13 @@
 export interface CmsConversationReadPositionResponseDto {
   conversationId: string;
   /** @minimum 0 */
-  lastReadOrdinal: number;
-  /** @minimum 0 */
   highestOrdinal: number;
   /** @minimum 0 */
-  unreadMessageCount: number;
+  lastReadOrdinal: number;
   /** @minimum 0 */
   unreadCustomerMessageCount: number;
+  /** @minimum 0 */
+  unreadMessageCount: number;
   /** @nullable */
   updatedAt?: string | null;
 }

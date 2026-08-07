@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PublishSupportSlaConfigurationMutationResponseDtoIntent } from "./publishSupportSlaConfigurationMutationResponseDtoIntent";
 import type { PublishSupportSlaConfigurationMutationResponseDtoDraft } from "./publishSupportSlaConfigurationMutationResponseDtoDraft";
+import type { PublishSupportSlaConfigurationMutationResponseDtoIntent } from "./publishSupportSlaConfigurationMutationResponseDtoIntent";
 import type { SupportSlaPublishedConfigurationReceiptDto } from "./supportSlaPublishedConfigurationReceiptDto";
 
 export interface PublishSupportSlaConfigurationMutationResponseDto {
-  intent: PublishSupportSlaConfigurationMutationResponseDtoIntent;
-  /** @minimum 1 */
-  rootVersion: number;
   /** @pattern ^"ssla1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
   /** @nullable */
   draft: PublishSupportSlaConfigurationMutationResponseDtoDraft;
+  intent: PublishSupportSlaConfigurationMutationResponseDtoIntent;
   publishedConfiguration: SupportSlaPublishedConfigurationReceiptDto;
+  /** @minimum 1 */
+  rootVersion: number;
 }

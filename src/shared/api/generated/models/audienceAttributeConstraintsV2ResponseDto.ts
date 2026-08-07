@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceAttributeConstraintsV2ResponseDtoMinimum } from "./audienceAttributeConstraintsV2ResponseDtoMinimum";
-import type { AudienceAttributeConstraintsV2ResponseDtoMaximum } from "./audienceAttributeConstraintsV2ResponseDtoMaximum";
 import type { AudienceAttributeConstraintsV2ResponseDtoAllowedValuesItem } from "./audienceAttributeConstraintsV2ResponseDtoAllowedValuesItem";
+import type { AudienceAttributeConstraintsV2ResponseDtoMaximum } from "./audienceAttributeConstraintsV2ResponseDtoMaximum";
+import type { AudienceAttributeConstraintsV2ResponseDtoMinimum } from "./audienceAttributeConstraintsV2ResponseDtoMinimum";
 
 export interface AudienceAttributeConstraintsV2ResponseDto {
-  minimum?: AudienceAttributeConstraintsV2ResponseDtoMinimum;
+  allowedValues?: AudienceAttributeConstraintsV2ResponseDtoAllowedValuesItem[];
   maximum?: AudienceAttributeConstraintsV2ResponseDtoMaximum;
   /** @minimum 0 */
-  minLength?: number;
-  /** @minimum 0 */
   maxLength?: number;
+  minimum?: AudienceAttributeConstraintsV2ResponseDtoMinimum;
+  /** @minimum 0 */
+  minLength?: number;
   /** @minimum 1 */
   precision?: number;
   /** @minimum 0 */
   scale?: number;
-  allowedValues?: AudienceAttributeConstraintsV2ResponseDtoAllowedValuesItem[];
 }

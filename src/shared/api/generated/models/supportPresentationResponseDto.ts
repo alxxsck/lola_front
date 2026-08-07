@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportPresentationResponseDtoKind } from "./supportPresentationResponseDtoKind";
 import type { SupportPresentationResponseDtoAvatar } from "./supportPresentationResponseDtoAvatar";
+import type { SupportPresentationResponseDtoKind } from "./supportPresentationResponseDtoKind";
 
 export interface SupportPresentationResponseDto {
-  kind: SupportPresentationResponseDtoKind;
+  /** @pattern ^"spr1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
+  /** @nullable */
+  avatar: SupportPresentationResponseDtoAvatar;
   /** @nullable */
   cmsUserId: string | null;
   displayName: string;
+  kind: SupportPresentationResponseDtoKind;
   version: number;
-  /** @nullable */
-  avatar: SupportPresentationResponseDtoAvatar;
-  /** @pattern ^"spr1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
 }

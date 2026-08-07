@@ -9,7 +9,7 @@ import type { AttributeDefinitionImpactIdentityResponseDto } from "./attributeDe
 import type { AttributeDefinitionImpactDependencyResponseDto } from "./attributeDefinitionImpactDependencyResponseDto";
 
 export interface AttributeDefinitionImpactResponseDto {
-  definition: AttributeDefinitionImpactIdentityResponseDto;
   canArchive: boolean;
+  definition: AttributeDefinitionImpactIdentityResponseDto;
   dependencies: AttributeDefinitionImpactDependencyResponseDto[];
 }

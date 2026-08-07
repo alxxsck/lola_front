@@ -10,11 +10,11 @@ import type { EventFieldRuleNodeDtoOperator } from "./eventFieldRuleNodeDtoOpera
 import type { EventFieldRuleNodeDtoValue } from "./eventFieldRuleNodeDtoValue";
 
 export interface EventFieldRuleNodeDto {
-  kind: EventFieldRuleNodeDtoKind;
   /** @maxLength 128 */
   eventCode: string;
   /** @maxLength 128 */
   fieldKey: string;
+  kind: EventFieldRuleNodeDtoKind;
   operator: EventFieldRuleNodeDtoOperator;
   value?: EventFieldRuleNodeDtoValue;
 }

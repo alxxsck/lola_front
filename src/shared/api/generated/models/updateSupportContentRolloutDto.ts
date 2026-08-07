@@ -8,9 +8,9 @@
 import type { UpdateSupportContentRolloutDtoEnabledCapabilitiesItem } from "./updateSupportContentRolloutDtoEnabledCapabilitiesItem";
 
 export interface UpdateSupportContentRolloutDto {
-  hardOff: boolean;
   /** @maxItems 5 */
   enabledCapabilities: UpdateSupportContentRolloutDtoEnabledCapabilitiesItem[];
+  hardOff: boolean;
   /**
    * @minLength 3
    * @maxLength 500

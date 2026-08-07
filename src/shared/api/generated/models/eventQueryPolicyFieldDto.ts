@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryPolicyFieldDtoSemanticType } from "./eventQueryPolicyFieldDtoSemanticType";
 import type { EventQueryPolicyFieldDtoOperationsItem } from "./eventQueryPolicyFieldDtoOperationsItem";
+import type { EventQueryPolicyFieldDtoSemanticType } from "./eventQueryPolicyFieldDtoSemanticType";
 import type { EventQueryPolicyFieldDtoSensitivity } from "./eventQueryPolicyFieldDtoSensitivity";
 
 export interface EventQueryPolicyFieldDto {
+  currencyConstant?: string;
+  currencyPath?: string;
+  operations: EventQueryPolicyFieldDtoOperationsItem[];
   path: string;
   semanticType: EventQueryPolicyFieldDtoSemanticType;
-  operations: EventQueryPolicyFieldDtoOperationsItem[];
   sensitivity: EventQueryPolicyFieldDtoSensitivity;
-  currencyPath?: string;
-  currencyConstant?: string;
 }

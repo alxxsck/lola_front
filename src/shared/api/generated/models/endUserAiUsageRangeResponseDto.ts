@@ -9,7 +9,7 @@
 export interface EndUserAiUsageRangeResponseDto {
   /** @nullable */
   from: string | null;
+  timezone: string;
   /** @nullable */
   to: string | null;
-  timezone: string;
 }

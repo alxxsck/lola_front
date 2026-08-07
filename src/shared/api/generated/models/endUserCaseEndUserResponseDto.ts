@@ -7,6 +7,6 @@
  */
 
 export interface EndUserCaseEndUserResponseDto {
-  id: string;
   externalId: string;
+  id: string;
 }

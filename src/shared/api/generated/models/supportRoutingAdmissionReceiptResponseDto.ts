@@ -9,26 +9,26 @@ import type { SupportRoutingAdmissionReceiptResponseDtoRevokedAt } from "./suppo
 import type { SupportRoutingAdmissionReceiptResponseDtoRevokedReasonCode } from "./supportRoutingAdmissionReceiptResponseDtoRevokedReasonCode";
 
 export interface SupportRoutingAdmissionReceiptResponseDto {
+  actionEtag: string;
+  algorithmRevision: string;
+  approvedMaximumMode: string;
+  expiresAt: string;
   id: string;
-  queueId: string;
-  queueRevisionId: string;
-  queueGenerationId: string;
+  issuedAt: string;
+  lifecycle: string;
   policyId: string;
   policyRevisionId: string;
-  workforceRevisionId: string;
-  routePriority: number;
-  algorithmRevision: string;
-  vectorFingerprint: string;
-  shadowWindowHash: string;
-  sampleResultHash: string;
-  lifecycle: string;
-  approvedMaximumMode: string;
-  issuedAt: string;
-  expiresAt: string;
+  queueGenerationId: string;
+  queueId: string;
+  queueRevisionId: string;
   /** @nullable */
   revokedAt: SupportRoutingAdmissionReceiptResponseDtoRevokedAt;
   /** @nullable */
   revokedReasonCode: SupportRoutingAdmissionReceiptResponseDtoRevokedReasonCode;
+  routePriority: number;
+  sampleResultHash: string;
+  shadowWindowHash: string;
+  vectorFingerprint: string;
   version: number;
-  actionEtag: string;
+  workforceRevisionId: string;
 }

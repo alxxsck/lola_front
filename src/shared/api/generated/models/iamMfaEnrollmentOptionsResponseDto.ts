@@ -9,8 +9,8 @@ import type { IamMfaEnrollmentOptionsResponseDtoKind } from "./iamMfaEnrollmentO
 import type { IamMfaEnrollmentOptionsResponseDtoPublicKey } from "./iamMfaEnrollmentOptionsResponseDtoPublicKey";
 
 export interface IamMfaEnrollmentOptionsResponseDto {
-  kind: IamMfaEnrollmentOptionsResponseDtoKind;
   ceremonyToken: string;
   expiresAt: string;
+  kind: IamMfaEnrollmentOptionsResponseDtoKind;
   publicKey: IamMfaEnrollmentOptionsResponseDtoPublicKey;
 }

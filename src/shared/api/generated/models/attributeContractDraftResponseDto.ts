@@ -8,11 +8,11 @@
 import type { AttributeContractDocumentDto } from "./attributeContractDocumentDto";
 
 export interface AttributeContractDraftResponseDto {
-  projectId: string;
-  draftVersion: number;
-  document: AttributeContractDocumentDto;
   /** @nullable */
   basePublicationId?: string | null;
+  document: AttributeContractDocumentDto;
+  draftVersion: number;
+  projectId: string;
   /** @nullable */
   updatedById?: string | null;
 }

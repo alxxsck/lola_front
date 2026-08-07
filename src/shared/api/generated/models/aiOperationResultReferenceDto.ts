@@ -8,11 +8,11 @@
 import type { AiOperationResultReferenceDtoKind } from "./aiOperationResultReferenceDtoKind";
 
 export interface AiOperationResultReferenceDto {
-  kind: AiOperationResultReferenceDtoKind;
-  id: string;
   /**
    * Canonical End User route context for Conversation results.
    * @nullable
    */
   endUserId?: string | null;
+  id: string;
+  kind: AiOperationResultReferenceDtoKind;
 }

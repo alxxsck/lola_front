@@ -9,12 +9,12 @@ import type { AiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeMode } from "
 import type { AiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeTranslations } from "./aiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeTranslations";
 
 export type AiAllowanceProjectPolicyDtoExhaustedContentOneOfThree = {
-  mode: AiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeMode;
   /**
    * @minLength 1
    * @maxLength 64
    */
   defaultLocale: string;
+  mode: AiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeMode;
   /** Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed. */
   translations: AiAllowanceProjectPolicyDtoExhaustedContentOneOfThreeTranslations;
 };

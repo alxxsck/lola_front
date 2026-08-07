@@ -5,30 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PutAiAllowanceAccrualRuleDtoLifecycle } from "./putAiAllowanceAccrualRuleDtoLifecycle";
 import type { PutAiAllowanceAccrualRuleDtoAllowedSourcesItem } from "./putAiAllowanceAccrualRuleDtoAllowedSourcesItem";
+import type { PutAiAllowanceAccrualRuleDtoLifecycle } from "./putAiAllowanceAccrualRuleDtoLifecycle";
 
 export interface PutAiAllowanceAccrualRuleDto {
-  /** @maxLength 160 */
-  name: string;
-  lifecycle: PutAiAllowanceAccrualRuleDtoLifecycle;
-  eventDefinitionKeyId: string;
-  /** @maxItems 50 */
-  eventDefinitionRevisionIds: string[];
   allowedSources: PutAiAllowanceAccrualRuleDtoAllowedSourcesItem[];
-  /** @maxLength 100 */
-  timezone: string;
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  rewardUsd: string;
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  perEndUserDailyCapUsd: string;
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  projectDailyCapUsd: string;
-  /**
-   * @minimum 60
-   * @maximum 31622400
-   */
-  grantTtlSeconds: number;
   /**
    * @minimum 0
    * @maximum 31622400
@@ -36,6 +17,25 @@ export interface PutAiAllowanceAccrualRuleDto {
   cooldownSeconds: number;
   effectiveFrom: string;
   effectiveUntil?: string;
+  eventDefinitionKeyId: string;
+  /** @maxItems 50 */
+  eventDefinitionRevisionIds: string[];
+  /**
+   * @minimum 60
+   * @maximum 31622400
+   */
+  grantTtlSeconds: number;
+  lifecycle: PutAiAllowanceAccrualRuleDtoLifecycle;
+  /** @maxLength 160 */
+  name: string;
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  perEndUserDailyCapUsd: string;
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  projectDailyCapUsd: string;
   /** @maxLength 500 */
   reason: string;
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  rewardUsd: string;
+  /** @maxLength 100 */
+  timezone: string;
 }

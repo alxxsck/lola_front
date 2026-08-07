@@ -7,13 +7,13 @@
  */
 
 export interface IamMfaPasskeySummaryDto {
+  backedUp: boolean;
+  backupEligible: boolean;
+  createdAt: string;
+  deviceType: string;
   id: string;
   /** @nullable */
   label: string | null;
-  deviceType: string;
-  backupEligible: boolean;
-  backedUp: boolean;
-  createdAt: string;
   /** @nullable */
   lastUsedAt: string | null;
 }

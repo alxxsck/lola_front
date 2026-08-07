@@ -6,19 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectMembershipCmsUserSummaryDto } from "./projectMembershipCmsUserSummaryDto";
-import type { ProjectMembershipResponseDtoStatus } from "./projectMembershipResponseDtoStatus";
 import type { ManagedProjectRoleSummaryDto } from "./managedProjectRoleSummaryDto";
+import type { ProjectMembershipResponseDtoStatus } from "./projectMembershipResponseDtoStatus";
 
 export interface ProjectMembershipResponseDto {
+  cmsUser: ProjectMembershipCmsUserSummaryDto;
+  createdAt: string;
+  effectivePermissionCodes: string[];
   id: string;
   projectId: string;
-  cmsUser: ProjectMembershipCmsUserSummaryDto;
-  status: ProjectMembershipResponseDtoStatus;
-  roles: ManagedProjectRoleSummaryDto[];
-  effectivePermissionCodes: string[];
-  version: number;
-  createdAt: string;
-  updatedAt: string;
   /** @nullable */
   removedAt: string | null;
+  roles: ManagedProjectRoleSummaryDto[];
+  status: ProjectMembershipResponseDtoStatus;
+  updatedAt: string;
+  version: number;
 }

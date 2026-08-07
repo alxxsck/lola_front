@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringDraftResponseDtoRule } from "./scenarioAuthoringDraftResponseDtoRule";
 import type { ScenarioAuthoringDraftResponseDtoAudience } from "./scenarioAuthoringDraftResponseDtoAudience";
-import type { ScenarioAuthoringDraftResponseDtoGraph } from "./scenarioAuthoringDraftResponseDtoGraph";
 import type { ScenarioAuthoringDraftResponseDtoDeliveryPolicy } from "./scenarioAuthoringDraftResponseDtoDeliveryPolicy";
-import type { ScenarioAuthoringDraftResponseDtoProfileFreshness } from "./scenarioAuthoringDraftResponseDtoProfileFreshness";
+import type { ScenarioAuthoringDraftResponseDtoGraph } from "./scenarioAuthoringDraftResponseDtoGraph";
 import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
+import type { ScenarioAuthoringDraftResponseDtoProfileFreshness } from "./scenarioAuthoringDraftResponseDtoProfileFreshness";
+import type { ScenarioAuthoringDraftResponseDtoRule } from "./scenarioAuthoringDraftResponseDtoRule";
 
 export interface ScenarioAuthoringDraftResponseDto {
   /** @nullable */
-  rule?: ScenarioAuthoringDraftResponseDtoRule;
-  /** @nullable */
   audience?: ScenarioAuthoringDraftResponseDtoAudience;
   /** @nullable */
-  graph?: ScenarioAuthoringDraftResponseDtoGraph;
+  baseRevisionId?: string | null;
+  catalogRevision: string;
+  createdAt: string;
   deliveryPolicy: ScenarioAuthoringDraftResponseDtoDeliveryPolicy;
   /** @nullable */
-  profileFreshness?: ScenarioAuthoringDraftResponseDtoProfileFreshness;
-  catalogRevision: string;
-  localization: ScenarioLocalizationPolicyDto;
+  graph?: ScenarioAuthoringDraftResponseDtoGraph;
   id: string;
-  /** @minimum 1 */
-  version: number;
+  localization: ScenarioLocalizationPolicyDto;
   /** @nullable */
-  baseRevisionId?: string | null;
+  profileFreshness?: ScenarioAuthoringDraftResponseDtoProfileFreshness;
+  /** @nullable */
+  rule?: ScenarioAuthoringDraftResponseDtoRule;
+  updatedAt: string;
   /** @nullable */
   updatedByAdminId?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

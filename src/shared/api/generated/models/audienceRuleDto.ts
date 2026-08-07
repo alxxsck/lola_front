@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceRuleDtoVersion } from "./audienceRuleDtoVersion";
 import type { AudienceRuleDtoFreshness } from "./audienceRuleDtoFreshness";
 import type { AudienceRuleDtoRoot } from "./audienceRuleDtoRoot";
+import type { AudienceRuleDtoVersion } from "./audienceRuleDtoVersion";
 
 export interface AudienceRuleDto {
-  version: AudienceRuleDtoVersion;
   freshness?: AudienceRuleDtoFreshness;
   root: AudienceRuleDtoRoot;
+  version: AudienceRuleDtoVersion;
 }

@@ -7,14 +7,14 @@
  */
 
 export interface ProjectAIAnalysisUsageTimeBucketDto {
-  startedAt: string;
-  operations: number;
-  /** @pattern ^\d+$ */
-  estimatedAiCostUsdTicks: string;
-  /** @pattern ^\d+$ */
-  billedAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   aiCostUsdTicks: string;
   /** @pattern ^\d+$ */
+  billedAiCostUsdTicks: string;
+  /** @pattern ^\d+$ */
   dbWorkUnits: string;
+  /** @pattern ^\d+$ */
+  estimatedAiCostUsdTicks: string;
+  operations: number;
+  startedAt: string;
 }

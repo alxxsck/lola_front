@@ -9,33 +9,33 @@ import type { StartSupportKnowledgeFileUploadDtoMimeType } from "./startSupportK
 
 export interface StartSupportKnowledgeFileUploadDto {
   /**
-   * @minLength 1
-   * @maxLength 240
+   * Canonical base64 SHA-256 checksum
+   * @pattern ^[A-Za-z0-9+/]{43}=$
    */
-  title: string;
+  checksumSha256Base64: string;
+  documentId?: string;
   /**
    * @minLength 1
    * @maxLength 255
    */
   filename: string;
+  /** @maxLength 35 */
+  language?: string;
+  /** @maxItems 50 */
+  languageTags?: string[];
   mimeType: StartSupportKnowledgeFileUploadDtoMimeType;
   /**
    * @minimum 1
    * @maximum 26214400
    */
   sizeBytes: number;
-  /**
-   * Canonical base64 SHA-256 checksum
-   * @pattern ^[A-Za-z0-9+/]{43}=$
-   */
-  checksumSha256Base64: string;
-  documentId?: string;
-  /** @maxLength 35 */
-  language?: string;
   /** @maxItems 100 */
   teamIds?: string[];
+  /**
+   * @minLength 1
+   * @maxLength 240
+   */
+  title: string;
   /** @maxItems 39 */
   topicCodes?: string[];
-  /** @maxItems 50 */
-  languageTags?: string[];
 }

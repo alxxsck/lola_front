@@ -2,6 +2,14 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import type { SupportInboxItem } from "@/features/support-workspace/api/support-workspace-source";
 import SupportInboxPane from "./SupportInboxPane.vue";
+import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
+
+const searchState: SupportSearchRouteState = {
+  phrase: "",
+  scope: "CASES",
+  filters: {},
+  sort: { field: "RELEVANCE", direction: "DESC" },
+};
 
 const items: SupportInboxItem[] = [
   {
@@ -32,6 +40,15 @@ function render(overrides: Record<string, unknown> = {}) {
       hasMore: false,
       canReadCases: true,
       canReadConversations: true,
+      canSearch: true,
+      searchState,
+      searchActive: false,
+      searchItems: [],
+      searchLoading: false,
+      searchError: "",
+      searchFailure: "NONE",
+      searchFreshness: null,
+      searchHasMore: false,
       ...overrides,
     },
     global: {
@@ -107,5 +124,55 @@ describe("SupportInboxPane", () => {
     expect(render({ items: [], mode: "ALL_CONVERSATIONS" }).text()).toContain(
       "Чатов пока нет",
     );
+  });
+
+  it("renders server search results with provenance and degraded freshness", async () => {
+    const wrapper = render({
+      searchState: { ...searchState, phrase: "payment", scope: "MESSAGES" },
+      searchActive: true,
+      searchItems: [
+        {
+          id: "message-1",
+          kind: "MESSAGE",
+          selection: { kind: "CONVERSATION", id: "conversation-1" },
+          snippet: "Safe server snippet",
+          activityAt: "2026-08-08T10:00:00.000Z",
+          matchProvenance: "TRANSLATION",
+          locale: "es",
+        },
+      ],
+      searchFreshness: {
+        state: "DEGRADED",
+        lagSeconds: 42,
+        indexedThrough: "2026-08-08T09:59:18.000Z",
+      },
+    });
+
+    expect(wrapper.text()).toContain("Индекс отстаёт");
+    expect(wrapper.text()).toContain("Safe server snippet");
+    expect(wrapper.text()).toContain("Совпадение в переводе");
+    await wrapper.get(".search-result-row").trigger("click");
+    expect(wrapper.emitted("selectSearch")?.[0]?.[0]).toMatchObject({
+      id: "message-1",
+      selection: { kind: "CONVERSATION", id: "conversation-1" },
+    });
+  });
+
+  it("renders no-results after a successful filter-only search", () => {
+    const wrapper = render({
+      searchState: {
+        ...searchState,
+        filters: { assignmentStates: ["UNASSIGNED"] },
+      },
+      searchActive: true,
+      searchFreshness: {
+        state: "READY",
+        lagSeconds: 0,
+        indexedThrough: "2026-08-08T10:00:00.000Z",
+      },
+    });
+
+    expect(wrapper.text()).toContain("Ничего не найдено");
+    expect(wrapper.text()).not.toContain("Введите запрос");
   });
 });

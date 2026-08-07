@@ -8,6 +8,6 @@
 import type { SupportSearchCanonicalTargetResponseDtoKind } from "./supportSearchCanonicalTargetResponseDtoKind";
 
 export interface SupportSearchCanonicalTargetResponseDto {
-  kind: SupportSearchCanonicalTargetResponseDtoKind;
   id: string;
+  kind: SupportSearchCanonicalTargetResponseDtoKind;
 }

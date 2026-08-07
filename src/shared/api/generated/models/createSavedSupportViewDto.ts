@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateSavedSupportViewDtoScope } from "./createSavedSupportViewDtoScope";
 import type { CreateSavedSupportViewDtoDraft } from "./createSavedSupportViewDtoDraft";
+import type { CreateSavedSupportViewDtoScope } from "./createSavedSupportViewDtoScope";
 
 export interface CreateSavedSupportViewDto {
   /** @pattern ^[a-z][a-z0-9-]{1,63}$ */
   code: string;
+  draft: CreateSavedSupportViewDtoDraft;
   scope: CreateSavedSupportViewDtoScope;
   teamId?: string;
-  draft: CreateSavedSupportViewDtoDraft;
 }

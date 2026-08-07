@@ -5,44 +5,44 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectAIAnalysisCompatibilityDto } from "./projectAIAnalysisCompatibilityDto";
 import type { ProjectAIAnalysisListItemDtoKind } from "./projectAIAnalysisListItemDtoKind";
-import type { ProjectAIAnalysisListItemDtoScopeKind } from "./projectAIAnalysisListItemDtoScopeKind";
-import type { ProjectAIAnalysisListItemDtoState } from "./projectAIAnalysisListItemDtoState";
 import type { ProjectAIAnalysisListItemDtoLatestRun } from "./projectAIAnalysisListItemDtoLatestRun";
 import type { ProjectAIAnalysisListItemDtoSchedule } from "./projectAIAnalysisListItemDtoSchedule";
-import type { ProjectAIAnalysisCompatibilityDto } from "./projectAIAnalysisCompatibilityDto";
+import type { ProjectAIAnalysisListItemDtoScopeKind } from "./projectAIAnalysisListItemDtoScopeKind";
+import type { ProjectAIAnalysisListItemDtoState } from "./projectAIAnalysisListItemDtoState";
 
 export interface ProjectAIAnalysisListItemDto {
   analysisId: string;
+  compatibility?: ProjectAIAnalysisCompatibilityDto;
+  complete: boolean;
+  createdAt: string;
+  /** @nullable */
+  createdByCmsUserId?: string | null;
+  /** @nullable */
+  endUserId?: string | null;
+  eventCodes: string[];
+  hasLimitations: boolean;
+  kind: ProjectAIAnalysisListItemDtoKind;
+  /** @nullable */
+  latestRun?: ProjectAIAnalysisListItemDtoLatestRun;
   /**
    * @nullable
    * @pattern ^\d+$
    */
   projectSequence?: string | null;
-  /** @minimum 1 */
-  version: number;
-  kind: ProjectAIAnalysisListItemDtoKind;
-  scopeKind: ProjectAIAnalysisListItemDtoScopeKind;
-  /** @nullable */
-  endUserId?: string | null;
   /**
    * @maxLength 240
    * @nullable
    */
   questionPreview?: string | null;
-  title: string;
-  /** @nullable */
-  createdByCmsUserId?: string | null;
-  state: ProjectAIAnalysisListItemDtoState;
-  createdAt: string;
   /** @nullable */
   retentionUntil?: string | null;
-  hasLimitations: boolean;
-  complete: boolean;
-  eventCodes: string[];
-  /** @nullable */
-  latestRun?: ProjectAIAnalysisListItemDtoLatestRun;
   /** @nullable */
   schedule?: ProjectAIAnalysisListItemDtoSchedule;
-  compatibility?: ProjectAIAnalysisCompatibilityDto;
+  scopeKind: ProjectAIAnalysisListItemDtoScopeKind;
+  state: ProjectAIAnalysisListItemDtoState;
+  title: string;
+  /** @minimum 1 */
+  version: number;
 }

@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ChatSend200OneOfNineAllowanceNoticeType } from "./chatSend200OneOfNineAllowanceNoticeType";
 import type { ChatSend200OneOfNineAllowanceNoticeCode } from "./chatSend200OneOfNineAllowanceNoticeCode";
+import type { ChatSend200OneOfNineAllowanceNoticeType } from "./chatSend200OneOfNineAllowanceNoticeType";
 
 /**
  * @nullable
  */
 export type ChatSend200OneOfNineAllowanceNotice = {
-  type: ChatSend200OneOfNineAllowanceNoticeType;
-  code: ChatSend200OneOfNineAllowanceNoticeCode;
-  eventId: string;
-  /** @minimum 1 */
-  crossingNumber: number;
-  message: string;
   /** @pattern ^\d+\.\d{12}$ */
   availableUsd: string;
+  code: ChatSend200OneOfNineAllowanceNoticeCode;
+  /** @minimum 1 */
+  crossingNumber: number;
+  eventId: string;
+  message: string;
+  resetAt: string;
   /** @pattern ^\d+\.\d{12}$ */
   thresholdUsd: string;
-  resetAt: string;
+  type: ChatSend200OneOfNineAllowanceNoticeType;
 } | null;

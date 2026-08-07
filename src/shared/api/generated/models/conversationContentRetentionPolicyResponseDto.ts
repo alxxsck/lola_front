@@ -9,10 +9,10 @@ import type { ConversationContentRetentionPolicyResponseDtoDraft } from "./conve
 import type { ConversationContentRetentionPolicyResponseDtoPublishedRevision } from "./conversationContentRetentionPolicyResponseDtoPublishedRevision";
 
 export interface ConversationContentRetentionPolicyResponseDto {
-  version: number;
+  /** @pattern ^"ccp1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
   draft: ConversationContentRetentionPolicyResponseDtoDraft;
   /** @nullable */
   publishedRevision: ConversationContentRetentionPolicyResponseDtoPublishedRevision;
-  /** @pattern ^"ccp1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
+  version: number;
 }

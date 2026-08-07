@@ -5,23 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
 import type { SupportContentSearchSortDto } from "./supportContentSearchSortDto";
+import type { SupportSearchTimeRangeDto } from "./supportSearchTimeRangeDto";
 
 export interface SupportConversationSearchQueryDto {
-  /**
-   * @minLength 2
-   * @maxLength 256
-   */
-  phrase?: string;
-  /**
-   * @minimum 1
-   * @maximum 100
-   */
-  limit?: number;
+  /** @maxItems 50 */
+  conversationIds?: string[];
   /** @maxLength 2048 */
   cursor?: string;
-  timeRange?: SupportSearchTimeRangeDto;
   /** @maxItems 50 */
   endUserIds?: string[];
   /**
@@ -29,7 +20,16 @@ export interface SupportConversationSearchQueryDto {
    * @maxItems 50
    */
   externalEndUserIds?: string[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minLength 2
+   * @maxLength 256
+   */
+  phrase?: string;
   sort?: SupportContentSearchSortDto;
-  /** @maxItems 50 */
-  conversationIds?: string[];
+  timeRange?: SupportSearchTimeRangeDto;
 }

@@ -9,11 +9,11 @@ import type { SupportQualityScorecardItemInputDto } from "./supportQualityScorec
 
 export interface CreateSupportQualityScorecardDto {
   code: string;
-  /** @maxLength 160 */
-  name: string;
   /**
    * @minItems 1
    * @maxItems 100
    */
   items: SupportQualityScorecardItemInputDto[];
+  /** @maxLength 160 */
+  name: string;
 }

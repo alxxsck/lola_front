@@ -10,12 +10,12 @@ import type { IamMfaAuthenticatedResponseDtoTokenType } from "./iamMfaAuthentica
 import type { IamMfaAuthenticatedUserDto } from "./iamMfaAuthenticatedUserDto";
 
 export interface IamMfaAuthenticatedResponseDto {
-  kind: IamMfaAuthenticatedResponseDtoKind;
-  tokenType: IamMfaAuthenticatedResponseDtoTokenType;
   readonly accessToken: string;
   /** @minimum 1 */
   expiresIn: number;
+  kind: IamMfaAuthenticatedResponseDtoKind;
   /** @minimum 1 */
   refreshExpiresIn: number;
+  tokenType: IamMfaAuthenticatedResponseDtoTokenType;
   user: IamMfaAuthenticatedUserDto;
 }

@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ChatAttachmentStatusResponseDtoState } from "./chatAttachmentStatusResponseDtoState";
-import type { ChatAttachmentStatusResponseDtoScanState } from "./chatAttachmentStatusResponseDtoScanState";
 import type { ChatAttachmentStatusResponseDtoAttachedMessageId } from "./chatAttachmentStatusResponseDtoAttachedMessageId";
 import type { ChatAttachmentStatusResponseDtoFailureCode } from "./chatAttachmentStatusResponseDtoFailureCode";
+import type { ChatAttachmentStatusResponseDtoScanState } from "./chatAttachmentStatusResponseDtoScanState";
+import type { ChatAttachmentStatusResponseDtoState } from "./chatAttachmentStatusResponseDtoState";
 
 export interface ChatAttachmentStatusResponseDto {
-  id: string;
-  state: ChatAttachmentStatusResponseDtoState;
-  scanState: ChatAttachmentStatusResponseDtoScanState;
-  displayFilename: string;
-  contentType: string;
-  sizeBytes: number;
   /** @nullable */
   attachedMessageId: ChatAttachmentStatusResponseDtoAttachedMessageId;
   canAttach: boolean;
+  contentType: string;
+  displayFilename: string;
   /** @nullable */
   failureCode: ChatAttachmentStatusResponseDtoFailureCode;
+  id: string;
+  scanState: ChatAttachmentStatusResponseDtoScanState;
+  sizeBytes: number;
+  state: ChatAttachmentStatusResponseDtoState;
   updatedAt: string;
 }

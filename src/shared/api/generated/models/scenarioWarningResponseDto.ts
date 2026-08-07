@@ -8,7 +8,7 @@
 
 export interface ScenarioWarningResponseDto {
   code: string;
-  path?: string;
-  message?: string;
   locale?: string;
+  message?: string;
+  path?: string;
 }

@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationDispatchMetricSeriesDtoProvider } from "./integrationDispatchMetricSeriesDtoProvider";
 import type { IntegrationDispatchMetricsBacklogDto } from "./integrationDispatchMetricsBacklogDto";
+import type { IntegrationDispatchMetricSeriesDtoProvider } from "./integrationDispatchMetricSeriesDtoProvider";
 
 export interface IntegrationDispatchMetricSeriesDto {
-  provider: IntegrationDispatchMetricSeriesDtoProvider;
-  connectionId: string;
   /** @minimum 0 */
   attempts: number;
+  backlog: IntegrationDispatchMetricsBacklogDto;
+  connectionId: string;
   /** @minimum 0 */
   delivered: number;
   /** @minimum 0 */
-  retried: number;
-  /** @minimum 0 */
-  permanentFailures: number;
-  /** @minimum 0 */
-  throttled: number;
-  /** @minimum 0 */
   duplicates: number;
-  /** @minimum 0 */
-  totalProviderLatencyMs: number;
   /** @minimum 0 */
   maxProviderLatencyMs: number;
   /** @minimum 0 */
-  totalQueueLatencyMs: number;
-  /** @minimum 0 */
   maxQueueLatencyMs: number;
-  backlog: IntegrationDispatchMetricsBacklogDto;
+  /** @minimum 0 */
+  permanentFailures: number;
+  provider: IntegrationDispatchMetricSeriesDtoProvider;
+  /** @minimum 0 */
+  retried: number;
+  /** @minimum 0 */
+  throttled: number;
+  /** @minimum 0 */
+  totalProviderLatencyMs: number;
+  /** @minimum 0 */
+  totalQueueLatencyMs: number;
 }

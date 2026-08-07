@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventSchemaChangeReasonResponseDtoCode } from "./eventSchemaChangeReasonResponseDtoCode";
-import type { EventSchemaChangeReasonResponseDtoSeverity } from "./eventSchemaChangeReasonResponseDtoSeverity";
 import type { EventSchemaChangeReasonResponseDtoDetails } from "./eventSchemaChangeReasonResponseDtoDetails";
+import type { EventSchemaChangeReasonResponseDtoSeverity } from "./eventSchemaChangeReasonResponseDtoSeverity";
 
 export interface EventSchemaChangeReasonResponseDto {
   code: EventSchemaChangeReasonResponseDtoCode;
+  details?: EventSchemaChangeReasonResponseDtoDetails;
+  fieldKey?: string;
   path: string;
   severity: EventSchemaChangeReasonResponseDtoSeverity;
-  fieldKey?: string;
-  details?: EventSchemaChangeReasonResponseDtoDetails;
 }

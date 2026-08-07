@@ -5,40 +5,40 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PutDefaultAllowancePlanDtoPeriod } from "./putDefaultAllowancePlanDtoPeriod";
-import type { PutDefaultAllowancePlanDtoEnforcementMode } from "./putDefaultAllowancePlanDtoEnforcementMode";
-import type { PutDefaultAllowancePlanDtoWarningContent } from "./putDefaultAllowancePlanDtoWarningContent";
-import type { PutDefaultAllowancePlanDtoLowThresholdMode } from "./putDefaultAllowancePlanDtoLowThresholdMode";
-import type { PutDefaultAllowancePlanDtoExhaustedContent } from "./putDefaultAllowancePlanDtoExhaustedContent";
 import type { PutAllowancePlanCategoryRuleDto } from "./putAllowancePlanCategoryRuleDto";
+import type { PutDefaultAllowancePlanDtoEnforcementMode } from "./putDefaultAllowancePlanDtoEnforcementMode";
+import type { PutDefaultAllowancePlanDtoExhaustedContent } from "./putDefaultAllowancePlanDtoExhaustedContent";
+import type { PutDefaultAllowancePlanDtoLowThresholdMode } from "./putDefaultAllowancePlanDtoLowThresholdMode";
+import type { PutDefaultAllowancePlanDtoPeriod } from "./putDefaultAllowancePlanDtoPeriod";
+import type { PutDefaultAllowancePlanDtoWarningContent } from "./putDefaultAllowancePlanDtoWarningContent";
 
 export interface PutDefaultAllowancePlanDto {
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  amountUsd: string;
+  categoryRules: PutAllowancePlanCategoryRuleDto[];
+  /** Explicitly restore the built-in exhausted allowance copy. */
+  clearExhaustedContent?: boolean;
+  /** Explicitly restore the built-in LOW warning copy. */
+  clearWarningContent?: boolean;
+  enforcementMode: PutDefaultAllowancePlanDtoEnforcementMode;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  exhaustedContent?: PutDefaultAllowancePlanDtoExhaustedContent;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
    */
   expectedProjectPolicyVersion: string;
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  amountUsd: string;
-  period: PutDefaultAllowancePlanDtoPeriod;
-  timezone: string;
-  enforcementMode: PutDefaultAllowancePlanDtoEnforcementMode;
-  /** @maxLength 500 */
-  reason: string;
-  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
-  warningContent?: PutDefaultAllowancePlanDtoWarningContent;
-  /** Explicitly restore the built-in LOW warning copy. */
-  clearWarningContent?: boolean;
   lowThresholdMode?: PutDefaultAllowancePlanDtoLowThresholdMode;
   /**
    * Percentage in (0,100] or an exact positive USD amount, selected by mode.
    * @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$
    */
   lowThresholdValue?: string;
-  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
-  exhaustedContent?: PutDefaultAllowancePlanDtoExhaustedContent;
-  /** Explicitly restore the built-in exhausted allowance copy. */
-  clearExhaustedContent?: boolean;
+  period: PutDefaultAllowancePlanDtoPeriod;
+  /** @maxLength 500 */
+  reason: string;
   showEndUserExactUsd: boolean;
-  categoryRules: PutAllowancePlanCategoryRuleDto[];
+  timezone: string;
+  /** SYSTEM uses backend-owned copy; CUSTOM replaces the complete locale map. */
+  warningContent?: PutDefaultAllowancePlanDtoWarningContent;
 }

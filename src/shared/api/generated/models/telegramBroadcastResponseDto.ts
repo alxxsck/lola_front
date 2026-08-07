@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TelegramBroadcastStatus } from "./telegramBroadcastStatus";
-import type { TelegramBroadcastRevisionDto } from "./telegramBroadcastRevisionDto";
 import type { TelegramBroadcastAllowedAction } from "./telegramBroadcastAllowedAction";
+import type { TelegramBroadcastRevisionDto } from "./telegramBroadcastRevisionDto";
+import type { TelegramBroadcastStatus } from "./telegramBroadcastStatus";
 
 export interface TelegramBroadcastResponseDto {
+  allowedActions: TelegramBroadcastAllowedAction[];
+  createdAt: string;
   id: string;
   projectId: string;
-  title: string;
-  status: TelegramBroadcastStatus;
-  /** @minimum 1 */
-  version: number;
-  revision: TelegramBroadcastRevisionDto;
   /**
    * @minimum 0
    * @maximum 10000
    */
   recipientCount: number;
-  allowedActions: TelegramBroadcastAllowedAction[];
+  revision: TelegramBroadcastRevisionDto;
   /** @nullable */
   scheduledAt?: string | null;
-  createdAt: string;
+  status: TelegramBroadcastStatus;
+  title: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

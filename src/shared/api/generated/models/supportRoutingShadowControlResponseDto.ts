@@ -7,8 +7,8 @@
  */
 
 export interface SupportRoutingShadowControlResponseDto {
+  actionEtag: string;
   shadowEnabled: boolean;
   /** @minimum 1 */
   version: number;
-  actionEtag: string;
 }

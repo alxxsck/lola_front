@@ -9,11 +9,6 @@ import type { SetSupportLolaPresentationDtoAvatarAssetId } from "./setSupportLol
 import type { SetSupportLolaPresentationDtoAvatarAssetVersion } from "./setSupportLolaPresentationDtoAvatarAssetVersion";
 
 export interface SetSupportLolaPresentationDto {
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  displayName: string;
   /** @nullable */
   avatarAssetId?: SetSupportLolaPresentationDtoAvatarAssetId;
   /**
@@ -21,4 +16,9 @@ export interface SetSupportLolaPresentationDto {
    * @nullable
    */
   avatarAssetVersion?: SetSupportLolaPresentationDtoAvatarAssetVersion;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  displayName: string;
 }

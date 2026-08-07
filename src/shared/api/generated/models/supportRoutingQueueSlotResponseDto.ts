@@ -7,9 +7,9 @@
  */
 
 export interface SupportRoutingQueueSlotResponseDto {
-  queueId: string;
+  actionEtag: string;
   policyId: string;
+  queueId: string;
   routePriority: number;
   version: number;
-  actionEtag: string;
 }

@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventFieldRuleExplanationResponseDtoKind } from "./eventFieldRuleExplanationResponseDtoKind";
 import type { ExplainValueResponseDto } from "./explainValueResponseDto";
+import type { EventFieldRuleExplanationResponseDtoKind } from "./eventFieldRuleExplanationResponseDtoKind";
 
 export interface EventFieldRuleExplanationResponseDto {
-  kind: EventFieldRuleExplanationResponseDtoKind;
-  matched: boolean;
   actual?: ExplainValueResponseDto;
   expected?: ExplainValueResponseDto;
+  kind: EventFieldRuleExplanationResponseDtoKind;
+  matched: boolean;
 }

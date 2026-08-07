@@ -10,10 +10,10 @@ import type { NotificationOperationsIntegrationResponseDtoKind } from "./notific
 export interface NotificationOperationsIntegrationResponseDto {
   integrationId: string;
   kind: NotificationOperationsIntegrationResponseDtoKind;
+  maskedIdentity: string;
   projectId: string;
+  quarantineAllowed: boolean;
   status: string;
   /** @minimum 1 */
   version: number;
-  maskedIdentity: string;
-  quarantineAllowed: boolean;
 }

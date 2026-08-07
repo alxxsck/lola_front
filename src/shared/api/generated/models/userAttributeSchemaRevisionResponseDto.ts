@@ -8,10 +8,10 @@
 import type { UserAttributeSchemaRevisionResponseDtoSchema } from "./userAttributeSchemaRevisionResponseDtoSchema";
 
 export interface UserAttributeSchemaRevisionResponseDto {
-  id: string;
-  projectId: string;
-  version: number;
-  schema: UserAttributeSchemaRevisionResponseDtoSchema;
   clientVisibleKeys: string[];
   createdAt: string;
+  id: string;
+  projectId: string;
+  schema: UserAttributeSchemaRevisionResponseDtoSchema;
+  version: number;
 }

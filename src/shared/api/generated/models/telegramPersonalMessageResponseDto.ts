@@ -9,26 +9,26 @@ import type { TelegramPersonalMessageKind } from "./telegramPersonalMessageKind"
 import type { TelegramPersonalMessageStatus } from "./telegramPersonalMessageStatus";
 
 export interface TelegramPersonalMessageResponseDto {
-  id: string;
-  projectId: string;
-  endUserId: string;
-  kind: TelegramPersonalMessageKind;
-  status: TelegramPersonalMessageStatus;
   /** @minimum 0 */
   attemptCount: number;
+  createdAt: string;
+  endUserId: string;
+  /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
+  finishedAt?: string | null;
+  id: string;
+  kind: TelegramPersonalMessageKind;
+  /** @nullable */
+  nextAttemptAt?: string | null;
+  projectId: string;
   /**
    * Telegram message_id represented losslessly as a decimal string.
    * @nullable
    */
   providerMessageId?: string | null;
   /** @nullable */
-  errorCode?: string | null;
-  /** @nullable */
-  nextAttemptAt?: string | null;
-  /** @nullable */
   sentAt?: string | null;
-  createdAt: string;
+  status: TelegramPersonalMessageStatus;
   updatedAt: string;
-  /** @nullable */
-  finishedAt?: string | null;
 }

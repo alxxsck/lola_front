@@ -7,17 +7,17 @@
  */
 
 export interface AiOperationToolCallDto {
-  parentModelAttemptStepId: string;
-  providerCallId: string;
+  argumentsHash: string;
   capabilityName: string;
   capabilityVersion: string;
-  schemaVersion: number;
+  normalizedSummary: string;
+  parentModelAttemptStepId: string;
+  providerCallId: string;
   /** @minimum 0 */
   providerItemIndex: number;
-  argumentsHash: string;
-  normalizedSummary: string;
-  /** @nullable */
-  resultHash: string | null;
   /** @nullable */
   resultBytes: string | null;
+  /** @nullable */
+  resultHash: string | null;
+  schemaVersion: number;
 }

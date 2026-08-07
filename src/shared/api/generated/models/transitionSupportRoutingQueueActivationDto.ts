@@ -8,11 +8,11 @@
 import type { TransitionSupportRoutingQueueActivationDtoTargetMode } from "./transitionSupportRoutingQueueActivationDtoTargetMode";
 
 export interface TransitionSupportRoutingQueueActivationDto {
-  targetMode: TransitionSupportRoutingQueueActivationDtoTargetMode;
-  /** @minimum 0 */
-  expectedActivationVersion: number;
   /** Required when activating OFFER/AUTO_ASSIGN. */
   admissionReceiptId?: string;
+  /** @minimum 0 */
+  expectedActivationVersion: number;
   /** @pattern ^[A-Z][A-Z0-9_]{2,99}$ */
   reasonCode: string;
+  targetMode: TransitionSupportRoutingQueueActivationDtoTargetMode;
 }

@@ -12,10 +12,10 @@ export interface CloseEndUserCaseEscalationDto {
   expectedCaseVersion: number;
   /** @minimum 1 */
   expectedEscalationVersion: number;
+  nextCaseStatus: CloseEndUserCaseEscalationDtoNextCaseStatus;
   /**
    * @minLength 1
    * @maxLength 1000
    */
   reason: string;
-  nextCaseStatus: CloseEndUserCaseEscalationDtoNextCaseStatus;
 }

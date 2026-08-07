@@ -8,9 +8,9 @@
 import type { SupportCaseAssignmentCandidateActionsResponseDto } from "./supportCaseAssignmentCandidateActionsResponseDto";
 
 export interface SupportCaseAssignmentCandidateOperatorResponseDto {
-  id: string;
-  displayName: string;
+  actions: SupportCaseAssignmentCandidateActionsResponseDto;
   /** @minimum 0 */
   availableCapacityUnits: number;
-  actions: SupportCaseAssignmentCandidateActionsResponseDto;
+  displayName: string;
+  id: string;
 }

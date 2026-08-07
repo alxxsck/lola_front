@@ -8,7 +8,7 @@
 import type { PasswordSetupRequiredResponseDtoKind } from "./passwordSetupRequiredResponseDtoKind";
 
 export interface PasswordSetupRequiredResponseDto {
+  expiresAt: string;
   kind: PasswordSetupRequiredResponseDtoKind;
   readonly setupToken: string;
-  expiresAt: string;
 }

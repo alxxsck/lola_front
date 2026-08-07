@@ -8,7 +8,7 @@
 import type { SupportRoutingPolicyResponseDto } from "./supportRoutingPolicyResponseDto";
 
 export interface SupportRoutingPolicyMutationResponseDto {
+  actionEtag: string;
   intent: string;
   policy: SupportRoutingPolicyResponseDto;
-  actionEtag: string;
 }

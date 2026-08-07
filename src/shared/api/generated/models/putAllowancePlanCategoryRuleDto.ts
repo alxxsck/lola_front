@@ -9,8 +9,8 @@ import type { PutAllowancePlanCategoryRuleDtoCategory } from "./putAllowancePlan
 import type { PutAllowancePlanCategoryRuleDtoResponsibility } from "./putAllowancePlanCategoryRuleDtoResponsibility";
 
 export interface PutAllowancePlanCategoryRuleDto {
-  category: PutAllowancePlanCategoryRuleDtoCategory;
-  responsibility: PutAllowancePlanCategoryRuleDtoResponsibility;
   /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
   capUsd?: string;
+  category: PutAllowancePlanCategoryRuleDtoCategory;
+  responsibility: PutAllowancePlanCategoryRuleDtoResponsibility;
 }

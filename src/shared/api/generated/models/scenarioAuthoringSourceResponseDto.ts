@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringSourceResponseDtoRule } from "./scenarioAuthoringSourceResponseDtoRule";
 import type { ScenarioAuthoringSourceResponseDtoAudience } from "./scenarioAuthoringSourceResponseDtoAudience";
-import type { ScenarioAuthoringSourceResponseDtoGraph } from "./scenarioAuthoringSourceResponseDtoGraph";
 import type { ScenarioAuthoringSourceResponseDtoDeliveryPolicy } from "./scenarioAuthoringSourceResponseDtoDeliveryPolicy";
-import type { ScenarioAuthoringSourceResponseDtoProfileFreshness } from "./scenarioAuthoringSourceResponseDtoProfileFreshness";
+import type { ScenarioAuthoringSourceResponseDtoGraph } from "./scenarioAuthoringSourceResponseDtoGraph";
 import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
+import type { ScenarioAuthoringSourceResponseDtoProfileFreshness } from "./scenarioAuthoringSourceResponseDtoProfileFreshness";
+import type { ScenarioAuthoringSourceResponseDtoRule } from "./scenarioAuthoringSourceResponseDtoRule";
 
 export interface ScenarioAuthoringSourceResponseDto {
   /** @nullable */
-  rule?: ScenarioAuthoringSourceResponseDtoRule;
-  /** @nullable */
   audience?: ScenarioAuthoringSourceResponseDtoAudience;
-  /** @nullable */
-  graph?: ScenarioAuthoringSourceResponseDtoGraph;
+  catalogRevision: string;
   deliveryPolicy: ScenarioAuthoringSourceResponseDtoDeliveryPolicy;
   /** @nullable */
-  profileFreshness?: ScenarioAuthoringSourceResponseDtoProfileFreshness;
-  catalogRevision: string;
+  graph?: ScenarioAuthoringSourceResponseDtoGraph;
   localization: ScenarioLocalizationPolicyDto;
+  /** @nullable */
+  profileFreshness?: ScenarioAuthoringSourceResponseDtoProfileFreshness;
+  /** @nullable */
+  rule?: ScenarioAuthoringSourceResponseDtoRule;
 }

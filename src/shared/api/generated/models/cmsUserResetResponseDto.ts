@@ -9,8 +9,8 @@ import type { CmsUserResetResponseDtoStatus } from "./cmsUserResetResponseDtoSta
 
 export interface CmsUserResetResponseDto {
   cmsUserId: string;
+  expiresAt: string;
+  readonly initialAccessSecret: string;
   status: CmsUserResetResponseDtoStatus;
   version: number;
-  readonly initialAccessSecret: string;
-  expiresAt: string;
 }

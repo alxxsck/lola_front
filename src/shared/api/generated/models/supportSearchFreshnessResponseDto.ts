@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSearchFreshnessResponseDtoState } from "./supportSearchFreshnessResponseDtoState";
 import type { SupportSearchFreshnessResponseDtoSourceWatermarks } from "./supportSearchFreshnessResponseDtoSourceWatermarks";
+import type { SupportSearchFreshnessResponseDtoState } from "./supportSearchFreshnessResponseDtoState";
 
 export interface SupportSearchFreshnessResponseDto {
   /** @nullable */
   generationId?: string | null;
-  state: SupportSearchFreshnessResponseDtoState;
   indexedThrough: string;
   /** @minimum 0 */
   lagSeconds: number;
   sourceWatermarks: SupportSearchFreshnessResponseDtoSourceWatermarks;
+  state: SupportSearchFreshnessResponseDtoState;
 }

@@ -8,11 +8,11 @@
 
 export interface SupportQueueEntryResponseDto {
   caseId: string;
-  eligibleSince: string;
+  createdAt: string;
   effectivePriority: number;
+  eligibleSince: string;
+  evaluatedAt: string;
+  lastActivityAt: string;
   /** @nullable */
   slaDueAt: string | null;
-  lastActivityAt: string;
-  createdAt: string;
-  evaluatedAt: string;
 }

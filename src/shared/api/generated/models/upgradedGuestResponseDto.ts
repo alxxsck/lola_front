@@ -7,7 +7,7 @@
  */
 
 export interface UpgradedGuestResponseDto {
-  id: string;
   externalId: string;
+  id: string;
   mergedIntoExistingUser: boolean;
 }

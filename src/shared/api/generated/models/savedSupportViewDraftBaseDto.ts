@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SavedSupportViewDraftBaseDtoSchemaVersion } from "./savedSupportViewDraftBaseDtoSchemaVersion";
 import type { SavedSupportViewDraftBaseDtoColumnsItem } from "./savedSupportViewDraftBaseDtoColumnsItem";
+import type { SavedSupportViewDraftBaseDtoSchemaVersion } from "./savedSupportViewDraftBaseDtoSchemaVersion";
 
 export interface SavedSupportViewDraftBaseDto {
-  schemaVersion: SavedSupportViewDraftBaseDtoSchemaVersion;
+  /** @maxItems 13 */
+  columns: SavedSupportViewDraftBaseDtoColumnsItem[];
   /**
    * @minLength 2
    * @maxLength 120
    */
   displayName: string;
-  /** @maxItems 5 */
-  columns: SavedSupportViewDraftBaseDtoColumnsItem[];
+  schemaVersion: SavedSupportViewDraftBaseDtoSchemaVersion;
 }

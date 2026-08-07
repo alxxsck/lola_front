@@ -8,13 +8,13 @@
 import type { SaveEventSchemaDraftDtoPayloadSchema } from "./saveEventSchemaDraftDtoPayloadSchema";
 
 export interface SaveEventSchemaDraftDto {
-  /** JSON Schema for the event payload. */
-  payloadSchema: SaveEventSchemaDraftDtoPayloadSchema;
   /**
    * Required when replacing an existing draft.
    * @minimum 1
    */
   expectedDraftVersion?: number;
+  /** JSON Schema for the event payload. */
+  payloadSchema: SaveEventSchemaDraftDtoPayloadSchema;
   /** @maxLength 500 */
   reason?: string;
 }
