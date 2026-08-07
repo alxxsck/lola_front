@@ -436,6 +436,197 @@ test("uses route-aware inbox and chat panes on mobile", async ({ page }) => {
   await expect(page).toHaveURL(/\/support\/inbox$/);
 });
 
+test("preserves mobile inbox position, selection, draft and message anchor across browser Back", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox");
+  await page.addStyleTag({
+    content: `
+      .support-inbox-pane .inbox-list {
+        height: 112px !important;
+        max-height: 112px !important;
+        flex: 0 0 112px !important;
+      }
+      .conversation-surface__log { max-height: 148px !important; }
+    `,
+  });
+
+  const inboxList = page.locator(".support-inbox-pane .inbox-list");
+  const selectedRow = inboxList.locator(".conversation-row").last();
+  const selectionKey = await selectedRow.getAttribute("data-selection-key");
+  expect(selectionKey).toBeTruthy();
+  await inboxList.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const inboxScrollTop = await inboxList.evaluate(
+    (element) => element.scrollTop,
+  );
+  expect(inboxScrollTop).toBeGreaterThan(0);
+  await selectedRow.click();
+
+  const draft = page.getByRole("textbox", { name: "Ответ пользователю" });
+  await draft.fill("Черновик мобильного оператора");
+  const messageLog = page.locator(".conversation-surface__log");
+  await messageLog.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  const anchorId = await messageLog.evaluate((element) => {
+    const logRect = element.getBoundingClientRect();
+    return [...element.querySelectorAll<HTMLElement>("[data-message-id]")].find(
+      (message) => message.getBoundingClientRect().bottom > logRect.top,
+    )?.dataset.messageId;
+  });
+  expect(anchorId).toBeTruthy();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/inbox$/);
+  await expect(
+    inboxList.locator(`[data-selection-key="${selectionKey}"]`),
+  ).toHaveAttribute("aria-current", "true");
+  await expect(
+    inboxList.locator(`[data-selection-key="${selectionKey}"]`),
+  ).toBeFocused();
+  expect(await inboxList.evaluate((element) => element.scrollTop)).toBe(
+    inboxScrollTop,
+  );
+
+  await page.goForward();
+  await expect(draft).toHaveValue("Черновик мобильного оператора");
+  await expect
+    .poll(() =>
+      messageLog.evaluate((element) => {
+        const logRect = element.getBoundingClientRect();
+        return [
+          ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
+        ].find(
+          (message) => message.getBoundingClientRect().bottom > logRect.top,
+        )?.dataset.messageId;
+      }),
+    )
+    .toBe(anchorId);
+});
+
+test("uses a routed inspector on mobile and an accessible drawer on tablet", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox");
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+  const contextTrigger = page.getByRole("button", { name: "Контекст" });
+  await contextTrigger.click();
+
+  await expect(page).toHaveURL(
+    /\/support\/inbox\/conversations\/conv_3\?panel=inspector$/,
+  );
+  await expect(
+    page.getByRole("region", { name: "Контекст диалога" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "Контекст диалога" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Назад к диалогу" }),
+  ).toBeFocused();
+  const mobileInspectorAccessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(
+    mobileInspectorAccessibility.violations.filter(
+      (violation) =>
+        violation.impact === "critical" || violation.impact === "serious",
+    ),
+  ).toEqual([]);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await expect(contextTrigger).toBeFocused();
+
+  await contextTrigger.click();
+  await page.getByRole("button", { name: "Назад к диалогу" }).click();
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/support\/inbox$/);
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await contextTrigger.click();
+  await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3$/);
+  const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
+  await expect(drawer).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(contextTrigger).toBeFocused();
+});
+
+test("keeps the exact tablet and mobile route matrix usable without overflow", async ({
+  page,
+}) => {
+  for (const viewport of [
+    { width: 1024, height: 768 },
+    { width: 768, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/support/inbox");
+    const inbox = page.getByRole("complementary", {
+      name: "Диалоги проекта",
+    });
+    await inbox
+      .getByRole("button", { name: /Бонусы и программа лояльности/ })
+      .click();
+    await expect(inbox).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "Ответ пользователю" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Контекст" }).click();
+    const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
+    await expect(drawer).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+  }
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 320, height: 568 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/support/inbox");
+    const inbox = page.getByRole("complementary", {
+      name: "Диалоги проекта",
+    });
+    await expect(inbox).toBeVisible();
+    await inbox
+      .getByRole("button", { name: /Бонусы и программа лояльности/ })
+      .click();
+    await expect(inbox).toBeHidden();
+    const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
+    await expect(composer).toBeVisible();
+    const geometry = await page.evaluate(() => {
+      const composer = document.querySelector<HTMLElement>(
+        'textarea[aria-label="Ответ пользователю"]',
+      );
+      return {
+        composerBottom: composer?.getBoundingClientRect().bottom ?? 0,
+        viewportHeight: window.visualViewport?.height ?? window.innerHeight,
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      };
+    });
+    expect(geometry.composerBottom).toBeLessThanOrEqual(
+      geometry.viewportHeight + 0.5,
+    );
+    expect(geometry.overflow).toBe(0);
+    await page.getByRole("button", { name: "Назад к списку диалогов" }).click();
+    await expect(inbox).toBeVisible();
+  }
+});
+
 test("keeps the full-tab shell stable for reduced motion and mobile focus", async ({
   page,
 }) => {
@@ -512,7 +703,7 @@ test("restores readable CMS navigation when the mobile workspace is collapsed", 
   ).toBeVisible();
 });
 
-test("opens the selected conversation context in a mobile drawer", async ({
+test("opens the selected conversation context as a mobile route", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -522,10 +713,12 @@ test("opens the selected conversation context in a mobile drawer", async ({
 
   await page.getByRole("button", { name: "Контекст" }).click();
 
-  const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
-  await expect(drawer).toBeVisible();
-  await expect(drawer.locator(".user-card h3")).toHaveText("Пользователь");
-  await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
+  const inspector = page.getByRole("region", { name: "Контекст диалога" });
+  await expect(inspector).toBeVisible();
+  await expect(inspector.locator(".user-card h3")).toHaveText("Пользователь");
+  await expect(inspector.getByText("user_11603", { exact: true })).toHaveCount(
+    0,
+  );
 });
 
 test("loads the profile only from the permission-gated inspector", async ({
@@ -537,9 +730,15 @@ test("loads the profile only from the permission-gated inspector", async ({
     .click();
   await page.getByRole("button", { name: "Контекст" }).click();
 
-  const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
-  await expect(drawer.getByText("Marco Silva", { exact: true })).toHaveCount(0);
-  await drawer.getByRole("button", { name: "Обновить" }).click();
-  await expect(drawer.getByText("Marco Silva", { exact: true })).toBeVisible();
-  await expect(drawer.getByText("user_11603", { exact: true })).toHaveCount(0);
+  const inspector = page.getByRole("region", { name: "Контекст диалога" });
+  await expect(inspector.getByText("Marco Silva", { exact: true })).toHaveCount(
+    0,
+  );
+  await inspector.getByRole("button", { name: "Обновить" }).click();
+  await expect(
+    inspector.getByText("Marco Silva", { exact: true }),
+  ).toBeVisible();
+  await expect(inspector.getByText("user_11603", { exact: true })).toHaveCount(
+    0,
+  );
 });

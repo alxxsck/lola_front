@@ -10,7 +10,6 @@ import {
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import Drawer from "primevue/drawer";
 import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
@@ -33,6 +32,7 @@ import type {
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
+import { clearConversationSurfaceProjectSession } from "@/features/conversation-surface/model/conversation-surface-session";
 import {
   defaultConversationReplyTemplates,
   type ConversationReplyTemplate,
@@ -72,6 +72,7 @@ import {
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
+import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
 import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 import { repository } from "@/shared/api/repository";
@@ -450,8 +451,9 @@ const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
 });
 const selectedCase = computed(() => conversation.selection.value?.case ?? null);
+const lastInboxSelectionKey = ref("");
 const selectedInboxKey = computed(
-  () => requestedSelectionKey.value || undefined,
+  () => requestedSelectionKey.value || lastInboxSelectionKey.value || undefined,
 );
 const selectedAssignmentAuthorityKey = computed(() => {
   const supportCase = conversation.selection.value?.case;
@@ -515,6 +517,27 @@ const aiSuspensionDialogVisible = ref(false);
 const aiSuspensionHistoryVisible = ref(false);
 const aiSuspensionDialogMode = ref<"START" | "EXTEND" | "RESUME">("START");
 const contextDrawerVisible = ref(false);
+const isMobileWorkspace = ref(false);
+const isCompactWorkspace = ref(false);
+let mobileWorkspaceMedia: MediaQueryList | null = null;
+let compactWorkspaceMedia: MediaQueryList | null = null;
+let contextTrigger: HTMLElement | null = null;
+const mobileInspectorRequested = computed(
+  () => route.query.panel === "inspector",
+);
+const mobileInspectorVisible = computed(
+  () =>
+    isMobileWorkspace.value &&
+    mobileInspectorRequested.value &&
+    Boolean(conversation.selection.value),
+);
+const workspaceInspectorMode = computed<"DESKTOP" | "TABLET" | "MOBILE">(() =>
+  isMobileWorkspace.value
+    ? "MOBILE"
+    : isCompactWorkspace.value
+      ? "TABLET"
+      : "DESKTOP",
+);
 const canManageSelectedCase = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
@@ -685,7 +708,9 @@ const profile = createSupportUserProfileController(
 );
 
 async function openInboxItem(item: SupportInboxItem): Promise<void> {
-  if (`${item.kind}:${item.id}` === requestedSelectionKey.value) return;
+  const selectionKey = `${item.kind}:${item.id}`;
+  lastInboxSelectionKey.value = selectionKey;
+  if (selectionKey === requestedSelectionKey.value) return;
   await router.push(
     item.kind === "CASE"
       ? { name: "support-inbox-case", params: { caseId: item.id } }
@@ -698,6 +723,7 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
 
 async function changeInboxMode(mode: SupportInboxMode): Promise<void> {
   const query = { ...route.query };
+  delete query.panel;
   if (mode === "ALL_CONVERSATIONS") delete query.mode;
   else query.mode = "cases";
   await router.push({ name: "support-inbox", query });
@@ -713,15 +739,61 @@ async function classifySelectedCase(): Promise<void> {
 
 async function backToInbox(): Promise<void> {
   contextDrawerVisible.value = false;
-  await router.push({
+  const query =
+    inboxMode.value === "CASES"
+      ? { ...route.query, mode: "cases" }
+      : Object.fromEntries(
+          Object.entries(route.query).filter(([key]) => key !== "mode"),
+        );
+  delete query.panel;
+  await router.replace({
     name: "support-inbox",
-    query:
-      inboxMode.value === "CASES"
-        ? { ...route.query, mode: "cases" }
-        : Object.fromEntries(
-            Object.entries(route.query).filter(([key]) => key !== "mode"),
-          ),
+    query,
   });
+}
+
+function syncMobileWorkspace(
+  event: MediaQueryList | MediaQueryListEvent,
+): void {
+  isMobileWorkspace.value = event.matches;
+  if (!event.matches && mobileInspectorRequested.value) {
+    const query = { ...route.query };
+    delete query.panel;
+    void router.replace({ query });
+  }
+}
+
+function syncCompactWorkspace(
+  event: MediaQueryList | MediaQueryListEvent,
+): void {
+  isCompactWorkspace.value = event.matches;
+}
+
+async function openConversationContext(event: Event): Promise<void> {
+  contextTrigger =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  if (!isMobileWorkspace.value) {
+    contextDrawerVisible.value = true;
+    return;
+  }
+  await router.push({
+    query: { ...route.query, panel: "inspector" },
+  });
+}
+
+async function closeMobileInspector(): Promise<void> {
+  const query = { ...route.query };
+  delete query.panel;
+  const target = router.resolve({
+    name: route.name ?? undefined,
+    params: route.params,
+    query,
+  }).fullPath;
+  if (window.history.state?.back === target) {
+    router.back();
+    return;
+  }
+  await router.replace({ query });
 }
 
 function openInternalNotes(): void {
@@ -1153,6 +1225,12 @@ async function submitAiSuspension(value: {
 
 onMounted(async () => {
   window.addEventListener("keydown", handleWorkspaceKeydown);
+  mobileWorkspaceMedia = window.matchMedia("(max-width: 767px)");
+  compactWorkspaceMedia = window.matchMedia("(max-width: 1180px)");
+  syncMobileWorkspace(mobileWorkspaceMedia);
+  syncCompactWorkspace(compactWorkspaceMedia);
+  mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
+  compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
   await inbox.load();
   if (canReadAvailability.value) {
     await availability.load();
@@ -1163,7 +1241,10 @@ onMounted(async () => {
 
 watch(
   () => auth.project?.id,
-  () => {
+  (_projectId, previousProjectId) => {
+    if (previousProjectId)
+      clearConversationSurfaceProjectSession(previousProjectId);
+    lastInboxSelectionKey.value = "";
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     availabilityAccessDenied.value = false;
@@ -1286,7 +1367,17 @@ watch(inboxMode, async () => {
 
 watch(
   requestedSelectionKey,
-  () => {
+  (selectionKey, previousSelectionKey) => {
+    if (selectionKey) lastInboxSelectionKey.value = selectionKey;
+    if (!selectionKey && previousSelectionKey && isMobileWorkspace.value) {
+      void nextTick(() => {
+        [...document.querySelectorAll<HTMLElement>("[data-selection-key]")]
+          .find(
+            (element) => element.dataset.selectionKey === previousSelectionKey,
+          )
+          ?.focus({ preventScroll: true });
+      });
+    }
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     assignmentReleaseAccessDenied.value = false;
@@ -1302,6 +1393,42 @@ watch(
   },
   { immediate: true },
 );
+
+watch(mobileInspectorRequested, (requested, previousRequested) => {
+  if (requested && !requestedSelectionKey.value) {
+    const query = { ...route.query };
+    delete query.panel;
+    void router.replace({ query });
+    return;
+  }
+  if (!requested && previousRequested) {
+    void nextTick(() => {
+      const trigger =
+        contextTrigger ??
+        document.querySelector<HTMLElement>(
+          ".conversation-pane .mobile-context",
+        );
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    });
+  }
+});
+
+watch(mobileInspectorVisible, (visible) => {
+  if (!visible) return;
+  void nextTick(() => {
+    document
+      .querySelector<HTMLElement>(".mobile-inspector-back")
+      ?.focus({ preventScroll: true });
+  });
+});
+
+watch(contextDrawerVisible, (visible, previousVisible) => {
+  if (visible || !previousVisible) return;
+  void nextTick(() => {
+    if (contextTrigger?.isConnected)
+      contextTrigger.focus({ preventScroll: true });
+  });
+});
 
 watch(
   [
@@ -1356,6 +1483,10 @@ watch(canReadProfile, (allowed) => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleWorkspaceKeydown);
+  mobileWorkspaceMedia?.removeEventListener("change", syncMobileWorkspace);
+  compactWorkspaceMedia?.removeEventListener("change", syncCompactWorkspace);
+  mobileWorkspaceMedia = null;
+  compactWorkspaceMedia = null;
   stopInternalNotesReconciliation();
   profile.reset();
   internalNotes.reset();
@@ -1440,6 +1571,7 @@ onBeforeUnmount(() => {
         class="support-workspace card"
         :class="{
           'has-route-selection': Boolean(requestedSelectionKey),
+          'has-mobile-inspector': mobileInspectorVisible,
         }"
       >
         <SupportInboxPane
@@ -1493,7 +1625,7 @@ onBeforeUnmount(() => {
                   icon="pi pi-user"
                   severity="secondary"
                   text
-                  @click="contextDrawerVisible = true"
+                  @click="openConversationContext"
                 />
                 <Tag
                   :value="
@@ -1679,7 +1811,7 @@ onBeforeUnmount(() => {
                 icon="pi pi-briefcase"
                 severity="secondary"
                 text
-                @click="contextDrawerVisible = true"
+                @click="openConversationContext"
               />
             </header>
             <div class="case-channel-empty">
@@ -1718,10 +1850,13 @@ onBeforeUnmount(() => {
           </div>
         </main>
 
-        <aside
+        <ResponsiveWorkspaceInspector
           v-if="conversation.selection.value"
-          class="context-pane"
-          aria-label="Контекст диалога"
+          :mode="workspaceInspectorMode"
+          :mobile-visible="mobileInspectorVisible"
+          :drawer-visible="contextDrawerVisible"
+          @close-mobile="closeMobileInspector"
+          @update:drawer-visible="contextDrawerVisible = $event"
         >
           <SupportConversationContext
             :conversation="selectedConversation"
@@ -1746,7 +1881,7 @@ onBeforeUnmount(() => {
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
           />
-        </aside>
+        </ResponsiveWorkspaceInspector>
       </div>
       <SupportRoutingOffers
         v-if="canManageRoutingOffers"
@@ -1768,38 +1903,6 @@ onBeforeUnmount(() => {
         @action="routingOffers.act"
         @retry="routingOffers.retryUnknownOutcome"
       />
-      <Drawer
-        v-if="conversation.selection.value"
-        :visible="contextDrawerVisible"
-        position="right"
-        aria-label="Контекст диалога"
-        :style="{ width: 'min(420px, 100vw)' }"
-        @update:visible="contextDrawerVisible = $event"
-      >
-        <SupportConversationContext
-          :conversation="selectedConversation"
-          :selection="conversation.selection.value"
-          :can-manage-case="canManageSelectedCase"
-          :can-release-assignment="canReleaseSelectedAssignment"
-          :can-read-internal-notes="canReadSelectedInternalNotes"
-          :can-read-profile="canReadProfile"
-          :profile="profile.profile.value"
-          :profile-loading="profile.loading.value"
-          :profile-error="profile.error.value"
-          :assignment-release="{
-            releasing: assignmentRelease.releasing.value,
-            error: assignmentRelease.error.value,
-            unknownOutcome: assignmentRelease.unknownOutcome.value,
-            completed: assignmentRelease.completed.value,
-            canRetry: assignmentRelease.canRetry.value,
-          }"
-          @load-profile="profile.load"
-          @release-assignment="assignmentRelease.release"
-          @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
-          @open-internal-notes="openInternalNotes"
-          @classify-case="classifySelectedCase"
-        />
-      </Drawer>
       <Dialog
         v-if="canReadAvailability"
         v-model:visible="availabilityDialogVisible"
@@ -1999,18 +2102,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-color: color-mix(in srgb, var(--line) 82%, transparent);
   box-shadow: var(--shadow-raised);
-}
-.context-pane {
-  min-height: 0;
-  padding: 18px;
-  background: var(--surface-card);
-  overflow: auto;
-}
-.context-pane {
-  padding: 18px 18px 24px;
-}
-.context-pane {
-  border-left: 1px solid var(--line);
 }
 .pane-heading {
   gap: 12px;
@@ -2294,14 +2385,11 @@ onBeforeUnmount(() => {
   .support-workspace {
     grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
   }
-  .context-pane {
-    display: none;
-  }
   .mobile-context {
     display: inline-flex;
   }
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .support-workspace-page--full-tab {
     padding: 0;
   }
@@ -2361,8 +2449,10 @@ onBeforeUnmount(() => {
     height: 100%;
   }
   .support-workspace:not(.has-route-selection) .conversation-pane,
-  .support-workspace:not(.has-route-selection) .context-pane,
   .support-workspace.has-route-selection .support-inbox-pane {
+    display: none;
+  }
+  .support-workspace.has-mobile-inspector .conversation-pane {
     display: none;
   }
   .support-inbox-pane {
@@ -2415,9 +2505,6 @@ onBeforeUnmount(() => {
   }
   .mobile-context {
     display: inline-flex;
-  }
-  .context-pane {
-    display: none;
   }
   .message-skeletons {
     padding: 16px;

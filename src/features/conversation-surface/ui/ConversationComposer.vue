@@ -652,7 +652,7 @@ function runAction(action: ConversationSurfaceComposerAction): void {
     min-height: 44px;
   }
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .conversation-composer {
     margin: 0;
     padding: 11px 12px 10px;

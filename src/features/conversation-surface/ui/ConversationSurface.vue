@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import Avatar from "primevue/avatar";
 import Button from "primevue/button";
 import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
@@ -17,6 +24,11 @@ import {
   type ConversationSurfaceSendRequest,
   type ConversationSurfaceTranslation,
 } from "../model/conversation-surface-contract";
+import {
+  conversationSurfaceSessionKey,
+  readConversationSurfaceScrollAnchor,
+  writeConversationSurfaceScrollAnchor,
+} from "../model/conversation-surface-session";
 
 const props = defineProps<{
   title: string;
@@ -56,6 +68,9 @@ const conversationKey = computed(() => {
   const { projectId, conversationId } = props.composer.scope;
   return `${projectId}:${conversationId}`;
 });
+const scrollSessionKey = computed(() =>
+  conversationSurfaceSessionKey(props.composer.scope),
+);
 const composerDisabled = computed(
   () =>
     props.composer.visibility !== "ENABLED" ||
@@ -197,6 +212,45 @@ function scrollToLatest(smooth = true): void {
   newMessageCount.value = 0;
 }
 
+function captureScrollAnchor(key = scrollSessionKey.value): void {
+  const element = logElement.value;
+  if (!element) return;
+  const logRect = element.getBoundingClientRect();
+  const message = [
+    ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
+  ].find((candidate) => candidate.getBoundingClientRect().bottom > logRect.top);
+  const messageId = message?.dataset.messageId;
+  if (!message || !messageId) return;
+  writeConversationSurfaceScrollAnchor(key, {
+    messageId,
+    offset: message.getBoundingClientRect().top - logRect.top,
+    atLatest: nearLatest(element),
+  });
+}
+
+async function restoreScrollAnchor(
+  key = scrollSessionKey.value,
+): Promise<void> {
+  await nextTick();
+  const element = logElement.value;
+  if (!element) return;
+  const saved = readConversationSurfaceScrollAnchor(key);
+  if (!saved || saved.atLatest) {
+    scrollToLatest(false);
+    return;
+  }
+  const message = [
+    ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
+  ].find((candidate) => candidate.dataset.messageId === saved.messageId);
+  if (!message) {
+    scrollToLatest(false);
+    return;
+  }
+  const logRect = element.getBoundingClientRect();
+  element.scrollTop +=
+    message.getBoundingClientRect().top - logRect.top - saved.offset;
+}
+
 function requestOlder(): void {
   const element = logElement.value;
   if (
@@ -214,6 +268,7 @@ function requestOlder(): void {
 function handleLogScroll(): void {
   if (nearLatest()) newMessageCount.value = 0;
   if ((logElement.value?.scrollTop ?? 100) <= 72) requestOlder();
+  captureScrollAnchor();
 }
 
 watch(conversationKey, () => {
@@ -291,7 +346,8 @@ watch(
   { flush: "pre" },
 );
 
-onMounted(() => void nextTick(() => scrollToLatest(false)));
+onMounted(() => void restoreScrollAnchor());
+onBeforeUnmount(() => captureScrollAnchor());
 </script>
 
 <template>
@@ -793,7 +849,7 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
     background-position: -220% 0;
   }
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .conversation-surface__toolbar {
     align-items: stretch;
     flex-direction: column;

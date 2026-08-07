@@ -506,7 +506,7 @@ function inboxTime(value: string): string {
 .load-more:hover {
   background: var(--surface-muted);
 }
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .support-inbox-pane {
     border-right: 0;
   }
