@@ -2583,6 +2583,7 @@ export * from "./supportWorkspaceCapabilitiesResponseDto";
 export * from "./supportWorkspaceCaseRowResponseDto";
 export * from "./supportWorkspaceCasesPageResponseDto";
 export * from "./supportWorkspaceCasesPageResponseDtoMode";
+export * from "./supportWorkspaceClassificationOptionResponseDto";
 export * from "./supportWorkspaceConversationPreviewResponseDto";
 export * from "./supportWorkspaceConversationRowResponseDto";
 export * from "./supportWorkspaceConversationRowResponseDtoLastMessage";

@@ -31,6 +31,7 @@ function selection(
   return {
     checkpoint: "checkpoint-1",
     capabilitiesRevision: "capabilities-1",
+    classificationOptions: [],
     capabilities: {
       assignCase: false,
       claimAssignment: false,

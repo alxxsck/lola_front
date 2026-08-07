@@ -246,8 +246,7 @@ export const router = createRouter({
         {
           path: "cases",
           name: "end-user-cases",
-          component: () => import("@/pages/EndUserCasesPage.vue"),
-          meta: { projectPermission: "project.cases.read" },
+          redirect: (to) => ({ name: "support-inbox", query: to.query }),
         },
         {
           path: "cases/settings",
@@ -258,8 +257,7 @@ export const router = createRouter({
         {
           path: "cases/:caseId",
           name: "end-user-case-detail",
-          component: () => import("@/pages/EndUserCasesPage.vue"),
-          meta: { projectPermission: "project.cases.read" },
+          redirect: (to) => ({ name: "support-inbox", query: to.query }),
         },
         {
           path: "support/inbox",
@@ -483,10 +481,10 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (
-    (to.name === "ai-analysis-detail" ||
+    (to.meta.supportWorkspaceAccess ||
+      to.name === "ai-analysis-detail" ||
       to.name === "ai-operation-detail" ||
       to.name === "ai-costs" ||
-      to.name === "end-user-case-detail" ||
       to.name === "users") &&
     typeof to.query.projectId === "string"
   ) {

@@ -25,6 +25,7 @@ export interface SupportWorkspaceConversation {
 export interface SupportWorkspaceSelection {
   checkpoint: string;
   capabilitiesRevision: string;
+  classificationOptions: Array<{ code: string; label: string }>;
   capabilities: {
     assignCase: boolean;
     claimAssignment: boolean;
@@ -259,6 +260,7 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
     return {
       checkpoint: response.checkpoint,
       capabilitiesRevision: response.capabilitiesRevision,
+      classificationOptions: response.classificationOptions,
       capabilities: response.capabilities,
       endUser: response.endUser,
       case: supportCase,
@@ -326,6 +328,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
     return {
       checkpoint: `mock:${projectId}:${conversationId}`,
       capabilitiesRevision: "mock-read-only",
+      classificationOptions: [{ code: "GENERAL", label: "Общие вопросы" }],
       capabilities: mockCapabilities,
       endUser: {
         id: selected.endUser.id,

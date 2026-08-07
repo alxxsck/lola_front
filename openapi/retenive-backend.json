@@ -40202,6 +40202,21 @@
         },
         "type": "object"
       },
+      "SupportWorkspaceClassificationOptionResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "type": "object"
+      },
       "SupportWorkspaceCapabilitiesResponseDto": {
         "properties": {
           "assignCase": {
@@ -40775,6 +40790,12 @@
             "nullable": true,
             "type": "object"
           },
+          "classificationOptions": {
+            "items": {
+              "$ref": "#/components/schemas/SupportWorkspaceClassificationOptionResponseDto"
+            },
+            "type": "array"
+          },
           "checkpoint": {
             "type": "string"
           },
@@ -40828,6 +40849,7 @@
           "relatedConversations",
           "relatedCasesTruncated",
           "relatedConversationsTruncated",
+          "classificationOptions",
           "capabilities",
           "capabilitiesRevision",
           "actionRevisions",

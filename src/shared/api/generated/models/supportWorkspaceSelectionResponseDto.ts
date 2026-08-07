@@ -8,6 +8,7 @@
 import type { SupportWorkspaceActionRevisionsResponseDto } from "./supportWorkspaceActionRevisionsResponseDto";
 import type { SupportWorkspaceCapabilitiesResponseDto } from "./supportWorkspaceCapabilitiesResponseDto";
 import type { SupportWorkspaceSelectionResponseDtoCase } from "./supportWorkspaceSelectionResponseDtoCase";
+import type { SupportWorkspaceClassificationOptionResponseDto } from "./supportWorkspaceClassificationOptionResponseDto";
 import type { SupportWorkspaceSelectionResponseDtoConversation } from "./supportWorkspaceSelectionResponseDtoConversation";
 import type { SupportWorkspaceEndUserResponseDto } from "./supportWorkspaceEndUserResponseDto";
 import type { SupportWorkspaceMessagePageResponseDto } from "./supportWorkspaceMessagePageResponseDto";
@@ -21,6 +22,7 @@ export interface SupportWorkspaceSelectionResponseDto {
   capabilitiesRevision: string;
   /** @nullable */
   case: SupportWorkspaceSelectionResponseDtoCase;
+  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
   checkpoint: string;
   /** @nullable */
   conversation: SupportWorkspaceSelectionResponseDtoConversation;

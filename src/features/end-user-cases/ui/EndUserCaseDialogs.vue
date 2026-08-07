@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
@@ -24,6 +24,12 @@ import { useEndUserCasesStore } from "../model/end-user-cases.store";
 const auth = useAuthStore();
 const router = useRouter();
 const store = useEndUserCasesStore();
+const props = withDefaults(
+  defineProps<{
+    classificationOptions?: ReadonlyArray<{ code: string; label: string }>;
+  }>(),
+  { classificationOptions: () => [] },
+);
 const transitionVisible = ref(false);
 const transitionStatus = ref<EndUserCaseStatus>("IN_PROGRESS");
 const transitionReason = ref("");
@@ -37,6 +43,12 @@ const classificationVisible = ref(false);
 const classificationGroup = ref("");
 const classificationPriority = ref<EndUserCasePriority | undefined>();
 const classificationReason = ref("");
+const publishedClassificationOptions = computed(() =>
+  props.classificationOptions.map(({ code, label }) => ({
+    value: code,
+    label: code === "UNMAPPED" ? "Другие темы" : label,
+  })),
+);
 const unlinkMessageId = ref<string | null>(null);
 const unlinkReason = ref("");
 const mergeVisible = ref(false);
@@ -107,7 +119,12 @@ async function submitAssignment(): Promise<void> {
 }
 
 function requestClassification(): void {
-  classificationGroup.value = store.selected?.case.groupCode ?? "";
+  const currentGroup = store.selected?.case.groupCode ?? "";
+  classificationGroup.value = publishedClassificationOptions.value.some(
+    ({ value }) => value === currentGroup,
+  )
+    ? currentGroup
+    : "";
   classificationPriority.value = store.selected?.case.priority;
   classificationReason.value = "";
   classificationVisible.value = true;
@@ -174,7 +191,11 @@ function requestSplit(): void {
   splitMessageIds.value = [];
   splitEvidenceIds.value = [];
   splitTitle.value = "";
-  splitGroup.value = value.groupCode;
+  splitGroup.value = publishedClassificationOptions.value.some(
+    ({ value: code }) => code === value.groupCode,
+  )
+    ? value.groupCode
+    : "";
   splitReason.value = "";
   splitVisible.value = true;
 }
@@ -281,9 +302,24 @@ defineExpose({
     header="Исправить классификацию"
     :style="{ width: 'min(520px, calc(100vw - 24px))' }"
   >
+    <Message
+      v-if="!publishedClassificationOptions.length"
+      severity="warn"
+      :closable="false"
+    >
+      Список классификаций недоступен. Обновите рабочее место и попробуйте ещё
+      раз.
+    </Message>
     <label class="dialog-field">
-      <span>Код категории</span>
-      <InputText v-model="classificationGroup" maxlength="64" />
+      <span>Классификация</span>
+      <Select
+        v-model="classificationGroup"
+        :options="publishedClassificationOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Выберите классификацию"
+        :disabled="!publishedClassificationOptions.length"
+      />
     </label>
     <label class="dialog-field">
       <span>Приоритет</span>
@@ -307,7 +343,7 @@ defineExpose({
       <Button label="Отмена" text @click="classificationVisible = false" />
       <Button
         label="Сохранить"
-        :disabled="!classificationReason.trim()"
+        :disabled="!classificationGroup || !classificationReason.trim()"
         :loading="store.mutating"
         @click="submitClassification"
       />
@@ -424,8 +460,15 @@ defineExpose({
       <InputText v-model="splitTitle" maxlength="200" />
     </label>
     <label class="dialog-field">
-      <span>Код категории</span>
-      <InputText v-model="splitGroup" maxlength="64" />
+      <span>Классификация нового обращения</span>
+      <Select
+        v-model="splitGroup"
+        :options="publishedClassificationOptions"
+        option-label="label"
+        option-value="value"
+        placeholder="Выберите классификацию"
+        :disabled="!publishedClassificationOptions.length"
+      />
     </label>
     <label class="dialog-field">
       <span>Причина разделения</span>
@@ -440,6 +483,7 @@ defineExpose({
           splitMessageIds.length >=
             (store.selected?.messages.items.length ?? 0) ||
           !splitTitle.trim() ||
+          !splitGroup ||
           !splitReason.trim()
         "
         :loading="store.mutating"

@@ -429,8 +429,8 @@ describe("authentication routes", () => {
   it.each([
     [
       "/cases/case-1?projectId=project-2",
-      "end-user-case-detail",
-      "project.cases.read",
+      "support-inbox",
+      "project.conversations.read",
     ],
     [
       "/users/end-user-1?conversationId=conversation-1&projectId=project-2",
@@ -476,11 +476,11 @@ describe("authentication routes", () => {
     },
   );
 
-  it("protects Case list, detail, and policy routes with their exact permissions", () => {
-    expect(router.resolve("/cases").meta.projectPermission).toBe(
-      "project.cases.read",
-    );
-    expect(router.resolve("/cases/case-1").name).toBe("end-user-case-detail");
+  it("redirects legacy Case pages into Support and keeps policy settings admin-only", () => {
+    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTruthy();
+    expect(
+      router.resolve("/cases/case-1").matched.at(-1)?.redirect,
+    ).toBeTruthy();
     expect(router.resolve("/cases/settings").meta.projectPermission).toBe(
       "project.cases.settings.manage",
     );

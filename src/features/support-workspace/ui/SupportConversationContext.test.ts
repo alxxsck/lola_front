@@ -24,6 +24,9 @@ const conversation: SupportWorkspaceConversation = {
 const selection: SupportWorkspaceSelection = {
   checkpoint: "42",
   capabilitiesRevision: "revision-1",
+  classificationOptions: [
+    { code: "BILLING", label: "Платежи и расчёты" },
+  ],
   capabilities: {
     assignCase: false,
     claimAssignment: false,

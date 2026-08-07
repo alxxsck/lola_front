@@ -1645,7 +1645,13 @@ onBeforeUnmount(() => {
         @retry-after-reconcile="availability.retryAfterReconcile"
       />
     </Dialog>
-    <EndUserCaseDialogs v-if="canManageSelectedCase" ref="caseDialogs" />
+    <EndUserCaseDialogs
+      v-if="canManageSelectedCase"
+      ref="caseDialogs"
+      :classification-options="
+        conversation.selection.value?.classificationOptions ?? []
+      "
+    />
     <SupportInternalNotesDialog
       v-if="canReadSelectedInternalNotes && conversation.selection.value?.case"
       v-model:visible="internalNotesVisible"

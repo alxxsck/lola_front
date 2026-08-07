@@ -68,6 +68,7 @@ function selection(
     },
     messages: { items: [], nextCursor: null },
     ...overrides,
+    classificationOptions: overrides.classificationOptions ?? [],
   };
 }
 

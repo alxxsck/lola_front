@@ -76,6 +76,12 @@ const FieldStub = {
 
 function mountDialogs() {
   return mount(EndUserCaseDialogs, {
+    props: {
+      classificationOptions: [
+        { code: "DEPOSIT", label: "Депозиты" },
+        { code: "PAYMENT", label: "Платежи" },
+      ],
+    },
     global: {
       stubs: {
         Dialog: {
@@ -93,7 +99,7 @@ function mountDialogs() {
         Message: { template: "<div><slot /></div>" },
         Textarea: FieldStub,
         InputText: FieldStub,
-        Select: FieldStub,
+        Select: { ...FieldStub, name: "Select" },
         MultiSelect: { ...FieldStub, name: "MultiSelect" },
       },
     },
@@ -183,6 +189,14 @@ describe("EndUserCaseDialogs", () => {
     const wrapper = mountDialogs();
     api(wrapper).requestClassification();
     await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Классификация");
+    expect(wrapper.text()).not.toContain("Код категории");
+    expect(
+      wrapper.findAllComponents({ name: "Select" })[0]!.props("options"),
+    ).toEqual([
+      { value: "DEPOSIT", label: "Депозиты" },
+      { value: "PAYMENT", label: "Платежи" },
+    ]);
     const classifyInputs = wrapper.findAll("input");
     await classifyInputs[0]!.setValue("PAYMENT");
     await classifyInputs[1]!.setValue("CRITICAL");
