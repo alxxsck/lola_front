@@ -34,7 +34,6 @@ import {
   defaultConversationReplyTemplates,
   type ConversationReplyTemplate,
 } from "@/features/conversation-surface/model/conversation-reply-templates";
-import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
 import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import type {
   ExtendConversationAISuspensionDto,
@@ -60,7 +59,7 @@ import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOpe
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
-import { adaptUsersConversationMessages } from "./model/user-conversation-surface-adapter";
+import UserConversationPane from "./UserConversationPane.vue";
 
 type WorkspaceMode = "PROFILE" | "CHAT";
 type MobilePane = "LIST" | "CHAT";
@@ -445,12 +444,6 @@ const bulkTranslationCompleted = computed(
       const state = translation.messageTranslations.value.get(messageId)?.state;
       return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
     }).length,
-);
-const userConversationMessages = computed(() =>
-  adaptUsersConversationMessages(
-    messages.value,
-    translation.messageTranslations.value,
-  ),
 );
 const userConversationHistory = computed<ConversationSurfaceHistory>(() => ({
   loading: messagesLoading.value,
@@ -1862,12 +1855,13 @@ function displayField(
             </div>
           </div>
         </div>
-        <ConversationSurface
+        <UserConversationPane
           v-if="canReadConversations && selectedConversation"
           :key="`${projectId}:${auth.user?.id ?? 'current-operator'}:${endUserId ?? 'none'}`"
           class="user-conversation-surface"
           :title="selectedConversation.title"
-          :messages="userConversationMessages"
+          :messages="messages"
+          :translations="translation.messageTranslations.value"
           :history="userConversationHistory"
           :translation="userConversationTranslation"
           :composer="userConversationComposer"

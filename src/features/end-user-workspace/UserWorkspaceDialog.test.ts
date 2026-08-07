@@ -9,7 +9,6 @@ import ConversationTranslationBanner from "@/features/conversation-translation/u
 import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
 import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
-import { runConversationSurfaceBehaviorSuite } from "@/features/conversation-surface/testing/conversation-surface-behavior-suite";
 import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
 
 const mocks = vi.hoisted(() => ({
@@ -367,18 +366,6 @@ describe("единое рабочее пространство пользова�
       },
     });
   }
-
-  runConversationSurfaceBehaviorSuite({
-    name: "Users adapter",
-    mount: async () => {
-      mocks.permissions.push("project.translation.create");
-      const wrapper = mountWorkspace(current.id);
-      await flushPromises();
-      return wrapper;
-    },
-    expectedMessageIds: ["user-message", "operator-message"],
-    translationAvailable: true,
-  });
 
   it("renders the selected Users chat through the canonical Conversation Surface", async () => {
     mocks.permissions.push("project.translation.create");

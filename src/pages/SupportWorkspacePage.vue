@@ -9,7 +9,6 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
-import Avatar from "primevue/avatar";
 import Dialog from "primevue/dialog";
 import Drawer from "primevue/drawer";
 import Message from "primevue/message";
@@ -22,15 +21,17 @@ import EndUserCaseDialogs from "@/features/end-user-cases/ui/EndUserCaseDialogs.
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
-import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
-import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
+  ConversationSurfaceAISuspensionCapability,
+  ConversationSurfaceHistory,
+  ConversationSurfaceSendRequest,
+  ConversationSurfaceTranslation,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
 import {
   defaultConversationReplyTemplates,
@@ -38,10 +39,9 @@ import {
 } from "@/features/conversation-surface/model/conversation-reply-templates";
 import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
-import SupportMessageDeliveryStatus from "@/features/support-conversation/ui/SupportMessageDeliveryStatus.vue";
+import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
-import SupportReplyComposer from "@/features/support-reply/ui/SupportReplyComposer.vue";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
 import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
@@ -70,7 +70,6 @@ import { createSupportWorkspaceLiveController } from "@/features/support-workspa
 import { relativeTime } from "@/shared/lib/format";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import type { ConversationMessage } from "@/shared/types/domain";
 import type {
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
@@ -324,6 +323,42 @@ const visibleTranslationMessageIds = computed(() =>
     .slice(-50)
     .map((message) => message.id),
 );
+const bulkTranslationIds = computed(() => [
+  ...translation.translatingMessageIds.value,
+]);
+const bulkTranslationCompleted = computed(
+  () =>
+    bulkTranslationIds.value.filter((messageId) => {
+      const state = translation.messageTranslations.value.get(messageId)?.state;
+      return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
+    }).length,
+);
+const supportConversationHistory = computed<ConversationSurfaceHistory>(() => ({
+  loading: conversation.loading.value,
+  loadingOlder: conversation.loadingOlder.value,
+  hasOlder: Boolean(conversation.nextMessageCursor.value),
+  error:
+    !conversation.loading.value && !conversation.messages.value.length
+      ? conversation.error.value || undefined
+      : undefined,
+}));
+const supportConversationTranslation = computed<ConversationSurfaceTranslation>(
+  () => ({
+    available: canManageTranslation.value,
+    mode: messageViewMode.value,
+    changing: translation.loading.value || translation.savingPreference.value,
+    workingLocaleLabel: supportComposerWorkingLocale.value,
+    loading: translation.loading.value,
+    progress:
+      bulkTranslationIds.value.length > 1
+        ? {
+            completed: bulkTranslationCompleted.value,
+            total: bulkTranslationIds.value.length,
+            cancellable: true,
+          }
+        : null,
+  }),
+);
 const workspaceLive = createSupportWorkspaceLiveController(
   {
     async reconcile() {
@@ -387,6 +422,18 @@ const canManageSelectedAiSuspension = computed(
 const selectedAiSuspensionEntry = computed(() => {
   const conversationId = conversation.selection.value?.conversation?.id;
   return conversationId ? aiSuspension.getEntry(conversationId) : undefined;
+});
+const supportConversationAiSuspension = computed<
+  ConversationSurfaceAISuspensionCapability | undefined
+>(() => {
+  const entry = selectedAiSuspensionEntry.value;
+  if (!canReadSelectedAiSuspension.value || !entry) return undefined;
+  return {
+    entry,
+    canManage: canManageSelectedAiSuspension.value,
+    conversationOpen: selectedConversation.value?.status === "OPEN",
+    showHistory: true,
+  };
 });
 const selectedAiSuspensionError = computed(() => {
   const conversationId = conversation.selection.value?.conversation?.id;
@@ -573,19 +620,6 @@ const profile = createSupportUserProfileController(
   },
   supportUserProfileSource,
 );
-
-function messageAuthorName(message: ConversationMessage): string {
-  return (
-    message.authorSnapshot?.displayName ??
-    {
-      USER: "Пользователь",
-      ASSISTANT: auth.project?.assistantName ?? "Lola",
-      ADMIN: "Оператор",
-      SCENARIO: "Сценарий",
-      SYSTEM: "Система",
-    }[message.author]
-  );
-}
 
 function initials(value: string): string {
   return value
@@ -830,6 +864,37 @@ async function showTranslatedMessages(): Promise<void> {
   if (!translation.state.value?.preference.enabled) return;
   await translation.translateMessages(visibleTranslationMessageIds.value);
   messageViewMode.value = "TRANSLATED";
+}
+
+async function changeSupportTranslationMode(
+  mode: "ORIGINAL" | "TRANSLATED",
+): Promise<void> {
+  if (mode === "ORIGINAL") {
+    messageViewMode.value = "ORIGINAL";
+    return;
+  }
+  await showTranslatedMessages();
+}
+
+function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
+  reply.draft.value = request.text;
+}
+
+async function sendSupportReply(
+  request: ConversationSurfaceSendRequest,
+): Promise<void> {
+  reply.draft.value = request.text;
+  await sendReply();
+}
+
+async function sendSupportTranslatedReply(
+  request: ConversationSurfaceSendRequest,
+): Promise<void> {
+  await sendTranslatedReply(request.text);
+}
+
+function reconcileSupportSurface(): void {
+  void Promise.all([inbox.load(), conversation.reconcile()]);
 }
 
 function handleSupportComposerAction(
@@ -1379,46 +1444,6 @@ onBeforeUnmount(() => {
               <p>Безопасный контекст доступен в панели диалога.</p>
             </div>
             <div class="conversation-header__actions">
-              <template
-                v-if="canReadSelectedAiSuspension && selectedAiSuspensionEntry"
-              >
-                <ConversationAISuspensionHeaderActions
-                  :entry="selectedAiSuspensionEntry"
-                  :can-manage="canManageSelectedAiSuspension"
-                  :conversation-open="selectedConversation.status === 'OPEN'"
-                  :show-history="canReadSelectedAiSuspension"
-                  @start="openAiSuspensionDialog('START')"
-                  @history="aiSuspensionHistoryVisible = true"
-                  @retry="reloadSelectedAiSuspension"
-                />
-              </template>
-              <div
-                v-if="canManageTranslation"
-                class="message-view-toggle"
-                role="group"
-                aria-label="Язык сообщений"
-              >
-                <Button
-                  type="button"
-                  label="Оригинал"
-                  size="small"
-                  severity="secondary"
-                  :outlined="messageViewMode !== 'ORIGINAL'"
-                  :aria-pressed="messageViewMode === 'ORIGINAL'"
-                  @click="messageViewMode = 'ORIGINAL'"
-                />
-                <Button
-                  type="button"
-                  label="Перевод"
-                  icon="pi pi-language"
-                  size="small"
-                  severity="secondary"
-                  :outlined="messageViewMode !== 'TRANSLATED'"
-                  :loading="translation.loading.value"
-                  :aria-pressed="messageViewMode === 'TRANSLATED'"
-                  @click="showTranslatedMessages"
-                />
-              </div>
               <Button
                 class="mobile-context"
                 label="Контекст"
@@ -1470,83 +1495,44 @@ onBeforeUnmount(() => {
           >
             {{ conversation.error.value }}
           </Message>
-          <div
-            v-else
-            class="message-log"
-            role="log"
-            aria-live="polite"
-            aria-label="История сообщений"
-          >
-            <Button
-              v-if="conversation.nextMessageCursor.value"
-              label="Загрузить более ранние сообщения"
-              severity="secondary"
-              outlined
-              class="load-older"
-              :loading="conversation.loadingOlder.value"
-              @click="conversation.loadOlder"
-            />
-            <article
-              v-for="message in conversation.messages.value"
-              :key="message.id"
-              class="message"
-              :class="{
-                'from-user': message.author === 'USER',
-                'from-operator': message.author === 'ADMIN',
-                'from-assistant': message.author === 'ASSISTANT',
-                'from-system':
-                  message.author !== 'USER' &&
-                  message.author !== 'ADMIN' &&
-                  message.author !== 'ASSISTANT',
-              }"
-            >
-              <div class="message-meta">
-                <span class="message-author">
-                  <Avatar
-                    :image="message.authorSnapshot?.avatarUrl ?? undefined"
-                    :label="initials(messageAuthorName(message))"
-                    shape="circle"
-                    class="message-avatar"
-                    :aria-label="`Автор: ${messageAuthorName(message)}`"
-                  />
-                  <strong>{{ messageAuthorName(message) }}</strong>
-                </span>
-                <time :datetime="message.createdAt">{{
-                  relativeTime(message.createdAt)
-                }}</time>
-              </div>
-              <TranslatedMessageBody
-                :message="message"
-                :requested="
-                  translation.messageTranslations.value.get(message.id)
-                "
-                :view-mode="messageViewMode"
-              />
-              <SupportMessageDeliveryStatus
-                v-if="message.author === 'ADMIN' && message.delivery"
-                :status="message.delivery.status"
-              />
-            </article>
-            <p v-if="!conversation.messages.value.length" class="empty-pane">
-              В этом диалоге пока нет сообщений.
-            </p>
-          </div>
-          <SupportReplyComposer
-            v-if="conversation.selection.value"
+          <SupportConversationPane
+            v-else-if="conversation.selection.value"
+            :title="selectedConversation.title"
+            :messages="conversation.messages.value"
+            :translations="translation.messageTranslations.value"
+            :assistant-label="auth.project?.assistantName ?? 'Lola'"
+            :history="supportConversationHistory"
+            :translation="supportConversationTranslation"
             :composer="supportConversationComposer"
-            :draft="reply.draft.value"
-            :working-locale-label="supportComposerWorkingLocale"
-            :error="reply.error.value"
-            :delivery-status="reply.deliveryStatus.value"
-            @update:draft="reply.draft.value = $event"
-            @send-source="sendReply"
+            :ai-suspension="supportConversationAiSuspension"
+            @load-older="conversation.loadOlder"
+            @cancel-translation="translation.cancelMessageTranslations"
+            @change-translation-mode="changeSupportTranslationMode"
+            @reconcile-required="reconcileSupportSurface"
+            @draft-change="changeSupportDraft"
+            @send="sendSupportReply"
             @request-reply-translation="prepareReplyTranslation"
             @reconcile-reply-translation="translation.reconcileReplyPreview"
             @retry-reply-translation="translation.retryReplyPreview"
             @save-reply-translation="translation.editReplyTranslation"
-            @send-reply-translation="sendTranslatedReply"
-            @action="handleSupportComposerAction"
+            @send-reply-translation="sendSupportTranslatedReply"
+            @composer-action="handleSupportComposerAction"
+            @start-ai-suspension="openAiSuspensionDialog('START')"
+            @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
+            @retry-ai-suspension="reloadSelectedAiSuspension"
           />
+          <p v-else class="empty-pane support-conversation-unavailable">
+            Выбранный диалог недоступен.
+          </p>
+          <Message
+            v-if="reply.error.value"
+            severity="error"
+            :closable="false"
+            class="support-reply-error"
+            role="alert"
+          >
+            {{ reply.error.value }}
+          </Message>
           <ConversationTemplateGallery
             :visible="replyTemplateGalleryVisible"
             :templates="defaultConversationReplyTemplates"
@@ -1822,16 +1808,14 @@ onBeforeUnmount(() => {
 .pane-heading,
 .conversation-row__top,
 .conversation-header,
-.conversation-header__actions,
-.message-meta {
+.conversation-header__actions {
   display: flex;
   align-items: center;
 }
 .support-workspace-header,
 .conversation-header,
 .pane-heading,
-.conversation-row__top,
-.message-meta {
+.conversation-row__top {
   justify-content: space-between;
 }
 .header-actions {
@@ -1842,15 +1826,6 @@ onBeforeUnmount(() => {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
-}
-.message-view-toggle {
-  display: inline-flex;
-  gap: 4px;
-}
-.message-view-toggle :deep(.p-button) {
-  min-height: 32px;
-  padding-inline: 9px;
-  font-size: 0.7rem;
 }
 .support-workspace-page {
   min-width: 0;
@@ -2013,8 +1988,7 @@ onBeforeUnmount(() => {
 }
 .conversation-row time,
 .conversation-row__meta,
-.conversation-header p,
-.message-meta time {
+.conversation-header p {
   color: var(--text-muted);
   font-size: 0.78rem;
 }
@@ -2066,69 +2040,20 @@ onBeforeUnmount(() => {
 .mobile-context {
   display: none;
 }
-.message-log {
-  min-height: 0;
-  flex: 1;
-  padding: 24px 28px;
-  display: grid;
-  align-content: start;
-  gap: 12px;
-  overflow: auto;
-}
 .message-skeletons {
   padding: 22px;
 }
-.message {
-  max-width: min(82%, 620px);
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--surface-card);
-  border: 1px solid var(--line);
+.support-conversation-pane {
+  min-height: 0;
+  height: auto;
+  flex: 1;
 }
-.message.from-user {
-  justify-self: start;
-  border-top-left-radius: 6px;
-}
-.message.from-operator {
-  justify-self: end;
-  border-top-right-radius: 6px;
-  background: var(--brand-soft);
-  border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
-}
-.message.from-assistant {
-  justify-self: start;
-  border-top-left-radius: 6px;
-  border-color: color-mix(in srgb, var(--status-accent-text) 30%, var(--line));
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 55%,
-    var(--surface-card)
-  );
-}
-.message.from-system {
-  justify-self: start;
-  background: var(--surface-muted);
-}
-.message-meta {
-  gap: 14px;
-  margin-bottom: 5px;
-}
-.message-author {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.message-avatar {
+.support-reply-error {
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  font-size: 0.62rem;
+  margin: 0 12px 12px;
 }
-.message p {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.support-conversation-unavailable {
+  padding: 24px;
 }
 .reply-translation-settings {
   padding-top: 2px;
@@ -2229,12 +2154,8 @@ onBeforeUnmount(() => {
   .context-pane {
     display: none;
   }
-  .message-log,
   .message-skeletons {
     padding: 16px;
-  }
-  .message {
-    max-width: 92%;
   }
 }
 </style>

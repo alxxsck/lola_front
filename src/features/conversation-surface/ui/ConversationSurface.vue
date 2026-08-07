@@ -2,11 +2,13 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import Avatar from "primevue/avatar";
 import Button from "primevue/button";
+import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import { relativeTime } from "@/shared/lib/format";
 import ConversationComposer from "./ConversationComposer.vue";
 import {
   conversationSurfaceDraftKey,
+  type ConversationSurfaceAISuspensionCapability,
   type ConversationSurfaceComposer,
   type ConversationSurfaceComposerAction,
   type ConversationSurfaceHistory,
@@ -22,6 +24,7 @@ const props = defineProps<{
   history: ConversationSurfaceHistory;
   translation: ConversationSurfaceTranslation;
   composer: ConversationSurfaceComposer;
+  aiSuspension?: ConversationSurfaceAISuspensionCapability;
 }>();
 
 const emit = defineEmits<{
@@ -37,6 +40,9 @@ const emit = defineEmits<{
   "save-reply-translation": [text: string];
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
   "composer-action": [action: ConversationSurfaceComposerAction];
+  "start-ai-suspension": [];
+  "show-ai-suspension-history": [];
+  "retry-ai-suspension": [];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -236,9 +242,10 @@ function acceptExternalDraft(value: string): void {
 }
 
 watch(
-  () => props.composer.draftRevision,
-  () => {
-    acceptExternalDraft(props.composer.initialDraft);
+  () => [draftKey.value, props.composer.draftRevision] as const,
+  ([nextKey], [previousKey]) => {
+    if (nextKey === previousKey)
+      acceptExternalDraft(props.composer.initialDraft);
   },
 );
 
@@ -294,33 +301,46 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
         <span>Переписка</span>
         <h2>{{ title }}</h2>
       </div>
-      <div
-        v-if="translation.available"
-        class="conversation-surface__view-toggle"
-        role="group"
-        aria-label="Режим отображения сообщений"
-      >
-        <button
-          type="button"
-          data-action="show-original-messages"
-          :class="{ active: translation.mode === 'ORIGINAL' }"
-          :aria-pressed="translation.mode === 'ORIGINAL'"
-          :disabled="translation.changing"
-          @click="setViewMode('ORIGINAL')"
+      <div class="conversation-surface__toolbar-actions">
+        <ConversationAISuspensionHeaderActions
+          v-if="aiSuspension"
+          :entry="aiSuspension.entry"
+          :can-manage="aiSuspension.canManage"
+          :conversation-open="aiSuspension.conversationOpen"
+          :show-history="aiSuspension.showHistory"
+          :hide-active-status="aiSuspension.hideActiveStatus"
+          @start="emit('start-ai-suspension')"
+          @history="emit('show-ai-suspension-history')"
+          @retry="emit('retry-ai-suspension')"
+        />
+        <div
+          v-if="translation.available"
+          class="conversation-surface__view-toggle"
+          role="group"
+          aria-label="Режим отображения сообщений"
         >
-          Оригинал
-        </button>
-        <button
-          type="button"
-          data-action="show-translated-messages"
-          :class="{ active: translation.mode === 'TRANSLATED' }"
-          :aria-pressed="translation.mode === 'TRANSLATED'"
-          :disabled="translation.loading || translation.changing"
-          @click="setViewMode('TRANSLATED')"
-        >
-          <i class="pi pi-language" aria-hidden="true" />
-          Перевод · {{ translation.workingLocaleLabel }}
-        </button>
+          <button
+            type="button"
+            data-action="show-original-messages"
+            :class="{ active: translation.mode === 'ORIGINAL' }"
+            :aria-pressed="translation.mode === 'ORIGINAL'"
+            :disabled="translation.changing"
+            @click="setViewMode('ORIGINAL')"
+          >
+            Оригинал
+          </button>
+          <button
+            type="button"
+            data-action="show-translated-messages"
+            :class="{ active: translation.mode === 'TRANSLATED' }"
+            :aria-pressed="translation.mode === 'TRANSLATED'"
+            :disabled="translation.loading || translation.changing"
+            @click="setViewMode('TRANSLATED')"
+          >
+            <i class="pi pi-language" aria-hidden="true" />
+            Перевод · {{ translation.workingLocaleLabel }}
+          </button>
+        </div>
       </div>
     </header>
 
@@ -493,6 +513,8 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
 .conversation-surface {
   position: relative;
   display: grid;
+  container-name: conversation-surface;
+  container-type: inline-size;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
@@ -541,6 +563,13 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
 }
 .conversation-surface__heading h2 {
   font-size: 1rem;
+}
+.conversation-surface__toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 .conversation-surface__view-toggle {
   display: inline-flex;
@@ -773,6 +802,11 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
   }
   .conversation-surface__view-toggle {
     width: 100%;
+  }
+  .conversation-surface__toolbar-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
   }
   .conversation-surface__view-toggle button {
     flex: 1;

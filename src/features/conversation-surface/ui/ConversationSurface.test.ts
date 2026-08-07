@@ -162,6 +162,13 @@ runConversationSurfaceBehaviorSuite({
   mount: () => mountSurface(),
   expectedMessageIds: ["message-1", "message-2"],
   translationAvailable: true,
+  translatedText: "Я не могу завершить оплату",
+  translation: translation(),
+  composer: composer(),
+  alternateComposer: composer("conversation-2"),
+  messagesWithGap: messages.map((message) =>
+    message.id === "message-2" ? { ...message, ordinal: 3 } : message,
+  ),
 });
 
 describe("ConversationSurface", () => {

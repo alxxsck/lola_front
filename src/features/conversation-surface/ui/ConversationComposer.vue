@@ -611,14 +611,7 @@ function runAction(action: ConversationSurfaceComposerAction): void {
   color: var(--text-secondary);
   font-size: 11px;
 }
-@media (max-width: 720px) {
-  .conversation-composer {
-    margin: 0;
-    padding: 11px 12px 10px;
-    border-width: 1px 0 0;
-    border-radius: 0;
-    background: var(--surface-card);
-  }
+@container conversation-surface (max-width: 720px) {
   .conversation-composer.is-translated {
     grid-template-columns: 1fr;
   }
@@ -657,6 +650,15 @@ function runAction(action: ConversationSurfaceComposerAction): void {
   }
   .conversation-composer__footer :deep(.p-button) {
     min-height: 44px;
+  }
+}
+@media (max-width: 720px) {
+  .conversation-composer {
+    margin: 0;
+    padding: 11px 12px 10px;
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: var(--surface-card);
   }
   .conversation-composer__action-menu {
     position: fixed;

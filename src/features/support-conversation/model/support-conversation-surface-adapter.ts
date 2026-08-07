@@ -3,9 +3,16 @@ import { adaptConversationSurfaceMessages } from "@/features/conversation-surfac
 import type { ConversationSurfaceMessage } from "@/features/conversation-surface/model/conversation-surface-contract";
 import type { ConversationMessage } from "@/shared/types/domain";
 
-export function adaptUsersConversationMessages(
+interface SupportConversationSurfaceAdapterOptions {
+  assistantLabel: string;
+}
+
+export function adaptSupportConversationMessages(
   messages: readonly ConversationMessage[],
   translations: ReadonlyMap<string, RequestedMessageTranslation>,
+  options: SupportConversationSurfaceAdapterOptions,
 ): ConversationSurfaceMessage[] {
-  return adaptConversationSurfaceMessages(messages, translations);
+  return adaptConversationSurfaceMessages(messages, translations, {
+    ASSISTANT: options.assistantLabel,
+  });
 }

@@ -3,6 +3,7 @@ import type {
   RequestedMessageTranslation,
   TranslatedMessageContent,
 } from "@/features/conversation-translation/model/translation-presentation";
+import type { ConversationAISuspensionEntry } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 
 export type ConversationSurfacePlacement = "INBOUND" | "OUTBOUND" | "NEUTRAL";
 export type ConversationSurfaceTone =
@@ -48,6 +49,14 @@ export interface ConversationSurfaceTranslation {
     total: number;
     cancellable: boolean;
   } | null;
+}
+
+export interface ConversationSurfaceAISuspensionCapability {
+  entry: ConversationAISuspensionEntry;
+  canManage: boolean;
+  conversationOpen: boolean;
+  showHistory: boolean;
+  hideActiveStatus?: boolean;
 }
 
 export interface ConversationSurfaceReplyPreview {
