@@ -65,8 +65,10 @@ const hasActionMenuItems = computed(() =>
   [
     props.composer.actions.attachment,
     props.composer.actions.createTicket,
+    props.composer.actions.classifyCase,
+    props.composer.actions.internalNotes,
     props.composer.actions.sendWithoutTranslation,
-  ].some((action) => action.visibility !== "HIDDEN"),
+  ].some((action) => action && action.visibility !== "HIDDEN"),
 );
 const footerVisible = computed(
   () =>
@@ -278,6 +280,44 @@ function runAction(action: ConversationSurfaceComposerAction): void {
               <span>
                 <strong>Создать тикет</strong>
                 <small>Открыть форму внешнего обращения</small>
+              </span>
+            </button>
+            <button
+              v-if="
+                composer.actions.classifyCase &&
+                composer.actions.classifyCase.visibility !== 'HIDDEN'
+              "
+              type="button"
+              role="menuitem"
+              :disabled="
+                composer.actions.classifyCase.visibility === 'DISABLED'
+              "
+              :title="composer.actions.classifyCase.reason"
+              @click="runAction('CLASSIFY_CASE')"
+            >
+              <i class="pi pi-tags" aria-hidden="true" />
+              <span>
+                <strong>Изменить классификацию</strong>
+                <small>Тема и приоритет обращения</small>
+              </span>
+            </button>
+            <button
+              v-if="
+                composer.actions.internalNotes &&
+                composer.actions.internalNotes.visibility !== 'HIDDEN'
+              "
+              type="button"
+              role="menuitem"
+              :disabled="
+                composer.actions.internalNotes.visibility === 'DISABLED'
+              "
+              :title="composer.actions.internalNotes.reason"
+              @click="runAction('INTERNAL_NOTES')"
+            >
+              <i class="pi pi-lock" aria-hidden="true" />
+              <span>
+                <strong>Внутренние заметки</strong>
+                <small>Открыть обсуждение команды</small>
               </span>
             </button>
             <button

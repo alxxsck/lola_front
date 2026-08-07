@@ -32,6 +32,11 @@ import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
+import {
+  defaultConversationReplyTemplates,
+  type ConversationReplyTemplate,
+} from "@/features/conversation-surface/model/conversation-reply-templates";
+import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportMessageDeliveryStatus from "@/features/support-conversation/ui/SupportMessageDeliveryStatus.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
@@ -125,6 +130,7 @@ const canReadTranslationDetails = computed(() =>
   ),
 );
 const replyTranslationRequested = ref(false);
+const replyTemplateGalleryVisible = ref(false);
 const translationSettingsVisible = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
@@ -252,16 +258,39 @@ const supportConversationComposer = computed<
     recipientStatus: null,
     actions: {
       attachment: {
-        visibility: "HIDDEN",
+        visibility: "DISABLED",
+        reason: "Backend-контракт вложений для ответа ещё не опубликован.",
       },
       createTicket: {
         visibility: "HIDDEN",
       },
+      classifyCase: {
+        visibility: selection?.case
+          ? canManageSelectedCase.value
+            ? "ENABLED"
+            : "HIDDEN"
+          : "DISABLED",
+        reason: selection?.case
+          ? undefined
+          : "Диалог пока не привязан к обращению.",
+      },
+      internalNotes: {
+        visibility: selection?.case
+          ? canReadSelectedInternalNotes.value
+            ? "ENABLED"
+            : "HIDDEN"
+          : "DISABLED",
+        reason: selection?.case
+          ? undefined
+          : "Внутренние заметки доступны после привязки обращения.",
+      },
       templates: {
-        visibility: "HIDDEN",
+        visibility: busy ? "DISABLED" : "ENABLED",
+        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
       },
       improveWithAI: {
-        visibility: "HIDDEN",
+        visibility: "DISABLED",
+        reason: "Backend-команда улучшения ответа с AI ещё не опубликована.",
       },
       sendWithoutTranslation: {
         visibility:
@@ -806,9 +835,29 @@ async function showTranslatedMessages(): Promise<void> {
 function handleSupportComposerAction(
   action: ConversationSurfaceComposerAction,
 ): void {
-  if (action === "SEND_WITHOUT_TRANSLATION") {
-    setSendWithoutTranslationVisible(true);
+  switch (action) {
+    case "TEMPLATES":
+      replyTemplateGalleryVisible.value = true;
+      break;
+    case "CLASSIFY_CASE":
+      void classifySelectedCase();
+      break;
+    case "INTERNAL_NOTES":
+      openInternalNotes();
+      break;
+    case "SEND_WITHOUT_TRANSLATION":
+      setSendWithoutTranslationVisible(true);
+      break;
+    case "ATTACHMENT":
+    case "CREATE_TICKET":
+    case "IMPROVE_WITH_AI":
+      break;
   }
+}
+
+function applySupportReplyTemplate(template: ConversationReplyTemplate): void {
+  reply.draft.value = template.text;
+  replyTemplateGalleryVisible.value = false;
 }
 
 async function prepareReplyTranslation(): Promise<void> {
@@ -982,6 +1031,7 @@ watch(
     internalNotes.reset();
     reply.reset();
     replyTranslationRequested.value = false;
+    replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
     setSendWithoutTranslationVisible(false);
     messageViewMode.value = "ORIGINAL";
@@ -1108,6 +1158,7 @@ watch(
     if (selected) inbox.upsert(selected);
     reply.syncSelection();
     replyTranslationRequested.value = false;
+    replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
     setSendWithoutTranslationVisible(false);
     messageViewMode.value = "ORIGINAL";
@@ -1156,6 +1207,7 @@ onBeforeUnmount(() => {
   profile.reset();
   internalNotes.reset();
   reply.reset();
+  replyTemplateGalleryVisible.value = false;
   translation.reset();
   setSendWithoutTranslationVisible(false);
   workspaceLive.dispose();
@@ -1494,6 +1546,12 @@ onBeforeUnmount(() => {
             @save-reply-translation="translation.editReplyTranslation"
             @send-reply-translation="sendTranslatedReply"
             @action="handleSupportComposerAction"
+          />
+          <ConversationTemplateGallery
+            :visible="replyTemplateGalleryVisible"
+            :templates="defaultConversationReplyTemplates"
+            @close="replyTemplateGalleryVisible = false"
+            @select="applySupportReplyTemplate"
           />
           <Message
             v-if="canManageTranslation && translation.error.value"

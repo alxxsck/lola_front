@@ -35,7 +35,12 @@ import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
+import {
+  defaultConversationReplyTemplates,
+  type ConversationReplyTemplate,
+} from "@/features/conversation-surface/model/conversation-reply-templates";
 import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
+import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import type {
   ExtendConversationAISuspensionDto,
   ProfileProjectionResponseDto,
@@ -450,12 +455,6 @@ const bulkTranslationProgress = computed(() => {
     (bulkTranslationCompleted.value / bulkTranslationIds.value.length) * 100,
   );
 });
-const replyTemplates = [
-  "Проверяю информацию. Одну минуту, пожалуйста.",
-  "Спасибо за ожидание. Уточняю детали и скоро вернусь с ответом.",
-  "Проверил информацию. Подскажите, проблема всё ещё актуальна?",
-] as const;
-
 async function setTranslationEnabled(enabled: boolean): Promise<void> {
   if (!(await ensureTranslationLoaded())) return;
   await translation.updatePreference({ enabled });
@@ -1015,10 +1014,8 @@ async function selectConversation(
   scrollToLatest(false);
 }
 
-function applyReplyTemplate(
-  template: (typeof replyTemplates)[number] = replyTemplates[0],
-): void {
-  replyText.value = template;
+function applyReplyTemplate(template: ConversationReplyTemplate): void {
+  replyText.value = template.text;
   replyTemplateGalleryVisible.value = false;
   toast.add({
     severity: "success",
@@ -1984,45 +1981,12 @@ function displayField(
           :message-count="messages.length"
           @close="ticketDrawerVisible = false"
         />
-        <div
-          v-if="replyTemplateGalleryVisible"
-          class="template-gallery-backdrop"
-          @click.self="replyTemplateGalleryVisible = false"
-        >
-          <section
-            class="template-gallery"
-            data-testid="reply-template-gallery"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reply-template-gallery-title"
-          >
-            <header>
-              <div>
-                <span>Быстрые ответы</span>
-                <h3 id="reply-template-gallery-title">Галерея шаблонов</h3>
-              </div>
-              <button
-                type="button"
-                aria-label="Закрыть галерею шаблонов"
-                @click="replyTemplateGalleryVisible = false"
-              >
-                <i class="pi pi-times" aria-hidden="true" />
-              </button>
-            </header>
-            <div class="template-gallery__grid">
-              <button
-                v-for="(template, index) in replyTemplates"
-                :key="template"
-                type="button"
-                @click="applyReplyTemplate(template)"
-              >
-                <span>Шаблон {{ index + 1 }}</span>
-                <strong>{{ template }}</strong>
-                <small>Выбрать и продолжить редактирование</small>
-              </button>
-            </div>
-          </section>
-        </div>
+        <ConversationTemplateGallery
+          :visible="replyTemplateGalleryVisible"
+          :templates="defaultConversationReplyTemplates"
+          @close="replyTemplateGalleryVisible = false"
+          @select="applyReplyTemplate"
+        />
       </main>
     </div>
 
@@ -3571,95 +3535,6 @@ function displayField(
   font-size: 12px;
   line-height: 1.45;
 }
-.template-gallery-backdrop {
-  position: absolute;
-  z-index: 35;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--overlay-backdrop);
-}
-.template-gallery {
-  width: min(680px, 100%);
-  max-height: min(620px, calc(100dvh - 80px));
-  overflow-y: auto;
-  padding: 18px;
-  border: 1px solid var(--border-default);
-  border-radius: 18px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow-dialog);
-}
-.template-gallery > header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.template-gallery > header span {
-  color: var(--text-tertiary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.template-gallery > header h3 {
-  margin: 3px 0 0;
-  color: var(--text-primary);
-  font-size: 18px;
-}
-.template-gallery > header button {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid var(--border-default);
-  border-radius: 9px;
-  background: var(--surface-card);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.template-gallery__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-.template-gallery__grid > button {
-  display: grid;
-  min-height: 126px;
-  align-content: start;
-  gap: 8px;
-  padding: 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 13px;
-  background: var(--surface-subtle);
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
-}
-.template-gallery__grid > button:hover {
-  border-color: var(--palette-blue-200);
-  background: var(--status-accent-soft);
-  transform: translateY(-1px);
-}
-.template-gallery__grid span,
-.template-gallery__grid small {
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-.template-gallery__grid span {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-weight: 700;
-}
-.template-gallery__grid strong {
-  font-size: 13px;
-  line-height: 1.45;
-}
 @keyframes skeleton-shimmer {
   from {
     background-position: -360px 0;
@@ -3899,22 +3774,6 @@ function displayField(
   }
   .message-bubble :deep(.translated-message > p) {
     font-size: 14px;
-  }
-  .template-gallery-backdrop {
-    place-items: end stretch;
-    padding: 0;
-  }
-  .template-gallery {
-    width: 100%;
-    max-height: 78dvh;
-    padding: 16px;
-    border-radius: 20px 20px 0 0;
-  }
-  .template-gallery__grid {
-    grid-template-columns: 1fr;
-  }
-  .template-gallery__grid > button {
-    min-height: 96px;
   }
   .new-message-pill {
     bottom: 126px;

@@ -97,4 +97,49 @@ describe("SupportReplyComposer", () => {
     ).toBeDefined();
     expect(wrapper.text()).toContain("Проверяем правила перевода…");
   });
+
+  it("keeps Support actions, templates and AI affordance in the shared footer", async () => {
+    const value = composer();
+    value.actions = {
+      attachment: {
+        visibility: "DISABLED",
+        reason: "Вложения пока недоступны.",
+      },
+      createTicket: { visibility: "HIDDEN" },
+      classifyCase: { visibility: "ENABLED" },
+      internalNotes: { visibility: "ENABLED" },
+      templates: { visibility: "ENABLED" },
+      improveWithAI: {
+        visibility: "DISABLED",
+        reason: "AI-команда пока недоступна.",
+      },
+      sendWithoutTranslation: { visibility: "HIDDEN" },
+    };
+    const wrapper = mount(SupportReplyComposer, {
+      props: {
+        composer: value,
+        draft: "Проверяю информацию",
+        workingLocaleLabel: "RU",
+        error: "",
+      },
+      global,
+    });
+
+    expect(wrapper.text()).toContain("Действие");
+    expect(wrapper.text()).toContain("Шаблоны");
+    expect(wrapper.text()).toContain("Улучшить с AI");
+    await wrapper.get("button[aria-label='Шаблоны']").trigger("click");
+    expect(wrapper.emitted("action")).toEqual([["TEMPLATES"]]);
+
+    await wrapper.get("button[aria-label='Действие']").trigger("click");
+    const classification = wrapper
+      .findAll('[role="menuitem"]')
+      .find((item) => item.text().includes("Изменить классификацию"));
+    expect(classification).toBeTruthy();
+    await classification!.trigger("click");
+    expect(wrapper.emitted("action")).toEqual([
+      ["TEMPLATES"],
+      ["CLASSIFY_CASE"],
+    ]);
+  });
 });

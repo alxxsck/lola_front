@@ -67,6 +67,8 @@ export interface ConversationSurfaceActionCapability {
 export interface ConversationSurfaceComposerActions {
   attachment: ConversationSurfaceActionCapability;
   createTicket: ConversationSurfaceActionCapability;
+  classifyCase?: ConversationSurfaceActionCapability;
+  internalNotes?: ConversationSurfaceActionCapability;
   templates: ConversationSurfaceActionCapability;
   improveWithAI: ConversationSurfaceActionCapability;
   sendWithoutTranslation: ConversationSurfaceActionCapability;
@@ -75,6 +77,8 @@ export interface ConversationSurfaceComposerActions {
 export type ConversationSurfaceComposerAction =
   | "ATTACHMENT"
   | "CREATE_TICKET"
+  | "CLASSIFY_CASE"
+  | "INTERNAL_NOTES"
   | "TEMPLATES"
   | "IMPROVE_WITH_AI"
   | "SEND_WITHOUT_TRANSLATION";
