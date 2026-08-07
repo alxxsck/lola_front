@@ -105,7 +105,8 @@ export function createSupportAvailabilityController(
 
   function isAccessLost(cause: unknown): boolean {
     return (
-      cause instanceof ApiError && (cause.status === 403 || cause.status === 404)
+      cause instanceof ApiError &&
+      (cause.status === 403 || cause.status === 404)
     );
   }
 
@@ -156,7 +157,9 @@ export function createSupportAvailabilityController(
     return {
       state: input.state,
       reasonCode: input.reasonCode,
-      ...(input.reasonNote?.trim() ? { reasonNote: input.reasonNote.trim() } : {}),
+      ...(input.reasonNote?.trim()
+        ? { reasonNote: input.reasonNote.trim() }
+        : {}),
       ...(input.hardDurationSeconds
         ? { hardDurationSeconds: input.hardDurationSeconds }
         : {}),
@@ -167,7 +170,9 @@ export function createSupportAvailabilityController(
   }
 
   function isValidSelfTransition(input: ChangeOwnAvailabilityInput): boolean {
-    if (!SUPPORT_AVAILABILITY_SELF_REASONS[input.state].includes(input.reasonCode))
+    if (
+      !SUPPORT_AVAILABILITY_SELF_REASONS[input.state].includes(input.reasonCode)
+    )
       return false;
     if (input.state !== "AWAY") return input.hardDurationSeconds === undefined;
     const duration = input.hardDurationSeconds;
@@ -190,7 +195,12 @@ export function createSupportAvailabilityController(
     changing.value = true;
     error.value = "";
     try {
-      const result = await source.setOwn(projectId, operatorId, command, abort.signal);
+      const result = await source.setOwn(
+        projectId,
+        operatorId,
+        command,
+        abort.signal,
+      );
       if (!isCurrentMutation(projectId, operatorId, requestGeneration)) return;
       if (!isExpectedTarget(result, projectId, operatorId)) {
         error.value = "Статус доступности вернул данные другого сотрудника";
@@ -214,7 +224,8 @@ export function createSupportAvailabilityController(
         unknownOutcome.value = false;
         needsReconcile.value = true;
         conflictVersion.value = availability.value?.version ?? null;
-        error.value = "Статус изменился в другом сеансе. Обновите снимок и повторите черновик с новой версией.";
+        error.value =
+          "Статус уже изменён в другом окне. Обновите данные и повторите сохранение.";
         return;
       }
       if (
@@ -225,12 +236,14 @@ export function createSupportAvailabilityController(
         unknownOutcome.value = false;
         needsReconcile.value = false;
         conflictVersion.value = null;
-        error.value = "Проверьте статус, причину и длительность перед повторной отправкой.";
+        error.value =
+          "Проверьте статус, причину и длительность перед повторной отправкой.";
         return;
       }
       pendingCommand = command;
       unknownOutcome.value = true;
-      error.value = "Результат изменения неизвестен. Повтор отправит тот же idempotent intent.";
+      error.value =
+        "Не удалось подтвердить изменение статуса. Попробуйте сохранить ещё раз — дублирования не будет.";
     } finally {
       if (requestGeneration === mutationGeneration) {
         changing.value = false;
@@ -244,7 +257,9 @@ export function createSupportAvailabilityController(
     draft.value = {
       state: input.state,
       reasonCode: input.reasonCode,
-      ...(input.reasonNote?.trim() ? { reasonNote: input.reasonNote.trim() } : {}),
+      ...(input.reasonNote?.trim()
+        ? { reasonNote: input.reasonNote.trim() }
+        : {}),
       ...(input.hardDurationSeconds
         ? { hardDurationSeconds: input.hardDurationSeconds }
         : {}),
@@ -252,7 +267,8 @@ export function createSupportAvailabilityController(
     needsReconcile.value = false;
     conflictVersion.value = null;
     if (!isValidSelfTransition(draft.value)) {
-      error.value = "Проверьте статус, причину и длительность перед повторной отправкой.";
+      error.value =
+        "Проверьте статус, причину и длительность перед повторной отправкой.";
       return;
     }
     const command = createCommand(draft.value);

@@ -63,4 +63,25 @@ describe("SupportAvailabilityStatus", () => {
     expect(wrapper.find("form").exists()).toBe(false);
     expect(wrapper.text()).toContain("Получаете новые обращения");
   });
+
+  it("explains an unconfirmed save without exposing transport terminology", () => {
+    const wrapper = mount(SupportAvailabilityStatus, {
+      props: {
+        availability,
+        loading: false,
+        changing: false,
+        error:
+          "Не удалось подтвердить изменение статуса. Попробуйте сохранить ещё раз — дублирования не будет.",
+        canManage: true,
+        unknownOutcome: true,
+        needsReconcile: false,
+        canRetryAfterReconcile: false,
+        draft: null,
+      },
+      global: { plugins: [PrimeVue] },
+    });
+
+    expect(wrapper.text()).toContain("Повторить сохранение");
+    expect(wrapper.text()).not.toMatch(/idempotent|intent|тот же запрос/iu);
+  });
 });

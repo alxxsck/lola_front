@@ -99,16 +99,16 @@ function labelState(value: SupportAvailabilityState): string {
   );
 }
 
-function stateSeverity(value: SupportAvailabilityState): "success" | "info" | "warn" | "danger" | "secondary" {
-  return (
-    {
-      AVAILABLE: "success",
-      BUSY: "info",
-      AWAY: "warn",
-      DRAINING: "warn",
-      OFFLINE: "secondary",
-    }[value] ?? "danger"
-  ) as "success" | "info" | "warn" | "danger" | "secondary";
+function stateSeverity(
+  value: SupportAvailabilityState,
+): "success" | "info" | "warn" | "danger" | "secondary" {
+  return ({
+    AVAILABLE: "success",
+    BUSY: "info",
+    AWAY: "warn",
+    DRAINING: "warn",
+    OFFLINE: "secondary",
+  }[value] ?? "danger") as "success" | "info" | "warn" | "danger" | "secondary";
 }
 
 function labelReason(value: string | null): string {
@@ -130,9 +130,11 @@ function labelReason(value: string | null): string {
 
 function labelSource(value: string | null): string {
   return (
-    { SELF: "Вы выбрали", LEAD_OVERRIDE: "Изменил лид", LEASE_EXPIRY: "Истёк lease" }[
-      value ?? ""
-    ] ?? "Источник не указан"
+    {
+      SELF: "Вы выбрали",
+      LEAD_OVERRIDE: "Изменил лид",
+      LEASE_EXPIRY: "Истёк lease",
+    }[value ?? ""] ?? "Источник не указан"
   );
 }
 
@@ -143,7 +145,8 @@ function selectState(): void {
 
 function submit(): void {
   if (selectedState.value === "AWAY" && !isAwayDurationValid.value) {
-    validationError.value = "Для статуса «Отошёл» укажите длительность от 1 минуты до 8 часов.";
+    validationError.value =
+      "Для статуса «Отошёл» укажите длительность от 1 минуты до 8 часов.";
     return;
   }
   validationError.value = "";
@@ -159,7 +162,10 @@ function submit(): void {
 </script>
 
 <template>
-  <section class="availability-status card" aria-labelledby="availability-status-heading">
+  <section
+    class="availability-status card"
+    aria-labelledby="availability-status-heading"
+  >
     <header class="availability-status__header">
       <div>
         <span class="eyebrow">Моя доступность</span>
@@ -185,12 +191,16 @@ function submit(): void {
           :severity="stateSeverity(availability.effectiveState)"
         />
         <span>
-          {{ availability.acceptsNewWork ? "Получаете новые обращения" : "Новые обращения не назначаются" }}
+          {{
+            availability.acceptsNewWork
+              ? "Получаете новые обращения"
+              : "Новые обращения не назначаются"
+          }}
         </span>
       </div>
       <dl class="availability-status__facts">
         <div>
-          <dt>Объявленный статус</dt>
+          <dt>Выбранный статус</dt>
           <dd>{{ labelState(availability.declaredState) }}</dd>
         </div>
         <div>
@@ -198,7 +208,7 @@ function submit(): void {
           <dd>{{ labelReason(availability.reasonCode) }}</dd>
         </div>
         <div>
-          <dt>Источник</dt>
+          <dt>Кем изменён</dt>
           <dd>{{ labelSource(availability.source) }}</dd>
         </div>
         <div v-if="availability.transitionedAt">
@@ -210,7 +220,7 @@ function submit(): void {
           <dd>{{ relativeTime(availability.effectiveUntil) }}</dd>
         </div>
         <div v-if="availability.leaseUntil">
-          <dt>Lease до</dt>
+          <dt>Подтверждён до</dt>
           <dd>{{ relativeTime(availability.leaseUntil) }}</dd>
         </div>
       </dl>
@@ -227,15 +237,26 @@ function submit(): void {
             :disabled="changing || unknownOutcome"
             @change="selectState"
           >
-            <option v-for="state in SUPPORT_AVAILABILITY_STATES" :key="state" :value="state">
+            <option
+              v-for="state in SUPPORT_AVAILABILITY_STATES"
+              :key="state"
+              :value="state"
+            >
               {{ labelState(state) }}
             </option>
           </select>
         </label>
         <label>
           <span>Причина</span>
-          <select v-model="selectedReason" :disabled="changing || unknownOutcome">
-            <option v-for="reason in availableReasons" :key="reason" :value="reason">
+          <select
+            v-model="selectedReason"
+            :disabled="changing || unknownOutcome"
+          >
+            <option
+              v-for="reason in availableReasons"
+              :key="reason"
+              :value="reason"
+            >
               {{ labelReason(reason) }}
             </option>
           </select>
@@ -254,7 +275,10 @@ function submit(): void {
           <small>От 1 минуты до 8 часов.</small>
         </label>
         <label class="availability-status__note">
-          <span>Комментарий <small>необязательно, без персональных данных</small></span>
+          <span
+            >Комментарий
+            <small>необязательно, без персональных данных</small></span
+          >
           <textarea
             v-model="reasonNote"
             rows="2"
@@ -277,12 +301,16 @@ function submit(): void {
       </form>
     </template>
 
-    <Message v-if="error" severity="error" :closable="false">
+    <Message
+      v-if="error"
+      :severity="unknownOutcome || needsReconcile ? 'warn' : 'error'"
+      :closable="false"
+    >
       {{ error }}
     </Message>
     <Button
       v-if="unknownOutcome"
-      label="Повторить тот же запрос"
+      label="Повторить сохранение"
       severity="secondary"
       outlined
       :loading="changing"
@@ -290,7 +318,7 @@ function submit(): void {
     />
     <Button
       v-if="needsReconcile"
-      label="Повторить черновик с новой версией"
+      label="Повторить сохранение"
       severity="secondary"
       outlined
       :disabled="!canRetryAfterReconcile"

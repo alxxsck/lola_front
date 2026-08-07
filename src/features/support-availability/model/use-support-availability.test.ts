@@ -26,7 +26,9 @@ function snapshot(
   };
 }
 
-function source(overrides: Partial<SupportAvailabilitySource> = {}): SupportAvailabilitySource {
+function source(
+  overrides: Partial<SupportAvailabilitySource> = {},
+): SupportAvailabilitySource {
   return {
     read: vi.fn().mockResolvedValue(snapshot()),
     setOwn: vi.fn().mockResolvedValue(snapshot({ version: 2 })),
@@ -43,7 +45,9 @@ describe("support availability controller", () => {
         canRead: () => true,
         canManage: () => true,
       },
-      source({ read: vi.fn().mockResolvedValue(snapshot({ operatorId: "operator-2" })) }),
+      source({
+        read: vi.fn().mockResolvedValue(snapshot({ operatorId: "operator-2" })),
+      }),
     );
 
     await controller.load();
@@ -82,7 +86,14 @@ describe("support availability controller", () => {
     const setOwn = vi
       .fn()
       .mockRejectedValueOnce(new Error("network lost"))
-      .mockResolvedValueOnce(snapshot({ declaredState: "BUSY", effectiveState: "BUSY", acceptsNewWork: false, version: 2 }));
+      .mockResolvedValueOnce(
+        snapshot({
+          declaredState: "BUSY",
+          effectiveState: "BUSY",
+          acceptsNewWork: false,
+          version: 2,
+        }),
+      );
     const controller = createSupportAvailabilityController(
       {
         projectId: () => "project-1",
@@ -96,6 +107,12 @@ describe("support availability controller", () => {
 
     await controller.load();
     await controller.change({ state: "BUSY", reasonCode: "FOCUS" });
+
+    expect(controller.error.value).toBe(
+      "Не удалось подтвердить изменение статуса. Попробуйте сохранить ещё раз — дублирования не будет.",
+    );
+    expect(controller.error.value).not.toMatch(/idempotent|intent/iu);
+
     await controller.retryUnknownOutcome();
 
     expect(setOwn).toHaveBeenCalledTimes(2);
@@ -125,7 +142,9 @@ describe("support availability controller", () => {
         onForbidden,
         createIdempotencyKey: () => "availability-intent-1",
       },
-      source({ setOwn: vi.fn().mockRejectedValue(new ApiError(403, "forbidden")) }),
+      source({
+        setOwn: vi.fn().mockRejectedValue(new ApiError(403, "forbidden")),
+      }),
     );
 
     await controller.load();
@@ -145,7 +164,9 @@ describe("support availability controller", () => {
         canManage: () => true,
         createIdempotencyKey: () => "availability-intent-1",
       },
-      source({ setOwn: vi.fn().mockRejectedValue(new ApiError(400, "invalid")) }),
+      source({
+        setOwn: vi.fn().mockRejectedValue(new ApiError(400, "invalid")),
+      }),
     );
 
     await controller.load();
@@ -189,7 +210,9 @@ describe("support availability controller", () => {
     const read = vi
       .fn()
       .mockResolvedValueOnce(snapshot())
-      .mockResolvedValueOnce(snapshot({ version: 2, declaredState: "BUSY", effectiveState: "BUSY" }));
+      .mockResolvedValueOnce(
+        snapshot({ version: 2, declaredState: "BUSY", effectiveState: "BUSY" }),
+      );
     const createIdempotencyKey = vi
       .fn()
       .mockReturnValueOnce("availability-intent-1")
