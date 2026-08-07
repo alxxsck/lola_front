@@ -322,7 +322,7 @@ function apply(): void {
         >
       </div>
       <div
-        role="group"
+        :role="multiple ? 'group' : 'radiogroup'"
         class="event-picker__options"
         :aria-label="multiple ? 'События' : 'Событие'"
       >
@@ -331,17 +331,26 @@ function apply(): void {
           :key="option.value"
           type="button"
           data-testid="event-picker-option"
-          :aria-pressed="draftValues.includes(option.value)"
+          :class="{ 'event-picker__option--single': !multiple }"
+          :role="multiple ? undefined : 'radio'"
+          :aria-checked="
+            multiple ? undefined : draftValues.includes(option.value)
+          "
+          :aria-pressed="
+            multiple ? draftValues.includes(option.value) : undefined
+          "
           @click="choose(option)"
         >
-          <span class="event-picker__selection-mark" aria-hidden="true">
+          <span
+            v-if="multiple"
+            class="event-picker__selection-mark"
+            aria-hidden="true"
+          >
             <i
               :class="
                 draftValues.includes(option.value)
                   ? 'pi pi-check'
-                  : multiple
-                    ? 'pi pi-square'
-                    : 'pi pi-circle'
+                  : 'pi pi-square'
               "
             />
           </span>
@@ -632,6 +641,10 @@ function apply(): void {
   border-color: var(--input-border-hover);
   background: var(--surface-hover);
 }
+.event-picker__options > button:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 2px;
+}
 .event-picker__options > button[aria-pressed="true"] {
   border-color: color-mix(
     in srgb,
@@ -640,6 +653,15 @@ function apply(): void {
   );
   background: var(--surface-active);
   box-shadow: inset 3px 0 0 var(--action-primary);
+}
+.event-picker__options > .event-picker__option--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.event-picker__options > .event-picker__option--single[aria-checked="true"] {
+  border-color: var(--action-primary);
+  background: var(--surface-active);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--action-primary) 18%, transparent);
 }
 .event-picker__selection-mark {
   display: grid;

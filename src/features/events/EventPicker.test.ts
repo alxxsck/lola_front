@@ -29,9 +29,16 @@ describe("EventPicker", () => {
 
     await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
-    await wrapper.get('[data-testid="event-picker-option"]').trigger("click");
+    const option = wrapper.get('[data-testid="event-picker-option"]');
+
+    expect(option.attributes("role")).toBe("radio");
+    expect(option.attributes("aria-checked")).toBe("false");
+    expect(option.find(".event-picker__selection-mark").exists()).toBe(false);
+
+    await option.trigger("click");
 
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    expect(option.attributes("aria-checked")).toBe("true");
 
     await wrapper.get('[data-testid="event-picker-apply"]').trigger("click");
 
@@ -150,7 +157,11 @@ describe("EventPicker", () => {
 
     await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
-    for (const option of wrapper.findAll('[data-testid="event-picker-option"]')) {
+    const options = wrapper.findAll('[data-testid="event-picker-option"]');
+    expect(options[0]?.find(".event-picker__selection-mark").exists()).toBe(
+      true,
+    );
+    for (const option of options) {
       await option.trigger("click");
     }
     await wrapper.get('[data-testid="event-picker-apply"]').trigger("click");
