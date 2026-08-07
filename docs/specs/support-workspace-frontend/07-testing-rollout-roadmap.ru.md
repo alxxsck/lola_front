@@ -24,10 +24,16 @@ Frontend:
 - перенести `ordinal` и `authorSnapshot` в domain/mappers;
 - scoped project/selection/generation state;
 - layout primitives и safe identity header;
-- characterization tests текущего chat flow.
+- characterization tests текущего chat flow;
+- извлечь общий Conversation Surface из `UserWorkspaceDialog`, сохранив
+  существующий toggle `Оригинал / Перевод`, message renderer, translation
+  progress, realtime reconcile, draft и composer;
+- подключить Users/Profile и Support adapters к одному Surface и удалить
+  `.message-row` chat renderer из `EndUserCaseDetail.vue`.
 
-Exit: новый route открывает read-only выбранную текущую Conversation без
-регрессий старого dialog.
+Exit: новый route и user chat открывают read-only выбранную Conversation через
+один Surface без регрессий старого dialog; shared behavior suite проходит для
+обоих adapters, второго message renderer в production source нет.
 
 ### F1. Project inbox и рабочая selection
 
@@ -299,6 +305,9 @@ Messages, assignments или read positions.
 - unit/contract/component/e2e зелёные;
 - keyboard/axe/visual matrix пройдены;
 - `409`, revoke, reconnect и unknown outcome проверены;
+- shared Conversation Surface contract suite проходит одинаково через
+  Users/Profile и Support adapters, включая translation toggle и original/
+  translated rendering;
 - telemetry/privacy review выполнен;
 - support runbook и feature flag готовы.
 

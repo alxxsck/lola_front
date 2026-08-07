@@ -33,7 +33,8 @@ src/
 ├── features/
 │   ├── support-workspace/       # route composition, selection, layout
 │   ├── support-inbox/           # queries, rows, views, filters, table
-│   ├── support-conversation/    # history, read, delivery, drafts, composer
+│   ├── conversation-surface/    # shared Users/Support history, translation, composer
+│   ├── support-conversation/    # Support adapter/capabilities, без своего renderer
 │   ├── support-inspector/       # lazy context tabs
 │   ├── support-assignment/      # claim/transfer/offers
 │   ├── support-availability/    # operator state/capacity
@@ -50,13 +51,27 @@ src/
 Глубокие модули предоставляют небольшой public API. Компоненты не вызывают
 generated client напрямую.
 
+Нормативные call sites после extraction:
+
+```text
+src/features/conversation-surface/ui/ConversationSurface.vue
+  ↑ единственный public root chat component
+  ├─ UserWorkspaceDialog.vue       # profile/legacy adapter
+  └─ SupportConversationPane.vue   # route Support adapter
+```
+
+Внутри `conversation-surface` допустимы private subcomponents для header,
+message bubble, translation toggle и composer. Call sites импортируют только
+`ConversationSurface.vue` и не собирают свою ленту из этих внутренних частей.
+
 ### Границы ответственности
 
 | Модуль                 | Владеет                                              | Не владеет                    |
 | ---------------------- | ---------------------------------------------------- | ----------------------------- |
 | `support-workspace`    | route selection, pane layout, cross-feature commands | Message merge, profile fields |
 | `support-inbox`        | query/view/cursor, row revisions, selection IDs      | Полные message bodies         |
-| `support-conversation` | message entities/order, read, delivery, draft        | Assignment policy, profile    |
+| `conversation-surface` | единый message renderer, translation toggle, history, draft/composer | Route layout, assignment policy |
+| `support-conversation` | Support selection adapter, read/delivery/note capabilities | Message template/CSS, translation UI |
 | `support-inspector`    | tab lifecycle и projection composition               | Canonical chat state          |
 | `support-assignment`   | assignment/offers/conflicts                          | Presence                      |
 | `support-availability` | self/override status, capacity                       | Browser/socket status         |
@@ -255,24 +270,33 @@ Backend worktree на момент аудита имеет незавершён�
 
 1. route-independent End User header;
 2. conversation list/item;
-3. message log;
-4. composer orchestration;
+3. единый `ConversationSurface`: state rail, toggle `Оригинал / Перевод`,
+   message log/`TranslatedMessageBody`, translation progress и scroll anchor;
+4. общий composer orchestration, reply translation и scoped drafts;
 5. profile inspector sections;
 6. auxiliary panels/drawers;
 7. status/error primitives.
 
 Извлечение выполняется небольшими PR с characterization tests. Новый workspace
-композирует extracted modules. Старый dialog временно использует те же modules,
-чтобы не было двух реализаций.
+и старый dialog становятся adapters одного deep module. Его interface принимает
+selection/context, permissions и typed capabilities, но не slots/props для
+другого message renderer, translation toggle или composer. Поведение
+проверяется одним shared suite через оба adapters.
 
 ### Удалить после cutover
 
 - CHAT mode монолита;
+- `.message-row` chat-like renderer и CSS из `EndUserCaseDetail.vue`; Case
+  evidence остаётся metadata/link, а Conversation открывается в общем Surface;
 - online-session gate для support durable reply;
 - сортировку message по `createdAt + id`;
 - fake «Support API не подключён» ticket form;
 - role-name или неполные hardcoded permission assumptions;
 - client-derived policy language.
+
+Deletion gate: в production source остаётся ровно одна реализация Conversation
+message feed, translation toggle и composer frame. Поиск второго renderer либо
+копии их CSS блокирует cutover.
 
 ## 10. UI primitives
 
