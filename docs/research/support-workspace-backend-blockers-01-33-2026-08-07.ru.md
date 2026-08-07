@@ -269,16 +269,22 @@ Evidence: `AdminMessaging_lookupOutcome`, `AdminMessaging_send`,
 
 ### 14 — Read/unread и first-unread
 
-**Статус: полный backend-блокер.**
+**Статус: backend-блокер снят; готово, можно проверять и брать в frontend-разработку.**
 
-Не опубликованы reader-scoped durable read position, unread count/state в inbox, first-unread
-ordinal и monotonic high-water ACK mutation. В OpenAPI отсутствуют как операции, так и schemas с
-`readPosition`, `unread`, `firstUnread` или `readAck` семантикой. Delivery status `READ` относится к
-End User delivery конкретного исходящего Message и не является личной позицией чтения CMS
-оператора.
+Backend `main` `75739a1` публикует reader-scoped durable `readState` в Project inbox и
+authoritative Support Workspace: `lastReadOrdinal`, `highestOrdinal`, `firstUnreadOrdinal`, общий и
+customer-originated unread counts. `GET/POST .../read-position` дают REST reconcile и monotonic
+high-water ACK; out-of-order ACK не уменьшает позицию, ACK выше server high-water возвращает typed
+`409` с `error.details.highestOrdinal`.
 
-Что может frontend сейчас: только message anchor/new-message UI без заявления «непрочитано».
-Локальный timestamp или scroll position нельзя выпускать как authoritative unread.
+Первая bounded history page содержит first-unread anchor. Подписанные `nextCursor` и
+`newerCursor` сохраняют доступность старой и новой части истории даже при unread backlog больше
+page limit. Reader identity берётся только из IAM; read и ACK используют ту же повторно проверенную
+authorization-bound transaction. Ответы помечены `no-store`.
+
+Проверено: unit/OpenAPI tests, clean build, 53/53 architecture gate, PostgreSQL workspace proof,
+index-backed load gate на 20k Conversations и 10k Messages, локальный production start/health и
+повторные spec/standards/architecture/security/scalability review без P0/P1.
 
 ### 15 — Delivery и reconnect reconciliation
 

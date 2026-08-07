@@ -67,3 +67,17 @@ Saved/System View сохраняет selection, но возвращает `effec
 Проверено: CRUD/ETag/idempotency, permission revocation, Queue visibility, degraded counts/freshness,
 pre-`LIMIT` System View scope, least privilege, clean PostgreSQL migration gate и повторное
 архитектурное/security/scalability ревью — P0/P1 не найдено.
+
+## Последующие frontend handoff
+
+### Ticket 14 — read/unread и first-unread
+
+**Готово, можно проверять и брать в разработку.**
+
+Backend `main` `75739a1` публикует reader-scoped durable read state/counts в inbox и authoritative
+workspace, first-unread anchor, подписанную двунаправленную history pagination и monotonic ACK в
+authorization-bound IAM transaction. Typed OpenAPI включает read-position operations, nested error
+envelope и server high-water для ACK-ahead conflict.
+
+Проверено: unit/OpenAPI, build, architecture, PostgreSQL/load, production health-smoke и повторные
+spec/standards/architecture/security/scalability review без P0/P1.
