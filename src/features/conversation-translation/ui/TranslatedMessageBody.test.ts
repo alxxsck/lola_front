@@ -1,6 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import TranslatedMessageBody from "./TranslatedMessageBody.vue";
+import type { ConversationMessageTranslationItemResponseDto } from "@/shared/api/generated/models";
 import type { ConversationMessage } from "@/shared/types/domain";
 
 function message(
@@ -122,7 +123,7 @@ describe("translated message body", () => {
           errorCode: null,
           warnings: [],
           updatedAt: "2026-07-30T10:00:01.000Z",
-        },
+        } satisfies ConversationMessageTranslationItemResponseDto,
       },
     });
 
@@ -145,7 +146,7 @@ describe("translated message body", () => {
           errorCode: null,
           warnings: [],
           updatedAt: "2026-07-30T10:00:01.000Z",
-        },
+        } satisfies ConversationMessageTranslationItemResponseDto,
       },
     });
 
@@ -167,7 +168,7 @@ describe("translated message body", () => {
           skipReason,
           translatedText: null,
           updatedAt: "2026-07-30T10:00:01.000Z",
-        },
+        } satisfies ConversationMessageTranslationItemResponseDto,
       },
     });
 
@@ -184,7 +185,7 @@ describe("translated message body", () => {
           state: "SKIPPED",
           translatedText: null,
           updatedAt: "2026-07-30T10:00:01.000Z",
-        },
+        } satisfies ConversationMessageTranslationItemResponseDto,
       },
     });
 

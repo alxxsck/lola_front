@@ -1261,6 +1261,181 @@ describe("единое рабочее пространство пользова�
     expect(translate.mock.calls[0]?.[3]).toEqual(["older-german"]);
   });
 
+  it("сохраняет визуальный anchor при добавлении предыдущей страницы истории", async () => {
+    mocks.getMessages
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "current-message",
+            conversationId: current.id,
+            author: "USER",
+            status: "COMPLETED",
+            text: "Текущее сообщение",
+            createdAt: "2026-07-20T12:59:00.000Z",
+          },
+        ],
+        nextCursor: "older",
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: "older-message",
+            conversationId: current.id,
+            author: "ASSISTANT",
+            status: "COMPLETED",
+            text: "Предыдущее сообщение",
+            createdAt: "2026-07-19T12:59:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      });
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    const history = wrapper.get<HTMLElement>(".message-history").element;
+    Object.defineProperties(history, {
+      clientHeight: { configurable: true, value: 300 },
+      scrollHeight: {
+        configurable: true,
+        get: vi
+          .fn()
+          .mockReturnValueOnce(600)
+          .mockReturnValueOnce(600)
+          .mockReturnValue(900),
+      },
+      scrollTop: { configurable: true, value: 40, writable: true },
+    });
+
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Показать предыдущие сообщения"))
+      ?.trigger("click");
+    await flushPromises();
+
+    expect(history.scrollTop).toBe(340);
+    expect(
+      wrapper.findAll(".message-bubble").map((message) => message.text()),
+    ).toEqual([
+      expect.stringContaining("Предыдущее сообщение"),
+      expect.stringContaining("Текущее сообщение"),
+    ]);
+  });
+
+  it("следует за live-сообщением только у нижней границы истории", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    const history = wrapper.get<HTMLElement>(".message-history").element;
+    const scrollTo = vi.mocked(history.scrollTo);
+    let scrollTop = 660;
+    Object.defineProperties(history, {
+      clientHeight: { configurable: true, value: 300 },
+      scrollHeight: { configurable: true, value: 1000 },
+      scrollTop: {
+        configurable: true,
+        get: () => scrollTop,
+        set: (value: number) => {
+          scrollTop = value;
+        },
+      },
+    });
+    scrollTo.mockClear();
+    const event = {
+      contractVersion: 1,
+      projectId: "project-1",
+      endUserId: "user-1",
+      conversationId: current.id,
+      message: {
+        id: "near-bottom-message",
+        threadId: current.id,
+        role: "USER",
+        status: "COMPLETED",
+        text: "Сообщение у нижней границы",
+        createdAt: "2026-07-20T13:01:00.000Z",
+        updatedAt: "2026-07-20T13:01:00.000Z",
+      },
+    };
+
+    mocks.messageHandler?.(event);
+    await flushPromises();
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: "auto" });
+    expect(wrapper.find(".new-message-pill").exists()).toBe(false);
+
+    scrollTop = 200;
+    scrollTo.mockClear();
+    mocks.messageHandler?.({
+      ...event,
+      message: {
+        ...event.message,
+        id: "while-reading-message",
+        text: "Сообщение во время чтения истории",
+        createdAt: "2026-07-20T13:02:00.000Z",
+        updatedAt: "2026-07-20T13:02:00.000Z",
+      },
+    });
+    await flushPromises();
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(wrapper.get(".new-message-pill").text()).toContain(
+      "1 новых сообщений",
+    );
+  });
+
+  it("восстанавливает отдельный public draft при возврате в диалог", async () => {
+    const second = {
+      ...current,
+      id: "conversation-second",
+      title: "Второй разговор",
+      isCurrent: false,
+      currentInteractionSessionCount: 0,
+      lastMessageAt: "2026-07-20T12:00:00.000Z",
+    };
+    mocks.getConversations.mockResolvedValue({
+      items: [current, second],
+      nextCursor: null,
+    });
+    mocks.getMessages.mockImplementation(
+      async (_projectId, _endUserId, conversationId) => ({
+        items: [
+          {
+            id: `message-${conversationId}`,
+            conversationId,
+            author: "USER",
+            status: "COMPLETED",
+            text: `Сообщение ${conversationId}`,
+            createdAt: "2026-07-20T12:59:00.000Z",
+          },
+        ],
+        nextCursor: null,
+      }),
+    );
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    const composer = () =>
+      wrapper.get('textarea[aria-label="Ответ пользователю"]');
+    const conversationButton = (title: string) =>
+      wrapper
+        .findAll(".conversation-list button")
+        .find((button) => button.text().includes(title))!;
+
+    await composer().setValue("Черновик текущего разговора");
+    await conversationButton("Второй разговор").trigger("click");
+    await flushPromises();
+    expect((composer().element as HTMLTextAreaElement).value).toBe("");
+
+    await composer().setValue("Черновик второго разговора");
+    await conversationButton("Текущий разговор").trigger("click");
+    await flushPromises();
+    expect((composer().element as HTMLTextAreaElement).value).toBe(
+      "Черновик текущего разговора",
+    );
+
+    await conversationButton("Второй разговор").trigger("click");
+    await flushPromises();
+    expect((composer().element as HTMLTextAreaElement).value).toBe(
+      "Черновик второго разговора",
+    );
+  });
+
   it("не отсекает substantive Cyrillic future realtime до backend", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
@@ -1472,5 +1647,45 @@ describe("единое рабочее пространство пользова�
       "Выберите события и сначала оцените объём запроса",
     );
     expect(review.find("button").text()).toContain("Запросить анализ");
+  });
+
+  describe("characterization: legacy Users chat before Conversation Surface migration", () => {
+    it("keeps the current log, translation toggle, pagination and composer landmarks", async () => {
+      mocks.permissions.push("project.translation.create");
+      vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+        translationState(true),
+      );
+      const wrapper = mountWorkspace(current.id);
+      await flushPromises();
+
+      expect(wrapper.get('[role="log"]').attributes("aria-live")).toBe(
+        "polite",
+      );
+      expect(
+        wrapper
+          .findAll('[aria-label="Режим отображения сообщений"] button')
+          .map((button) => button.text().replace(/\s+/g, " ").trim()),
+      ).toEqual(["Оригинал", "Перевод · RU"]);
+      expect(wrapper.text()).toContain("Показать предыдущие сообщения");
+      expect(
+        wrapper.get('textarea[aria-label="Ответ пользователю"]').element,
+      ).toBeInstanceOf(HTMLTextAreaElement);
+    });
+
+    it("does not send the legacy draft during IME composition or with Shift+Enter", async () => {
+      mocks.sendAdminMessage.mockResolvedValue({ threadId: current.id });
+      const wrapper = mountWorkspace(current.id);
+      await flushPromises();
+      const textarea = wrapper.get('textarea[aria-label="Ответ пользователю"]');
+      await textarea.setValue("Проверю статус платежа");
+
+      await textarea.trigger("keydown", { key: "Enter", isComposing: true });
+      await textarea.trigger("keydown", { key: "Enter", shiftKey: true });
+      expect(mocks.sendAdminMessage).not.toHaveBeenCalled();
+
+      await textarea.trigger("keydown", { key: "Enter" });
+      await flushPromises();
+      expect(mocks.sendAdminMessage).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -84,9 +84,14 @@ describe("reply translation preview", () => {
   });
 
   it("даёт вручную сверить зависший pending draft", async () => {
+    const pendingDraft: ReplyTranslationDraftResponseDto = {
+      ...draft,
+      status: "PENDING",
+      queued: true,
+    };
     const wrapper = shallowMount(ReplyTranslationPreview, {
       props: {
-        draft: { ...draft, status: "PENDING", queued: true },
+        draft: pendingDraft,
         targetLocale: "de",
         busy: false,
         stale: false,

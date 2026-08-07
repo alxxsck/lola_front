@@ -1,0 +1,511 @@
+import { flushPromises, mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
+import ConversationSurface from "./ConversationSurface.vue";
+import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import type {
+  ConversationSurfaceComposer,
+  ConversationSurfaceMessage,
+  ConversationSurfaceTranslation,
+} from "../model/conversation-surface-contract";
+
+const messages: ConversationSurfaceMessage[] = [
+  {
+    id: "message-2",
+    ordinal: 2,
+    placement: "OUTBOUND",
+    author: { displayName: "Анна · Support", avatarUrl: null },
+    createdAt: "2026-08-07T09:02:00.000Z",
+    content: {
+      text: "I will check this for you.",
+      status: "COMPLETED",
+      translation: {
+        direction: "OUTBOUND",
+        status: "COMPLETED",
+        originalText: "Я проверю это для вас.",
+        translatedText: "I will check this for you.",
+        deliveredText: "I will check this for you.",
+        viewText: "Я проверю это для вас.",
+        targetLocale: "en",
+        warnings: [],
+      },
+    },
+    delivery: { label: "Доставлено", tone: "SUCCESS" },
+  },
+  {
+    id: "message-1",
+    ordinal: 1,
+    placement: "INBOUND",
+    author: { displayName: "Пользователь", avatarUrl: null },
+    createdAt: "2026-08-07T09:03:00.000Z",
+    content: {
+      text: "I cannot complete the payment",
+      status: "COMPLETED",
+      translation: {
+        direction: "INBOUND",
+        status: "COMPLETED",
+        originalText: "I cannot complete the payment",
+        translatedText: "Я не могу завершить оплату",
+        deliveredText: null,
+        viewText: "Я не могу завершить оплату",
+        targetLocale: "ru",
+        warnings: [],
+      },
+    },
+  },
+];
+
+function translation(
+  overrides: Partial<ConversationSurfaceTranslation> = {},
+): ConversationSurfaceTranslation {
+  return {
+    available: true,
+    mode: "ORIGINAL",
+    changing: false,
+    workingLocaleLabel: "Русский",
+    loading: false,
+    progress: null,
+    ...overrides,
+  };
+}
+
+type PublicComposer = Extract<
+  ConversationSurfaceComposer,
+  { mode: "PUBLIC_REPLY" }
+>;
+type NoteComposer = Extract<
+  ConversationSurfaceComposer,
+  { mode: "INTERNAL_NOTE" }
+>;
+
+function composer(conversationId = "conversation-1"): PublicComposer {
+  const base = {
+    visibility: "ENABLED" as const,
+    scope: {
+      projectId: "project-1",
+      actorId: "operator-1",
+      conversationId,
+    },
+    initialDraft: "",
+    draftRevision: "initial",
+    sending: false,
+  };
+  return {
+    ...base,
+    mode: "PUBLIC_REPLY",
+    sendCapability: { kind: "SOURCE" },
+    replyPreview: null,
+  };
+}
+
+function noteComposer(conversationId = "conversation-1"): NoteComposer {
+  return {
+    ...composer(conversationId),
+    mode: "INTERNAL_NOTE",
+    sendCapability: { kind: "SOURCE" },
+    replyPreview: null,
+  };
+}
+
+function mountSurface(
+  props: Partial<InstanceType<typeof ConversationSurface>["$props"]> = {},
+  slots: Record<string, string> = {},
+) {
+  return mount(ConversationSurface, {
+    props: {
+      title: "Оплата не проходит",
+      messages,
+      history: {
+        loading: false,
+        loadingOlder: false,
+        hasOlder: true,
+      },
+      translation: translation(),
+      composer: composer(),
+      ...props,
+    },
+    slots,
+    global: {
+      stubs: {
+        Button: {
+          props: ["label", "disabled", "loading"],
+          emits: ["click"],
+          template:
+            '<button type="button" :disabled="disabled" :aria-busy="String(Boolean(loading))" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+        },
+        Textarea: {
+          props: ["modelValue", "disabled", "placeholder", "ariaLabel"],
+          emits: ["update:modelValue", "keydown"],
+          template:
+            '<textarea :value="modelValue" :disabled="disabled" :placeholder="placeholder" :aria-label="ariaLabel" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" />',
+        },
+      },
+    },
+  });
+}
+
+describe("ConversationSurface", () => {
+  it("renders one canonical log ordered by ordinal with author, time and textual delivery", () => {
+    const wrapper = mountSurface();
+    const rendered = wrapper.findAll("[data-message-id]");
+
+    expect(rendered.map((item) => item.attributes("data-message-id"))).toEqual([
+      "message-1",
+      "message-2",
+    ]);
+    expect(rendered[0]?.text()).toContain("Пользователь");
+    expect(rendered[1]?.text()).toContain("Анна · Support");
+    expect(rendered[1]?.text()).toContain("Доставлено");
+    expect(wrapper.get('[role="log"]').attributes("aria-live")).toBe("polite");
+  });
+
+  it("requests translation mode without committing it before the adapter succeeds", async () => {
+    const wrapper = mountSurface();
+    const buttons = wrapper.findAll(
+      '[aria-label="Режим отображения сообщений"] button',
+    );
+
+    expect(buttons.map((button) => button.text())).toEqual([
+      "Оригинал",
+      "Перевод · Русский",
+    ]);
+    expect(wrapper.text()).toContain("I cannot complete the payment");
+
+    await buttons[1]!.trigger("click");
+    expect(wrapper.text()).toContain("I cannot complete the payment");
+    expect(wrapper.emitted("change-translation-mode")?.at(-1)).toEqual([
+      "TRANSLATED",
+    ]);
+
+    await wrapper.setProps({
+      translation: translation({ changing: true }),
+    });
+    expect(wrapper.text()).toContain("I cannot complete the payment");
+
+    await wrapper.setProps({
+      translation: translation({ mode: "TRANSLATED" }),
+    });
+    expect(wrapper.text()).toContain("Я не могу завершить оплату");
+  });
+
+  it("accepts a conversation-scoped translation mode from the canonical adapter scope", async () => {
+    const wrapper = mountSurface({
+      translation: translation({ mode: "TRANSLATED" }),
+    });
+    expect(wrapper.text()).toContain("Я не могу завершить оплату");
+
+    await wrapper.setProps({
+      composer: composer("conversation-2"),
+      translation: translation({ mode: "ORIGINAL" }),
+    });
+    expect(wrapper.text()).toContain("I cannot complete the payment");
+  });
+
+  it("shows bulk translation progress without reordering the log", () => {
+    const wrapper = mountSurface({
+      translation: translation({
+        mode: "TRANSLATED",
+        progress: { completed: 3, total: 8, cancellable: true },
+      }),
+    });
+
+    expect(wrapper.get('[role="status"]').text()).toContain("3 из 8");
+    expect(
+      wrapper
+        .findAll("[data-message-id]")
+        .map((item) => item.attributes("data-message-id")),
+    ).toEqual(["message-1", "message-2"]);
+  });
+
+  it("keeps the reply translation preview inside the shared composer behavior", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        sendCapability: { kind: "TRANSLATED_PREVIEW" },
+        replyPreview: {
+          draft: {
+            status: "READY",
+            targetLocale: "en",
+            translatedText: "I will check the payment status.",
+            warnings: [],
+          },
+          targetLocale: "en",
+          busy: false,
+          stale: false,
+          disabled: false,
+        },
+      },
+    });
+
+    expect(
+      wrapper.get('[aria-label="Предпросмотр перевода ответа"]').text(),
+    ).toContain("Уйдёт пользователю · EN");
+    await wrapper
+      .get('[aria-label="Предпросмотр перевода ответа"] button:last-of-type')
+      .trigger("click");
+    expect(wrapper.emitted("send-reply-translation")?.[0]?.[0]).toMatchObject({
+      scopeKey: "project-1:operator-1:conversation-1:PUBLIC_REPLY",
+      mode: "PUBLIC_REPLY",
+      text: "I will check the payment status.",
+    });
+  });
+
+  it.each([
+    {
+      name: "stale",
+      preview: {
+        draft: {
+          status: "READY" as const,
+          targetLocale: "en",
+          translatedText: "Ready but stale",
+          warnings: [],
+        },
+        targetLocale: "en",
+        busy: false,
+        stale: true,
+        disabled: false,
+      },
+    },
+    {
+      name: "failed",
+      preview: {
+        draft: {
+          status: "FAILED" as const,
+          targetLocale: "en",
+          translatedText: null,
+          warnings: [],
+        },
+        targetLocale: "en",
+        busy: false,
+        stale: false,
+        disabled: false,
+      },
+    },
+  ])(
+    "fails closed when the reply translation is $name",
+    async ({ preview }) => {
+      const wrapper = mountSurface({
+        composer: {
+          ...composer(),
+          sendCapability: { kind: "TRANSLATED_PREVIEW" },
+          initialDraft: "Нельзя отправить оригинал",
+          replyPreview: preview,
+        },
+      });
+
+      await wrapper.get("textarea").trigger("keydown", { key: "Enter" });
+      wrapper
+        .getComponent(ReplyTranslationPreview)
+        .vm.$emit("send", "Programmatic bypass");
+      expect(wrapper.emitted("send")).toBeUndefined();
+      expect(wrapper.emitted("send-reply-translation")).toBeUndefined();
+      expect(wrapper.text()).not.toContain("Отправить пользователю");
+      const translationSend = wrapper
+        .findAll("button")
+        .find((button) => button.text().includes("Отправить перевод"));
+      if (translationSend)
+        expect(translationSend.attributes("disabled")).toBeDefined();
+    },
+  );
+
+  it("preserves scoped drafts across conversations and public/note modes", async () => {
+    const wrapper = mountSurface();
+    const textarea = wrapper.get('textarea[aria-label="Ответ пользователю"]');
+    await textarea.setValue("Черновик ответа");
+
+    await wrapper.setProps({
+      composer: composer("conversation-2"),
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+    await wrapper.get("textarea").setValue("Другой диалог");
+
+    await wrapper.setProps({
+      composer: noteComposer("conversation-1"),
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+    await wrapper.get("textarea").setValue("Заметка только для команды");
+
+    await wrapper.setProps({ composer: composer("conversation-1") });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Черновик ответа",
+    );
+  });
+
+  it("sends on exact Enter or Ctrl/Cmd+Enter but ignores IME, Shift and Alt", async () => {
+    const wrapper = mountSurface();
+    const textarea = wrapper.get("textarea");
+    await textarea.setValue("Готовый ответ");
+
+    await textarea.trigger("keydown", { key: "Enter", isComposing: true });
+    await textarea.trigger("keydown", { key: "Enter", shiftKey: true });
+    await textarea.trigger("keydown", { key: "Enter", altKey: true });
+    expect(wrapper.emitted("send")).toBeUndefined();
+
+    await textarea.trigger("keydown", { key: "Enter" });
+    await textarea.trigger("keydown", { key: "Enter", ctrlKey: true });
+    expect(wrapper.emitted("send")).toHaveLength(2);
+    expect(wrapper.emitted("send")?.[0]?.[0]).toMatchObject({
+      text: "Готовый ответ",
+      mode: "PUBLIC_REPLY",
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Готовый ответ",
+    );
+
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        initialDraft: "",
+        draftRevision: "accepted-message-1",
+      },
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        initialDraft: "Восстановлено после 409",
+        draftRevision: "conflict-recovery-2",
+      },
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Восстановлено после 409",
+    );
+  });
+
+  it("keeps colliding messages visible and asks the adapter to reconcile gaps and conflicts", async () => {
+    const wrapper = mountSurface({
+      messages: [
+        messages[1]!,
+        {
+          ...messages[1]!,
+          ordinal: 3,
+          revision: "conflicting-revision",
+          author: { displayName: "Конфликтующий автор", avatarUrl: null },
+          content: { ...messages[1]!.content, text: "Conflicting payload" },
+        },
+        {
+          ...messages[0]!,
+          id: "message-collision",
+          ordinal: 1,
+        },
+        {
+          ...messages[0]!,
+          ordinal: 4,
+        },
+      ],
+    });
+    await flushPromises();
+
+    expect(
+      wrapper
+        .findAll("[data-message-id]")
+        .map((item) => item.attributes("data-message-id")),
+    ).toEqual(["message-1", "message-collision", "message-2"]);
+    expect(wrapper.emitted("reconcile-required")?.[0]?.[0]).toEqual(
+      expect.arrayContaining([
+        { kind: "MESSAGE_ID_CONFLICT", messageId: "message-1" },
+        {
+          kind: "ORDINAL_COLLISION",
+          ordinal: 1,
+          messageIds: ["message-1", "message-collision"],
+        },
+        { kind: "ORDINAL_GAP", afterOrdinal: 1, beforeOrdinal: 4 },
+      ]),
+    );
+    expect(wrapper.text()).toContain("Пользователь");
+    expect(wrapper.text()).not.toContain("Конфликтующий автор");
+    expect(wrapper.text()).not.toContain("Conflicting payload");
+  });
+
+  it("preserves the visual anchor after an older page is prepended", async () => {
+    const wrapper = mountSurface();
+    const log = wrapper.get('[role="log"]').element as HTMLElement;
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, get: vi.fn(() => 600) },
+      clientHeight: { configurable: true, get: vi.fn(() => 300) },
+    });
+    log.scrollTop = 80;
+
+    await wrapper.get('[data-action="load-older"]').trigger("click");
+    Object.defineProperty(log, "scrollHeight", {
+      configurable: true,
+      get: vi.fn(() => 840),
+    });
+    await wrapper.setProps({
+      messages: [
+        {
+          ...messages[1]!,
+          id: "message-0",
+          ordinal: 0,
+          content: { ...messages[1]!.content, text: "Earlier" },
+        },
+        ...messages,
+      ],
+      history: { loading: false, loadingOlder: false, hasOlder: false },
+    });
+    await flushPromises();
+
+    expect(log.scrollTop).toBe(320);
+    expect(wrapper.emitted("load-older")).toHaveLength(1);
+  });
+
+  it("positions an asynchronously loaded conversation at the latest message", async () => {
+    const wrapper = mountSurface({
+      messages: [],
+      history: { loading: true, loadingOlder: false, hasOlder: false },
+    });
+    const log = wrapper.get('[role="log"]').element as HTMLElement;
+    const scrollTo = vi.fn();
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 960 },
+      scrollTo: { configurable: true, value: scrollTo },
+    });
+
+    await wrapper.setProps({
+      messages,
+      history: { loading: false, loadingOlder: false, hasOlder: true },
+    });
+    await flushPromises();
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 960, behavior: "auto" });
+  });
+
+  it("does not expose renderer or composer replacement slots", () => {
+    const wrapper = mountSurface(
+      { title: "Диалог" },
+      {
+        message: '<div data-testid="foreign-renderer">foreign</div>',
+        composer: '<div data-testid="foreign-composer">foreign</div>',
+      },
+    );
+
+    expect(wrapper.find('[data-testid="foreign-renderer"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="foreign-composer"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it("does not mount the composer action when its typed capability is hidden", () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        visibility: "HIDDEN",
+        sendCapability: {
+          kind: "BLOCKED",
+          reason: "Ответ недоступен для вашей роли.",
+        },
+      },
+    });
+
+    expect(wrapper.find("textarea").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Ответ недоступен для вашей роли.");
+  });
+});

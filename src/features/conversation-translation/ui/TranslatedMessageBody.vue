@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ConversationMessageTranslationItemResponseDto } from "@/shared/api/generated/models";
-import type { ConversationMessage } from "@/shared/types/domain";
+import type {
+  RequestedMessageTranslation,
+  TranslatedMessageContent,
+} from "../model/translation-presentation";
 
 const props = defineProps<{
-  message: ConversationMessage;
-  requested?: ConversationMessageTranslationItemResponseDto;
+  message: TranslatedMessageContent;
+  requested?: RequestedMessageTranslation;
   viewMode?: "ORIGINAL" | "TRANSLATED";
 }>();
 const outbound = computed(
   () => props.message.translation?.direction === "OUTBOUND",
 );
-const originalVisible = computed(
-  () => props.viewMode === "ORIGINAL",
-);
+const originalVisible = computed(() => props.viewMode === "ORIGINAL");
 
 const status = computed(
   () => props.requested?.state ?? props.message.translation?.status,

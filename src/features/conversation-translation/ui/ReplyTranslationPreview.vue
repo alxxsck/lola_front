@@ -3,15 +3,16 @@ import { ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import Textarea from "primevue/textarea";
-import type { ReplyTranslationDraftResponseDto } from "@/shared/api/generated/models";
 import { localeDisplayName } from "@/shared/lib/locale";
+import type { ReplyTranslationPreviewModel } from "../model/translation-presentation";
 
 const props = defineProps<{
-  draft: ReplyTranslationDraftResponseDto | null;
+  draft: ReplyTranslationPreviewModel | null;
   targetLocale: string | null;
   busy: boolean;
   stale: boolean;
   disabled: boolean;
+  sendDisabled?: boolean;
   showProviderDetails?: boolean;
 }>();
 const emit = defineEmits<{
@@ -177,7 +178,7 @@ watch(
           icon="pi pi-send"
           size="small"
           :loading="busy"
-          :disabled="disabled || !editedText.trim()"
+          :disabled="disabled || sendDisabled || !editedText.trim()"
           @click="emit('send', editedText)"
         />
       </div>
