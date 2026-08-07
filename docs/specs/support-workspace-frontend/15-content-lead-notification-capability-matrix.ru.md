@@ -1,0 +1,138 @@
+# W0: capability matrix content, Lead Control и browser notifications
+
+Статус: normative baseline для frontend Task 03
+
+Версия: 1
+
+Дата: 7 августа 2026 года
+
+Pinned contract: `sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`
+
+Backend docs/source review: `c8948779d9d5ef4fb1421a5ac416768782dd8647`
+
+Frontend реализует только то, что опубликовано в pinned OpenAPI. Текущий
+backend source уже содержит более новый browser-notification slice, но до
+повторного pin/generate он остаётся `NOT_PUBLISHED` для CMS frontend.
+`READY` означает typed transport и достаточную authority. `RELEASE_GATED`
+требует server rollout/admission. `PARTIAL` означает, что часть projection или
+ошибок не типизирована. Нельзя подменять пробел локальным DTO или legacy
+notification API.
+
+## 1. Internal Notes и content governance
+
+| Capability            | Published operation / schema                           | Authority / revision                                                        | Status                                                                     |
+| --------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Note list             | `SupportInternalNote_list`, limit ≤ 100, cursor ≤ 1024 | `project.support.internal_notes.read`; повторная Case authority             | `READY` для выбранного Case                                                |
+| Note revision history | `SupportInternalNote_revisions`                        | одновременно `internal_notes.read` + `history_read`; revision number/author | `READY` read contract                                                      |
+| Create                | `SupportInternalNote_create`                           | `internal_notes.write`, `Idempotency-Key`                                   | `PARTIAL`: нет Case-scoped create allowed action и typed 4xx               |
+| Correct               | `SupportInternalNote_correction`                       | write, `sin1` If-Match, idempotency, append-only revision                   | `PARTIAL`: `reasonCode` — свободная строка, 409/410 без schema             |
+| Tombstone             | `SupportInternalNote_tombstone`                        | `internal_notes.redact`, `sin1` If-Match, idempotency                       | `PARTIAL`: server lifecycle есть, action capability/error body нет         |
+| Redacted/purged read  | `SupportInternalNoteResponseDto.lifecycle`             | `ACTIVE / TOMBSTONED / PURGED`, nullable body, unavailable references       | `READY`; UI не восстанавливает body из cache                               |
+| Content panel         | `SupportContentPanel_read`                             | macro read; независимые macro/knowledge states                              | `PARTIAL`: `items` обеих секций остаются arbitrary object                  |
+| Content rollout       | `SupportContentGovernance_rollout/updateRollout`       | version, `scr1` ETag, idempotency, hardOff                                  | `READY` как content rollout root, не project shell flag                    |
+| Retention             | read/replace/publish/preview operations                | exact `content_retention.manage`, `scp1` ETag                               | `PARTIAL`: draft/revision — arbitrary object; только bounded purge preview |
+| Legal hold            | list/create/release                                    | exact `content_legal_hold.manage`, version/action ETag                      | `READY` для hold lifecycle; purge apply остаётся maintenance-only          |
+
+Published content rollout capabilities: `MACRO_AUTHORING`, `MACRO_DRAFT`,
+`MACRO_SEND`, `INTERNAL_NOTES`, `CONTENT_PANEL`. Note body, creator details,
+references и signed URLs не попадают в inbox/realtime/telemetry fixtures.
+Physical purge не является пользовательской delete-командой.
+
+## 2. Support Macros
+
+| Capability     | Operation                                 | Permission / OCC                                                                                     | Status                                                                               |
+| -------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Catalog/detail | `SupportMacro_catalog/read`               | `project.support.macros.read`; limit ≤ 100                                                           | `PARTIAL`: cursor string ошибочно описан numeric `maximum`, typed errors отсутствуют |
+| Authoring      | create/replaceDraft/publish/archive       | `project.support.macros.manage`; idempotency; existing root uses `sm1` If-Match                      | `RELEASE_GATED`; 4xx/503 body `NOT_PUBLISHED`                                        |
+| Reply draft    | `SupportMacroReplyDraft_create/read/edit` | all-of: conversation reply + macro read + macro use; actor/Conversation binding; `smd1` ETag on edit | `RELEASE_GATED`; target allowed action и typed conflict/expiry errors отсутствуют    |
+| Provenance     | `SupportMacroReplyDraftResponseDto`       | macro revision ID/number, rendered hash, draft version, expiry                                       | `READY`; result remains editable and never auto-sends                                |
+
+Macro `read`, `use` и `manage` зарегистрированы как независимые frontend
+permissions. Published revision не меняет immutable Message author. Unknown
+send outcome должен проходить messaging reconciliation из Task 13, а не
+повторное применение Macro.
+
+## 3. Support Internal Knowledge
+
+Это отдельный `/support/knowledge/*` corpus и permissions
+`project.support.knowledge.read/manage`. Он не переиспользует существующий AI
+`/knowledge`.
+
+| Capability           | Operation / provenance                                                                | Status                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Search               | `SupportInternalKnowledge_search`; required Case, q 1–240, cursor ≤ 2000, limit ≤ 100 | `READY`; item содержит document/revision/title/safe snippet               |
+| Open/download        | `open/createFileDownload`; required Case; revision-scoped expiring URL                | `RELEASE_GATED`; errors `NOT_PUBLISHED`                                   |
+| Manage               | page/detail, text drafts/revisions, file upload/complete/scan, publish/archive        | `RELEASE_GATED`; exact document/revision state и idempotency опубликованы |
+| Scan/revision        | `SupportKnowledgeManagedRevisionResponseDto`                                          | `EDITING / QUARANTINED / SCANNING / PUBLISHABLE / PUBLISHED / REJECTED`   |
+| Emergency revoke     | `rollbackAdmission` → `REVOKED` receipt                                               | command опубликована, admission read/current capability `NOT_PUBLISHED`   |
+| Retention/hold/purge | CMS operations отсутствуют                                                            | `NOT_PUBLISHED`; destructive maintenance не переносится в browser         |
+
+`CONTENT_PANEL` не считается отдельным typed Knowledge rollout/admission.
+Case-scoped allowed actions, typed errors и unknown-outcome lookup должны быть
+опубликованы backend Knowledge/Content owner-ом до mutation UI.
+
+## 4. Lead Control и operational alerts
+
+| Capability                | Operation                                    | Provenance / status                                                                     |
+| ------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Summary                   | `SupportLead_summary`                        | generation, checkpoint, sourceHighWater, computedAt, freshness; `READY`                 |
+| Case risks                | `SupportLead_caseRisks`                      | required risk type, Case/assignment/SLA/delivery versions; `READY`                      |
+| Capacity risks            | `SupportLead_capacityRisks`                  | data state только `UNAVAILABLE`; UI обязан показывать недоступность                     |
+| Investigation             | `SupportLead_investigation`                  | pinned policy revisions, action tokens, causal facts; routing facts пока `UNAVAILABLE`  |
+| Support Activity          | `SupportLead_activity`                       | отдельный `project.support.activity.read`; bounded safe facts                           |
+| Alert list/detail         | `SupportOperationalAlert_list/detail`        | `alerts.read`, owner/count/version, materialization checkpoint/freshness                |
+| Alert acknowledge/resolve | versioned commands                           | `alerts.manage`, numeric If-Match, idempotency, closed reasons, authoritative receipt   |
+| Alert change owner        | `SupportOperationalAlertCommand_changeOwner` | command опубликована и audited; eligible owner catalog/target authority `NOT_PUBLISHED` |
+
+Lead freshness: `BUILDING / READY / STALE / DEGRADED`. Alert lifecycle в
+contract: `NEW / ACKNOWLEDGED / RESOLVED`; тексты старых документов
+`OPEN/CLOSED` не являются API enum. Assignment, priority и availability
+override используют отдельные команды из Task 02; Lead frontend не создаёт
+свои mutation endpoints. Bulk/partial receipts отсутствуют.
+
+## 5. Browser notifications — отдельная заблокированная vertical
+
+Pinned contract содержит только legacy email Case Escalation preferences. Он
+не содержит:
+
+- Project-scoped Support browser preferences;
+- browser Push subscription register/list/revoke;
+- registered devices/status/revision;
+- topics `SUPPORT_CASE_ATTENTION` и `SUPPORT_CASE_ASSIGNED_TO_ME`;
+- безопасный Support deep-link payload/resolve contract;
+- browser notification permission/rollout projection.
+
+`NotificationDestination_*`, platform notification operations и email
+preference не являются заменой. В current backend source эти controllers уже
+есть, но CMS ждёт новый pinned OpenAPI и generated client. До этого Task 27 не
+показывает enabled toggle, devices или fake deep link.
+
+## 6. Flags, owners и blockers
+
+| Slice                      | Published rollout / deployment control                                                | Owner / next task                              |
+| -------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Macros/Notes/content panel | typed Content Rollout root; backend global hard-off                                   | Support Operations Content → Tasks 22/24       |
+| Internal Knowledge         | Project admission; docs flags `SUPPORT_INTERNAL_KNOWLEDGE_*`                          | Knowledge/Content → Task 25                    |
+| Lead Control               | typed disabled/not-ready errors; отдельный project rollout contract отсутствует       | Lead projection/rollout → Task 26              |
+| Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
+| Browser notifications      | в pin ничего нет; source flags `PERSONAL_SUPPORT_BROWSER_PUSH_*` не frontend contract | Notifications/Auth/deep-link → re-pin, Task 27 |
+| Whole Support shell        | временный `VITE_SUPPORT_WORKSPACE_ENABLED`                                            | backend rollout → cutover tasks                |
+
+Backend environment flag не равен frontend feature flag. UI читает только
+typed server rollout/admission либо остаётся выключенным.
+
+## 7. Executable fixtures и recovery boundary
+
+Corpus:
+`src/shared/api/repository/fixtures/support-content-lead-notification-contract-fixtures.ts`.
+Published fixtures валидируются Ajv напрямую по pinned schemas: tombstoned и
+purged Note, Macro Reply Draft revision, Knowledge search, partial content
+panel, stale Lead summary, degraded alerts, alert receipt, typed Lead 403 и
+alert timeout 503.
+
+Content 403, revoked browser subscription, bulk/partial Lead result и общий
+command outcome lookup помечены `NOT_PUBLISHED`. Additive неизвестный
+projection state хранится отдельно и не трактуется как success.
+
+Task 03 не реализует UI. Визуальные и screenshot acceptance начинаются в
+Tasks 22, 24–27.

@@ -4,11 +4,17 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Capability matrix содержит internal notes, macros и Support Internal Knowledge с отдельными permissions и revisions.
-- [ ] Lead summary, risks, alerts, investigation, drill-down и audited commands привязаны к published operations.
-- [ ] Notification preferences, browser subscriptions, devices и deep-link payloads зафиксированы отдельно.
-- [ ] Sensitive content, masking, retention и purge requirements отражены в contracts/fixtures.
-- [ ] Fixtures покрывают denied permission, revoked subscription, stale projection, partial action и unknown outcome.
-- [ ] Feature flags и backend owners указаны для каждого capability gap.
+- [x] Capability matrix содержит internal notes, macros и Support Internal Knowledge с отдельными permissions и revisions.
+- [x] Lead summary, risks, alerts, investigation, drill-down и audited commands привязаны к published operations.
+- [x] Notification preferences, browser subscriptions, devices и deep-link payloads зафиксированы отдельно.
+- [x] Sensitive content, masking, retention и purge requirements отражены в contracts/fixtures.
+- [x] Fixtures покрывают denied permission, revoked subscription, stale projection, partial action и unknown outcome.
+- [x] Feature flags и backend owners указаны для каждого capability gap.
+
+Browser notification preferences, subscriptions, devices и safe deep-link
+contracts присутствуют в текущем backend source, но отсутствуют в pinned
+OpenAPI/generated client. До повторного pin/generate они остаются
+`NOT_PUBLISHED`; legacy email preferences и Notification Destinations не
+используются как замена.

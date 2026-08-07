@@ -57,22 +57,23 @@ dialog и Support быть не может. `/live` остаётся диагн�
 
 ## 3. Документы пакета
 
-| Документ                                                                                             | Что фиксирует                                                         |
-| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [01-operator-workspace.ru.md](./01-operator-workspace.ru.md)                                         | IA, inbox, layout, навигацию, responsive и сценарии оператора         |
-| [02-conversation-experience.ru.md](./02-conversation-experience.ru.md)                               | сообщения, read/unread, delivery, composer, realtime, вложения        |
-| [03-user-context-permissions.ru.md](./03-user-context-permissions.ru.md)                             | источники данных пользователя, inspector, роли, permissions и masking |
-| [04-translation-ai-content.ru.md](./04-translation-ai-content.ru.md)                                 | перевод, AI takeover, notes, macros и knowledge                       |
-| [05-lead-quality-analytics.ru.md](./05-lead-quality-analytics.ru.md)                                 | контроль работы, QA и статистику                                      |
-| [06-frontend-architecture-contracts.ru.md](./06-frontend-architecture-contracts.ru.md)               | модули, state, API/realtime контракты и migration map                 |
-| [07-testing-rollout-roadmap.ru.md](./07-testing-rollout-roadmap.ru.md)                               | этапы, acceptance criteria, тесты и rollout                           |
-| [08-remediation-plan.ru.md](./08-remediation-plan.ru.md)                                             | проверенный gap analysis и порядок устранения разрывов                |
-| [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                                           | целевой UI/UX, responsive и visual acceptance                         |
-| [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)                     | full-tab shell, кнопка, motion, scroll/focus contract                 |
-| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)             | короткий backlog W0–F7, cutover и отдельный integration track         |
-| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                       | видимый индекс 33 локальных задач и их blocking edges                 |
-| [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)   | W0 contract matrix workspace, history, send, delivery и blockers      |
-| [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md) | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers |
+| Документ                                                                                                       | Что фиксирует                                                             |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [01-operator-workspace.ru.md](./01-operator-workspace.ru.md)                                                   | IA, inbox, layout, навигацию, responsive и сценарии оператора             |
+| [02-conversation-experience.ru.md](./02-conversation-experience.ru.md)                                         | сообщения, read/unread, delivery, composer, realtime, вложения            |
+| [03-user-context-permissions.ru.md](./03-user-context-permissions.ru.md)                                       | источники данных пользователя, inspector, роли, permissions и masking     |
+| [04-translation-ai-content.ru.md](./04-translation-ai-content.ru.md)                                           | перевод, AI takeover, notes, macros и knowledge                           |
+| [05-lead-quality-analytics.ru.md](./05-lead-quality-analytics.ru.md)                                           | контроль работы, QA и статистику                                          |
+| [06-frontend-architecture-contracts.ru.md](./06-frontend-architecture-contracts.ru.md)                         | модули, state, API/realtime контракты и migration map                     |
+| [07-testing-rollout-roadmap.ru.md](./07-testing-rollout-roadmap.ru.md)                                         | этапы, acceptance criteria, тесты и rollout                               |
+| [08-remediation-plan.ru.md](./08-remediation-plan.ru.md)                                                       | проверенный gap analysis и порядок устранения разрывов                    |
+| [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                                                     | целевой UI/UX, responsive и visual acceptance                             |
+| [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)                               | full-tab shell, кнопка, motion, scroll/focus contract                     |
+| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F7, cutover и отдельный integration track             |
+| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 33 локальных задач и их blocking edges                     |
+| [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)             | W0 contract matrix workspace, history, send, delivery и blockers          |
+| [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md)           | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers     |
+| [15-content-lead-notification-capability-matrix.ru.md](./15-content-lead-notification-capability-matrix.ru.md) | W0 matrix notes, macros, Internal Knowledge, Lead Control и notifications |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
 [support-operator-workspace-ux.ru.md](../../research/support-operator-workspace-ux.ru.md).

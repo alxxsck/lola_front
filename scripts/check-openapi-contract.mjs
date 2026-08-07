@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { validateSupportContentLeadNotificationContract } from "./support-content-lead-notification-contract.mjs";
 import { validateSupportInboxCaseWorkforceContract } from "./support-inbox-case-workforce-contract.mjs";
 import { validateSupportWorkspaceMessagingContract } from "./support-workspace-contract.mjs";
 
@@ -7,6 +8,7 @@ const snapshotUrl = new URL(
   import.meta.url,
 );
 const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
+validateSupportContentLeadNotificationContract(document);
 validateSupportInboxCaseWorkforceContract(document);
 validateSupportWorkspaceMessagingContract(document);
 

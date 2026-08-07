@@ -3,9 +3,27 @@ import {
   hasPlatformPermission,
   hasProjectPermission,
   hasProjectOrPlatformPermission,
+  PROJECT_PERMISSION_CODES,
 } from "./permission-access";
 
 describe("permission access", () => {
+  it("registers independent Support content and Lead Control capabilities", () => {
+    expect(PROJECT_PERMISSION_CODES).toEqual(
+      expect.arrayContaining([
+        "project.support.activity.read",
+        "project.support.alerts.manage",
+        "project.support.macros.read",
+        "project.support.macros.use",
+        "project.support.macros.manage",
+        "project.support.knowledge.read",
+        "project.support.knowledge.manage",
+        "project.support.content_retention.manage",
+        "project.support.content_legal_hold.manage",
+        "project.support.content_rollout.manage",
+      ]),
+    );
+  });
+
   it("keeps CMS Agent, Analysis and Operations authority independent", () => {
     const permissions = [
       "project.cms_agent.use",
