@@ -7,8 +7,8 @@
  */
 
 export interface AttributeDefinitionImpactDependencyResponseDto {
-  id: string;
   kind: string;
+  id: string;
   name: string;
   status: string;
 }

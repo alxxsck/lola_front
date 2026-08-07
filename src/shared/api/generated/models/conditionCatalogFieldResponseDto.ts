@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConditionCatalogFieldResponseDtoAggregationsItem } from "./conditionCatalogFieldResponseDtoAggregationsItem";
-import type { ConditionCatalogFieldResponseDtoAllowedValuesItem } from "./conditionCatalogFieldResponseDtoAllowedValuesItem";
-import type { ConditionCatalogFieldCapabilitiesResponseDto } from "./conditionCatalogFieldCapabilitiesResponseDto";
-import type { ConditionCatalogFieldResponseDtoControl } from "./conditionCatalogFieldResponseDtoControl";
-import type { ConditionCatalogDisplayResponseDto } from "./conditionCatalogDisplayResponseDto";
 import type { ConditionCatalogFieldResponseDtoOperatorsItem } from "./conditionCatalogFieldResponseDtoOperatorsItem";
+import type { ConditionCatalogFieldResponseDtoAggregationsItem } from "./conditionCatalogFieldResponseDtoAggregationsItem";
+import type { ConditionCatalogFieldCapabilitiesResponseDto } from "./conditionCatalogFieldCapabilitiesResponseDto";
+import type { ConditionCatalogDisplayResponseDto } from "./conditionCatalogDisplayResponseDto";
+import type { ConditionCatalogFieldResponseDtoAllowedValuesItem } from "./conditionCatalogFieldResponseDtoAllowedValuesItem";
+import type { ConditionCatalogFieldResponseDtoControl } from "./conditionCatalogFieldResponseDtoControl";
 
 export interface ConditionCatalogFieldResponseDto {
-  aggregations: ConditionCatalogFieldResponseDtoAggregationsItem[];
-  allowedValues?: ConditionCatalogFieldResponseDtoAllowedValuesItem[];
-  authoringUnsupportedReason?: string;
-  capabilities: ConditionCatalogFieldCapabilitiesResponseDto;
-  control: ConditionCatalogFieldResponseDtoControl;
+  fieldKey: string;
+  path: string;
+  label: string;
   /** @nullable */
   description?: string | null;
-  display: ConditionCatalogDisplayResponseDto;
-  fieldKey: string;
-  label: string;
-  operators: ConditionCatalogFieldResponseDtoOperatorsItem[];
-  path: string;
-  required: boolean;
+  valueType: string;
   /** @nullable */
   semanticType?: string | null;
-  sensitive?: boolean;
   unit?: string;
-  valueType: string;
+  required: boolean;
+  operators: ConditionCatalogFieldResponseDtoOperatorsItem[];
+  aggregations: ConditionCatalogFieldResponseDtoAggregationsItem[];
+  capabilities: ConditionCatalogFieldCapabilitiesResponseDto;
+  display: ConditionCatalogDisplayResponseDto;
+  allowedValues?: ConditionCatalogFieldResponseDtoAllowedValuesItem[];
+  sensitive?: boolean;
+  authoringUnsupportedReason?: string;
+  control: ConditionCatalogFieldResponseDtoControl;
 }

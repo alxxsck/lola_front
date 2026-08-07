@@ -7,7 +7,6 @@
  */
 
 export interface TransferEndUserCaseEscalationDto {
-  cmsUserId: string;
   /** @minimum 1 */
   expectedCaseVersion: number;
   /** @minimum 1 */
@@ -17,4 +16,5 @@ export interface TransferEndUserCaseEscalationDto {
    * @maxLength 1000
    */
   reason: string;
+  cmsUserId: string;
 }

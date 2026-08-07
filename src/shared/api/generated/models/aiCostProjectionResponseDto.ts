@@ -8,14 +8,14 @@
 import type { AiCostProjectionResponseDtoStatus } from "./aiCostProjectionResponseDtoStatus";
 
 export interface AiCostProjectionResponseDto {
-  /** @nullable */
-  asOf: string | null;
-  driftDetected: boolean;
-  /** @nullable */
-  lastReconciledAt: string | null;
-  projectedRecords: string;
-  rebuildGeneration: string;
-  sourceRecords: string;
   status: AiCostProjectionResponseDtoStatus;
   timezone: string;
+  /** @nullable */
+  asOf: string | null;
+  /** @nullable */
+  lastReconciledAt: string | null;
+  sourceRecords: string;
+  projectedRecords: string;
+  rebuildGeneration: string;
+  driftDetected: boolean;
 }

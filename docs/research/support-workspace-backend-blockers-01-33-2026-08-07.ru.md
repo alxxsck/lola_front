@@ -63,6 +63,10 @@ contract`). Опубликован `AdminMessaging_lookupOutcome`: lookup по �
 из другого scope. Typed `409 IDEMPOTENCY_KEY_REUSED` закреплён в OpenAPI для безопасного сохранения
 draft. **Блокер снят; можно проверять и брать задачу 13 в работу.**
 
+**Frontend завершён:** Task 13 реализован на pin backend `3791c37`, включая
+lookup-before-retry, tab-scoped recovery после reload, compact Conversation
+Surface states и e2e без дублирования Message.
+
 ## Итоговая карта
 
 Сводно: **11** задач не имеют прямого backend-блокера, **10** имеют полный blocker,
@@ -79,10 +83,10 @@ draft. **Блокер снят; можно проверять и брать за
 | 07 | Remove legacy duplicates | Нет | Frontend cutover |
 | 08 | Full-tab shell | Нет | Frontend presentation |
 | 09 | Unified Case/Conversation inbox | Нет | `SupportWorkspace_read` публикует оба режима и selection |
-| 10 | Search/filters/sort | **Полный** | Search responses без schemas, нет Users search и нужной closed grammar |
-| 11 | Saved Views | **Полный** | Все success responses без schemas, нет typed preset catalog/count/freshness |
+| 10 | Search/filters/sort | Нет (снят `9da7bc9`) | Typed surface-specific search опубликован |
+| 11 | Saved Views | Нет (снят `9da7bc9`) | Typed Saved Views/presets/count/freshness опубликованы |
 | 12 | Responsive route stack | Нет | Frontend routing/layout |
-| 13 | Durable send/idempotency recovery | **Частичный** | Нет lookup результата по idempotency key после timeout |
+| 13 | Durable send/idempotency recovery | Нет (снят `3791c37`); frontend complete | `AdminMessaging_lookupOutcome` опубликован и подключён |
 | 14 | Read/unread/first-unread | **Полный** | Нет reader-scoped read position, unread projection и monotonic ACK |
 | 15 | Delivery/reconnect reconciliation | **Частичный** | Нет lookup/retry command и опубликованного typed realtime contract |
 | 16 | Case workflow/classification | **Частичный** | Нет priority floor, action-level authority, confidence/evidence и typed audit/errors |
@@ -246,21 +250,22 @@ Back, focus, scroll/draft anchor и responsive layout принадлежат fro
 
 ### 13 — Durable send и idempotency recovery
 
-**Статус: частичный backend-блокер.**
+**Актуальный статус: backend-блокер снят, frontend завершён.**
 
-Готово на backend: `AdminMessaging_send` требует `Idempotency-Key`, возвращает
-`SendAdminMessageResponseDto`, `messagePersistence=PERSISTED`, `duplicate`, stored Message и
-delivery receipt. Повтор с тем же body/key deduplicates.
+Backend `3791c37` публикует `AdminMessaging_lookupOutcome` по исходному
+`Idempotency-Key` с actor/Project/End User scope, persisted Message, актуальным
+delivery receipt и typed `200/400/403/404`. `AdminMessaging_send` сохраняет
+Message независимо от online-session, дедуплицирует тот же body/key и возвращает
+typed `409 IDEMPOTENCY_KEY_REUSED` при конфликтующем body.
 
-Не хватает отдельной read/lookup операции вида «получить outcome по actor/project/idempotency key».
-После transport timeout frontend не может отличить принятую команду от непринятой без повторного
-POST. Ticket прямо требует сначала lookup.
+Frontend закрепил этот контракт на pin
+`sha256:dda53093e2be430610e308265d490f77d5869ac1947e489a1cc2572d6a8c43b7`:
+stable key и исходный request сохраняются до terminal outcome, transport timeout
+сначала вызывает lookup, только authoritative `404` разрешает replay тем же
+body/key, а draft переживает reload, revoke и conflict.
 
-Что может frontend сейчас: stable key, durable POST, receipt/realtime merge, сохранение draft,
-replay тем же key и authoritative history reconcile. Полностью закрыть неизвестный outcome нельзя.
-
-Evidence: `src/modules/chat/admin-messaging.controller.ts`, `SendAdminMessageDto`,
-`SendAdminMessageResponseDto`; в 539 operations нет idempotency outcome lookup.
+Evidence: `AdminMessaging_lookupOutcome`, `AdminMessaging_send`,
+`SendAdminMessageResponseDto`, frontend Task 13 unit/component/e2e proof.
 
 ### 14 — Read/unread и first-unread
 

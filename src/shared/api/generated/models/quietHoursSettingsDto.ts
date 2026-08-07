@@ -9,7 +9,7 @@
 export interface QuietHoursSettingsDto {
   enabled: boolean;
   /** @pattern ^(?:[01]\d|2[0-3]):[0-5]\d$ */
-  endLocalTime: string;
-  /** @pattern ^(?:[01]\d|2[0-3]):[0-5]\d$ */
   startLocalTime: string;
+  /** @pattern ^(?:[01]\d|2[0-3]):[0-5]\d$ */
+  endLocalTime: string;
 }

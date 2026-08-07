@@ -9,14 +9,14 @@ import type { ConditionCatalogEventCapabilitiesResponseDto } from "./conditionCa
 import type { ConditionCatalogFieldResponseDto } from "./conditionCatalogFieldResponseDto";
 
 export interface ConditionCatalogEventResponseDto {
-  capabilities: ConditionCatalogEventCapabilitiesResponseDto;
-  code: string;
-  definitionId: string;
   definitionKeyId: string;
+  definitionId: string;
+  code: string;
+  name: string;
   /** @nullable */
   description?: string | null;
-  fields: ConditionCatalogFieldResponseDto[];
-  name: string;
   /** @minimum 1 */
   schemaVersion: number;
+  capabilities: ConditionCatalogEventCapabilitiesResponseDto;
+  fields: ConditionCatalogFieldResponseDto[];
 }

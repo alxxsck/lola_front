@@ -7,11 +7,11 @@
  */
 
 export interface ScenarioRunExplainRevisionResponseDto {
-  catalogRevision: string;
-  contentHash: string;
-  publishedAt: string;
+  scenarioId: string;
   revisionId: string;
   /** @minimum 1 */
   revisionNumber: number;
-  scenarioId: string;
+  contentHash: string;
+  catalogRevision: string;
+  publishedAt: string;
 }

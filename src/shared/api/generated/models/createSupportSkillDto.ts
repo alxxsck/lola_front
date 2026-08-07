@@ -11,14 +11,14 @@ export interface CreateSupportSkillDto {
   /** @pattern ^[a-z][a-z0-9-]{1,63}$ */
   code: string;
   /**
+   * @minLength 2
+   * @maxLength 120
+   */
+  name: string;
+  /**
    * @maxLength 1000
    * @nullable
    */
   description?: string | null;
   kind: CreateSupportSkillDtoKind;
-  /**
-   * @minLength 2
-   * @maxLength 120
-   */
-  name: string;
 }

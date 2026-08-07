@@ -13,7 +13,7 @@ export interface StartConversationAISuspensionDto {
    * @maximum 604800
    */
   durationSeconds: number;
+  reason: StartConversationAISuspensionDtoReason;
   /** @maxLength 500 */
   note?: string;
-  reason: StartConversationAISuspensionDtoReason;
 }

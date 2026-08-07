@@ -243,23 +243,21 @@ test("retention and notification boundaries stay explicit and fail closed", asyn
       );
     },
     (contract) => {
-      contract.paths[
-        "/api/v1/admin/projects/{projectId}/support/notification-preferences"
-      ] = {
-        get: { operationId: "SupportNotificationPreferences_read" },
-      };
+      delete operation(
+        contract,
+        "PersonalSupportNotificationPreferences_update",
+      ).parameters.find((parameter) => parameter.name === "Idempotency-Key")
+        .required;
     },
     (contract) => {
-      contract.paths["/api/v1/auth/me/browser-push-subscriptions"] = {
-        post: { operationId: "BrowserPushSubscription_register" },
-      };
+      delete operation(contract, "PersonalBrowserPushSubscription_register")
+        .requestBody;
     },
     (contract) => {
-      contract.paths[
-        "/api/v1/auth/me/browser-push-notifications/{capability}"
-      ] = {
-        get: { operationId: "PersonalSupportNotificationDeepLink_resolve" },
-      };
+      delete operation(
+        contract,
+        "PersonalSupportNotificationDeepLink_resolve",
+      ).responses["200"];
     },
   ];
 

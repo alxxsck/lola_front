@@ -9,12 +9,12 @@ import type { SupportKnowledgeSearchItemResponseDtoSourceType } from "./supportK
 
 export interface SupportKnowledgeSearchItemResponseDto {
   documentId: string;
+  revisionId: string;
+  sourceType: SupportKnowledgeSearchItemResponseDtoSourceType;
+  title: string;
   /** @nullable */
   language?: string | null;
   publishedAt: string;
-  revisionId: string;
   /** @maxLength 320 */
   snippet: string;
-  sourceType: SupportKnowledgeSearchItemResponseDtoSourceType;
-  title: string;
 }

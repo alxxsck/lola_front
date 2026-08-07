@@ -8,11 +8,11 @@
 import type { SupportWorkforceTeamSkillDtoRequirement } from "./supportWorkforceTeamSkillDtoRequirement";
 
 export interface SupportWorkforceTeamSkillDto {
+  skillId: string;
+  requirement: SupportWorkforceTeamSkillDtoRequirement;
   /**
    * @minimum 1
    * @maximum 5
    */
   minimumProficiency?: number;
-  requirement: SupportWorkforceTeamSkillDtoRequirement;
-  skillId: string;
 }

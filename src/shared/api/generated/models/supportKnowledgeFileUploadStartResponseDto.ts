@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeFileUploadStartResponseDtoRequiredHeaders } from "./supportKnowledgeFileUploadStartResponseDtoRequiredHeaders";
 import type { SupportKnowledgeFileUploadStartResponseDtoState } from "./supportKnowledgeFileUploadStartResponseDtoState";
+import type { SupportKnowledgeFileUploadStartResponseDtoRequiredHeaders } from "./supportKnowledgeFileUploadStartResponseDtoRequiredHeaders";
 
 export interface SupportKnowledgeFileUploadStartResponseDto {
-  expiresAt?: string;
-  replayed: boolean;
-  requiredHeaders?: SupportKnowledgeFileUploadStartResponseDtoRequiredHeaders;
   sessionId: string;
   state: SupportKnowledgeFileUploadStartResponseDtoState;
+  replayed: boolean;
+  expiresAt?: string;
   uploadUrl?: string;
+  requiredHeaders?: SupportKnowledgeFileUploadStartResponseDtoRequiredHeaders;
 }

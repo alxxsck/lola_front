@@ -8,16 +8,16 @@
 import type { TelegramBroadcastConsentResponseDtoStatus } from "./telegramBroadcastConsentResponseDtoStatus";
 
 export interface TelegramBroadcastConsentResponseDto {
+  subscribed: boolean;
+  status: TelegramBroadcastConsentResponseDtoStatus;
+  /** @minimum 0 */
+  version: number;
+  /** @minimum 1 */
+  policyVersion: number;
   /** @nullable */
   consentedAt?: string | null;
   /** @nullable */
-  ineligibleReason?: string | null;
-  /** @minimum 1 */
-  policyVersion: number;
-  status: TelegramBroadcastConsentResponseDtoStatus;
-  subscribed: boolean;
-  /** @minimum 0 */
-  version: number;
-  /** @nullable */
   withdrawnAt?: string | null;
+  /** @nullable */
+  ineligibleReason?: string | null;
 }

@@ -7,8 +7,8 @@
  */
 
 export interface PublishEventQueryPolicyItemDto {
-  /** @minimum 0 */
-  expectedPolicyVersion: number;
   /** @minimum 1 */
   expectedVersion: number;
+  /** @minimum 0 */
+  expectedPolicyVersion: number;
 }

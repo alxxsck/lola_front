@@ -5,12 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportRoutingQueueWeightsDto } from "./supportRoutingQueueWeightsDto";
-import type { SupportRoutingRetryDto } from "./supportRoutingRetryDto";
-import type { SupportRoutingTimeoutsDto } from "./supportRoutingTimeoutsDto";
 import type { SupportRoutingWeightsDto } from "./supportRoutingWeightsDto";
+import type { SupportRoutingQueueWeightsDto } from "./supportRoutingQueueWeightsDto";
+import type { SupportRoutingTimeoutsDto } from "./supportRoutingTimeoutsDto";
+import type { SupportRoutingRetryDto } from "./supportRoutingRetryDto";
 
 export interface SupportRoutingPolicyDraftDto {
+  /** @maxItems 50 */
+  mandatorySkills?: string[];
+  /** @maxItems 50 */
+  preferredSkills?: string[];
+  /** @maxItems 50 */
+  mandatoryLanguages?: string[];
+  /** @maxItems 50 */
+  preferredLanguages?: string[];
   /**
    * @minimum 1
    * @maximum 10000
@@ -21,16 +29,8 @@ export interface SupportRoutingPolicyDraftDto {
    * @maximum 100
    */
   hardUtilizationPercent: number;
-  /** @maxItems 50 */
-  mandatoryLanguages?: string[];
-  /** @maxItems 50 */
-  mandatorySkills?: string[];
-  /** @maxItems 50 */
-  preferredLanguages?: string[];
-  /** @maxItems 50 */
-  preferredSkills?: string[];
-  queueWeights?: SupportRoutingQueueWeightsDto;
-  retry?: SupportRoutingRetryDto;
-  timeouts?: SupportRoutingTimeoutsDto;
   weights?: SupportRoutingWeightsDto;
+  queueWeights?: SupportRoutingQueueWeightsDto;
+  timeouts?: SupportRoutingTimeoutsDto;
+  retry?: SupportRoutingRetryDto;
 }

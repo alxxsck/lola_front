@@ -9,21 +9,21 @@ import type { IntegrationDispatchActivityItemDtoProvider } from "./integrationDi
 import type { IntegrationDispatchActivityItemDtoStatus } from "./integrationDispatchActivityItemDtoStatus";
 
 export interface IntegrationDispatchActivityItemDto {
-  /** @minimum 0 */
-  attemptCount: number;
-  connectionId: string;
-  createdAt: string;
-  /** @nullable */
-  errorCode: string | null;
-  eventId: string;
-  /** @nullable */
-  finishedAt: string | null;
   id: string;
-  occurredAt: string;
+  connectionId: string;
+  routeId: string;
+  routeRevisionId: string;
+  eventId: string;
   provider: IntegrationDispatchActivityItemDtoProvider;
   providerEventName: string;
   providerIdempotencyId: string;
-  routeId: string;
-  routeRevisionId: string;
+  occurredAt: string;
   status: IntegrationDispatchActivityItemDtoStatus;
+  /** @minimum 0 */
+  attemptCount: number;
+  /** @nullable */
+  errorCode: string | null;
+  createdAt: string;
+  /** @nullable */
+  finishedAt: string | null;
 }

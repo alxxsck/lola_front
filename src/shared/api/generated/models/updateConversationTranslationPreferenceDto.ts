@@ -11,14 +11,14 @@ export interface UpdateConversationTranslationPreferenceDto {
   /**
    * @minLength 1
    * @maxLength 64
+   */
+  workingLocale: string;
+  /**
+   * @minLength 1
+   * @maxLength 64
    * @nullable
    */
   endUserLocaleOverride: string | null;
   /** @nullable */
   expectedUpdatedAt: string | null;
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
-  workingLocale: string;
 }

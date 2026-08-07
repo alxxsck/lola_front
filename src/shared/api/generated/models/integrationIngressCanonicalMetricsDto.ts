@@ -7,11 +7,11 @@
  */
 
 export interface IntegrationIngressCanonicalMetricsDto {
-  /** @minimum 0 */
-  conflicts: number;
+  supported: boolean;
   /** @minimum 0 */
   duplicates: number;
   /** @minimum 0 */
+  conflicts: number;
+  /** @minimum 0 */
   recoveries: number;
-  supported: boolean;
 }

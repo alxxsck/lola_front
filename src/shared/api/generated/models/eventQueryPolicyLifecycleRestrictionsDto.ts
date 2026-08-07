@@ -7,8 +7,8 @@
  */
 
 export interface EventQueryPolicyLifecycleRestrictionsDto {
+  readOnly: boolean;
   canApply: boolean;
   canEnable: boolean;
-  readOnly: boolean;
   reasons: string[];
 }

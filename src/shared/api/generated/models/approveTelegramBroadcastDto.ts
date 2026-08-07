@@ -7,18 +7,18 @@
  */
 
 export interface ApproveTelegramBroadcastDto {
+  /** @minimum 1 */
+  expectedVersion: number;
   /**
    * @minLength 64
    * @maxLength 64
    * @pattern ^[0-9a-f]{64}$
    */
   expectedContentHash: string;
+  successfulTestId: string;
   /**
    * @minimum 0
    * @maximum 10000
    */
   expectedRecipientCount: number;
-  /** @minimum 1 */
-  expectedVersion: number;
-  successfulTestId: string;
 }

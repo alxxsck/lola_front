@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueDraftPreviewResponseDtoDiagnosticsItem } from "./supportQueueDraftPreviewResponseDtoDiagnosticsItem";
 import type { SupportQueueSourceHighWaterResponseDto } from "./supportQueueSourceHighWaterResponseDto";
+import type { SupportQueueDraftPreviewResponseDtoDiagnosticsItem } from "./supportQueueDraftPreviewResponseDtoDiagnosticsItem";
 
 export interface SupportQueueDraftPreviewResponseDto {
   /** @maxItems 200 */
   caseIds: string[];
+  countExact: boolean;
   /**
    * @minimum 0
    * @nullable
    */
   count: number | null;
-  countExact: boolean;
   /**
    * @minimum 1
    * @nullable
    */
   countLowerBound: number | null;
-  diagnostics: SupportQueueDraftPreviewResponseDtoDiagnosticsItem[];
   evaluatedAt: string;
+  sourceHighWater: SupportQueueSourceHighWaterResponseDto;
   /** @maxItems 64 */
   reasonSummary: string[];
-  sourceHighWater: SupportQueueSourceHighWaterResponseDto;
+  diagnostics: SupportQueueDraftPreviewResponseDtoDiagnosticsItem[];
 }

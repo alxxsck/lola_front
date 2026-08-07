@@ -8,8 +8,8 @@
 
 export type SupportCaseAssignmentAssign404Current = {
   id: string;
-  operatorCmsUserId: string;
-  operatorDisplayName: string;
   /** @minimum 1 */
   version: number;
+  operatorCmsUserId: string;
+  operatorDisplayName: string;
 };

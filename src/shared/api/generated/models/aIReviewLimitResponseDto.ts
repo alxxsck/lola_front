@@ -7,6 +7,6 @@
  */
 
 export interface AIReviewLimitResponseDto {
-  max: number;
   min: number;
+  max: number;
 }

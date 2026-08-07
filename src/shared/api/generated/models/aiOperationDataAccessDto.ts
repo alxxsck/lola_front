@@ -7,22 +7,22 @@
  */
 
 export interface AiOperationDataAccessDto {
-  bytesRead: string;
-  complete: boolean;
-  groupsReturned: number;
-  limitationCodes: string[];
-  /** @nullable */
-  rangeEndedAt: string | null;
+  toolCallStepId: string;
+  sourceType: string;
+  sourceReceiptId: string;
   /** @nullable */
   rangeStartedAt: string | null;
+  /** @nullable */
+  rangeEndedAt: string | null;
   rowsRead: number;
-  sourceReceiptId: string;
-  sourceType: string;
-  toolCallStepId: string;
-  truncated: boolean;
+  groupsReturned: number;
+  bytesRead: string;
   /**
    * Cost-accounting work units. Null without project.ai_analysis_cost.read.
    * @nullable
    */
   workUnits?: string | null;
+  complete: boolean;
+  truncated: boolean;
+  limitationCodes: string[];
 }

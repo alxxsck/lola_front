@@ -8,6 +8,6 @@
 
 export interface AudienceIssueResponseDto {
   code: string;
-  message: string;
   path: string;
+  message: string;
 }

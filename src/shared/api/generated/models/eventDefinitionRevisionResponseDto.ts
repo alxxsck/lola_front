@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventDefinitionRevisionResponseDtoCompatibility } from "./eventDefinitionRevisionResponseDtoCompatibility";
 import type { EventDefinitionRevisionResponseDtoPayloadSchema } from "./eventDefinitionRevisionResponseDtoPayloadSchema";
+import type { EventDefinitionRevisionResponseDtoCompatibility } from "./eventDefinitionRevisionResponseDtoCompatibility";
 
 export interface EventDefinitionRevisionResponseDto {
-  code: string;
-  compatibility: EventDefinitionRevisionResponseDtoCompatibility;
-  definitionKeyId: string;
   id: string;
-  isCurrent: boolean;
+  projectId: string;
+  definitionKeyId: string;
+  code: string;
   /** @minimum 1 */
   number: number;
   payloadSchema: EventDefinitionRevisionResponseDtoPayloadSchema;
+  publishedAt: string;
   /** @minimum 0 */
   pinnedScenarioRevisionCount: number;
-  projectId: string;
-  publishedAt: string;
+  compatibility: EventDefinitionRevisionResponseDtoCompatibility;
+  isCurrent: boolean;
 }

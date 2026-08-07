@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventQueryPolicyCatalogItemDtoLifecycle } from "./eventQueryPolicyCatalogItemDtoLifecycle";
 import type { EventQueryPolicyItemConfigurationDto } from "./eventQueryPolicyItemConfigurationDto";
 import type { EventQueryPolicyItemEffectiveResponseDto } from "./eventQueryPolicyItemEffectiveResponseDto";
-import type { EventQueryPolicyCatalogItemDtoLifecycle } from "./eventQueryPolicyCatalogItemDtoLifecycle";
 
 export interface EventQueryPolicyCatalogItemDto {
-  configuration: EventQueryPolicyItemConfigurationDto;
   definitionKeyId: string;
-  effective: EventQueryPolicyItemEffectiveResponseDto;
   eventCode: string;
   eventName: string;
   lifecycle: EventQueryPolicyCatalogItemDtoLifecycle;
+  configuration: EventQueryPolicyItemConfigurationDto;
+  effective: EventQueryPolicyItemEffectiveResponseDto;
   queryable: boolean;
 }

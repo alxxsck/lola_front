@@ -8,11 +8,11 @@
 import type { SupportBusinessCalendarIntervalDto } from "./supportBusinessCalendarIntervalDto";
 
 export interface SupportBusinessCalendarWeekdayDto {
-  /** @maxItems 8 */
-  intervals: SupportBusinessCalendarIntervalDto[];
   /**
    * @minimum 1
    * @maximum 7
    */
   isoWeekday: number;
+  /** @maxItems 8 */
+  intervals: SupportBusinessCalendarIntervalDto[];
 }

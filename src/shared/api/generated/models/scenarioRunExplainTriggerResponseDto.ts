@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence } from "./scenarioRunExplainTriggerResponseDtoCompatibilityEvidence";
-import type { ScenarioRunExplainTriggerResponseDtoMatchDecision } from "./scenarioRunExplainTriggerResponseDtoMatchDecision";
 import type { ScenarioRunExplainTriggerResponseDtoMatchingMode } from "./scenarioRunExplainTriggerResponseDtoMatchingMode";
+import type { ScenarioRunExplainTriggerResponseDtoMatchDecision } from "./scenarioRunExplainTriggerResponseDtoMatchDecision";
+import type { ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence } from "./scenarioRunExplainTriggerResponseDtoCompatibilityEvidence";
 import type { ScenarioRunExplainTriggerResponseDtoSource } from "./scenarioRunExplainTriggerResponseDtoSource";
 
 export interface ScenarioRunExplainTriggerResponseDto {
-  acceptedRevisionIds: string[];
+  eventLogId: string;
   code: string;
-  /** @nullable */
-  compatibilityEvidence?: ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence;
-  compiledRevisionId: string;
   /** @nullable */
   definitionKeyId?: string | null;
   definitionRevisionId: string;
-  eventLogId: string;
-  matchDecision: ScenarioRunExplainTriggerResponseDtoMatchDecision;
-  matchingMode: ScenarioRunExplainTriggerResponseDtoMatchingMode;
-  occurredAt: string;
-  receivedAt: string;
   /** @minimum 1 */
   schemaVersion: number;
+  matchingMode: ScenarioRunExplainTriggerResponseDtoMatchingMode;
+  compiledRevisionId: string;
+  acceptedRevisionIds: string[];
+  matchDecision: ScenarioRunExplainTriggerResponseDtoMatchDecision;
+  /** @nullable */
+  compatibilityEvidence?: ScenarioRunExplainTriggerResponseDtoCompatibilityEvidence;
   source: ScenarioRunExplainTriggerResponseDtoSource;
+  occurredAt: string;
+  receivedAt: string;
 }

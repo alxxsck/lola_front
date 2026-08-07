@@ -7,13 +7,13 @@
  */
 
 export interface SupportWorkspaceCapabilitiesResponseDto {
-  assignCase: boolean;
-  claimAssignment: boolean;
-  escalateCase: boolean;
-  manageCase: boolean;
-  releaseAssignment: boolean;
   reply: boolean;
   replyWithoutTranslation: boolean;
   suspendAi: boolean;
+  manageCase: boolean;
+  assignCase: boolean;
+  claimAssignment: boolean;
+  releaseAssignment: boolean;
   transferAssignment: boolean;
+  escalateCase: boolean;
 }

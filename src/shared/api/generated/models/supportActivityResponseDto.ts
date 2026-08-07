@@ -5,37 +5,37 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportLeadActivityDataDto } from "./supportLeadActivityDataDto";
-import type { SupportActivityResponseDtoEffectiveWindow } from "./supportActivityResponseDtoEffectiveWindow";
 import type { SupportActivityResponseDtoFreshnessState } from "./supportActivityResponseDtoFreshnessState";
-import type { SupportActivityResponseDtoKind } from "./supportActivityResponseDtoKind";
+import type { SupportActivityResponseDtoEffectiveWindow } from "./supportActivityResponseDtoEffectiveWindow";
 import type { SupportActivityResponseDtoSlaRolloutState } from "./supportActivityResponseDtoSlaRolloutState";
+import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
+import type { SupportActivityResponseDtoKind } from "./supportActivityResponseDtoKind";
+import type { SupportLeadActivityDataDto } from "./supportLeadActivityDataDto";
 
 export interface SupportActivityResponseDto {
-  capabilities: SupportLeadCapabilitiesDto;
+  /** @minimum 1 */
+  projectionGeneration: number;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  computedAt: string;
-  data: SupportLeadActivityDataDto;
-  /** @nullable */
-  effectiveWindow: SupportActivityResponseDtoEffectiveWindow;
-  freshnessState: SupportActivityResponseDtoFreshnessState;
-  kind: SupportActivityResponseDtoKind;
-  /**
-   * @maxLength 2048
-   * @nullable
-   */
-  nextCursor: string | null;
-  /** @minimum 1 */
-  projectionGeneration: number;
-  slaRolloutState: SupportActivityResponseDtoSlaRolloutState;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   sourceHighWater: string | null;
+  freshnessState: SupportActivityResponseDtoFreshnessState;
+  computedAt: string;
+  /**
+   * @maxLength 2048
+   * @nullable
+   */
+  nextCursor: string | null;
+  /** @nullable */
+  effectiveWindow: SupportActivityResponseDtoEffectiveWindow;
+  slaRolloutState: SupportActivityResponseDtoSlaRolloutState;
+  capabilities: SupportLeadCapabilitiesDto;
+  kind: SupportActivityResponseDtoKind;
+  data: SupportLeadActivityDataDto;
 }

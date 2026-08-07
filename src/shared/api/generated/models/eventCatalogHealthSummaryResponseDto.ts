@@ -8,13 +8,13 @@
 
 export interface EventCatalogHealthSummaryResponseDto {
   /** @minimum 0 */
-  blockedConsumerCount: number;
-  /** @minimum 0 */
-  blockedDraftCount: number;
+  healthyConsumerCount: number;
   /** @minimum 0 */
   exactConsumerCount: number;
   /** @minimum 0 */
-  healthyConsumerCount: number;
+  blockedConsumerCount: number;
   /** @minimum 0 */
   needsReviewDraftCount: number;
+  /** @minimum 0 */
+  blockedDraftCount: number;
 }

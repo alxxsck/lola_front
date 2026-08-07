@@ -9,14 +9,14 @@ import type { NotificationOperationsReplayResponseDtoChannel } from "./notificat
 import type { NotificationOperationsReplayResponseDtoStatus } from "./notificationOperationsReplayResponseDtoStatus";
 
 export interface NotificationOperationsReplayResponseDto {
-  /** @minimum 0 */
-  attemptCount: number;
-  channel: NotificationOperationsReplayResponseDtoChannel;
-  contentAvailable: boolean;
   id: string;
+  projectId: string;
+  channel: NotificationOperationsReplayResponseDtoChannel;
+  status: NotificationOperationsReplayResponseDtoStatus;
   /** @minimum 1 */
   operationsVersion: number;
-  projectId: string;
+  /** @minimum 0 */
+  attemptCount: number;
+  contentAvailable: boolean;
   replayed: boolean;
-  status: NotificationOperationsReplayResponseDtoStatus;
 }

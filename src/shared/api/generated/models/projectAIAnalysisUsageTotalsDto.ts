@@ -7,18 +7,18 @@
  */
 
 export interface ProjectAIAnalysisUsageTotalsDto {
+  runs: number;
+  modelAttempts: number;
+  /** @pattern ^\d+$ */
+  reservedAiCostUsdTicks: string;
+  /** @pattern ^\d+$ */
+  estimatedAiCostUsdTicks: string;
+  /** @pattern ^\d+$ */
+  billedAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualAiCostUsdTicks: string;
   /** @pattern ^\d+$ */
   actualDbWorkUnits: string;
-  /** @pattern ^\d+$ */
-  billedAiCostUsdTicks: string;
-  costStatuses: string[];
-  /** @pattern ^\d+$ */
-  estimatedAiCostUsdTicks: string;
-  modelAttempts: number;
   reconciliationPendingRuns: number;
-  /** @pattern ^\d+$ */
-  reservedAiCostUsdTicks: string;
-  runs: number;
+  costStatuses: string[];
 }

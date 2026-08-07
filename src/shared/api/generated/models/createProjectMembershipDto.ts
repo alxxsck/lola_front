@@ -7,17 +7,17 @@
  */
 
 export interface CreateProjectMembershipDto {
-  cmsUserId: string;
-  /**
-   * @minLength 10
-   * @maxLength 500
-   */
-  reason: string;
   /**
    * @minItems 1
    * @maxItems 5
    */
   roleIds: string[];
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  reason: string;
+  cmsUserId: string;
   /**
    * Required only when reactivating a previously removed membership
    * @minimum 1

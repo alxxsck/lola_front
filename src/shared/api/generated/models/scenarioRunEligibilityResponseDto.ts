@@ -7,15 +7,15 @@
  */
 import type { ScenarioRunEligibilityResponseDtoDecision } from "./scenarioRunEligibilityResponseDtoDecision";
 import type { ScenarioRunEligibilityResponseDtoFidelity } from "./scenarioRunEligibilityResponseDtoFidelity";
-import type { ScenarioRunEligibilityResponseDtoLastRecheck } from "./scenarioRunEligibilityResponseDtoLastRecheck";
 import type { ScenarioRunEligibilityResponseDtoRoot } from "./scenarioRunEligibilityResponseDtoRoot";
+import type { ScenarioRunEligibilityResponseDtoLastRecheck } from "./scenarioRunEligibilityResponseDtoLastRecheck";
 
 export interface ScenarioRunEligibilityResponseDto {
   decision: ScenarioRunEligibilityResponseDtoDecision;
-  /** @nullable */
-  evaluatedAt?: string | null;
   fidelity: ScenarioRunEligibilityResponseDtoFidelity;
   /** @nullable */
-  lastRecheck?: ScenarioRunEligibilityResponseDtoLastRecheck;
+  evaluatedAt?: string | null;
   root: ScenarioRunEligibilityResponseDtoRoot;
+  /** @nullable */
+  lastRecheck?: ScenarioRunEligibilityResponseDtoLastRecheck;
 }

@@ -8,6 +8,6 @@
 import type { EndUserCaseEscalationActorResponseDtoType } from "./endUserCaseEscalationActorResponseDtoType";
 
 export interface EndUserCaseEscalationActorResponseDto {
-  id: string;
   type: EndUserCaseEscalationActorResponseDtoType;
+  id: string;
 }

@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseEventResponseDtoPayload } from "./endUserCaseEventResponseDtoPayload";
 import type { EndUserCaseEventResponseDtoType } from "./endUserCaseEventResponseDtoType";
+import type { EndUserCaseEventResponseDtoPayload } from "./endUserCaseEventResponseDtoPayload";
 
 export interface EndUserCaseEventResponseDto {
-  /** @minimum 1 */
-  caseVersion: number;
-  createdAt: string;
   id: string;
-  payload: EndUserCaseEventResponseDtoPayload;
   projectSequence: string;
   type: EndUserCaseEventResponseDtoType;
+  /** @minimum 1 */
+  caseVersion: number;
+  payload: EndUserCaseEventResponseDtoPayload;
+  createdAt: string;
 }

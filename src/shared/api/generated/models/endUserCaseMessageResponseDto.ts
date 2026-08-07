@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseMessageResponseDtoMetadata } from "./endUserCaseMessageResponseDtoMetadata";
 import type { EndUserCaseMessageResponseDtoRole } from "./endUserCaseMessageResponseDtoRole";
 import type { EndUserCaseMessageResponseDtoStatus } from "./endUserCaseMessageResponseDtoStatus";
+import type { EndUserCaseMessageResponseDtoMetadata } from "./endUserCaseMessageResponseDtoMetadata";
 
 export interface EndUserCaseMessageResponseDto {
-  createdAt: string;
   id: string;
-  metadata: EndUserCaseMessageResponseDtoMetadata;
+  threadId: string;
   role: EndUserCaseMessageResponseDtoRole;
-  status: EndUserCaseMessageResponseDtoStatus;
   /** @maxLength 4096 */
   text: string;
-  threadId: string;
+  status: EndUserCaseMessageResponseDtoStatus;
+  createdAt: string;
+  metadata: EndUserCaseMessageResponseDtoMetadata;
 }

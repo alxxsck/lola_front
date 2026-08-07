@@ -8,15 +8,15 @@
 import type { SupportSlaMigratePolicyMutationResponseDtoIntent } from "./supportSlaMigratePolicyMutationResponseDtoIntent";
 
 export interface SupportSlaMigratePolicyMutationResponseDto {
-  /** @pattern ^"sslah1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
-  calendarRevisionId: string;
-  caseId: string;
   intent: SupportSlaMigratePolicyMutationResponseDtoIntent;
+  caseId: string;
   occurrenceId: string;
   /** @minimum 1 */
   occurrenceNumber: number;
   /** @minimum 1 */
   occurrenceVersion: number;
   policyRevisionId: string;
+  calendarRevisionId: string;
+  /** @pattern ^"sslah1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
 }

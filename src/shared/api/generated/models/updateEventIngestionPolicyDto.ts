@@ -7,9 +7,9 @@
  */
 
 export interface UpdateEventIngestionPolicyDto {
+  enabled: boolean;
   clientIngestible: boolean;
   countsAsActivity: boolean;
-  enabled: boolean;
   /**
    * @minimum 1
    * @maximum 2147483647

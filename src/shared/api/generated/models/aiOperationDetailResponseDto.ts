@@ -6,27 +6,46 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiOperationDetailResponseDtoCategory } from "./aiOperationDetailResponseDtoCategory";
-import type { AiOperationDetailResponseDtoChargedAccount } from "./aiOperationDetailResponseDtoChargedAccount";
-import type { AiOperationDetailResponseDtoCost } from "./aiOperationDetailResponseDtoCost";
-import type { AiOperationActorDto } from "./aiOperationActorDto";
-import type { AiOperationDetailResponseDtoResultReference } from "./aiOperationDetailResponseDtoResultReference";
 import type { AiOperationDetailResponseDtoStatus } from "./aiOperationDetailResponseDtoStatus";
+import type { AiOperationActorDto } from "./aiOperationActorDto";
+import type { AiOperationDetailResponseDtoChargedAccount } from "./aiOperationDetailResponseDtoChargedAccount";
 import type { AiOperationSubjectSummaryDto } from "./aiOperationSubjectSummaryDto";
+import type { AiOperationDetailResponseDtoResultReference } from "./aiOperationDetailResponseDtoResultReference";
+import type { AiOperationDetailResponseDtoCost } from "./aiOperationDetailResponseDtoCost";
 import type { AiOperationTimelineItemDto } from "./aiOperationTimelineItemDto";
 import type { AiOperationPageInfoDto } from "./aiOperationPageInfoDto";
 import type { AiOperationUsageDto } from "./aiOperationUsageDto";
 
 export interface AiOperationDetailResponseDto {
+  operationId: string;
+  projectSequence: string;
+  rootCorrelationId: string;
+  /** @nullable */
+  parentOperationId?: string | null;
+  category: AiOperationDetailResponseDtoCategory;
+  status: AiOperationDetailResponseDtoStatus;
+  title: string;
+  sourceKind: string;
+  sourceId: string;
+  initiator: AiOperationActorDto;
+  chargedAccount: AiOperationDetailResponseDtoChargedAccount;
+  /** @nullable */
+  responsibleCmsUserId?: string | null;
+  /** @nullable */
+  responsibleCmsUserDisplayName?: string | null;
+  /** @nullable */
+  authorizedByCmsUserId?: string | null;
   /** @nullable */
   authorizedByCmsUserDisplayName?: string | null;
   /** @nullable */
-  authorizedByCmsUserId?: string | null;
-  category: AiOperationDetailResponseDtoCategory;
-  chargedAccount: AiOperationDetailResponseDtoChargedAccount;
-  /** @nullable */
   chargedEndUserId?: string | null;
-  /** @nullable */
-  completedAt?: string | null;
+  subjectSummary: AiOperationSubjectSummaryDto;
+  /**
+   * Canonical domain result resolved by the server.
+   * @nullable
+   */
+  resultReference?: AiOperationDetailResponseDtoResultReference;
+  usageRecords: number;
   /**
    * Monetary cost projection. Null without project.ai_analysis_cost.read.
    * @nullable
@@ -38,39 +57,20 @@ export interface AiOperationDetailResponseDto {
    * @pattern ^\d+$
    */
   dbWorkUnits?: string | null;
-  initiator: AiOperationActorDto;
   limitationCodes: string[];
-  operationId: string;
+  startedAt: string;
   /** @nullable */
-  outcomeCode?: string | null;
-  /** @nullable */
-  parentOperationId?: string | null;
-  projectSequence: string;
+  completedAt?: string | null;
   purpose: string;
   /** @nullable */
-  responsibleCmsUserDisplayName?: string | null;
-  /** @nullable */
-  responsibleCmsUserId?: string | null;
-  restrictedSections: string[];
-  /**
-   * Canonical domain result resolved by the server.
-   * @nullable
-   */
-  resultReference?: AiOperationDetailResponseDtoResultReference;
-  rootCorrelationId: string;
+  outcomeCode?: string | null;
   /**
    * Safe administrator-facing explanation without protected prompt or result data.
    * @nullable
    */
   safeSummary?: string | null;
-  sourceId: string;
-  sourceKind: string;
-  startedAt: string;
-  status: AiOperationDetailResponseDtoStatus;
-  subjectSummary: AiOperationSubjectSummaryDto;
   timeline: AiOperationTimelineItemDto[];
   timelinePageInfo: AiOperationPageInfoDto;
-  title: string;
   usage: AiOperationUsageDto;
-  usageRecords: number;
+  restrictedSections: string[];
 }

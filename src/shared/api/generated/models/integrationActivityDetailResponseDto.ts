@@ -6,40 +6,40 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IntegrationActivityDetailResponseDtoActivityType } from "./integrationActivityDetailResponseDtoActivityType";
-import type { IntegrationActivityAttemptDto } from "./integrationActivityAttemptDto";
-import type { IntegrationActivityDetailResponseDtoContentState } from "./integrationActivityDetailResponseDtoContentState";
-import type { IntegrationActivityEndUserDto } from "./integrationActivityEndUserDto";
-import type { IntegrationActivityMilestoneDto } from "./integrationActivityMilestoneDto";
-import type { IntegrationActivityOriginDto } from "./integrationActivityOriginDto";
 import type { IntegrationActivityDetailResponseDtoStatus } from "./integrationActivityDetailResponseDtoStatus";
+import type { IntegrationActivityEndUserDto } from "./integrationActivityEndUserDto";
+import type { IntegrationActivityOriginDto } from "./integrationActivityOriginDto";
+import type { IntegrationActivityDetailResponseDtoContentState } from "./integrationActivityDetailResponseDtoContentState";
+import type { IntegrationActivityAttemptDto } from "./integrationActivityAttemptDto";
+import type { IntegrationActivityMilestoneDto } from "./integrationActivityMilestoneDto";
 
 export interface IntegrationActivityDetailResponseDto {
+  id: string;
+  provider: string;
   activityType: IntegrationActivityDetailResponseDtoActivityType;
+  status: IntegrationActivityDetailResponseDtoStatus;
+  state: string;
+  endUser: IntegrationActivityEndUserDto;
+  origin: IntegrationActivityOriginDto;
   /** @minimum 0 */
   attemptCount: number;
-  attempts: IntegrationActivityAttemptDto[];
-  contentState: IntegrationActivityDetailResponseDtoContentState;
-  /** @nullable */
-  conversationId?: string | null;
-  /** @nullable */
-  correlationId?: string | null;
-  createdAt: string;
-  endUser: IntegrationActivityEndUserDto;
   /** @nullable */
   errorCode?: string | null;
+  contentState: IntegrationActivityDetailResponseDtoContentState;
+  createdAt: string;
+  updatedAt: string;
   /** @nullable */
   finishedAt?: string | null;
-  id: string;
-  milestones: IntegrationActivityMilestoneDto[];
-  origin: IntegrationActivityOriginDto;
-  provider: string;
+  sourceResourceKind: string;
+  sourceResourceId: string;
   /** @nullable */
   requestId?: string | null;
   /** @nullable */
+  correlationId?: string | null;
+  /** @nullable */
+  conversationId?: string | null;
+  /** @nullable */
   scenarioRunId?: string | null;
-  sourceResourceId: string;
-  sourceResourceKind: string;
-  state: string;
-  status: IntegrationActivityDetailResponseDtoStatus;
-  updatedAt: string;
+  attempts: IntegrationActivityAttemptDto[];
+  milestones: IntegrationActivityMilestoneDto[];
 }

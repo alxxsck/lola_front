@@ -5,23 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeClassification } from "./attributeClassification";
+import type { AttributeValueType } from "./attributeValueType";
 import type { AttributeConstraintsDto } from "./attributeConstraintsDto";
-import type { AttributeDefinitionLifecycle } from "./attributeDefinitionLifecycle";
+import type { AttributeContractDraftFieldDtoSemanticRole } from "./attributeContractDraftFieldDtoSemanticRole";
+import type { AttributeClassification } from "./attributeClassification";
 import type { AttributeConsumerPoliciesDto } from "./attributeConsumerPoliciesDto";
 import type { AttributeRequirementMode } from "./attributeRequirementMode";
-import type { AttributeContractDraftFieldDtoSemanticRole } from "./attributeContractDraftFieldDtoSemanticRole";
-import type { AttributeValueType } from "./attributeValueType";
+import type { AttributeDefinitionLifecycle } from "./attributeDefinitionLifecycle";
 
 export interface AttributeContractDraftFieldDto {
-  classification?: AttributeClassification;
-  constraints: AttributeConstraintsDto;
   definitionId?: string;
-  /**
-   * @maxLength 2000
-   * @nullable
-   */
-  description?: string | null;
   /**
    * @maxLength 64
    * @pattern ^[a-z][a-zA-Z0-9_]{0,63}$
@@ -32,24 +25,31 @@ export interface AttributeContractDraftFieldDto {
    * @maxLength 120
    */
   label: string;
-  lifecycle: AttributeDefinitionLifecycle;
-  policies: AttributeConsumerPoliciesDto;
   /**
-   * @minimum 0
-   * @maximum 10000
+   * @maxLength 2000
+   * @nullable
    */
-  position: number;
+  description?: string | null;
+  valueType: AttributeValueType;
+  constraints: AttributeConstraintsDto;
+  /** @nullable */
+  semanticRole?: AttributeContractDraftFieldDtoSemanticRole;
+  classification?: AttributeClassification;
   /**
    * @maxLength 500
    * @nullable
    */
   purpose?: string | null;
+  policies: AttributeConsumerPoliciesDto;
+  requirement: AttributeRequirementMode;
+  lifecycle: AttributeDefinitionLifecycle;
   /** @nullable */
   replacementDefinitionId?: string | null;
-  requirement: AttributeRequirementMode;
-  /** @nullable */
-  semanticRole?: AttributeContractDraftFieldDtoSemanticRole;
   /** @nullable */
   sunsetAt?: string | null;
-  valueType: AttributeValueType;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  position: number;
 }

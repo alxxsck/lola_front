@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaRuleWhenDtoCaseTypesItem } from "./supportSlaRuleWhenDtoCaseTypesItem";
 import type { SupportSlaRuleWhenDtoPrioritiesItem } from "./supportSlaRuleWhenDtoPrioritiesItem";
+import type { SupportSlaRuleWhenDtoCaseTypesItem } from "./supportSlaRuleWhenDtoCaseTypesItem";
 
 export interface SupportSlaRuleWhenDto {
-  /** @maxItems 6 */
-  caseTypes?: SupportSlaRuleWhenDtoCaseTypesItem[];
-  /** @maxItems 100 */
-  groupCodes?: string[];
   /** @maxItems 5 */
   priorities?: SupportSlaRuleWhenDtoPrioritiesItem[];
+  /** @maxItems 100 */
+  groupCodes?: string[];
+  /** @maxItems 6 */
+  caseTypes?: SupportSlaRuleWhenDtoCaseTypesItem[];
 }

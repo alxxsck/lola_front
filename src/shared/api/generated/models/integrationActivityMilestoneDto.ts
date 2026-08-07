@@ -7,6 +7,6 @@
  */
 
 export interface IntegrationActivityMilestoneDto {
-  at: string;
   state: string;
+  at: string;
 }

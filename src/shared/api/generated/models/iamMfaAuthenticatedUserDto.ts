@@ -7,7 +7,7 @@
  */
 
 export interface IamMfaAuthenticatedUserDto {
-  displayName: string;
-  email: string;
   id: string;
+  email: string;
+  displayName: string;
 }

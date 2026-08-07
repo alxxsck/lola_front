@@ -5,42 +5,42 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventLogResponseDtoContext } from "./eventLogResponseDtoContext";
-import type { EventLogUserRefResponseDto } from "./eventLogUserRefResponseDto";
-import type { EventLogDefinitionRefResponseDto } from "./eventLogDefinitionRefResponseDto";
 import type { EventLogResponseDtoIngestionPolicySnapshot } from "./eventLogResponseDtoIngestionPolicySnapshot";
-import type { EventLogResponseDtoPayload } from "./eventLogResponseDtoPayload";
-import type { EventLogResponseDtoProcessingResult } from "./eventLogResponseDtoProcessingResult";
 import type { EventSource } from "./eventSource";
+import type { EventLogResponseDtoPayload } from "./eventLogResponseDtoPayload";
+import type { EventLogResponseDtoContext } from "./eventLogResponseDtoContext";
 import type { EventStatus } from "./eventStatus";
+import type { EventLogResponseDtoProcessingResult } from "./eventLogResponseDtoProcessingResult";
+import type { EventLogDefinitionRefResponseDto } from "./eventLogDefinitionRefResponseDto";
+import type { EventLogUserRefResponseDto } from "./eventLogUserRefResponseDto";
 
 export interface EventLogResponseDto {
-  context: EventLogResponseDtoContext;
-  endUser: EventLogUserRefResponseDto;
-  endUserId: string;
-  /** @nullable */
-  error?: string | null;
-  eventDefinition: EventLogDefinitionRefResponseDto;
+  id: string;
+  projectId: string;
   eventDefinitionId: string;
   eventDefinitionKeyId: string;
-  /** @nullable */
-  externalEventId?: string | null;
-  id: string;
-  ingestionPolicySnapshot: EventLogResponseDtoIngestionPolicySnapshot;
   /** @minimum 1 */
   ingestionPolicyVersion: number;
+  ingestionPolicySnapshot: EventLogResponseDtoIngestionPolicySnapshot;
+  endUserId: string;
+  /** @nullable */
+  externalEventId?: string | null;
+  source: EventSource;
+  payload: EventLogResponseDtoPayload;
+  context: EventLogResponseDtoContext;
   /** @nullable */
   message?: string | null;
   occurredAt: string;
-  payload: EventLogResponseDtoPayload;
+  receivedAt: string;
+  status: EventStatus;
   /**
    * Deprecated compatibility field. Always null; use Scenario APIs for outcomes.
    * @deprecated
    * @nullable
    */
   processingResult?: EventLogResponseDtoProcessingResult;
-  projectId: string;
-  receivedAt: string;
-  source: EventSource;
-  status: EventStatus;
+  /** @nullable */
+  error?: string | null;
+  eventDefinition: EventLogDefinitionRefResponseDto;
+  endUser: EventLogUserRefResponseDto;
 }

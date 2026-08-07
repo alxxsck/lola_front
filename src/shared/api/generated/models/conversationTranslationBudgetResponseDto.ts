@@ -8,14 +8,14 @@
 
 export interface ConversationTranslationBudgetResponseDto {
   consumedMicros: string;
-  hardExhausted: boolean;
-  /** @nullable */
-  hardLimitMicros: string | null;
-  /** @nullable */
-  hardPercent: number | null;
   reservedMicros: string;
   /** @nullable */
   softLimitMicros: string | null;
   /** @nullable */
+  hardLimitMicros: string | null;
+  /** @nullable */
   softPercent: number | null;
+  /** @nullable */
+  hardPercent: number | null;
+  hardExhausted: boolean;
 }

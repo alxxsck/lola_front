@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { LastRuleWindowDtoBoundary } from "./lastRuleWindowDtoBoundary";
 import type { LastRuleWindowDtoKind } from "./lastRuleWindowDtoKind";
+import type { LastRuleWindowDtoBoundary } from "./lastRuleWindowDtoBoundary";
 
 export interface LastRuleWindowDto {
-  boundary?: LastRuleWindowDtoBoundary;
+  kind: LastRuleWindowDtoKind;
   /**
    * @minimum 1
    * @maximum 7776000000
    */
   durationMs: number;
-  kind: LastRuleWindowDtoKind;
+  boundary?: LastRuleWindowDtoBoundary;
 }

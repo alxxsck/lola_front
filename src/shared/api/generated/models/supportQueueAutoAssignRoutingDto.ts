@@ -8,12 +8,12 @@
 import type { SupportQueueAutoAssignRoutingDtoMode } from "./supportQueueAutoAssignRoutingDtoMode";
 
 export interface SupportQueueAutoAssignRoutingDto {
-  /** @maxItems 5 */
-  fallbackTeamIds: string[];
   mode: SupportQueueAutoAssignRoutingDtoMode;
   /**
    * @minItems 1
    * @maxItems 50
    */
   primaryTeamIds: string[];
+  /** @maxItems 5 */
+  fallbackTeamIds: string[];
 }

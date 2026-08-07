@@ -5,33 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioGoalResolutionResponseDtoMatchEvidence } from "./scenarioGoalResolutionResponseDtoMatchEvidence";
 import type { ScenarioGoalResolutionResponseDtoOutcome } from "./scenarioGoalResolutionResponseDtoOutcome";
-import type { ScenarioGoalSubscriptionExplainResponseDto } from "./scenarioGoalSubscriptionExplainResponseDto";
 import type { ScenarioGoalResolutionResponseDtoWinner } from "./scenarioGoalResolutionResponseDtoWinner";
+import type { ScenarioGoalResolutionResponseDtoMatchEvidence } from "./scenarioGoalResolutionResponseDtoMatchEvidence";
+import type { ScenarioGoalSubscriptionExplainResponseDto } from "./scenarioGoalSubscriptionExplainResponseDto";
 
 export interface ScenarioGoalResolutionResponseDto {
+  waitId: string;
+  /** @nullable */
+  stepId?: string | null;
   /** @nullable */
   deadlineAt?: string | null;
-  /** @nullable */
-  matchEvidence?: ScenarioGoalResolutionResponseDtoMatchEvidence;
   outcome: ScenarioGoalResolutionResponseDtoOutcome;
+  /** @nullable */
+  winner?: ScenarioGoalResolutionResponseDtoWinner;
   /** @nullable */
   resolvedAt?: string | null;
   /** @nullable */
   selectedBranch?: string | null;
   /** @nullable */
-  stepId?: string | null;
-  subscriptions: ScenarioGoalSubscriptionExplainResponseDto[];
-  /** @nullable */
   targetNodeKey?: string | null;
-  waitId: string;
   /** @nullable */
-  winner?: ScenarioGoalResolutionResponseDtoWinner;
+  winningEventLogId?: string | null;
   /** @nullable */
   winningDefinitionKeyId?: string | null;
   /** @nullable */
   winningDefinitionRevisionId?: string | null;
   /** @nullable */
-  winningEventLogId?: string | null;
+  matchEvidence?: ScenarioGoalResolutionResponseDtoMatchEvidence;
+  subscriptions: ScenarioGoalSubscriptionExplainResponseDto[];
 }

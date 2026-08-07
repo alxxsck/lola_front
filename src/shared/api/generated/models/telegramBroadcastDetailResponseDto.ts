@@ -5,34 +5,34 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TelegramBroadcastAllowedAction } from "./telegramBroadcastAllowedAction";
-import type { TelegramBroadcastDetailResponseDtoApproval } from "./telegramBroadcastDetailResponseDtoApproval";
-import type { TelegramBroadcastDetailResponseDtoLatestTest } from "./telegramBroadcastDetailResponseDtoLatestTest";
-import type { TelegramBroadcastProgressDto } from "./telegramBroadcastProgressDto";
-import type { TelegramBroadcastRevisionDto } from "./telegramBroadcastRevisionDto";
 import type { TelegramBroadcastStatus } from "./telegramBroadcastStatus";
+import type { TelegramBroadcastRevisionDto } from "./telegramBroadcastRevisionDto";
+import type { TelegramBroadcastAllowedAction } from "./telegramBroadcastAllowedAction";
+import type { TelegramBroadcastProgressDto } from "./telegramBroadcastProgressDto";
+import type { TelegramBroadcastDetailResponseDtoLatestTest } from "./telegramBroadcastDetailResponseDtoLatestTest";
+import type { TelegramBroadcastDetailResponseDtoApproval } from "./telegramBroadcastDetailResponseDtoApproval";
 
 export interface TelegramBroadcastDetailResponseDto {
-  allowedActions: TelegramBroadcastAllowedAction[];
-  /** @nullable */
-  approval?: TelegramBroadcastDetailResponseDtoApproval;
-  createdAt: string;
   id: string;
-  /** @nullable */
-  latestTest?: TelegramBroadcastDetailResponseDtoLatestTest;
-  progress: TelegramBroadcastProgressDto;
   projectId: string;
+  title: string;
+  status: TelegramBroadcastStatus;
+  /** @minimum 1 */
+  version: number;
+  revision: TelegramBroadcastRevisionDto;
   /**
    * @minimum 0
    * @maximum 10000
    */
   recipientCount: number;
-  revision: TelegramBroadcastRevisionDto;
+  allowedActions: TelegramBroadcastAllowedAction[];
   /** @nullable */
   scheduledAt?: string | null;
-  status: TelegramBroadcastStatus;
-  title: string;
+  createdAt: string;
   updatedAt: string;
-  /** @minimum 1 */
-  version: number;
+  progress: TelegramBroadcastProgressDto;
+  /** @nullable */
+  latestTest?: TelegramBroadcastDetailResponseDtoLatestTest;
+  /** @nullable */
+  approval?: TelegramBroadcastDetailResponseDtoApproval;
 }

@@ -7,13 +7,13 @@
  */
 
 export interface IntegrationReconciliationRepairDto {
-  /** @minimum 2 */
-  afterOperationsVersion: number;
+  id: string;
+  repairCode: string;
+  beforeStatus: string;
   afterStatus: string;
   /** @minimum 1 */
   beforeOperationsVersion: number;
-  beforeStatus: string;
+  /** @minimum 2 */
+  afterOperationsVersion: number;
   createdAt: string;
-  id: string;
-  repairCode: string;
 }

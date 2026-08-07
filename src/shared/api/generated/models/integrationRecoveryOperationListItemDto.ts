@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationRecoveryOperationListItemDtoDirection } from "./integrationRecoveryOperationListItemDtoDirection";
 import type { IntegrationRecoveryOperationListItemDtoOperationKind } from "./integrationRecoveryOperationListItemDtoOperationKind";
+import type { IntegrationRecoveryOperationListItemDtoDirection } from "./integrationRecoveryOperationListItemDtoDirection";
 import type { IntegrationRecoveryOperationListItemDtoProvider } from "./integrationRecoveryOperationListItemDtoProvider";
 import type { IntegrationRecoveryOperationListItemDtoStatus } from "./integrationRecoveryOperationListItemDtoStatus";
 
 export interface IntegrationRecoveryOperationListItemDto {
-  /** @minimum 0 */
-  attemptCount: number;
-  connectionId: string;
-  createdAt: string;
-  direction: IntegrationRecoveryOperationListItemDtoDirection;
-  /** @nullable */
-  failureCode: string | null;
-  /** @nullable */
-  finishedAt: string | null;
   id: string;
-  /** @nullable */
-  lastRecoveryOperationId: string | null;
   operationKind: IntegrationRecoveryOperationListItemDtoOperationKind;
-  /** @minimum 1 */
-  operationsVersion: number;
+  direction: IntegrationRecoveryOperationListItemDtoDirection;
   provider: IntegrationRecoveryOperationListItemDtoProvider;
+  connectionId: string;
   /** @nullable */
   routeId: string | null;
   status: IntegrationRecoveryOperationListItemDtoStatus;
+  /** @minimum 0 */
+  attemptCount: number;
+  /** @minimum 1 */
+  operationsVersion: number;
+  /** @nullable */
+  failureCode: string | null;
+  createdAt: string;
   updatedAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+  /** @nullable */
+  lastRecoveryOperationId: string | null;
 }

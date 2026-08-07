@@ -7,7 +7,7 @@
  */
 
 export interface CmsAuthenticatedUserResponseDto {
-  displayName: string;
-  email: string;
   id: string;
+  email: string;
+  displayName: string;
 }

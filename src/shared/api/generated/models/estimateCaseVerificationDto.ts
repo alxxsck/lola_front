@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EstimateCaseVerificationDtoPredicate } from "./estimateCaseVerificationDtoPredicate";
 import type { CaseVerificationQueryDto } from "./caseVerificationQueryDto";
+import type { EstimateCaseVerificationDtoPredicate } from "./estimateCaseVerificationDtoPredicate";
 
 export interface EstimateCaseVerificationDto {
-  predicate: EstimateCaseVerificationDtoPredicate;
   /**
    * @minItems 1
    * @maxItems 1
    */
   queries: CaseVerificationQueryDto[];
+  predicate: EstimateCaseVerificationDtoPredicate;
 }

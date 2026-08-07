@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringDraftResponseDtoAudience } from "./scenarioAuthoringDraftResponseDtoAudience";
-import type { ScenarioAuthoringDraftResponseDtoDeliveryPolicy } from "./scenarioAuthoringDraftResponseDtoDeliveryPolicy";
-import type { ScenarioAuthoringDraftResponseDtoGraph } from "./scenarioAuthoringDraftResponseDtoGraph";
-import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
-import type { ScenarioAuthoringDraftResponseDtoProfileFreshness } from "./scenarioAuthoringDraftResponseDtoProfileFreshness";
 import type { ScenarioAuthoringDraftResponseDtoRule } from "./scenarioAuthoringDraftResponseDtoRule";
+import type { ScenarioAuthoringDraftResponseDtoAudience } from "./scenarioAuthoringDraftResponseDtoAudience";
+import type { ScenarioAuthoringDraftResponseDtoGraph } from "./scenarioAuthoringDraftResponseDtoGraph";
+import type { ScenarioAuthoringDraftResponseDtoDeliveryPolicy } from "./scenarioAuthoringDraftResponseDtoDeliveryPolicy";
+import type { ScenarioAuthoringDraftResponseDtoProfileFreshness } from "./scenarioAuthoringDraftResponseDtoProfileFreshness";
+import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 
 export interface ScenarioAuthoringDraftResponseDto {
   /** @nullable */
+  rule?: ScenarioAuthoringDraftResponseDtoRule;
+  /** @nullable */
   audience?: ScenarioAuthoringDraftResponseDtoAudience;
   /** @nullable */
-  baseRevisionId?: string | null;
-  catalogRevision: string;
-  createdAt: string;
+  graph?: ScenarioAuthoringDraftResponseDtoGraph;
   deliveryPolicy: ScenarioAuthoringDraftResponseDtoDeliveryPolicy;
   /** @nullable */
-  graph?: ScenarioAuthoringDraftResponseDtoGraph;
-  id: string;
-  localization: ScenarioLocalizationPolicyDto;
-  /** @nullable */
   profileFreshness?: ScenarioAuthoringDraftResponseDtoProfileFreshness;
-  /** @nullable */
-  rule?: ScenarioAuthoringDraftResponseDtoRule;
-  updatedAt: string;
-  /** @nullable */
-  updatedByAdminId?: string | null;
+  catalogRevision: string;
+  localization: ScenarioLocalizationPolicyDto;
+  id: string;
   /** @minimum 1 */
   version: number;
+  /** @nullable */
+  baseRevisionId?: string | null;
+  /** @nullable */
+  updatedByAdminId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -82,18 +82,77 @@ function requireInlineErrorEnum(operationValue, status, values) {
   }
 }
 
-function requireBrowserNotificationsUnpublished(document) {
-  const publishedPath = Object.keys(document.paths ?? {}).find(
-    (path) =>
-      path.includes("/support/notification-preferences") ||
-      path.includes("/browser-push-subscriptions") ||
-      path.includes("/browser-push-notifications"),
+function requireBrowserNotificationsPublished(document) {
+  const preferencesRead = operation(
+    document,
+    "PersonalSupportNotificationPreferences_get",
   );
-  if (publishedPath) {
-    throw new Error(
-      `Browser notifications appeared at ${publishedPath}; update the pinned capability baseline`,
-    );
-  }
+  const preferencesUpdate = operation(
+    document,
+    "PersonalSupportNotificationPreferences_update",
+  );
+  const subscriptionsList = operation(
+    document,
+    "PersonalBrowserPushSubscription_list",
+  );
+  const subscriptionsRegister = operation(
+    document,
+    "PersonalBrowserPushSubscription_register",
+  );
+  const subscriptionsRevoke = operation(
+    document,
+    "PersonalBrowserPushSubscription_revoke",
+  );
+  const deepLinkResolve = operation(
+    document,
+    "PersonalSupportNotificationDeepLink_resolve",
+  );
+
+  requireHeader(preferencesUpdate, "Idempotency-Key");
+  requireHeader(subscriptionsRegister, "Idempotency-Key");
+  requireHeader(subscriptionsRevoke, "Idempotency-Key");
+  requireRequestSchema(
+    preferencesUpdate,
+    "UpdatePersonalSupportNotificationPreferenceDto",
+  );
+  requireRequestSchema(
+    subscriptionsRegister,
+    "RegisterBrowserPushSubscriptionDto",
+  );
+  requireRequestSchema(
+    subscriptionsRevoke,
+    "RevokeBrowserPushSubscriptionDto",
+  );
+  requireResponseSchema(
+    preferencesRead,
+    "200",
+    "PersonalSupportNotificationSettingsResponseDto",
+  );
+  requireResponseSchema(
+    preferencesUpdate,
+    "200",
+    "PersonalSupportNotificationSettingsResponseDto",
+  );
+  requireResponseSchema(
+    subscriptionsList,
+    "200",
+    "BrowserPushSubscriptionListResponseDto",
+  );
+  requireResponseSchema(
+    subscriptionsRegister,
+    "200",
+    "BrowserPushSubscriptionResponseDto",
+  );
+  requireResponseSchema(
+    subscriptionsRevoke,
+    "200",
+    "BrowserPushSubscriptionResponseDto",
+  );
+  requireResponseSchema(
+    deepLinkResolve,
+    "200",
+    "PersonalSupportNotificationDeepLinkTargetDto",
+  );
 }
 
 export function validateSupportContentLeadNotificationContract(document) {
@@ -796,5 +855,5 @@ export function validateSupportContentLeadNotificationContract(document) {
     ],
   );
 
-  requireBrowserNotificationsUnpublished(document);
+  requireBrowserNotificationsPublished(document);
 }

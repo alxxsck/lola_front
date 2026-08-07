@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventQueryResultResponseDtoGroupsItem } from "./eventQueryResultResponseDtoGroupsItem";
-import type { EventQueryProvenanceResponseDto } from "./eventQueryProvenanceResponseDto";
-import type { EventQueryResultResponseDtoRange } from "./eventQueryResultResponseDtoRange";
-import type { EventQueryResultResponseDtoRowsItem } from "./eventQueryResultResponseDtoRowsItem";
 import type { EventQueryResultResponseDtoStatus } from "./eventQueryResultResponseDtoStatus";
+import type { EventQueryResultResponseDtoRange } from "./eventQueryResultResponseDtoRange";
+import type { EventQueryProvenanceResponseDto } from "./eventQueryProvenanceResponseDto";
 import type { EventQueryResultResponseDtoSummariesItem } from "./eventQueryResultResponseDtoSummariesItem";
+import type { EventQueryResultResponseDtoGroupsItem } from "./eventQueryResultResponseDtoGroupsItem";
+import type { EventQueryResultResponseDtoRowsItem } from "./eventQueryResultResponseDtoRowsItem";
 
 export interface EventQueryResultResponseDto {
-  complete: boolean;
+  status: EventQueryResultResponseDtoStatus;
   errorCode?: string;
-  estimatedAddedInputTokens?: number;
-  excludedCount: number;
-  groups?: EventQueryResultResponseDtoGroupsItem[];
+  complete: boolean;
+  truncated: boolean;
   limitations: string[];
-  matchedCount?: number;
-  /** @nullable */
-  policyRevisionId: string | null;
-  provenance: EventQueryProvenanceResponseDto;
   /** @nullable */
   range: EventQueryResultResponseDtoRange;
-  rows?: EventQueryResultResponseDtoRowsItem[];
-  serializedBytes?: number;
+  /** @nullable */
+  policyRevisionId: string | null;
   /** @nullable */
   snapshotReceivedAt: string | null;
-  status: EventQueryResultResponseDtoStatus;
+  matchedCount?: number;
+  excludedCount: number;
+  provenance: EventQueryProvenanceResponseDto;
+  serializedBytes?: number;
+  estimatedAddedInputTokens?: number;
   summaries?: EventQueryResultResponseDtoSummariesItem[];
-  truncated: boolean;
+  groups?: EventQueryResultResponseDtoGroupsItem[];
+  rows?: EventQueryResultResponseDtoRowsItem[];
 }

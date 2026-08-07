@@ -10,12 +10,12 @@ import type { CanonicalIdentityPolicyParticipantResponseDto } from "./canonicalI
 import type { CanonicalIdentityPolicyPreviewResponseDtoRuntimeActivation } from "./canonicalIdentityPolicyPreviewResponseDtoRuntimeActivation";
 
 export interface CanonicalIdentityPolicyPreviewResponseDto {
+  mode: CanonicalIdentityPolicyPreviewResponseDtoMode;
   canonicalKeyName: string;
-  /** @nullable */
-  currentPolicyRevisionId: string | null;
   /** @minimum 0 */
   expectedVersion: number;
-  mode: CanonicalIdentityPolicyPreviewResponseDtoMode;
+  /** @nullable */
+  currentPolicyRevisionId: string | null;
   participants: CanonicalIdentityPolicyParticipantResponseDto[];
   publishable: boolean;
   runtimeActivation: CanonicalIdentityPolicyPreviewResponseDtoRuntimeActivation;

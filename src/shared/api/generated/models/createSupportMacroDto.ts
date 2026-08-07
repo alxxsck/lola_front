@@ -8,10 +8,10 @@
 import type { SupportMacroDraftDto } from "./supportMacroDraftDto";
 
 export interface CreateSupportMacroDto {
-  draft: SupportMacroDraftDto;
   /**
    * @minLength 2
    * @maxLength 64
    */
   stableCode: string;
+  draft: SupportMacroDraftDto;
 }

@@ -9,10 +9,10 @@ import type { AttributeIndexPolicy } from "./attributeIndexPolicy";
 
 export interface AttributeConsumerPoliciesDto {
   adminRead: boolean;
-  aiRead: boolean;
-  audienceRead: boolean;
   clientRead: boolean;
+  audienceRead: boolean;
+  templateRead: boolean;
+  aiRead: boolean;
   exportRead: boolean;
   indexPolicy: AttributeIndexPolicy;
-  templateRead: boolean;
 }

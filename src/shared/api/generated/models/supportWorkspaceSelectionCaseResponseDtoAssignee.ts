@@ -10,6 +10,6 @@
  * @nullable
  */
 export type SupportWorkspaceSelectionCaseResponseDtoAssignee = {
-  displayName?: string;
   id?: string;
+  displayName?: string;
 } | null;

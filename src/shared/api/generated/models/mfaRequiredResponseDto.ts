@@ -9,9 +9,9 @@ import type { MfaRequiredResponseDtoKind } from "./mfaRequiredResponseDtoKind";
 import type { MfaRequiredResponseDtoPublicKey } from "./mfaRequiredResponseDtoPublicKey";
 
 export interface MfaRequiredResponseDto {
+  kind: MfaRequiredResponseDtoKind;
   readonly ceremonyToken: string;
   expiresAt: string;
-  kind: MfaRequiredResponseDtoKind;
   publicKey: MfaRequiredResponseDtoPublicKey;
   recoveryAvailable: boolean;
 }

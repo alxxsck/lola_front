@@ -8,6 +8,6 @@
 
 export interface ScenarioRuleIssueResponseDto {
   code: string;
-  message: string;
   path: string;
+  message: string;
 }

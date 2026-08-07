@@ -8,7 +8,7 @@
 
 export interface AudienceFreshnessAgeLimitV2ResponseDto {
   /** @minimum 1 */
-  maximum: number;
-  /** @minimum 1 */
   minimum: number;
+  /** @minimum 1 */
+  maximum: number;
 }

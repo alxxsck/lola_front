@@ -7,11 +7,11 @@
  */
 
 export interface AssignEndUserCaseDto {
-  /** @nullable */
-  assignedCmsUserId: string | null;
   /** @minimum 1 */
   expectedVersion: number;
   idempotencyKey: string;
+  /** @nullable */
+  assignedCmsUserId: string | null;
   /**
    * @minLength 1
    * @maxLength 2000

@@ -9,23 +9,23 @@ import type { AdminConversationMessageTranslationResponseDtoDirection } from "./
 import type { AdminConversationMessageTranslationResponseDtoStatus } from "./adminConversationMessageTranslationResponseDtoStatus";
 
 export interface AdminConversationMessageTranslationResponseDto {
-  configRevision?: string;
-  /** @nullable */
-  deliveredText?: string | null;
-  direction: AdminConversationMessageTranslationResponseDtoDirection;
-  /** @nullable */
-  errorCode?: string | null;
   id: string;
-  model?: string;
+  viewText: string;
   originalText: string;
-  provider?: string;
-  /** @nullable */
-  sourceLocale?: string | null;
-  status: AdminConversationMessageTranslationResponseDtoStatus;
-  targetLocale: string;
   /** @nullable */
   translatedText?: string | null;
-  updatedAt: string;
-  viewText: string;
+  /** @nullable */
+  deliveredText?: string | null;
+  /** @nullable */
+  sourceLocale?: string | null;
+  targetLocale: string;
+  direction: AdminConversationMessageTranslationResponseDtoDirection;
+  status: AdminConversationMessageTranslationResponseDtoStatus;
   warnings: string[];
+  /** @nullable */
+  errorCode?: string | null;
+  updatedAt: string;
+  provider?: string;
+  model?: string;
+  configRevision?: string;
 }

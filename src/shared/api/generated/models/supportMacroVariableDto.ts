@@ -8,8 +8,8 @@
 import type { SupportMacroVariableDtoName } from "./supportMacroVariableDtoName";
 
 export interface SupportMacroVariableDto {
-  /** @maxLength 1024 */
-  fallback?: string;
   name: SupportMacroVariableDtoName;
   required: boolean;
+  /** @maxLength 1024 */
+  fallback?: string;
 }

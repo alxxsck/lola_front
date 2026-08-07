@@ -352,6 +352,11 @@ export interface ReteniveRepository {
     userId: string,
     message: AdminMessageRequest,
   ): Promise<AdminMessageResult>;
+  lookupAdminMessageOutcome(
+    projectId: string,
+    userId: string,
+    idempotencyKey: string,
+  ): Promise<AdminMessageResult>;
   getStats(
     projectId: string,
     effectivePermissionCodes?: readonly string[],

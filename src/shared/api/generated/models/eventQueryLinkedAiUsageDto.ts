@@ -7,16 +7,16 @@
  */
 
 export interface EventQueryLinkedAiUsageDto {
-  /** @nullable */
-  billedCostUsd?: string | null;
-  /** @nullable */
-  estimatedCostUsd?: string | null;
-  /** @minimum 0 */
-  inputTokens: number;
-  /** @minimum 0 */
-  outputTokens: number;
   /** @minimum 0 */
   records: number;
   /** @minimum 0 */
   totalTokens: number;
+  /** @minimum 0 */
+  inputTokens: number;
+  /** @minimum 0 */
+  outputTokens: number;
+  /** @nullable */
+  estimatedCostUsd?: string | null;
+  /** @nullable */
+  billedCostUsd?: string | null;
 }

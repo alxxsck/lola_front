@@ -7,17 +7,17 @@
  */
 
 export interface ScenarioRunCommandResponseDto {
+  id: string;
+  type: string;
+  sequence: number;
+  status: string;
+  /** @nullable */
+  sentAt?: string | null;
   /** @nullable */
   acknowledgedAt?: string | null;
-  createdAt: string;
   /** @nullable */
   executedAt?: string | null;
   /** @nullable */
   expiresAt?: string | null;
-  id: string;
-  /** @nullable */
-  sentAt?: string | null;
-  sequence: number;
-  status: string;
-  type: string;
+  createdAt: string;
 }

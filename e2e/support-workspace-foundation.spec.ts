@@ -71,6 +71,94 @@ test("sends a public reply only through the selected conversation", async ({
   ).toBeVisible();
 });
 
+test("recovers an accepted reply after reload without creating a duplicate", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const dataKey = "retenive-cms-demo-data-v2";
+    localStorage.setItem(
+      dataKey,
+      JSON.stringify({
+        conversations: [
+          {
+            id: "conv_3",
+            userId: "usr_2",
+            title: "Бонусы и программа лояльности",
+            status: "ACTIVE",
+            lastMessageAt: "2026-08-07T10:00:00.000Z",
+            messageCount: 3,
+            isCurrent: true,
+            currentInteractionSessionCount: 0,
+            aiSuspension: {
+              mode: "AUTOMATIC",
+              lifecycle: "NONE",
+              version: "0",
+              suspendedUntil: null,
+              serverTime: "2026-08-07T10:00:00.000Z",
+            },
+          },
+        ],
+      }),
+    );
+  });
+  await page.reload();
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+  await expect(page.getByText("Пользователь офлайн", { exact: true })).toBeVisible();
+  const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
+  const text = "Проверка durable recovery после перезагрузки";
+  await composer.fill(text);
+  await page.getByRole("button", { name: "Отправить", exact: true }).click();
+  await expect(page.getByText(text, { exact: true })).toHaveCount(1);
+
+  await page.evaluate((replyText) => {
+    const dataKey = "retenive-cms-demo-data-v2";
+    const data = JSON.parse(localStorage.getItem(dataKey) ?? "null") as {
+      adminMessageIdempotency: Record<
+        string,
+        { payload: string; result: { messageId: string } }
+      >;
+    } | null;
+    if (!data) throw new Error("Demo repository was not persisted");
+    const accepted = Object.entries(data.adminMessageIdempotency).find(
+      ([, receipt]) => receipt.payload.includes(replyText),
+    );
+    if (!accepted) throw new Error("Accepted reply receipt was not found");
+    const [key] = accepted;
+    const scope = "prj_retenive_demo\u001fcms_1\u001fconv_3\u001fPUBLIC_REPLY";
+    sessionStorage.setItem(
+      `retenive:support-reply-attempt:${encodeURIComponent(scope)}`,
+      JSON.stringify({
+        version: 1,
+        projectId: "prj_retenive_demo",
+        actorId: "cms_1",
+        conversationId: "conv_3",
+        endUserId: "usr_2",
+        text: replyText,
+        key,
+        state: "CHECKING_OUTCOME",
+      }),
+    );
+  }, text);
+
+  await page.reload();
+
+  await expect(page.getByText(text, { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Пользователь офлайн", { exact: true })).toBeVisible();
+  await expect(composer).toHaveValue("");
+  await expect(
+    page.getByRole("button", { name: "Проверить результат" }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(sessionStorage).some((key) =>
+        key.startsWith("retenive:support-reply-attempt:"),
+      ),
+    ),
+  ).toBe(false);
+});
+
 test("keeps the selected operator workspace free of serious structural accessibility violations", async ({
   page,
 }) => {
@@ -166,11 +254,15 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
     /\/support\/inbox\/cases\/case-demo-deposit\?mode=cases$/,
   );
   const desktopContext = page.locator(".context-pane");
-  const usesContextDrawer = (page.viewportSize()?.width ?? 1280) <= 1279;
-  const context = usesContextDrawer
-    ? page.getByRole("dialog", { name: "Контекст диалога" })
-    : desktopContext;
-  if (usesContextDrawer) {
+  const viewportWidth = page.viewportSize()?.width ?? 1280;
+  const usesMobileContextRoute = viewportWidth <= 767;
+  const usesContextDrawer = viewportWidth > 767 && viewportWidth <= 1279;
+  const context = usesMobileContextRoute
+    ? page.locator(".mobile-inspector-pane")
+    : usesContextDrawer
+      ? page.getByRole("dialog", { name: "Контекст диалога" })
+      : desktopContext;
+  if (usesMobileContextRoute || usesContextDrawer) {
     await page.getByRole("button", { name: "Контекст" }).click();
   }
   await expect(context.getByRole("tab")).toHaveCount(3);

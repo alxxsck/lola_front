@@ -8,24 +8,24 @@
 import type { SupportMacroReplyDraftResponseDtoState } from "./supportMacroReplyDraftResponseDtoState";
 
 export interface SupportMacroReplyDraftResponseDto {
-  /** @pattern ^"smd1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
-  conversationId: string;
-  createdAt: string;
-  /** @nullable */
-  endUserCaseId: string | null;
-  expiresAt: string;
   id: string;
   macroId: string;
   macroRevisionId: string;
   /** @minimum 1 */
   macroRevisionNumber: number;
-  /** @pattern ^[a-f0-9]{64}$ */
-  renderedHash: string;
-  state: SupportMacroReplyDraftResponseDtoState;
+  conversationId: string;
   /** @nullable */
-  text: string | null;
-  updatedAt: string;
+  endUserCaseId: string | null;
+  state: SupportMacroReplyDraftResponseDtoState;
   /** @minimum 1 */
   version: number;
+  /** @nullable */
+  text: string | null;
+  /** @pattern ^[a-f0-9]{64}$ */
+  renderedHash: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  /** @pattern ^"smd1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
 }

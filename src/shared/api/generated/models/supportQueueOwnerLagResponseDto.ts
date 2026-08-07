@@ -8,9 +8,9 @@
 
 export interface SupportQueueOwnerLagResponseDto {
   /** @minimum 0 */
-  assignment: number;
-  /** @minimum 0 */
   case: number;
+  /** @minimum 0 */
+  assignment: number;
   /** @minimum 0 */
   sla: number;
 }

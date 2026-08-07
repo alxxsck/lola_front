@@ -7,10 +7,10 @@
  */
 
 export interface AttributeContractAcceptanceResponseDto {
+  id: string;
   acceptedFrom: string;
   /** @nullable */
   acceptedUntil?: string | null;
-  id: string;
-  reason: string;
   sourcePublicationId: string;
+  reason: string;
 }

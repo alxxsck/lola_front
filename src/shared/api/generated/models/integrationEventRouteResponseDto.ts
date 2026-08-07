@@ -6,27 +6,27 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IntegrationEventRouteResponseDtoDirection } from "./integrationEventRouteResponseDtoDirection";
-import type { IntegrationEventRouteResponseDtoDraftRevision } from "./integrationEventRouteResponseDtoDraftRevision";
 import type { IntegrationEventRouteResponseDtoLifecycle } from "./integrationEventRouteResponseDtoLifecycle";
+import type { IntegrationEventRouteResponseDtoDraftRevision } from "./integrationEventRouteResponseDtoDraftRevision";
 import type { IntegrationEventRouteResponseDtoPublishedRevision } from "./integrationEventRouteResponseDtoPublishedRevision";
 
 export interface IntegrationEventRouteResponseDto {
+  id: string;
+  projectId: string;
   connectionId: string;
+  direction: IntegrationEventRouteResponseDtoDirection;
+  name: string;
   /** @nullable */
   description: string | null;
-  direction: IntegrationEventRouteResponseDtoDirection;
-  /** @nullable */
-  draftRevision: IntegrationEventRouteResponseDtoDraftRevision;
+  lifecycle: IntegrationEventRouteResponseDtoLifecycle;
   enabled: boolean;
   /** @minimum 1 */
   enablementVersion: number;
-  id: string;
-  lifecycle: IntegrationEventRouteResponseDtoLifecycle;
-  name: string;
-  projectId: string;
+  /** @minimum 1 */
+  version: number;
+  /** @nullable */
+  draftRevision: IntegrationEventRouteResponseDtoDraftRevision;
   /** @nullable */
   publishedRevision: IntegrationEventRouteResponseDtoPublishedRevision;
   updatedAt: string;
-  /** @minimum 1 */
-  version: number;
 }

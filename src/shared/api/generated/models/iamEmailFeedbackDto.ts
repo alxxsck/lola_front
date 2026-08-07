@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IamEmailFeedbackDtoMetadata } from "./iamEmailFeedbackDtoMetadata";
 import type { IamEmailFeedbackDtoProvider } from "./iamEmailFeedbackDtoProvider";
 import type { IamEmailFeedbackDtoType } from "./iamEmailFeedbackDtoType";
+import type { IamEmailFeedbackDtoMetadata } from "./iamEmailFeedbackDtoMetadata";
 
 export interface IamEmailFeedbackDto {
-  messageId?: string;
-  metadata?: IamEmailFeedbackDtoMetadata;
-  occurredAt: string;
   provider: IamEmailFeedbackDtoProvider;
   /** @maxLength 255 */
+  source: string;
+  /** @maxLength 255 */
   providerEventId: string;
+  messageId?: string;
   /** @maxLength 255 */
   providerMessageId?: string;
-  /** @maxLength 100 */
-  reasonCode?: string;
+  type: IamEmailFeedbackDtoType;
+  occurredAt: string;
   /** @pattern ^[a-f0-9]{64}$ */
   recipientFingerprint?: string;
-  /** @maxLength 255 */
-  source: string;
-  type: IamEmailFeedbackDtoType;
+  /** @maxLength 100 */
+  reasonCode?: string;
+  metadata?: IamEmailFeedbackDtoMetadata;
 }

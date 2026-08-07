@@ -8,11 +8,11 @@
 import type { SupportQueueCompiledDraftResponseDto } from "./supportQueueCompiledDraftResponseDto";
 
 export interface SupportQueueDraftResponseDto {
-  configuration: SupportQueueCompiledDraftResponseDto;
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
   /** @minimum 1 */
   generation: number;
   /** @minimum 1 */
   version: number;
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
+  configuration: SupportQueueCompiledDraftResponseDto;
 }

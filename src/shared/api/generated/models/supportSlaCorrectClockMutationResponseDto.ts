@@ -6,21 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportSlaCorrectClockMutationResponseDtoIntent } from "./supportSlaCorrectClockMutationResponseDtoIntent";
-import type { SupportSlaCorrectClockMutationResponseDtoOutcome } from "./supportSlaCorrectClockMutationResponseDtoOutcome";
-import type { SupportSlaCorrectClockMutationResponseDtoRisk } from "./supportSlaCorrectClockMutationResponseDtoRisk";
 import type { SupportSlaCorrectClockMutationResponseDtoTiming } from "./supportSlaCorrectClockMutationResponseDtoTiming";
+import type { SupportSlaCorrectClockMutationResponseDtoRisk } from "./supportSlaCorrectClockMutationResponseDtoRisk";
+import type { SupportSlaCorrectClockMutationResponseDtoOutcome } from "./supportSlaCorrectClockMutationResponseDtoOutcome";
 
 export interface SupportSlaCorrectClockMutationResponseDto {
-  /** @pattern ^"sslah1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
+  intent: SupportSlaCorrectClockMutationResponseDtoIntent;
   caseId: string;
   clockId: string;
   /** @minimum 1 */
   clockVersion: number;
+  timing: SupportSlaCorrectClockMutationResponseDtoTiming;
+  risk: SupportSlaCorrectClockMutationResponseDtoRisk;
+  outcome: SupportSlaCorrectClockMutationResponseDtoOutcome;
   /** @nullable */
   currentDeadlineAt?: string | null;
-  intent: SupportSlaCorrectClockMutationResponseDtoIntent;
-  outcome: SupportSlaCorrectClockMutationResponseDtoOutcome;
-  risk: SupportSlaCorrectClockMutationResponseDtoRisk;
-  timing: SupportSlaCorrectClockMutationResponseDtoTiming;
+  /** @pattern ^"sslah1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
 }

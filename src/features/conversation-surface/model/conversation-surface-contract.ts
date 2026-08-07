@@ -98,6 +98,15 @@ export interface ConversationSurfaceTranslationAssist {
   disabled: boolean;
 }
 
+export interface ConversationSurfaceComposerOutcome {
+  state: "CHECKING_OUTCOME" | "RETRYABLE" | "BLOCKED";
+  label: string;
+  action?: {
+    kind: "CHECK" | "DISCARD";
+    label: string;
+  };
+}
+
 interface ConversationSurfaceComposerBase {
   visibility: "ENABLED" | "DISABLED" | "HIDDEN";
   scope: {
@@ -108,6 +117,7 @@ interface ConversationSurfaceComposerBase {
   initialDraft: string;
   draftRevision: string | number;
   sending: boolean;
+  outcome?: ConversationSurfaceComposerOutcome;
   recipientStatus: {
     label: string;
     tone: "ONLINE" | "OFFLINE" | "NEUTRAL";

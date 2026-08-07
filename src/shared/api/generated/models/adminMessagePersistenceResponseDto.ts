@@ -8,6 +8,6 @@
 import type { AdminMessagePersistenceResponseDtoStatus } from "./adminMessagePersistenceResponseDtoStatus";
 
 export interface AdminMessagePersistenceResponseDto {
-  duplicate: boolean;
   status: AdminMessagePersistenceResponseDtoStatus;
+  duplicate: boolean;
 }

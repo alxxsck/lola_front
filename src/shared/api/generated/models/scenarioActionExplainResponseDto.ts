@@ -5,28 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioActionExplainResponseDtoCommand } from "./scenarioActionExplainResponseDtoCommand";
 import type { ScenarioActionExplainResponseDtoExecutor } from "./scenarioActionExplainResponseDtoExecutor";
 import type { ScenarioActionExplainResponseDtoLocalization } from "./scenarioActionExplainResponseDtoLocalization";
+import type { ScenarioActionExplainResponseDtoCommand } from "./scenarioActionExplainResponseDtoCommand";
 
 export interface ScenarioActionExplainResponseDto {
+  id: string;
+  nodeKey: string;
+  position: number;
   actionType: string;
-  /** @nullable */
-  command?: ScenarioActionExplainResponseDtoCommand;
+  executor: ScenarioActionExplainResponseDtoExecutor;
+  status: string;
   /** @nullable */
   errorCode?: string | null;
-  executor: ScenarioActionExplainResponseDtoExecutor;
-  /** @nullable */
-  finishedAt?: string | null;
-  id: string;
   /**
    * Pinned locale selection and localized-value fallback evidence.
    * @nullable
    */
   localization?: ScenarioActionExplainResponseDtoLocalization;
-  nodeKey: string;
-  position: number;
   /** @nullable */
   startedAt?: string | null;
-  status: string;
+  /** @nullable */
+  finishedAt?: string | null;
+  /** @nullable */
+  command?: ScenarioActionExplainResponseDtoCommand;
 }

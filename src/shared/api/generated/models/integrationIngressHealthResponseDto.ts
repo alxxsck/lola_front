@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationIngressBacklogMetricsDto } from "./integrationIngressBacklogMetricsDto";
-import type { IntegrationIngressCanonicalMetricsDto } from "./integrationIngressCanonicalMetricsDto";
-import type { IntegrationIngressConnectionHealthMetricsDto } from "./integrationIngressConnectionHealthMetricsDto";
+import type { IntegrationIngressHealthResponseDtoProvider } from "./integrationIngressHealthResponseDtoProvider";
 import type { IntegrationIngressHealthResponseDtoDirection } from "./integrationIngressHealthResponseDtoDirection";
 import type { IntegrationIngressHealthResponseDtoHealth } from "./integrationIngressHealthResponseDtoHealth";
-import type { IntegrationIngressProcessingMetricsDto } from "./integrationIngressProcessingMetricsDto";
-import type { IntegrationIngressHealthResponseDtoProvider } from "./integrationIngressHealthResponseDtoProvider";
 import type { IntegrationIngressHealthResponseDtoReasonsItem } from "./integrationIngressHealthResponseDtoReasonsItem";
+import type { IntegrationIngressConnectionHealthMetricsDto } from "./integrationIngressConnectionHealthMetricsDto";
 import type { IntegrationIngressRetainedEvidenceMetricsDto } from "./integrationIngressRetainedEvidenceMetricsDto";
+import type { IntegrationIngressBacklogMetricsDto } from "./integrationIngressBacklogMetricsDto";
+import type { IntegrationIngressProcessingMetricsDto } from "./integrationIngressProcessingMetricsDto";
 import type { IntegrationIngressRetentionMetricsDto } from "./integrationIngressRetentionMetricsDto";
 import type { IntegrationIngressStorageMetricsDto } from "./integrationIngressStorageMetricsDto";
+import type { IntegrationIngressCanonicalMetricsDto } from "./integrationIngressCanonicalMetricsDto";
 
 export interface IntegrationIngressHealthResponseDto {
-  backlog: IntegrationIngressBacklogMetricsDto;
-  canonical: IntegrationIngressCanonicalMetricsDto;
-  connections: IntegrationIngressConnectionHealthMetricsDto;
+  provider: IntegrationIngressHealthResponseDtoProvider;
   direction: IntegrationIngressHealthResponseDtoDirection;
   health: IntegrationIngressHealthResponseDtoHealth;
-  observedAt: string;
-  processing: IntegrationIngressProcessingMetricsDto;
-  provider: IntegrationIngressHealthResponseDtoProvider;
   reasons: IntegrationIngressHealthResponseDtoReasonsItem[];
+  observedAt: string;
+  connections: IntegrationIngressConnectionHealthMetricsDto;
   retainedEvidence: IntegrationIngressRetainedEvidenceMetricsDto;
+  backlog: IntegrationIngressBacklogMetricsDto;
+  processing: IntegrationIngressProcessingMetricsDto;
   retention: IntegrationIngressRetentionMetricsDto;
   storage: IntegrationIngressStorageMetricsDto;
+  canonical: IntegrationIngressCanonicalMetricsDto;
 }

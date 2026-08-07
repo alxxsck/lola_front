@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisBudgetPositionDto } from "./projectAIAnalysisBudgetPositionDto";
-import type { ProjectAIAnalysisUsageByAnalysisDto } from "./projectAIAnalysisUsageByAnalysisDto";
-import type { ProjectAIAnalysisUsageByCmsUserDto } from "./projectAIAnalysisUsageByCmsUserDto";
-import type { ProjectAIAnalysisUsageTimeBucketDto } from "./projectAIAnalysisUsageTimeBucketDto";
-import type { ProjectAIAnalysisUsageByModelDto } from "./projectAIAnalysisUsageByModelDto";
-import type { ProjectAIAnalysisUsageByOperationDto } from "./projectAIAnalysisUsageByOperationDto";
 import type { ProjectAIAnalysisUsageTotalsDto } from "./projectAIAnalysisUsageTotalsDto";
+import type { ProjectAIAnalysisUsageByCmsUserDto } from "./projectAIAnalysisUsageByCmsUserDto";
+import type { ProjectAIAnalysisUsageByModelDto } from "./projectAIAnalysisUsageByModelDto";
+import type { ProjectAIAnalysisUsageByAnalysisDto } from "./projectAIAnalysisUsageByAnalysisDto";
+import type { ProjectAIAnalysisUsageByOperationDto } from "./projectAIAnalysisUsageByOperationDto";
+import type { ProjectAIAnalysisUsageTimeBucketDto } from "./projectAIAnalysisUsageTimeBucketDto";
+import type { ProjectAIAnalysisBudgetPositionDto } from "./projectAIAnalysisBudgetPositionDto";
 
 export interface ProjectAIAnalysisUsageResponseDto {
-  budget: ProjectAIAnalysisBudgetPositionDto[];
-  byAnalysis: ProjectAIAnalysisUsageByAnalysisDto[];
-  byCmsUser: ProjectAIAnalysisUsageByCmsUserDto[];
-  byDay: ProjectAIAnalysisUsageTimeBucketDto[];
-  byModel: ProjectAIAnalysisUsageByModelDto[];
-  byMonth: ProjectAIAnalysisUsageTimeBucketDto[];
-  byOperation: ProjectAIAnalysisUsageByOperationDto[];
   from: string;
-  linksTruncated: boolean;
-  project: ProjectAIAnalysisUsageTotalsDto;
   to: string;
+  project: ProjectAIAnalysisUsageTotalsDto;
+  byCmsUser: ProjectAIAnalysisUsageByCmsUserDto[];
+  byModel: ProjectAIAnalysisUsageByModelDto[];
+  byAnalysis: ProjectAIAnalysisUsageByAnalysisDto[];
+  byOperation: ProjectAIAnalysisUsageByOperationDto[];
+  byDay: ProjectAIAnalysisUsageTimeBucketDto[];
+  byMonth: ProjectAIAnalysisUsageTimeBucketDto[];
+  linksTruncated: boolean;
+  budget: ProjectAIAnalysisBudgetPositionDto[];
 }

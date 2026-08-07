@@ -8,18 +8,6 @@
 import type { AudienceRuleDto } from "./audienceRuleDto";
 
 export interface PublishSegmentRevisionDto {
-  /**
-   * @minLength 1
-   * @maxLength 128
-   */
-  catalogRevision: string;
-  /**
-   * @maxLength 1000
-   * @nullable
-   */
-  description?: string | null;
-  /** @nullable */
-  expectedCurrentRevisionId: string | null;
   /** @pattern ^[a-z][a-z0-9_-]{0,63}$ */
   key?: string;
   /**
@@ -27,5 +15,17 @@ export interface PublishSegmentRevisionDto {
    * @maxLength 128
    */
   name: string;
+  /**
+   * @maxLength 1000
+   * @nullable
+   */
+  description?: string | null;
   rule: AudienceRuleDto;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  catalogRevision: string;
+  /** @nullable */
+  expectedCurrentRevisionId: string | null;
 }

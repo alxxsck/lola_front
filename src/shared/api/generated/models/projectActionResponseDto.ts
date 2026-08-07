@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectActionTypeSummaryResponseDto } from "./projectActionTypeSummaryResponseDto";
-import type { ActionTypeRevisionResponseDto } from "./actionTypeRevisionResponseDto";
 import type { ProjectActionResponseDtoConfiguration } from "./projectActionResponseDtoConfiguration";
 import type { ProjectActionLifecycle } from "./projectActionLifecycle";
+import type { ProjectActionTypeSummaryResponseDto } from "./projectActionTypeSummaryResponseDto";
+import type { ActionTypeRevisionResponseDto } from "./actionTypeRevisionResponseDto";
 
 export interface ProjectActionResponseDto {
-  actionType: ProjectActionTypeSummaryResponseDto;
+  id: string;
+  projectId: string;
   actionTypeId: string;
-  actionTypeRevision: ActionTypeRevisionResponseDto;
   actionTypeRevisionId: string;
+  code: string;
+  /** @nullable */
+  nameOverride?: string | null;
+  /** @nullable */
+  descriptionOverride?: string | null;
+  scenarioEnabled: boolean;
   aiEnabled: boolean;
   /** @nullable */
   aiUsageDescription?: string | null;
-  code: string;
   configuration: ProjectActionResponseDtoConfiguration;
-  createdAt: string;
-  /** @nullable */
-  descriptionOverride?: string | null;
-  id: string;
   lifecycle: ProjectActionLifecycle;
-  /** @nullable */
-  nameOverride?: string | null;
-  projectId: string;
-  scenarioEnabled: boolean;
+  createdAt: string;
   updatedAt: string;
+  actionType: ProjectActionTypeSummaryResponseDto;
+  actionTypeRevision: ActionTypeRevisionResponseDto;
 }

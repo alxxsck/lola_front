@@ -7,15 +7,15 @@
  */
 
 export interface SupportRoutingDecisionListQueryDto {
-  /** @maxLength 2048 */
-  cursor?: string;
-  /** RFC3339 UTC instant */
-  from?: string;
   /**
    * @minimum 1
    * @maximum 200
    */
   limit?: number;
   /** RFC3339 UTC instant */
+  from?: string;
+  /** RFC3339 UTC instant */
   to?: string;
+  /** @maxLength 2048 */
+  cursor?: string;
 }

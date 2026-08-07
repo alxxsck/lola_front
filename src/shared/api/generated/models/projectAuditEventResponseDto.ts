@@ -6,39 +6,39 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProjectAuditEventActorResponseDto } from "./projectAuditEventActorResponseDto";
-import type { ProjectAuditEventResponseDtoAfter } from "./projectAuditEventResponseDtoAfter";
+import type { ProjectAuditEventTargetResponseDto } from "./projectAuditEventTargetResponseDto";
+import type { ProjectAuditEventResponseDtoOutcome } from "./projectAuditEventResponseDtoOutcome";
 import type { ProjectAuditEventResponseDtoAuthorizationEvidence } from "./projectAuditEventResponseDtoAuthorizationEvidence";
 import type { ProjectAuditEventResponseDtoBefore } from "./projectAuditEventResponseDtoBefore";
+import type { ProjectAuditEventResponseDtoAfter } from "./projectAuditEventResponseDtoAfter";
 import type { ProjectAuditEventResponseDtoMetadata } from "./projectAuditEventResponseDtoMetadata";
-import type { ProjectAuditEventResponseDtoOutcome } from "./projectAuditEventResponseDtoOutcome";
-import type { ProjectAuditEventTargetResponseDto } from "./projectAuditEventTargetResponseDto";
 
 export interface ProjectAuditEventResponseDto {
-  actor: ProjectAuditEventActorResponseDto;
-  /** @nullable */
-  after: ProjectAuditEventResponseDtoAfter;
-  /** @nullable */
-  auditReason: string | null;
-  authorizationEvidence: ProjectAuditEventResponseDtoAuthorizationEvidence;
-  /** @nullable */
-  before: ProjectAuditEventResponseDtoBefore;
-  /** @nullable */
-  correlationId: string | null;
+  id: string;
   eventType: string;
   eventVersion: number;
-  id: string;
-  /** @nullable */
-  ipAddress: string | null;
-  metadata: ProjectAuditEventResponseDtoMetadata;
   occurredAt: string;
+  actor: ProjectAuditEventActorResponseDto;
+  target: ProjectAuditEventTargetResponseDto;
+  /** @nullable */
+  requiredPermissionCode: string | null;
   outcome: ProjectAuditEventResponseDtoOutcome;
+  authorizationEvidence: ProjectAuditEventResponseDtoAuthorizationEvidence;
   /** @nullable */
   reasonCode: string | null;
   /** @nullable */
+  auditReason: string | null;
+  /** @nullable */
   requestId: string | null;
   /** @nullable */
-  requiredPermissionCode: string | null;
-  target: ProjectAuditEventTargetResponseDto;
+  correlationId: string | null;
+  /** @nullable */
+  ipAddress: string | null;
   /** @nullable */
   userAgent: string | null;
+  /** @nullable */
+  before: ProjectAuditEventResponseDtoBefore;
+  /** @nullable */
+  after: ProjectAuditEventResponseDtoAfter;
+  metadata: ProjectAuditEventResponseDtoMetadata;
 }

@@ -7,13 +7,13 @@
  */
 
 export interface NotificationOperationsQueueHealthDto {
-  /** @minimum 0 */
-  attemptsInWindow: number;
+  queueKind: string;
   channel: string;
+  status: string;
   /** @minimum 0 */
   count: number;
   /** @minimum 0 */
   oldestAgeSeconds: number;
-  queueKind: string;
-  status: string;
+  /** @minimum 0 */
+  attemptsInWindow: number;
 }

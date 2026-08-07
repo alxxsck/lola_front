@@ -11,23 +11,23 @@ import type { SupportOperatorAvailabilityResponseDtoReasonCode } from "./support
 import type { SupportOperatorAvailabilityResponseDtoSource } from "./supportOperatorAvailabilityResponseDtoSource";
 
 export interface SupportOperatorAvailabilityResponseDto {
-  acceptsNewWork: boolean;
+  projectId: string;
+  operatorId: string;
   declaredState: SupportOperatorAvailabilityResponseDtoDeclaredState;
   effectiveState: SupportOperatorAvailabilityResponseDtoEffectiveState;
-  /** @nullable */
-  effectiveUntil: string | null;
-  /** @nullable */
-  leaseRenewedAt: string | null;
+  acceptsNewWork: boolean;
+  /** @minimum 0 */
+  version: number;
   /** @nullable */
   leaseUntil: string | null;
-  operatorId: string;
-  projectId: string;
+  /** @nullable */
+  effectiveUntil: string | null;
   /** @nullable */
   reasonCode: SupportOperatorAvailabilityResponseDtoReasonCode;
   /** @nullable */
   source: SupportOperatorAvailabilityResponseDtoSource;
   /** @nullable */
   transitionedAt: string | null;
-  /** @minimum 0 */
-  version: number;
+  /** @nullable */
+  leaseRenewedAt: string | null;
 }

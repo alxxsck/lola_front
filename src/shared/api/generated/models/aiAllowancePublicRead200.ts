@@ -8,16 +8,16 @@
 import type { AiAllowancePublicRead200Status } from "./aiAllowancePublicRead200Status";
 
 export type AiAllowancePublicRead200 = {
-  /** @pattern ^\d+\.\d{12}$ */
-  availableUsd?: string;
-  exactUsdVisible: boolean;
-  /** @pattern ^\d+\.\d{12}$ */
-  reservedUsd?: string;
+  status: AiAllowancePublicRead200Status;
   /** @nullable */
   resetAt: string | null;
-  status: AiAllowancePublicRead200Status;
+  exactUsdVisible: boolean;
   /** @pattern ^\d+\.\d{12}$ */
-  unknownHeldUsd?: string;
+  availableUsd?: string;
   /** @pattern ^\d+\.\d{12}$ */
   usedUsd?: string;
+  /** @pattern ^\d+\.\d{12}$ */
+  reservedUsd?: string;
+  /** @pattern ^\d+\.\d{12}$ */
+  unknownHeldUsd?: string;
 };

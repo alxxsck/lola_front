@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { NotPredicateDtoOperand } from "./notPredicateDtoOperand";
 import type { NotPredicateDtoOperator } from "./notPredicateDtoOperator";
+import type { NotPredicateDtoOperand } from "./notPredicateDtoOperand";
 
 export interface NotPredicateDto {
-  operand: NotPredicateDtoOperand;
   operator: NotPredicateDtoOperator;
+  operand: NotPredicateDtoOperand;
 }

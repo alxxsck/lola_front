@@ -8,9 +8,9 @@
 import type { EventQueryMetricDtoOperation } from "./eventQueryMetricDtoOperation";
 
 export interface EventQueryMetricDto {
-  /** Required for MONEY SUM and AVG. */
-  currencyField?: string;
+  operation: EventQueryMetricDtoOperation;
   /** Required for SUM, MIN, MAX and AVG. */
   field?: string;
-  operation: EventQueryMetricDtoOperation;
+  /** Required for MONEY SUM and AVG. */
+  currencyField?: string;
 }

@@ -10,6 +10,9 @@ import type { QuietHoursSettingsResponseDto } from "./quietHoursSettingsResponse
 import type { ScenarioAdmissionSettingsSemanticsResponseDto } from "./scenarioAdmissionSettingsSemanticsResponseDto";
 
 export interface ScenarioAdmissionSettingsResponseDto {
+  /** @minimum 1 */
+  projectVersion: number;
+  mode: ScenarioAdmissionSettingsResponseDtoMode;
   /**
    * @minimum 1
    * @nullable
@@ -22,9 +25,6 @@ export interface ScenarioAdmissionSettingsResponseDto {
   maxStartsPerVisit: number | null;
   /** @minimum 0 */
   minimumIntervalSeconds: number;
-  mode: ScenarioAdmissionSettingsResponseDtoMode;
-  /** @minimum 1 */
-  projectVersion: number;
   quietHours: QuietHoursSettingsResponseDto;
   semantics: ScenarioAdmissionSettingsSemanticsResponseDto;
 }

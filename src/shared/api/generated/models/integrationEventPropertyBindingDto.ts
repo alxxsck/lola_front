@@ -7,7 +7,6 @@
  */
 
 export interface IntegrationEventPropertyBindingDto {
-  required: boolean;
   /**
    * @minItems 1
    * @maxItems 8
@@ -18,4 +17,5 @@ export interface IntegrationEventPropertyBindingDto {
    * @maxLength 64
    */
   targetKey: string;
+  required: boolean;
 }

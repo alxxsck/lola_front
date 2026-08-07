@@ -8,13 +8,13 @@
 import type { NotificationDestinationTestResponseDtoStatus } from "./notificationDestinationTestResponseDtoStatus";
 
 export interface NotificationDestinationTestResponseDto {
+  id: string;
   destinationId: string;
-  /** @minimum 1 */
-  destinationVersion: number;
+  status: NotificationDestinationTestResponseDtoStatus;
   /** @nullable */
   errorCode: string | null;
   /** @nullable */
   finishedAt: string | null;
-  id: string;
-  status: NotificationDestinationTestResponseDtoStatus;
+  /** @minimum 1 */
+  destinationVersion: number;
 }

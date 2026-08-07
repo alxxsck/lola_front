@@ -1253,7 +1253,7 @@ export const mockRepository: ReteniveRepository = {
           "Ключ уже использован для другой операции",
           undefined,
           undefined,
-          "IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD",
+          "IDEMPOTENCY_KEY_REUSED",
         );
       }
       await pause();
@@ -1364,6 +1364,15 @@ export const mockRepository: ReteniveRepository = {
     writeDemo(data);
     await pause();
     return structuredClone(result);
+  },
+  async lookupAdminMessageOutcome(_projectId, userId, idempotencyKey) {
+    const replay = readDemo().adminMessageIdempotency[idempotencyKey];
+    if (!replay) throw new ApiError(404, "Результат отправки не найден");
+    const payload = JSON.parse(replay.payload) as { userId?: unknown };
+    if (payload.userId !== userId)
+      throw new ApiError(404, "Результат отправки не найден");
+    await pause();
+    return structuredClone({ ...replay.result, duplicate: true });
   },
   async getStats(projectId) {
     const [project, scenarios, users, sessions] = await Promise.all([

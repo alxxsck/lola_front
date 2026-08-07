@@ -5,44 +5,44 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceRuleDto } from "./audienceRuleDto";
-import type { PublishScenarioDtoDeliveryPolicy } from "./publishScenarioDtoDeliveryPolicy";
-import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
-import type { PublishScenarioDtoProfileFreshness } from "./publishScenarioDtoProfileFreshness";
-import type { ScenarioRuleDto } from "./scenarioRuleDto";
 import type { PublishScenarioDtoTriggerMatchingMode } from "./publishScenarioDtoTriggerMatchingMode";
+import type { PublishScenarioDtoDeliveryPolicy } from "./publishScenarioDtoDeliveryPolicy";
+import type { ScenarioRuleDto } from "./scenarioRuleDto";
+import type { AudienceRuleDto } from "./audienceRuleDto";
+import type { PublishScenarioDtoProfileFreshness } from "./publishScenarioDtoProfileFreshness";
+import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 
 export interface PublishScenarioDto {
-  audience?: AudienceRuleDto;
-  /**
-   * Condition catalog revision used to validate the draft.
-   * @minLength 1
-   * @maxLength 128
-   */
-  catalogRevision: string;
-  /** IMMEDIATE, WAIT_UNTIL_ONLINE, SKIP_IF_OFFLINE or FAIL_IF_OFFLINE. */
-  deliveryPolicy?: PublishScenarioDtoDeliveryPolicy;
-  /**
-   * Scenario head observed by the editor; null publishes the first revision.
-   * @nullable
-   */
-  expectedCurrentRevisionId: string | null;
-  /**
-   * Durable draft version to publish atomically. When present, Rule, Audience, Delivery and graph are read from that draft.
-   * @minimum 1
-   */
-  expectedDraftVersion?: number;
-  localization?: ScenarioLocalizationPolicyDto;
-  /** Required when Audience or action templates read End User Attributes. */
-  profileFreshness?: PublishScenarioDtoProfileFreshness;
   /**
    * Required when publishing a Scenario classified as SECURITY.
    * @minLength 10
    * @maxLength 500
    */
   reason?: string;
-  /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
-  rule?: ScenarioRuleDto;
   /** AUTO follows stable compatible Event revisions; EXACT intentionally pins this Scenario revision. */
   triggerMatchingMode?: PublishScenarioDtoTriggerMatchingMode;
+  /**
+   * Durable draft version to publish atomically. When present, Rule, Audience, Delivery and graph are read from that draft.
+   * @minimum 1
+   */
+  expectedDraftVersion?: number;
+  /** IMMEDIATE, WAIT_UNTIL_ONLINE, SKIP_IF_OFFLINE or FAIL_IF_OFFLINE. */
+  deliveryPolicy?: PublishScenarioDtoDeliveryPolicy;
+  /** Versioned typed rule AST to compile into the immutable Scenario Revision. */
+  rule?: ScenarioRuleDto;
+  audience?: AudienceRuleDto;
+  /** Required when Audience or action templates read End User Attributes. */
+  profileFreshness?: PublishScenarioDtoProfileFreshness;
+  localization?: ScenarioLocalizationPolicyDto;
+  /**
+   * Scenario head observed by the editor; null publishes the first revision.
+   * @nullable
+   */
+  expectedCurrentRevisionId: string | null;
+  /**
+   * Condition catalog revision used to validate the draft.
+   * @minLength 1
+   * @maxLength 128
+   */
+  catalogRevision: string;
 }

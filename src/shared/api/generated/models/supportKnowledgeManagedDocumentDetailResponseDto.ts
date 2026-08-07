@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentDetailResponseDtoLifecycle";
 import type { SupportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision } from "./supportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision";
 import type { SupportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision } from "./supportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision";
-import type { SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft } from "./supportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft";
-import type { SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle } from "./supportKnowledgeManagedDocumentDetailResponseDtoLifecycle";
 import type { SupportKnowledgeManagedRevisionResponseDto } from "./supportKnowledgeManagedRevisionResponseDto";
+import type { SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft } from "./supportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft";
 
 export interface SupportKnowledgeManagedDocumentDetailResponseDto {
-  /** @nullable */
-  archivedAt?: string | null;
-  createdAt: string;
+  documentId: string;
+  lifecycle: SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle;
   /** @nullable */
   currentDraftRevision: SupportKnowledgeManagedDocumentDetailResponseDtoCurrentDraftRevision;
   /** @nullable */
   currentPublishedRevision: SupportKnowledgeManagedDocumentDetailResponseDtoCurrentPublishedRevision;
-  documentId: string;
   /** @nullable */
-  editableTextDraft: SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft;
-  lifecycle: SupportKnowledgeManagedDocumentDetailResponseDtoLifecycle;
+  archivedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
   revisions: SupportKnowledgeManagedRevisionResponseDto[];
   revisionsTruncated: boolean;
-  updatedAt: string;
+  /** @nullable */
+  editableTextDraft: SupportKnowledgeManagedDocumentDetailResponseDtoEditableTextDraft;
 }

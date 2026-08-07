@@ -10,7 +10,7 @@ export interface IntegrationIngressRetentionMetricsDto {
   /** @minimum 0 */
   envelopeContentOverdue: number;
   /** @minimum 0 */
-  metadataOverdue: number;
-  /** @minimum 0 */
   payloadOverdue: number;
+  /** @minimum 0 */
+  metadataOverdue: number;
 }

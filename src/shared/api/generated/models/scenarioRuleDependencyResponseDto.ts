@@ -7,8 +7,8 @@
  */
 
 export interface ScenarioRuleDependencyResponseDto {
-  definitionKeyId: string;
   eventCode: string;
+  definitionKeyId: string;
   eventDefinitionRevisionId: string;
   /** @minimum 1 */
   schemaVersion: number;

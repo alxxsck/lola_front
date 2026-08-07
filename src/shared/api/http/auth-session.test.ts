@@ -53,6 +53,10 @@ describe("auth session", () => {
       '{"draftId":"private-draft"}',
     );
     sessionStorage.setItem(
+      "retenive:support-reply-attempt:project-2%1Foperator-1%1Fconversation-1",
+      '{"text":"private reply"}',
+    );
+    sessionStorage.setItem(
       "retenive:amplitude-pending-tests:project-2",
       '[{"state":"REQUESTING"}]',
     );

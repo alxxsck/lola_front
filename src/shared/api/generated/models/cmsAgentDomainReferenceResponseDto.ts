@@ -9,9 +9,9 @@ import type { CmsAgentDomainReferenceResponseDtoRelation } from "./cmsAgentDomai
 import type { CmsAgentDomainReferenceResponseDtoResult } from "./cmsAgentDomainReferenceResponseDtoResult";
 
 export interface CmsAgentDomainReferenceResponseDto {
-  domainAiOperationId?: string;
-  domainId: string;
   domainKind: string;
+  domainId: string;
   relation: CmsAgentDomainReferenceResponseDtoRelation;
+  domainAiOperationId?: string;
   result: CmsAgentDomainReferenceResponseDtoResult;
 }

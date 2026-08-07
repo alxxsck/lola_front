@@ -8,8 +8,8 @@
 
 export interface EndUserCaseCmsParticipationResponseDto {
   /** @minimum 0 */
+  messageCount: number;
+  /** @minimum 0 */
   actionCount: number;
   firstParticipatedAt?: string;
-  /** @minimum 0 */
-  messageCount: number;
 }

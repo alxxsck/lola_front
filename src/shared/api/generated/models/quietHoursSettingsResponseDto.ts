@@ -8,6 +8,6 @@
 
 export interface QuietHoursSettingsResponseDto {
   enabled: boolean;
-  endLocalTime: string;
   startLocalTime: string;
+  endLocalTime: string;
 }

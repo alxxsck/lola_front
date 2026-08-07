@@ -8,17 +8,17 @@
 
 export interface UpdateEventDefinitionMetadataDto {
   /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
    * @maxLength 2000
    * @nullable
    */
   description?: string | null;
   /** Optimistic concurrency token. */
   expectedUpdatedAt: string;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  name: string;
   /** @maxLength 500 */
   reason?: string;
 }

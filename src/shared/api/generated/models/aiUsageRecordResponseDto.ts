@@ -6,43 +6,43 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiUsageRecordResponseDtoCategory } from "./aiUsageRecordResponseDtoCategory";
-import type { AiUsageRecordResponseDtoProviderMetadata } from "./aiUsageRecordResponseDtoProviderMetadata";
-import type { AiUsageRecordResponseDtoRawUsage } from "./aiUsageRecordResponseDtoRawUsage";
 import type { AiUsageRecordResponseDtoReasoningEffort } from "./aiUsageRecordResponseDtoReasoningEffort";
+import type { AiUsageRecordResponseDtoRawUsage } from "./aiUsageRecordResponseDtoRawUsage";
+import type { AiUsageRecordResponseDtoProviderMetadata } from "./aiUsageRecordResponseDtoProviderMetadata";
 
 export interface AiUsageRecordResponseDto {
-  /** @nullable */
-  appliedModel: string | null;
-  /** @nullable */
-  billedCost: string | null;
-  category: AiUsageRecordResponseDtoCategory;
-  costStatus: string;
-  currency: string;
-  /** @nullable */
-  estimatedCost: string | null;
   id: string;
-  inputCharacters: number;
-  inputTokens: number;
+  provider: string;
+  operation: string;
+  category: AiUsageRecordResponseDtoCategory;
+  providerRequestId: string;
   /** @nullable */
   model: string | null;
   /** @nullable */
-  modelConfigRevision: string | null;
-  occurredAt: string;
-  operation: string;
-  outputTokens: number;
+  requestedModel: string | null;
   /** @nullable */
-  pricingVersion: string | null;
-  provider: string;
-  /** @nullable */
-  providerBilledUnits: string | null;
-  providerMetadata: AiUsageRecordResponseDtoProviderMetadata;
-  providerRequestId: string;
-  rawUsage: AiUsageRecordResponseDtoRawUsage;
+  appliedModel: string | null;
   /** @nullable */
   reasoningEffort: AiUsageRecordResponseDtoReasoningEffort;
   /** @nullable */
-  requestedModel: string | null;
+  modelConfigRevision: string | null;
   /** @nullable */
   status: string | null;
+  inputCharacters: number;
+  /** @nullable */
+  providerBilledUnits: string | null;
   totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  currency: string;
+  costStatus: string;
+  /** @nullable */
+  estimatedCost: string | null;
+  /** @nullable */
+  billedCost: string | null;
+  /** @nullable */
+  pricingVersion: string | null;
+  rawUsage: AiUsageRecordResponseDtoRawUsage;
+  providerMetadata: AiUsageRecordResponseDtoProviderMetadata;
+  occurredAt: string;
 }

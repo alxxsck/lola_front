@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SegmentDetailResponseDtoStatus } from "./segmentDetailResponseDtoStatus";
 import type { SegmentDetailResponseDtoCurrentRevision } from "./segmentDetailResponseDtoCurrentRevision";
 import type { SegmentRevisionSummaryResponseDto } from "./segmentRevisionSummaryResponseDto";
-import type { SegmentDetailResponseDtoStatus } from "./segmentDetailResponseDtoStatus";
 
 export interface SegmentDetailResponseDto {
-  /** @nullable */
-  currentRevision?: SegmentDetailResponseDtoCurrentRevision;
-  /** @nullable */
-  description?: string | null;
+  segmentId: string;
   key: string;
   name: string;
-  revisions: SegmentRevisionSummaryResponseDto[];
-  segmentId: string;
+  /** @nullable */
+  description?: string | null;
   status: SegmentDetailResponseDtoStatus;
+  /** @nullable */
+  currentRevision?: SegmentDetailResponseDtoCurrentRevision;
+  revisions: SegmentRevisionSummaryResponseDto[];
 }

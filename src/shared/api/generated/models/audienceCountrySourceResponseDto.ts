@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceCountrySourceResponseDtoAuthoringAvailability } from "./audienceCountrySourceResponseDtoAuthoringAvailability";
-import type { AudienceCountrySourceResponseDtoControl } from "./audienceCountrySourceResponseDtoControl";
-import type { AudienceCountrySourceResponseDtoOperatorsItem } from "./audienceCountrySourceResponseDtoOperatorsItem";
-import type { AudienceCountrySourceResponseDtoSemantics } from "./audienceCountrySourceResponseDtoSemantics";
 import type { AudienceCountrySourceResponseDtoSource } from "./audienceCountrySourceResponseDtoSource";
 import type { AudienceCountrySourceResponseDtoValueType } from "./audienceCountrySourceResponseDtoValueType";
+import type { AudienceCountrySourceResponseDtoSemantics } from "./audienceCountrySourceResponseDtoSemantics";
+import type { AudienceCountrySourceResponseDtoOperatorsItem } from "./audienceCountrySourceResponseDtoOperatorsItem";
+import type { AudienceCountrySourceResponseDtoControl } from "./audienceCountrySourceResponseDtoControl";
+import type { AudienceCountrySourceResponseDtoAuthoringAvailability } from "./audienceCountrySourceResponseDtoAuthoringAvailability";
 
 export interface AudienceCountrySourceResponseDto {
-  authoringAvailability: AudienceCountrySourceResponseDtoAuthoringAvailability;
-  control: AudienceCountrySourceResponseDtoControl;
-  operators: AudienceCountrySourceResponseDtoOperatorsItem[];
-  semantics: AudienceCountrySourceResponseDtoSemantics;
   source: AudienceCountrySourceResponseDtoSource;
+  valueType: AudienceCountrySourceResponseDtoValueType;
+  semantics: AudienceCountrySourceResponseDtoSemantics;
+  operators: AudienceCountrySourceResponseDtoOperatorsItem[];
+  control: AudienceCountrySourceResponseDtoControl;
+  authoringAvailability: AudienceCountrySourceResponseDtoAuthoringAvailability;
   /** @nullable */
   unsupportedReason?: string | null;
-  valueType: AudienceCountrySourceResponseDtoValueType;
 }

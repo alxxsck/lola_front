@@ -5,36 +5,36 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationRecoveryAttemptDto } from "./integrationRecoveryAttemptDto";
-import type { IntegrationRecoveryOperationDetailDtoDirection } from "./integrationRecoveryOperationDetailDtoDirection";
 import type { IntegrationRecoveryOperationDetailDtoOperationKind } from "./integrationRecoveryOperationDetailDtoOperationKind";
+import type { IntegrationRecoveryOperationDetailDtoDirection } from "./integrationRecoveryOperationDetailDtoDirection";
 import type { IntegrationRecoveryOperationDetailDtoProvider } from "./integrationRecoveryOperationDetailDtoProvider";
-import type { IntegrationReconciliationRepairDto } from "./integrationReconciliationRepairDto";
-import type { IntegrationRecoveryCommandReceiptDto } from "./integrationRecoveryCommandReceiptDto";
 import type { IntegrationRecoveryOperationDetailDtoStatus } from "./integrationRecoveryOperationDetailDtoStatus";
+import type { IntegrationRecoveryAttemptDto } from "./integrationRecoveryAttemptDto";
+import type { IntegrationRecoveryCommandReceiptDto } from "./integrationRecoveryCommandReceiptDto";
+import type { IntegrationReconciliationRepairDto } from "./integrationReconciliationRepairDto";
 
 export interface IntegrationRecoveryOperationDetailDto {
-  /** @minimum 0 */
-  attemptCount: number;
-  attempts: IntegrationRecoveryAttemptDto[];
-  connectionId: string;
-  createdAt: string;
-  direction: IntegrationRecoveryOperationDetailDtoDirection;
-  /** @nullable */
-  failureCode: string | null;
-  /** @nullable */
-  finishedAt: string | null;
   id: string;
-  /** @nullable */
-  lastRecoveryOperationId: string | null;
   operationKind: IntegrationRecoveryOperationDetailDtoOperationKind;
-  /** @minimum 1 */
-  operationsVersion: number;
+  direction: IntegrationRecoveryOperationDetailDtoDirection;
   provider: IntegrationRecoveryOperationDetailDtoProvider;
-  reconciliationRepairs: IntegrationReconciliationRepairDto[];
-  recoveryCommands: IntegrationRecoveryCommandReceiptDto[];
+  connectionId: string;
   /** @nullable */
   routeId: string | null;
   status: IntegrationRecoveryOperationDetailDtoStatus;
+  /** @minimum 0 */
+  attemptCount: number;
+  /** @minimum 1 */
+  operationsVersion: number;
+  /** @nullable */
+  failureCode: string | null;
+  createdAt: string;
   updatedAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+  /** @nullable */
+  lastRecoveryOperationId: string | null;
+  attempts: IntegrationRecoveryAttemptDto[];
+  recoveryCommands: IntegrationRecoveryCommandReceiptDto[];
+  reconciliationRepairs: IntegrationReconciliationRepairDto[];
 }

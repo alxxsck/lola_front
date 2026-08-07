@@ -7,11 +7,11 @@
  */
 
 export interface ScenarioRunExplainRunResponseDto {
-  /** @nullable */
-  errorCode?: string | null;
+  id: string;
+  status: string;
+  startedAt: string;
   /** @nullable */
   finishedAt?: string | null;
-  id: string;
-  startedAt: string;
-  status: string;
+  /** @nullable */
+  errorCode?: string | null;
 }

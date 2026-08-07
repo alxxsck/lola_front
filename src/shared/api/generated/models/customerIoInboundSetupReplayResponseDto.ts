@@ -7,18 +7,18 @@
  */
 
 export interface CustomerIoInboundSetupReplayResponseDto {
-  admissionReady: boolean;
+  replayed: boolean;
   connectionId: string;
   /** @minimum 1 */
   connectionVersion: number;
+  /** @minimum 1 */
+  credentialRevision: number;
   /**
    * @minLength 16
    * @maxLength 16
    */
   credentialFingerprint: string;
-  /** @minimum 1 */
-  credentialRevision: number;
+  admissionReady: boolean;
   /** @nullable */
   overlapEndsAt: string | null;
-  replayed: boolean;
 }

@@ -7,13 +7,13 @@
  */
 
 export interface ProfileFieldCoverageResponseDto {
+  definitionId: string;
+  key: string;
+  usersWithValue: number;
+  usersWithSnapshot: number;
   /**
    * @minimum 0
    * @maximum 1
    */
   coverage: number;
-  definitionId: string;
-  key: string;
-  usersWithSnapshot: number;
-  usersWithValue: number;
 }

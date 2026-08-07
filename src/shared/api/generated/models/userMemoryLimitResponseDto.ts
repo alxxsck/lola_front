@@ -7,6 +7,6 @@
  */
 
 export interface UserMemoryLimitResponseDto {
-  max: number;
   min: number;
+  max: number;
 }

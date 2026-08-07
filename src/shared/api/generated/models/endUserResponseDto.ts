@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EndUserResponseDtoProfile } from "./endUserResponseDtoProfile";
 import type { EndUserResponseDtoAttributes } from "./endUserResponseDtoAttributes";
 import type { EndUserResponseDtoPreferences } from "./endUserResponseDtoPreferences";
-import type { EndUserResponseDtoProfile } from "./endUserResponseDtoProfile";
 
 export interface EndUserResponseDto {
+  id: string;
+  projectId: string;
+  externalId: string;
+  isGuest: boolean;
+  /** @nullable */
+  locale?: string | null;
+  /** @nullable */
+  segment?: string | null;
+  profile: EndUserResponseDtoProfile;
   attributes: EndUserResponseDtoAttributes;
   /** @nullable */
   attributesSchemaRevisionId?: string | null;
-  createdAt: string;
-  externalId: string;
-  id: string;
-  isGuest: boolean;
-  lastSeenAt: string;
-  /** @nullable */
-  locale?: string | null;
-  preferences: EndUserResponseDtoPreferences;
-  profile: EndUserResponseDtoProfile;
   /** @pattern ^\d+$ */
   profileVersion: string;
-  projectId: string;
-  /** @nullable */
-  segment?: string | null;
+  preferences: EndUserResponseDtoPreferences;
+  lastSeenAt: string;
+  createdAt: string;
   updatedAt: string;
 }

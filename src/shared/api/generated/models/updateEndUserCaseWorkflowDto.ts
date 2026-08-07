@@ -11,10 +11,10 @@ export interface UpdateEndUserCaseWorkflowDto {
   /** @minimum 1 */
   expectedVersion: number;
   idempotencyKey: string;
+  status: UpdateEndUserCaseWorkflowDtoStatus;
   /**
    * @minLength 1
    * @maxLength 2000
    */
   reason: string;
-  status: UpdateEndUserCaseWorkflowDtoStatus;
 }

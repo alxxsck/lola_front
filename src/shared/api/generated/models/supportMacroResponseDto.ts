@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportMacroResponseDtoDraft } from "./supportMacroResponseDtoDraft";
 import type { SupportMacroResponseDtoLifecycle } from "./supportMacroResponseDtoLifecycle";
+import type { SupportMacroResponseDtoDraft } from "./supportMacroResponseDtoDraft";
 import type { SupportMacroResponseDtoPublishedRevision } from "./supportMacroResponseDtoPublishedRevision";
 
 export interface SupportMacroResponseDto {
-  actionEtag: string;
-  /** @nullable */
-  draft: SupportMacroResponseDtoDraft;
   id: string;
-  lifecycle: SupportMacroResponseDtoLifecycle;
-  /** @nullable */
-  publishedRevision: SupportMacroResponseDtoPublishedRevision;
   stableCode: string;
+  lifecycle: SupportMacroResponseDtoLifecycle;
   /** @minimum 1 */
   version: number;
+  /** @nullable */
+  draft: SupportMacroResponseDtoDraft;
+  /** @nullable */
+  publishedRevision: SupportMacroResponseDtoPublishedRevision;
+  actionEtag: string;
 }

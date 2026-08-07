@@ -9,10 +9,10 @@ import type { TelegramLinkChallengeStatus } from "./telegramLinkChallengeStatus"
 
 export interface TelegramPendingCandidateDto {
   challengeId: string;
-  /** @nullable */
-  expiresAt?: string | null;
   status: TelegramLinkChallengeStatus;
   telegramDisplayName: string;
   /** @nullable */
   telegramUsername?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
 }

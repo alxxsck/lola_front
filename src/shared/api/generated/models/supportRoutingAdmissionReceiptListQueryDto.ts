@@ -7,11 +7,11 @@
  */
 
 export interface SupportRoutingAdmissionReceiptListQueryDto {
-  /** @maxLength 2048 */
-  cursor?: string;
   /**
    * @minimum 1
    * @maximum 200
    */
   limit?: number;
+  /** @maxLength 2048 */
+  cursor?: string;
 }

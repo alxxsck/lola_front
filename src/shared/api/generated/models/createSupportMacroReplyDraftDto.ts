@@ -7,7 +7,7 @@
  */
 
 export interface CreateSupportMacroReplyDraftDto {
+  macroId: string;
   endUserCaseId?: string;
   expectedMacroRevisionId?: string;
-  macroId: string;
 }

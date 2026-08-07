@@ -8,16 +8,16 @@
 import type { CreateOperationalTelegramDestinationDtoTopic } from "./createOperationalTelegramDestinationDtoTopic";
 
 export interface CreateOperationalTelegramDestinationDto {
+  topic?: CreateOperationalTelegramDestinationDtoTopic;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  displayName: string;
   /**
    * Write-only Telegram bot token. It is validated and never returned.
    * @minLength 27
    * @maxLength 160
    */
   botToken: string;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  displayName: string;
-  topic?: CreateOperationalTelegramDestinationDtoTopic;
 }

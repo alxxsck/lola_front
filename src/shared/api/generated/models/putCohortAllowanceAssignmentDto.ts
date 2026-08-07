@@ -7,8 +7,6 @@
  */
 
 export interface PutCohortAllowanceAssignmentDto {
-  effectiveFrom: string;
-  effectiveUntil?: string;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
@@ -20,6 +18,8 @@ export interface PutCohortAllowanceAssignmentDto {
    * @maximum 1000000
    */
   priority: number;
+  effectiveFrom: string;
+  effectiveUntil?: string;
   /** @maxLength 500 */
   reason: string;
 }

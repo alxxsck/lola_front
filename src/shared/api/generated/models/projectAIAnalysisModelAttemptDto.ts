@@ -8,21 +8,21 @@
 import type { ProjectAIAnalysisModelAttemptDtoUsage } from "./projectAIAnalysisModelAttemptDtoUsage";
 
 export interface ProjectAIAnalysisModelAttemptDto {
+  stepId: string;
+  ordinal: number;
+  status: string;
+  provider: string;
+  model: string;
+  operation: string;
   /** @nullable */
-  completedAt?: string | null;
+  providerResponseId?: string | null;
   /** @nullable */
   errorCode?: string | null;
   /** @nullable */
   errorMessage?: string | null;
-  model: string;
-  operation: string;
-  ordinal: number;
-  provider: string;
-  /** @nullable */
-  providerResponseId?: string | null;
   startedAt: string;
-  status: string;
-  stepId: string;
+  /** @nullable */
+  completedAt?: string | null;
   /** @nullable */
   usage?: ProjectAIAnalysisModelAttemptDtoUsage;
 }

@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EventDefinitionUsageEventLogsResponseDto } from "./eventDefinitionUsageEventLogsResponseDto";
+import type { EventDefinitionUsageScenarioPageResponseDto } from "./eventDefinitionUsageScenarioPageResponseDto";
+import type { EventDefinitionUsageEventQueryPolicyResponseDto } from "./eventDefinitionUsageEventQueryPolicyResponseDto";
 import type { EventDefinitionUsageResponseDtoArchiveBlockersItem } from "./eventDefinitionUsageResponseDtoArchiveBlockersItem";
 import type { EventDefinitionUsageResponseDtoArchiveEffectsItem } from "./eventDefinitionUsageResponseDtoArchiveEffectsItem";
 import type { EventDefinitionUsageResponseDtoDeleteBlockersItem } from "./eventDefinitionUsageResponseDtoDeleteBlockersItem";
-import type { EventDefinitionUsageEventLogsResponseDto } from "./eventDefinitionUsageEventLogsResponseDto";
-import type { EventDefinitionUsageEventQueryPolicyResponseDto } from "./eventDefinitionUsageEventQueryPolicyResponseDto";
-import type { EventDefinitionUsageScenarioPageResponseDto } from "./eventDefinitionUsageScenarioPageResponseDto";
 
 export interface EventDefinitionUsageResponseDto {
-  /** @minimum 0 */
-  activeWaitCount: number;
-  archiveBlockers: EventDefinitionUsageResponseDtoArchiveBlockersItem[];
-  archiveEffects: EventDefinitionUsageResponseDtoArchiveEffectsItem[];
-  canArchive: boolean;
-  canDelete: boolean;
   definitionKeyId: string;
-  deleteBlockers: EventDefinitionUsageResponseDtoDeleteBlockersItem[];
   evaluatedAt: string;
-  eventLogs: EventDefinitionUsageEventLogsResponseDto;
-  eventQueryPolicy: EventDefinitionUsageEventQueryPolicyResponseDto;
   /** @minimum 1 */
   lifecycleVersion: number;
   /** @minimum 1 */
   policyVersion: number;
+  eventLogs: EventDefinitionUsageEventLogsResponseDto;
+  scenarios: EventDefinitionUsageScenarioPageResponseDto;
+  /** @minimum 0 */
+  scenarioDraftDependencyCount: number;
   /** @minimum 0 */
   publishedScenarioRevisionCount: number;
   /** @minimum 0 */
-  scenarioDraftDependencyCount: number;
-  scenarios: EventDefinitionUsageScenarioPageResponseDto;
+  activeWaitCount: number;
+  eventQueryPolicy: EventDefinitionUsageEventQueryPolicyResponseDto;
+  canArchive: boolean;
+  canDelete: boolean;
+  archiveBlockers: EventDefinitionUsageResponseDtoArchiveBlockersItem[];
+  archiveEffects: EventDefinitionUsageResponseDtoArchiveEffectsItem[];
+  deleteBlockers: EventDefinitionUsageResponseDtoDeleteBlockersItem[];
 }

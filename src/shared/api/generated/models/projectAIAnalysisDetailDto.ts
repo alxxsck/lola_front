@@ -5,29 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAIAnalysisCompatibilityDto } from "./projectAIAnalysisCompatibilityDto";
 import type { ProjectAIAnalysisDetailDtoKind } from "./projectAIAnalysisDetailDtoKind";
 import type { ProjectAIAnalysisDetailDtoScopeKind } from "./projectAIAnalysisDetailDtoScopeKind";
 import type { ProjectAIAnalysisDetailDtoState } from "./projectAIAnalysisDetailDtoState";
+import type { ProjectAIAnalysisCompatibilityDto } from "./projectAIAnalysisCompatibilityDto";
 
 export interface ProjectAIAnalysisDetailDto {
-  /** @nullable */
-  agentRequestId?: string | null;
   analysisId: string;
-  compatibility?: ProjectAIAnalysisCompatibilityDto;
-  createdAt: string;
-  /** @nullable */
-  createdByCmsUserId?: string | null;
-  /** @nullable */
-  endUserId?: string | null;
-  kind: ProjectAIAnalysisDetailDtoKind;
-  /** @nullable */
-  latestRunId?: string | null;
   /**
    * @nullable
    * @pattern ^\d+$
    */
   projectSequence?: string | null;
+  /** @minimum 1 */
+  version: number;
+  kind: ProjectAIAnalysisDetailDtoKind;
+  scopeKind: ProjectAIAnalysisDetailDtoScopeKind;
+  /** @nullable */
+  endUserId?: string | null;
+  /** @nullable */
+  agentRequestId?: string | null;
+  /** @nullable */
+  rootAiOperationId?: string | null;
   /** @nullable */
   question?: string | null;
   /**
@@ -35,16 +34,17 @@ export interface ProjectAIAnalysisDetailDto {
    * @pattern ^[0-9a-f]{64}$
    */
   questionHash?: string | null;
+  title: string;
   /** @nullable */
-  redactedAt?: string | null;
+  createdByCmsUserId?: string | null;
+  state: ProjectAIAnalysisDetailDtoState;
+  /** @nullable */
+  latestRunId?: string | null;
   /** @nullable */
   retentionUntil?: string | null;
   /** @nullable */
-  rootAiOperationId?: string | null;
-  scopeKind: ProjectAIAnalysisDetailDtoScopeKind;
-  state: ProjectAIAnalysisDetailDtoState;
-  title: string;
+  redactedAt?: string | null;
+  createdAt: string;
   updatedAt: string;
-  /** @minimum 1 */
-  version: number;
+  compatibility?: ProjectAIAnalysisCompatibilityDto;
 }

@@ -9,18 +9,18 @@ import type { AttributePublicationChangesResponseDto } from "./attributePublicat
 import type { AttributePublicationSummaryResponseDtoPublishedActorType } from "./attributePublicationSummaryResponseDtoPublishedActorType";
 
 export interface AttributePublicationSummaryResponseDto {
-  canonicalHash: string;
-  changes: AttributePublicationChangesResponseDto;
-  contractRevisionId: string;
-  contractVersion: number;
-  fieldCount: number;
   id: string;
   projectId: string;
-  publishedActorId: string;
-  publishedActorType: AttributePublicationSummaryResponseDtoPublishedActorType;
-  publishedAt: string;
+  sequence: number;
+  canonicalHash: string;
+  contractRevisionId: string;
+  contractVersion: number;
+  changes: AttributePublicationChangesResponseDto;
   /** @nullable */
   publishedById?: string | null;
+  publishedActorType: AttributePublicationSummaryResponseDtoPublishedActorType;
+  publishedActorId: string;
   publishReason: string;
-  sequence: number;
+  publishedAt: string;
+  fieldCount: number;
 }

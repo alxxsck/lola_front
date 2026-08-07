@@ -8,33 +8,33 @@
 import type { AiUsageCategoryBreakdownResponseDtoCategory } from "./aiUsageCategoryBreakdownResponseDtoCategory";
 
 export interface AiUsageCategoryBreakdownResponseDto {
-  billedCost: string;
-  cachedInputAudioTokens: number;
-  cachedInputImageTokens: number;
-  cachedInputTextTokens: number;
+  records: number;
+  inputCharacters: number;
+  providerBilledUnits: string;
+  totalTokens: number;
+  inputTokens: number;
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
-  category: AiUsageCategoryBreakdownResponseDtoCategory;
-  currency: string;
-  durationSeconds: string;
-  /** providerReportedCost plus estimatedFallbackCost. */
-  effectiveCost: string;
-  estimatedCost: string;
-  /** Locally estimated fallback currency cost. */
-  estimatedFallbackCost: string;
-  inputAudioTokens: number;
-  inputCharacters: number;
-  inputImageTokens: number;
-  inputTextTokens: number;
-  inputTokens: number;
-  outputAudioTokens: number;
-  outputImageTokens: number;
-  outputTextTokens: number;
   outputTokens: number;
-  providerBilledUnits: string;
+  reasoningTokens: number;
+  inputTextTokens: number;
+  cachedInputTextTokens: number;
+  outputTextTokens: number;
+  inputAudioTokens: number;
+  cachedInputAudioTokens: number;
+  outputAudioTokens: number;
+  inputImageTokens: number;
+  cachedInputImageTokens: number;
+  outputImageTokens: number;
+  durationSeconds: string;
+  estimatedCost: string;
+  billedCost: string;
   /** Provider-reported currency cost. */
   providerReportedCost: string;
-  reasoningTokens: number;
-  records: number;
-  totalTokens: number;
+  /** Locally estimated fallback currency cost. */
+  estimatedFallbackCost: string;
+  /** providerReportedCost plus estimatedFallbackCost. */
+  effectiveCost: string;
+  category: AiUsageCategoryBreakdownResponseDtoCategory;
+  currency: string;
 }

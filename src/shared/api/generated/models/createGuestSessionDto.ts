@@ -8,8 +8,8 @@
 import type { CreateGuestSessionDtoContext } from "./createGuestSessionDtoContext";
 
 export interface CreateGuestSessionDto {
-  context?: CreateGuestSessionDtoContext;
   locale?: string;
+  context?: CreateGuestSessionDtoContext;
   /**
    * @minimum 300
    * @maximum 604800

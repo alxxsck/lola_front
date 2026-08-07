@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportLeadSummaryDataDto } from "./supportLeadSummaryDataDto";
-import type { SupportLeadSummaryResponseDtoEffectiveWindow } from "./supportLeadSummaryResponseDtoEffectiveWindow";
 import type { SupportLeadSummaryResponseDtoFreshnessState } from "./supportLeadSummaryResponseDtoFreshnessState";
-import type { SupportLeadSummaryResponseDtoKind } from "./supportLeadSummaryResponseDtoKind";
+import type { SupportLeadSummaryResponseDtoEffectiveWindow } from "./supportLeadSummaryResponseDtoEffectiveWindow";
 import type { SupportLeadSummaryResponseDtoSlaRolloutState } from "./supportLeadSummaryResponseDtoSlaRolloutState";
+import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
+import type { SupportLeadSummaryResponseDtoKind } from "./supportLeadSummaryResponseDtoKind";
 import type { SupportLeadSummaryResponseDtoView } from "./supportLeadSummaryResponseDtoView";
+import type { SupportLeadSummaryDataDto } from "./supportLeadSummaryDataDto";
 
 export interface SupportLeadSummaryResponseDto {
-  capabilities: SupportLeadCapabilitiesDto;
+  /** @minimum 1 */
+  projectionGeneration: number;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  computedAt: string;
-  data: SupportLeadSummaryDataDto;
-  /** @nullable */
-  effectiveWindow: SupportLeadSummaryResponseDtoEffectiveWindow;
-  freshnessState: SupportLeadSummaryResponseDtoFreshnessState;
-  kind: SupportLeadSummaryResponseDtoKind;
-  /**
-   * @maxLength 2048
-   * @nullable
-   */
-  nextCursor: string | null;
-  /** @minimum 1 */
-  projectionGeneration: number;
-  slaRolloutState: SupportLeadSummaryResponseDtoSlaRolloutState;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   sourceHighWater: string | null;
+  freshnessState: SupportLeadSummaryResponseDtoFreshnessState;
+  computedAt: string;
+  /**
+   * @maxLength 2048
+   * @nullable
+   */
+  nextCursor: string | null;
+  /** @nullable */
+  effectiveWindow: SupportLeadSummaryResponseDtoEffectiveWindow;
+  slaRolloutState: SupportLeadSummaryResponseDtoSlaRolloutState;
+  capabilities: SupportLeadCapabilitiesDto;
+  kind: SupportLeadSummaryResponseDtoKind;
   view: SupportLeadSummaryResponseDtoView;
+  data: SupportLeadSummaryDataDto;
 }

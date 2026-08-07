@@ -7,8 +7,6 @@
  */
 
 export interface StartAdminVoiceConversationDto {
-  /** Optional preferred online interaction session. Backend selects the latest active one when omitted. */
-  interactionSessionId?: string;
   /**
    * Exact first phrase that Retenive will synthesize after the user accepts the call.
    * @minLength 1
@@ -21,4 +19,6 @@ export interface StartAdminVoiceConversationDto {
    * @pattern ^[A-Za-z][A-Za-z0-9_-]{0,63}$
    */
   voice?: string;
+  /** Optional preferred online interaction session. Backend selects the latest active one when omitted. */
+  interactionSessionId?: string;
 }

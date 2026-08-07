@@ -10,18 +10,18 @@ import type { UserAttributeType } from "./userAttributeType";
 import type { UserAttributeDefinitionResponseDtoValidation } from "./userAttributeDefinitionResponseDtoValidation";
 
 export interface UserAttributeDefinitionResponseDto {
-  clientVisible: boolean;
-  createdAt: string;
-  /** @nullable */
-  description?: UserAttributeDefinitionResponseDtoDescription;
-  enabled: boolean;
   id: string;
+  projectId: string;
   key: string;
   label: string;
-  position: number;
-  projectId: string;
-  required: boolean;
+  /** @nullable */
+  description?: UserAttributeDefinitionResponseDtoDescription;
   type: UserAttributeType;
-  updatedAt: string;
+  required: boolean;
+  clientVisible: boolean;
   validation: UserAttributeDefinitionResponseDtoValidation;
+  enabled: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
 }

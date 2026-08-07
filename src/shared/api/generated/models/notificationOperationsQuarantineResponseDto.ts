@@ -8,14 +8,14 @@
 import type { NotificationOperationsQuarantineResponseDtoKind } from "./notificationOperationsQuarantineResponseDtoKind";
 
 export interface NotificationOperationsQuarantineResponseDto {
-  integrationId: string;
   kind: NotificationOperationsQuarantineResponseDtoKind;
-  maskedIdentity: string;
+  integrationId: string;
   projectId: string;
-  replayed: boolean;
   status: string;
-  /** @minimum 0 */
-  suppressedQueuedCount: number;
   /** @minimum 1 */
   version: number;
+  maskedIdentity: string;
+  /** @minimum 0 */
+  suppressedQueuedCount: number;
+  replayed: boolean;
 }

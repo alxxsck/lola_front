@@ -5,12 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationCanonicalKeyExtractorDto } from "./integrationCanonicalKeyExtractorDto";
 import type { IntegrationEventPropertyBindingDto } from "./integrationEventPropertyBindingDto";
+import type { IntegrationCanonicalKeyExtractorDto } from "./integrationCanonicalKeyExtractorDto";
 
 export interface CreateCustomerIoInboundRouteDto {
-  canonicalKeyExtractor?: IntegrationCanonicalKeyExtractorDto;
   connectionId: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
   /**
    * @minLength 1
    * @maxLength 500
@@ -22,12 +26,8 @@ export interface CreateCustomerIoInboundRouteDto {
    * @minLength 1
    * @maxLength 120
    */
-  name: string;
+  providerEventName: string;
   /** @maxItems 32 */
   propertyBindings: IntegrationEventPropertyBindingDto[];
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  providerEventName: string;
+  canonicalKeyExtractor?: IntegrationCanonicalKeyExtractorDto;
 }

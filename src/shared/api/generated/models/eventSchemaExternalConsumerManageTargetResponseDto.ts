@@ -8,11 +8,11 @@
 import type { EventSchemaExternalConsumerManageTargetResponseDtoWorkspace } from "./eventSchemaExternalConsumerManageTargetResponseDtoWorkspace";
 
 export interface EventSchemaExternalConsumerManageTargetResponseDto {
+  workspace: EventSchemaExternalConsumerManageTargetResponseDtoWorkspace;
   resourceId: string;
   /**
    * Provider-neutral section identifier within the Integrations workspace.
    * @nullable
    */
   section: string | null;
-  workspace: EventSchemaExternalConsumerManageTargetResponseDtoWorkspace;
 }

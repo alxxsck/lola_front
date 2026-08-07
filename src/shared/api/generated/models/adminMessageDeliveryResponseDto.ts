@@ -9,12 +9,12 @@ import type { AdminMessageDeliveryResponseDtoChannel } from "./adminMessageDeliv
 import type { AdminMessageDeliveryResponseDtoStatus } from "./adminMessageDeliveryResponseDtoStatus";
 
 export interface AdminMessageDeliveryResponseDto {
-  acceptedAt?: string;
-  channel?: AdminMessageDeliveryResponseDtoChannel;
-  commandIds: string[];
   id?: string;
-  /** @nullable */
-  interactionSessionId?: string | null;
+  channel?: AdminMessageDeliveryResponseDtoChannel;
   /** Acceptance is PENDING; only an authenticated client ACK may advance to DELIVERED or READ. */
   status: AdminMessageDeliveryResponseDtoStatus;
+  acceptedAt?: string;
+  /** @nullable */
+  interactionSessionId?: string | null;
+  commandIds: string[];
 }

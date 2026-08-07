@@ -8,10 +8,10 @@
 import type { EventQueryPolicyDocumentDto } from "./eventQueryPolicyDocumentDto";
 
 export interface EventQueryPolicyRevisionResponseDto {
-  compilerVersion: string;
+  id: string;
+  version: number;
   document: EventQueryPolicyDocumentDto;
   documentHash: string;
-  id: string;
+  compilerVersion: string;
   publishedAt: string;
-  version: number;
 }

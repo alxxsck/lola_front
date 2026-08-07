@@ -12,13 +12,13 @@ export interface MergeEndUserCasesDto {
   expectedVersion: number;
   idempotencyKey: string;
   /**
-   * @minLength 1
-   * @maxLength 2000
-   */
-  reason: string;
-  /**
    * @minItems 1
    * @maxItems 20
    */
   sources: MergeEndUserCaseSourceDto[];
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  reason: string;
 }

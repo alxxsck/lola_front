@@ -13,10 +13,10 @@ export interface FirstPlatformOperatorDto {
    * @minLength 1
    * @maxLength 100
    */
-  familyName: string;
+  givenName: string;
   /**
    * @minLength 1
    * @maxLength 100
    */
-  givenName: string;
+  familyName: string;
 }

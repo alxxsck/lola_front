@@ -8,14 +8,14 @@
 import type { ReplaceSupportWorkforceDraftDto } from "./replaceSupportWorkforceDraftDto";
 
 export interface SupportWorkforceDraftResponseDto {
-  configuration?: ReplaceSupportWorkforceDraftDto;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  version: number;
   /**
    * @minLength 64
    * @maxLength 64
    */
   contentHash: string;
-  /** @minimum 1 */
-  generation: number;
-  /** @minimum 1 */
-  version: number;
+  configuration?: ReplaceSupportWorkforceDraftDto;
 }

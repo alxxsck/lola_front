@@ -8,9 +8,9 @@
 import type { IntegrationEventRouteSummaryPolicyDtoMode } from "./integrationEventRouteSummaryPolicyDtoMode";
 
 export interface IntegrationEventRouteSummaryPolicyDto {
+  mode: IntegrationEventRouteSummaryPolicyDtoMode;
   /** @nullable */
   authoritativeRouteId: string | null;
-  mode: IntegrationEventRouteSummaryPolicyDtoMode;
   /** @nullable */
   policyRevisionId: string | null;
 }

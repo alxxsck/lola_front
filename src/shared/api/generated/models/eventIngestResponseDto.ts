@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventIngestResponseDtoProcessingStatus } from "./eventIngestResponseDtoProcessingStatus";
 import type { EventIngestResponseDtoStatus } from "./eventIngestResponseDtoStatus";
+import type { EventIngestResponseDtoProcessingStatus } from "./eventIngestResponseDtoProcessingStatus";
 
 export interface EventIngestResponseDto {
-  commandIds?: string[];
+  status: EventIngestResponseDtoStatus;
+  processingStatus: EventIngestResponseDtoProcessingStatus;
   duplicate?: boolean;
   eventId: string;
   matchedScenarios: string[];
-  processingStatus: EventIngestResponseDtoProcessingStatus;
   scenarioRunIds: string[];
-  status: EventIngestResponseDtoStatus;
+  commandIds?: string[];
 }

@@ -8,16 +8,16 @@
 import type { SupportOperationalAlertCommandReceiptDtoState } from "./supportOperationalAlertCommandReceiptDtoState";
 
 export interface SupportOperationalAlertCommandReceiptDto {
-  activityId: string;
-  alertId: string;
   commandId: string;
+  alertId: string;
   eventId: string;
-  occurredAt: string;
+  activityId: string;
   outboxId: string;
+  state: SupportOperationalAlertCommandReceiptDtoState;
   /** @nullable */
   ownerCmsUserId: string | null;
-  replayed: boolean;
-  state: SupportOperationalAlertCommandReceiptDtoState;
   /** @minimum 2 */
   version: number;
+  occurredAt: string;
+  replayed: boolean;
 }

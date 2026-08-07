@@ -9,8 +9,8 @@ import type { EventDefinitionUsageScenarioResponseDtoStatus } from "./eventDefin
 import type { EventDefinitionUsageScenarioResponseDtoUsagesItem } from "./eventDefinitionUsageScenarioResponseDtoUsagesItem";
 
 export interface EventDefinitionUsageScenarioResponseDto {
-  name: string;
   scenarioId: string;
+  name: string;
   status: EventDefinitionUsageScenarioResponseDtoStatus;
   usages: EventDefinitionUsageScenarioResponseDtoUsagesItem[];
 }

@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SetSupportOperatorAvailabilityDtoReasonCode } from "./setSupportOperatorAvailabilityDtoReasonCode";
 import type { SetSupportOperatorAvailabilityDtoState } from "./setSupportOperatorAvailabilityDtoState";
+import type { SetSupportOperatorAvailabilityDtoReasonCode } from "./setSupportOperatorAvailabilityDtoReasonCode";
 
 export interface SetSupportOperatorAvailabilityDto {
-  /**
-   * @minimum 60
-   * @maximum 28800
-   */
-  hardDurationSeconds?: number;
+  state: SetSupportOperatorAvailabilityDtoState;
   reasonCode: SetSupportOperatorAvailabilityDtoReasonCode;
   /**
    * @minLength 1
    * @maxLength 500
    */
   reasonNote?: string;
-  state: SetSupportOperatorAvailabilityDtoState;
+  /**
+   * @minimum 60
+   * @maximum 28800
+   */
+  hardDurationSeconds?: number;
 }

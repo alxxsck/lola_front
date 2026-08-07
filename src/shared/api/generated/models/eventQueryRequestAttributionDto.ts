@@ -8,11 +8,11 @@
 
 export interface EventQueryRequestAttributionDto {
   /** @nullable */
-  aiAnalysisRunId?: string | null;
+  caseId?: string | null;
   /** @nullable */
   aiReviewRunId?: string | null;
   /** @nullable */
-  caseId?: string | null;
+  aiAnalysisRunId?: string | null;
   /** @nullable */
   chatMessageId?: string | null;
   /** @nullable */

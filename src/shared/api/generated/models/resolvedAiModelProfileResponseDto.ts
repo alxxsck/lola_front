@@ -9,8 +9,8 @@ import type { ResolvedAiModelProfileResponseDtoReasoningEffort } from "./resolve
 import type { ResolvedAiModelProfileResponseDtoSource } from "./resolvedAiModelProfileResponseDtoSource";
 
 export interface ResolvedAiModelProfileResponseDto {
-  configRevision: string;
   modelId: string;
   reasoningEffort: ResolvedAiModelProfileResponseDtoReasoningEffort;
   source: ResolvedAiModelProfileResponseDtoSource;
+  configRevision: string;
 }

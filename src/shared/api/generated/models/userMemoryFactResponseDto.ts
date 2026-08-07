@@ -8,13 +8,13 @@
 import type { UserMemoryFactResponseDtoCategory } from "./userMemoryFactResponseDtoCategory";
 
 export interface UserMemoryFactResponseDto {
-  category: UserMemoryFactResponseDtoCategory;
-  createdAt: string;
-  expiresAt: string;
   id: string;
+  category: UserMemoryFactResponseDtoCategory;
   key: string;
+  value: string;
   sourceMessageId: string;
   sourceObservedAt: string;
+  expiresAt: string;
+  createdAt: string;
   updatedAt: string;
-  value: string;
 }

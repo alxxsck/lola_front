@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceFreshnessAgeLimitV2ResponseDto } from "./audienceFreshnessAgeLimitV2ResponseDto";
 import type { AudienceFreshnessPolicyV2ResponseDtoMode } from "./audienceFreshnessPolicyV2ResponseDtoMode";
+import type { AudienceFreshnessAgeLimitV2ResponseDto } from "./audienceFreshnessAgeLimitV2ResponseDto";
 
 export interface AudienceFreshnessPolicyV2ResponseDto {
-  maxAgeSeconds?: AudienceFreshnessAgeLimitV2ResponseDto;
   mode: AudienceFreshnessPolicyV2ResponseDtoMode;
+  maxAgeSeconds?: AudienceFreshnessAgeLimitV2ResponseDto;
 }

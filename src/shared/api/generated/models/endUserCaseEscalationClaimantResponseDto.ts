@@ -7,6 +7,6 @@
  */
 
 export interface EndUserCaseEscalationClaimantResponseDto {
-  displayName: string;
   id: string;
+  displayName: string;
 }

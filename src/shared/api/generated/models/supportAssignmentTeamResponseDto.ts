@@ -7,7 +7,7 @@
  */
 
 export interface SupportAssignmentTeamResponseDto {
-  code: string;
   id: string;
+  code: string;
   name: string;
 }

@@ -8,11 +8,11 @@
 
 export interface TelegramBroadcastPreviewExclusionsDto {
   /** @minimum 0 */
-  consentNotActive: number;
-  /** @minimum 0 */
-  installationUnavailable: number;
-  /** @minimum 0 */
   noActiveLink: number;
   /** @minimum 0 */
+  consentNotActive: number;
+  /** @minimum 0 */
   staleConsent: number;
+  /** @minimum 0 */
+  installationUnavailable: number;
 }

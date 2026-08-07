@@ -5,5 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SavedSupportViewCaseDraftDto } from "./savedSupportViewCaseDraftDto";
+import type { SavedSupportViewConversationDraftDto } from "./savedSupportViewConversationDraftDto";
+import type { SavedSupportViewMessageDraftDto } from "./savedSupportViewMessageDraftDto";
 
-export type ReplaceSavedSupportViewDraftDtoDraft = { [key: string]: unknown };
+export type ReplaceSavedSupportViewDraftDtoDraft =
+  | SavedSupportViewCaseDraftDto
+  | SavedSupportViewConversationDraftDto
+  | SavedSupportViewMessageDraftDto;

@@ -8,13 +8,13 @@
 import type { TelegramBroadcastTestResponseDtoStatus } from "./telegramBroadcastTestResponseDtoStatus";
 
 export interface TelegramBroadcastTestResponseDto {
-  currentRevision: boolean;
   id: string;
-  label: string;
   revisionId: string;
+  label: string;
+  status: TelegramBroadcastTestResponseDtoStatus;
+  currentRevision: boolean;
   /** @nullable */
   sentAt?: string | null;
-  status: TelegramBroadcastTestResponseDtoStatus;
   /** @minimum 1 */
   version: number;
 }

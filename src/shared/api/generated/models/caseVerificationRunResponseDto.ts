@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CaseVerificationRunResponseDtoEvaluation } from "./caseVerificationRunResponseDtoEvaluation";
-import type { CaseVerificationRunResponseDtoPredicate } from "./caseVerificationRunResponseDtoPredicate";
 import type { CaseVerificationQueryDto } from "./caseVerificationQueryDto";
+import type { CaseVerificationRunResponseDtoPredicate } from "./caseVerificationRunResponseDtoPredicate";
+import type { CaseVerificationRunResponseDtoEvaluation } from "./caseVerificationRunResponseDtoEvaluation";
 import type { CaseVerificationRunResponseDtoResults } from "./caseVerificationRunResponseDtoResults";
 import type { CaseVerificationRunResponseDtoStatus } from "./caseVerificationRunResponseDtoStatus";
 
 export interface CaseVerificationRunResponseDto {
-  caseChanged: boolean;
-  caseStatus: string;
-  caseVersion: number;
-  complete: boolean;
-  estimatedAddedInputTokens: number;
-  evaluation: CaseVerificationRunResponseDtoEvaluation;
-  id: string;
-  planId: string;
   policyRevisionId: string;
-  predicate: CaseVerificationRunResponseDtoPredicate;
+  snapshotReceivedAt: string;
   /**
    * @minItems 1
    * @maxItems 1
    */
   queries: CaseVerificationQueryDto[];
+  predicate: CaseVerificationRunResponseDtoPredicate;
+  evaluation: CaseVerificationRunResponseDtoEvaluation;
+  complete: boolean;
+  estimatedAddedInputTokens: number;
   results: CaseVerificationRunResponseDtoResults;
-  snapshotReceivedAt: string;
+  id: string;
+  planId: string;
   status: CaseVerificationRunResponseDtoStatus;
+  caseChanged: boolean;
+  caseStatus: string;
+  caseVersion: number;
 }

@@ -10,24 +10,24 @@ import type { CustomerIoInboundSetupResponseDtoPayloadTemplate } from "./custome
 import type { CustomerIoInboundSetupResponseDtoSignatureAlgorithm } from "./customerIoInboundSetupResponseDtoSignatureAlgorithm";
 
 export interface CustomerIoInboundSetupResponseDto {
-  admissionReady: boolean;
+  replayed: boolean;
   connectionId: string;
   /** @minimum 1 */
   connectionVersion: number;
+  endpointPath: string;
+  headerName: CustomerIoInboundSetupResponseDtoHeaderName;
+  /** Shown only in this response. */
+  secret: string;
+  /** @minimum 1 */
+  credentialRevision: number;
   /**
    * @minLength 16
    * @maxLength 16
    */
   credentialFingerprint: string;
-  /** @minimum 1 */
-  credentialRevision: number;
-  endpointPath: string;
-  headerName: CustomerIoInboundSetupResponseDtoHeaderName;
+  admissionReady: boolean;
   /** @nullable */
   overlapEndsAt: string | null;
   payloadTemplate: CustomerIoInboundSetupResponseDtoPayloadTemplate;
-  replayed: boolean;
-  /** Shown only in this response. */
-  secret: string;
   signatureAlgorithm: CustomerIoInboundSetupResponseDtoSignatureAlgorithm;
 }

@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiCapabilityToolResponseDtoParameters } from "./aiCapabilityToolResponseDtoParameters";
 import type { AiCapabilityToolResponseDtoType } from "./aiCapabilityToolResponseDtoType";
+import type { AiCapabilityToolResponseDtoParameters } from "./aiCapabilityToolResponseDtoParameters";
 
 export interface AiCapabilityToolResponseDto {
-  description: string;
+  type: AiCapabilityToolResponseDtoType;
   name: string;
+  description: string;
   parameters: AiCapabilityToolResponseDtoParameters;
   strict: boolean;
-  type: AiCapabilityToolResponseDtoType;
 }

@@ -8,8 +8,8 @@
 import type { SupportMacroCompiledVariableDtoName } from "./supportMacroCompiledVariableDtoName";
 
 export interface SupportMacroCompiledVariableDto {
-  /** @nullable */
-  fallback: string | null;
   name: SupportMacroCompiledVariableDtoName;
   required: boolean;
+  /** @nullable */
+  fallback: string | null;
 }

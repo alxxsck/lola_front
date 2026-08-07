@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaPauseDto } from "./supportSlaPauseDto";
-import type { SupportSlaTargetsDto } from "./supportSlaTargetsDto";
 import type { SupportSlaRuleWhenDto } from "./supportSlaRuleWhenDto";
+import type { SupportSlaTargetsDto } from "./supportSlaTargetsDto";
+import type { SupportSlaPauseDto } from "./supportSlaPauseDto";
 
 export interface SupportSlaRuleDto {
+  /** @pattern ^[A-Z][A-Z0-9_]{1,63}$ */
+  code: string;
+  order: number;
+  when: SupportSlaRuleWhenDto;
+  targets: SupportSlaTargetsDto;
   /**
    * @minimum 1
    * @maximum 90
    */
   atRiskRemainingPercent: number;
-  /** @pattern ^[A-Z][A-Z0-9_]{1,63}$ */
-  code: string;
-  order: number;
   pause: SupportSlaPauseDto;
-  targets: SupportSlaTargetsDto;
-  when: SupportSlaRuleWhenDto;
 }

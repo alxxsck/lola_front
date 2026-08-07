@@ -6,14 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AiOperationSubjectPageResponseDtoAvailability } from "./aiOperationSubjectPageResponseDtoAvailability";
-import type { AiOperationSubjectDto } from "./aiOperationSubjectDto";
 import type { AiOperationSubjectPageResponseDtoManifest } from "./aiOperationSubjectPageResponseDtoManifest";
+import type { AiOperationSubjectDto } from "./aiOperationSubjectDto";
 import type { AiOperationPageInfoDto } from "./aiOperationPageInfoDto";
 
 export interface AiOperationSubjectPageResponseDto {
   availability: AiOperationSubjectPageResponseDtoAvailability;
-  items: AiOperationSubjectDto[];
   /** @nullable */
   manifest?: AiOperationSubjectPageResponseDtoManifest;
+  items: AiOperationSubjectDto[];
   pageInfo: AiOperationPageInfoDto;
 }

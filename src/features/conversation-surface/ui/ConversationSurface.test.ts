@@ -191,6 +191,72 @@ describe("ConversationSurface", () => {
     ]);
   });
 
+  it("keeps an unknown send outcome inside the compact composer and checks without resending", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        outcome: {
+          state: "CHECKING_OUTCOME",
+          label: "Результат пока неизвестен. Сообщение не отправляется заново.",
+          action: { kind: "CHECK", label: "Проверить результат" },
+        },
+      } as PublicComposer,
+    });
+
+    expect(wrapper.get(".conversation-composer__outcome").text()).toContain(
+      "Результат пока неизвестен",
+    );
+    expect(wrapper.get("textarea").attributes("disabled")).toBeDefined();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Проверить результат")!
+      .trigger("click");
+    expect(wrapper.emitted("check-send-outcome")).toHaveLength(1);
+    expect(wrapper.emitted("send")).toBeUndefined();
+  });
+
+  it("offers the original stable attempt only after outcome lookup returns not found", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        initialDraft: "Повторить этот ответ",
+        outcome: {
+          state: "RETRYABLE",
+          label: "Отправка не найдена. Черновик сохранён.",
+        },
+      } as PublicComposer,
+    });
+
+    const retry = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Повторить отправку");
+    expect(retry).toBeDefined();
+    await wrapper.get(".conversation-composer").trigger("submit");
+    expect(wrapper.emitted("send")).toHaveLength(1);
+  });
+
+  it("lets the operator discard a blocked key without losing the draft", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        initialDraft: "Исправить и отправить новым ключом",
+        outcome: {
+          state: "BLOCKED",
+          label: "Отправка заблокирована. Черновик сохранён.",
+          action: { kind: "DISCARD", label: "Начать новую попытку" },
+        },
+      } as PublicComposer,
+    });
+
+    expect(wrapper.get("textarea").attributes("disabled")).toBeDefined();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Начать новую попытку")!
+      .trigger("click");
+    expect(wrapper.emitted("discard-send-attempt")).toHaveLength(1);
+    expect(wrapper.emitted("send")).toBeUndefined();
+  });
+
   it("renders one canonical log ordered by ordinal with author, time and textual delivery", () => {
     const wrapper = mountSurface();
     const rendered = wrapper.findAll("[data-message-id]");

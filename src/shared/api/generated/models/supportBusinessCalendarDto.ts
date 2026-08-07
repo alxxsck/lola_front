@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportBusinessCalendarExceptionDto } from "./supportBusinessCalendarExceptionDto";
 import type { SupportBusinessCalendarWeekdayDto } from "./supportBusinessCalendarWeekdayDto";
+import type { SupportBusinessCalendarExceptionDto } from "./supportBusinessCalendarExceptionDto";
 
 export interface SupportBusinessCalendarDto {
-  /** @maxItems 730 */
-  exceptions: SupportBusinessCalendarExceptionDto[];
   /** @maxLength 64 */
   timeZone: string;
   /** @maxItems 7 */
   weekly: SupportBusinessCalendarWeekdayDto[];
+  /** @maxItems 730 */
+  exceptions: SupportBusinessCalendarExceptionDto[];
 }

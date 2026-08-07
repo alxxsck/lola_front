@@ -8,6 +8,6 @@
 
 export interface ScenarioLocalizationLocaleResponseDto {
   code: string;
-  default: boolean;
   language: string;
+  default: boolean;
 }

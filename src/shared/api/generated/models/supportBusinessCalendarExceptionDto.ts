@@ -8,8 +8,8 @@
 import type { SupportBusinessCalendarIntervalDto } from "./supportBusinessCalendarIntervalDto";
 
 export interface SupportBusinessCalendarExceptionDto {
-  /** @maxItems 8 */
-  intervals: SupportBusinessCalendarIntervalDto[];
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   localDate: string;
+  /** @maxItems 8 */
+  intervals: SupportBusinessCalendarIntervalDto[];
 }

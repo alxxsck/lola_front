@@ -5,24 +5,34 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
-import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
+import type { AdminConversationMessageResponseDtoContentState } from "./adminConversationMessageResponseDtoContentState";
+import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
+import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
 import type { AdminConversationMessageTranslationResponseDto } from "./adminConversationMessageTranslationResponseDto";
+import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
 
 export interface AdminConversationMessageResponseDto {
-  /** @nullable */
-  author: AdminConversationMessageResponseDtoAuthor;
-  createdAt: string;
-  delivery?: AdminMessageDeliveryResponseDto;
   id: string;
-  /** @minimum 1 */
-  ordinal: number;
+  threadId: string;
   role: MessageRole;
   status: MessageStatus;
   text: string;
-  threadId: string;
-  translation?: AdminConversationMessageTranslationResponseDto;
+  contentState: AdminConversationMessageResponseDtoContentState;
+  /** @minimum 1 */
+  contentVersion: number;
+  /** @minimum 1 */
+  revisionNumber: number;
+  /** @nullable */
+  tombstonedAt?: string | null;
+  /** @minimum 1 */
+  ordinal: number;
+  /** @nullable */
+  author: AdminConversationMessageResponseDtoAuthor;
+  attachments: ChatAttachmentMessageSnapshotResponseDto[];
+  createdAt: string;
   updatedAt: string;
+  translation?: AdminConversationMessageTranslationResponseDto;
+  delivery?: AdminMessageDeliveryResponseDto;
 }

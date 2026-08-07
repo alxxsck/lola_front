@@ -7,13 +7,13 @@
  */
 
 export interface SupportOperationalAlertEscalationStepDto {
-  /** @minimum 0 */
-  afterSeconds: number;
   /**
    * @minimum 0
    * @maximum 9
    */
   stepOrdinal: number;
+  /** @minimum 0 */
+  afterSeconds: number;
   /** @maxLength 64 */
   targetCode: string;
 }

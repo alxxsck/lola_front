@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IngestClientEventDtoContext } from "./ingestClientEventDtoContext";
 import type { IngestClientEventDtoPayload } from "./ingestClientEventDtoPayload";
+import type { IngestClientEventDtoContext } from "./ingestClientEventDtoContext";
 
 export interface IngestClientEventDto {
-  context?: IngestClientEventDtoContext;
   /**
    * @minLength 1
    * @maxLength 120
    */
   eventCode: string;
-  /** @maxLength 200 */
-  externalEventId?: string;
+  payload: IngestClientEventDtoPayload;
+  context?: IngestClientEventDtoContext;
   /** @maxLength 5000 */
   message?: string;
+  /** @maxLength 200 */
+  externalEventId?: string;
   occurredAt?: string;
-  payload: IngestClientEventDtoPayload;
   /** @deprecated */
   timestamp?: string;
 }

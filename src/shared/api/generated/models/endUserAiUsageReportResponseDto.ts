@@ -5,29 +5,29 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EndUserAiUsageRangeResponseDto } from "./endUserAiUsageRangeResponseDto";
+import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
+import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
 import type { AiUsageBreakdownResponseDto } from "./aiUsageBreakdownResponseDto";
 import type { AiUsageCategoryBreakdownResponseDto } from "./aiUsageCategoryBreakdownResponseDto";
-import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
 import type { AiUsageProviderBreakdownsResponseDto } from "./aiUsageProviderBreakdownsResponseDto";
-import type { EndUserAiUsageRangeResponseDto } from "./endUserAiUsageRangeResponseDto";
-import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
-import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
-import type { EndUserAiUsageReportResponseDtoWindow } from "./endUserAiUsageReportResponseDtoWindow";
 import type { ProjectAiUsageWorkloadProjectionResponseDto } from "./projectAiUsageWorkloadProjectionResponseDto";
+import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
+import type { EndUserAiUsageReportResponseDtoWindow } from "./endUserAiUsageReportResponseDtoWindow";
 
 export interface EndUserAiUsageReportResponseDto {
+  projectId: string;
+  range: EndUserAiUsageRangeResponseDto;
+  totals: AiUsageTotalsResponseDto;
+  textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
   breakdown: AiUsageBreakdownResponseDto[];
   categories: AiUsageCategoryBreakdownResponseDto[];
-  endUserId: string;
+  providers: AiUsageProviderBreakdownsResponseDto;
+  /** Bounded cross-ledger workload projection. Present on the Project-level AI Usage report. */
+  workloads?: ProjectAiUsageWorkloadProjectionResponseDto;
   items: AiUsageRecordResponseDto[];
   /** @nullable */
   nextCursor: string | null;
-  projectId: string;
-  providers: AiUsageProviderBreakdownsResponseDto;
-  range: EndUserAiUsageRangeResponseDto;
-  textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
-  totals: AiUsageTotalsResponseDto;
+  endUserId: string;
   window: EndUserAiUsageReportResponseDtoWindow;
-  /** Bounded cross-ledger workload projection. Present on the Project-level AI Usage report. */
-  workloads?: ProjectAiUsageWorkloadProjectionResponseDto;
 }

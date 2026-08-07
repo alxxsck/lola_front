@@ -6,32 +6,32 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ConversationPolicy } from "./conversationPolicy";
-import type { ScenarioRunUserSummaryDto } from "./scenarioRunUserSummaryDto";
-import type { ScenarioRunScenarioSummaryDto } from "./scenarioRunScenarioSummaryDto";
 import type { ScenarioRunStatus } from "./scenarioRunStatus";
+import type { ScenarioRunScenarioSummaryDto } from "./scenarioRunScenarioSummaryDto";
+import type { ScenarioRunUserSummaryDto } from "./scenarioRunUserSummaryDto";
 import type { ScenarioRunStepResponseDto } from "./scenarioRunStepResponseDto";
 
 export interface ScenarioRunResponseDto {
-  /** @nullable */
-  conversationId?: string | null;
-  conversationPolicy: ConversationPolicy;
-  currentStep: number;
-  endUser: ScenarioRunUserSummaryDto;
-  endUserId: string;
-  /** @nullable */
-  errorCode?: string | null;
-  eventLogId: string;
-  /** @nullable */
-  finishedAt?: string | null;
   id: string;
-  /** @nullable */
-  interactionSessionId?: string | null;
   projectId: string;
-  scenario: ScenarioRunScenarioSummaryDto;
   scenarioId: string;
   /** @nullable */
   scenarioRevisionId?: string | null;
-  startedAt: string;
+  eventLogId: string;
+  endUserId: string;
+  /** @nullable */
+  interactionSessionId?: string | null;
+  /** @nullable */
+  conversationId?: string | null;
+  conversationPolicy: ConversationPolicy;
   status: ScenarioRunStatus;
+  /** @nullable */
+  errorCode?: string | null;
+  startedAt: string;
+  /** @nullable */
+  finishedAt?: string | null;
+  currentStep: number;
+  scenario: ScenarioRunScenarioSummaryDto;
+  endUser: ScenarioRunUserSummaryDto;
   steps: ScenarioRunStepResponseDto[];
 }

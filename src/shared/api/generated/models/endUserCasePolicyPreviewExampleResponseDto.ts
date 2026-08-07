@@ -8,6 +8,6 @@
 import type { EndUserCasePolicyPreviewExampleResponseDtoFloor } from "./endUserCasePolicyPreviewExampleResponseDtoFloor";
 
 export interface EndUserCasePolicyPreviewExampleResponseDto {
-  floor: EndUserCasePolicyPreviewExampleResponseDtoFloor;
   ruleCode: string;
+  floor: EndUserCasePolicyPreviewExampleResponseDtoFloor;
 }

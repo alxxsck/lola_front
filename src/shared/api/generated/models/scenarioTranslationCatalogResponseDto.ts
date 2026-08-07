@@ -8,7 +8,7 @@
 
 export interface ScenarioTranslationCatalogResponseDto {
   enabled: boolean;
-  maxBatchCharacters: number;
   supportedSourceLocales: string[];
   supportedTargetLocales: string[];
+  maxBatchCharacters: number;
 }

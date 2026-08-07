@@ -11,7 +11,7 @@ import type { EndUserCaseResolutionResponseDtoSource } from "./endUserCaseResolu
 export interface EndUserCaseResolutionResponseDto {
   assessment: EndUserCaseResolutionResponseDtoAssessment;
   /** @nullable */
-  confidence?: string | null;
-  /** @nullable */
   source?: EndUserCaseResolutionResponseDtoSource;
+  /** @nullable */
+  confidence?: string | null;
 }

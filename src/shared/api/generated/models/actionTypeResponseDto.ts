@@ -5,17 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActionTypeResponseDtoActiveRevision } from "./actionTypeResponseDtoActiveRevision";
 import type { ActionTypeOrigin } from "./actionTypeOrigin";
+import type { ActionTypeResponseDtoActiveRevision } from "./actionTypeResponseDtoActiveRevision";
 
 export interface ActionTypeResponseDto {
-  /** @nullable */
-  activeRevision?: ActionTypeResponseDtoActiveRevision;
-  /** @nullable */
-  activeRevisionId?: string | null;
   id: string;
   key: string;
   origin: ActionTypeOrigin;
   /** @nullable */
   ownerProjectId?: string | null;
+  /** @nullable */
+  activeRevisionId?: string | null;
+  /** @nullable */
+  activeRevision?: ActionTypeResponseDtoActiveRevision;
 }

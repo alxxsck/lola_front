@@ -8,14 +8,14 @@
 import type { IntegrationIngressStatusMetricsDto } from "./integrationIngressStatusMetricsDto";
 
 export interface IntegrationIngressBacklogMetricsDto {
-  byStatus: IntegrationIngressStatusMetricsDto;
   /** @minimum 0 */
   count: number;
+  /** @nullable */
+  oldestReceivedAt: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   oldestAgeSeconds: number | null;
-  /** @nullable */
-  oldestReceivedAt: string | null;
+  byStatus: IntegrationIngressStatusMetricsDto;
 }

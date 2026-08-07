@@ -8,15 +8,15 @@
 import type { SupportOperationalAlertMaterializationDtoState } from "./supportOperationalAlertMaterializationDtoState";
 
 export interface SupportOperationalAlertMaterializationDto {
+  state: SupportOperationalAlertMaterializationDtoState;
   /** @pattern ^(0|[1-9][0-9]*)$ */
   checkpoint: string;
-  computedAt: string;
+  /** @pattern ^(0|[1-9][0-9]*)$ */
+  sourceHighWater: string;
   /**
    * @maxLength 100
    * @nullable
    */
   diagnosticCode: string | null;
-  /** @pattern ^(0|[1-9][0-9]*)$ */
-  sourceHighWater: string;
-  state: SupportOperationalAlertMaterializationDtoState;
+  computedAt: string;
 }

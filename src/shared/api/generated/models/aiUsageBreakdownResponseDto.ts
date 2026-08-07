@@ -8,44 +8,44 @@
 import type { AiUsageBreakdownResponseDtoReasoningEffort } from "./aiUsageBreakdownResponseDtoReasoningEffort";
 
 export interface AiUsageBreakdownResponseDto {
-  /** @nullable */
-  appliedModel: string | null;
-  billedCost: string;
-  cachedInputAudioTokens: number;
-  cachedInputImageTokens: number;
-  cachedInputTextTokens: number;
+  records: number;
+  inputCharacters: number;
+  providerBilledUnits: string;
+  totalTokens: number;
+  inputTokens: number;
   cachedInputTokens: number;
   cacheWriteInputTokens: number;
-  currency: string;
+  outputTokens: number;
+  reasoningTokens: number;
+  inputTextTokens: number;
+  cachedInputTextTokens: number;
+  outputTextTokens: number;
+  inputAudioTokens: number;
+  cachedInputAudioTokens: number;
+  outputAudioTokens: number;
+  inputImageTokens: number;
+  cachedInputImageTokens: number;
+  outputImageTokens: number;
   durationSeconds: string;
-  /** providerReportedCost plus estimatedFallbackCost. */
-  effectiveCost: string;
   estimatedCost: string;
+  billedCost: string;
+  /** Provider-reported currency cost. */
+  providerReportedCost: string;
   /** Locally estimated fallback currency cost. */
   estimatedFallbackCost: string;
-  inputAudioTokens: number;
-  inputCharacters: number;
-  inputImageTokens: number;
-  inputTextTokens: number;
-  inputTokens: number;
+  /** providerReportedCost plus estimatedFallbackCost. */
+  effectiveCost: string;
+  provider: string;
   /** @nullable */
   model: string | null;
   /** @nullable */
-  modelConfigRevision: string | null;
-  operation: string;
-  outputAudioTokens: number;
-  outputImageTokens: number;
-  outputTextTokens: number;
-  outputTokens: number;
-  provider: string;
-  providerBilledUnits: string;
-  /** Provider-reported currency cost. */
-  providerReportedCost: string;
+  requestedModel: string | null;
+  /** @nullable */
+  appliedModel: string | null;
   /** @nullable */
   reasoningEffort: AiUsageBreakdownResponseDtoReasoningEffort;
-  reasoningTokens: number;
-  records: number;
   /** @nullable */
-  requestedModel: string | null;
-  totalTokens: number;
+  modelConfigRevision: string | null;
+  operation: string;
+  currency: string;
 }

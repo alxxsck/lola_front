@@ -7,7 +7,7 @@
  */
 
 export interface SupportKnowledgeManagedVisibilityResponseDto {
-  languageTags: string[];
   teamIds: string[];
   topicCodes: string[];
+  languageTags: string[];
 }

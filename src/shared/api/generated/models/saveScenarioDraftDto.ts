@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioRuleDto } from "./scenarioRuleDto";
 import type { AudienceRuleDto } from "./audienceRuleDto";
+import type { SaveScenarioDraftDtoProfileFreshness } from "./saveScenarioDraftDtoProfileFreshness";
 import type { SaveScenarioDraftDtoDeliveryPolicy } from "./saveScenarioDraftDtoDeliveryPolicy";
 import type { ScenarioSourceGraphDto } from "./scenarioSourceGraphDto";
 import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
-import type { SaveScenarioDraftDtoProfileFreshness } from "./saveScenarioDraftDtoProfileFreshness";
-import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
 export interface SaveScenarioDraftDto {
-  audience?: AudienceRuleDto;
-  /**
-   * @minLength 1
-   * @maxLength 128
-   */
-  catalogRevision: string;
-  deliveryPolicy: SaveScenarioDraftDtoDeliveryPolicy;
-  /** @nullable */
-  expectedCurrentRevisionId: string | null;
   /**
    * @minimum 1
    * @nullable
    */
   expectedDraftVersion: number | null;
+  /** @nullable */
+  expectedCurrentRevisionId: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  catalogRevision: string;
+  rule?: ScenarioRuleDto;
+  audience?: AudienceRuleDto;
+  profileFreshness?: SaveScenarioDraftDtoProfileFreshness;
+  deliveryPolicy: SaveScenarioDraftDtoDeliveryPolicy;
   graph: ScenarioSourceGraphDto;
   localization?: ScenarioLocalizationPolicyDto;
-  profileFreshness?: SaveScenarioDraftDtoProfileFreshness;
-  rule?: ScenarioRuleDto;
 }

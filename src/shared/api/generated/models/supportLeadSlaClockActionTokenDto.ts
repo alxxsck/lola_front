@@ -7,10 +7,10 @@
  */
 
 export interface SupportLeadSlaClockActionTokenDto {
+  clockId: string;
   /**
    * @minLength 1
    * @maxLength 256
    */
   actionEtag: string;
-  clockId: string;
 }

@@ -7,9 +7,9 @@
  */
 
 export interface AttributeContractAdmissionRevisionResponseDto {
+  revisionId: string;
+  version: number;
   acceptedFrom: string;
   /** @nullable */
   acceptedUntil?: string | null;
-  revisionId: string;
-  version: number;
 }

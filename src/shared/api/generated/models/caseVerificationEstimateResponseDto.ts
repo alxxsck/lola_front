@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CaseVerificationEstimateResponseDtoEvaluation } from "./caseVerificationEstimateResponseDtoEvaluation";
-import type { CaseVerificationEstimateResponseDtoPredicate } from "./caseVerificationEstimateResponseDtoPredicate";
 import type { CaseVerificationQueryDto } from "./caseVerificationQueryDto";
+import type { CaseVerificationEstimateResponseDtoPredicate } from "./caseVerificationEstimateResponseDtoPredicate";
+import type { CaseVerificationEstimateResponseDtoEvaluation } from "./caseVerificationEstimateResponseDtoEvaluation";
 import type { CaseVerificationEstimateResponseDtoResults } from "./caseVerificationEstimateResponseDtoResults";
 
 export interface CaseVerificationEstimateResponseDto {
-  complete: boolean;
-  estimatedAddedInputTokens: number;
-  evaluation: CaseVerificationEstimateResponseDtoEvaluation;
   policyRevisionId: string;
-  predicate: CaseVerificationEstimateResponseDtoPredicate;
+  snapshotReceivedAt: string;
   /**
    * @minItems 1
    * @maxItems 1
    */
   queries: CaseVerificationQueryDto[];
+  predicate: CaseVerificationEstimateResponseDtoPredicate;
+  evaluation: CaseVerificationEstimateResponseDtoEvaluation;
+  complete: boolean;
+  estimatedAddedInputTokens: number;
   results: CaseVerificationEstimateResponseDtoResults;
-  snapshotReceivedAt: string;
 }

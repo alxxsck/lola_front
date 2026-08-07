@@ -8,17 +8,17 @@
 
 export interface EventSchemaImpactSummaryResponseDto {
   /** @minimum 0 */
-  activeWaitCount: number;
+  consumerCount: number;
   /** @minimum 0 */
-  blockingActiveWaitCount: number;
+  activeWaitCount: number;
   /** @minimum 0 */
   blockingConsumerCount: number;
   /** @minimum 0 */
-  blockingEventQueryPolicyCount: number;
-  /** @minimum 0 */
-  consumerCount: number;
+  blockingActiveWaitCount: number;
   /** @minimum 0 */
   eventQueryPolicyCount: number;
+  /** @minimum 0 */
+  blockingEventQueryPolicyCount: number;
   /** @minimum 0 */
   legacyExactCount: number;
 }

@@ -7,6 +7,6 @@
  */
 
 export interface AdminProjectConversationEndUserResponseDto {
-  externalId: string;
   id: string;
+  externalId: string;
 }

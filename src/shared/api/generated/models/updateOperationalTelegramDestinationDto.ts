@@ -8,17 +8,17 @@
 import type { UpdateOperationalTelegramDestinationDtoDesiredStatus } from "./updateOperationalTelegramDestinationDtoDesiredStatus";
 
 export interface UpdateOperationalTelegramDestinationDto {
+  /** @minimum 1 */
+  expectedVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  displayName?: string;
   /**
    * @minLength 27
    * @maxLength 160
    */
   botToken?: string;
   desiredStatus?: UpdateOperationalTelegramDestinationDtoDesiredStatus;
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  displayName?: string;
-  /** @minimum 1 */
-  expectedVersion: number;
 }

@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiModelProfileResponseDto } from "./aiModelProfileResponseDto";
 import type { StoredAiModelSettingsResponseDtoVersion } from "./storedAiModelSettingsResponseDtoVersion";
+import type { AiModelProfileResponseDto } from "./aiModelProfileResponseDto";
 
 export interface StoredAiModelSettingsResponseDto {
+  version: StoredAiModelSettingsResponseDtoVersion;
   assistant: AiModelProfileResponseDto;
   translation: AiModelProfileResponseDto;
-  version: StoredAiModelSettingsResponseDtoVersion;
 }

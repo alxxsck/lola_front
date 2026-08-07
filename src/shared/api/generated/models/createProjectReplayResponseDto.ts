@@ -8,6 +8,6 @@
 import type { ProjectResponseDto } from "./projectResponseDto";
 
 export interface CreateProjectReplayResponseDto {
-  project: ProjectResponseDto;
   replayed: boolean;
+  project: ProjectResponseDto;
 }

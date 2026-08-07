@@ -8,8 +8,8 @@
 import type { ScenarioAuthoringDraftResponseDto } from "./scenarioAuthoringDraftResponseDto";
 
 export interface CreateScenarioAuthoringResponseDto {
+  scenarioId: string;
   /** @nullable */
   currentRevisionId: string | null;
   draft: ScenarioAuthoringDraftResponseDto;
-  scenarioId: string;
 }

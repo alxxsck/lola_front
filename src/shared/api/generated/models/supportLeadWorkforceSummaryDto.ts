@@ -10,9 +10,9 @@ import type { SupportLeadAvailabilitySummaryDto } from "./supportLeadAvailabilit
 export interface SupportLeadWorkforceSummaryDto {
   availability: SupportLeadAvailabilitySummaryDto;
   /** @minimum 0 */
-  capacityGapUnits: number;
-  /** @minimum 0 */
   currentWorkloadUnits: number;
   /** @minimum 0 */
   maximumCapacityUnits: number;
+  /** @minimum 0 */
+  capacityGapUnits: number;
 }

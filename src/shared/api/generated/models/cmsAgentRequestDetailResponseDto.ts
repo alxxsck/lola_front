@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsAgentConfirmationResponseDto } from "./cmsAgentConfirmationResponseDto";
-import type { CmsAgentDomainLinkResponseDto } from "./cmsAgentDomainLinkResponseDto";
-import type { CmsAgentRequestPageInfoDto } from "./cmsAgentRequestPageInfoDto";
-import type { CmsAgentInterpretationRunResponseDto } from "./cmsAgentInterpretationRunResponseDto";
 import type { CmsAgentRequestDetailResponseDtoStatus } from "./cmsAgentRequestDetailResponseDtoStatus";
+import type { CmsAgentDomainLinkResponseDto } from "./cmsAgentDomainLinkResponseDto";
+import type { CmsAgentConfirmationResponseDto } from "./cmsAgentConfirmationResponseDto";
+import type { CmsAgentInterpretationRunResponseDto } from "./cmsAgentInterpretationRunResponseDto";
+import type { CmsAgentRequestPageInfoDto } from "./cmsAgentRequestPageInfoDto";
 
 export interface CmsAgentRequestDetailResponseDto {
-  confirmations: CmsAgentConfirmationResponseDto[];
-  contentAvailable: boolean;
-  createdAt: string;
-  domainLinks: CmsAgentDomainLinkResponseDto[];
-  interpretationPageInfo: CmsAgentRequestPageInfoDto;
-  interpretationRuns: CmsAgentInterpretationRunResponseDto[];
+  requestId: string;
+  projectId: string;
+  rootOperationId: string;
+  requestingCmsUserId: string;
   /** @nullable */
   pinnedEndUserId?: string | null;
-  projectId: string;
-  /** @nullable */
-  redactedAt?: string | null;
-  requestId: string;
-  requestingCmsUserId: string;
-  retentionUntil: string;
-  rootOperationId: string;
-  status: CmsAgentRequestDetailResponseDtoStatus;
   /** @nullable */
   text?: string | null;
+  contentAvailable: boolean;
+  status: CmsAgentRequestDetailResponseDtoStatus;
+  createdAt: string;
   updatedAt: string;
+  retentionUntil: string;
+  /** @nullable */
+  redactedAt?: string | null;
+  domainLinks: CmsAgentDomainLinkResponseDto[];
+  confirmations: CmsAgentConfirmationResponseDto[];
+  interpretationRuns: CmsAgentInterpretationRunResponseDto[];
+  interpretationPageInfo: CmsAgentRequestPageInfoDto;
 }

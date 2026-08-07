@@ -8,7 +8,7 @@
 import type { EventQueryPolicyDocumentDto } from "./eventQueryPolicyDocumentDto";
 
 export interface EventQueryPolicyDraftResponseDto {
+  version: number;
   document: EventQueryPolicyDocumentDto;
   updatedAt: string;
-  version: number;
 }

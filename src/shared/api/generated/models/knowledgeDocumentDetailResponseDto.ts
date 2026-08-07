@@ -5,33 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { KnowledgeDocumentDetailResponseDtoCategory } from "./knowledgeDocumentDetailResponseDtoCategory";
-import type { KnowledgeDocumentDetailResponseDtoContentText } from "./knowledgeDocumentDetailResponseDtoContentText";
-import type { KnowledgeDocumentDetailResponseDtoError } from "./knowledgeDocumentDetailResponseDtoError";
-import type { KnowledgeDocumentDetailResponseDtoErrorCode } from "./knowledgeDocumentDetailResponseDtoErrorCode";
-import type { KnowledgeDocumentDetailResponseDtoLocale } from "./knowledgeDocumentDetailResponseDtoLocale";
 import type { KnowledgeSourceType } from "./knowledgeSourceType";
 import type { KnowledgeDocumentStatus } from "./knowledgeDocumentStatus";
+import type { KnowledgeDocumentDetailResponseDtoLocale } from "./knowledgeDocumentDetailResponseDtoLocale";
+import type { KnowledgeDocumentDetailResponseDtoCategory } from "./knowledgeDocumentDetailResponseDtoCategory";
+import type { KnowledgeDocumentDetailResponseDtoErrorCode } from "./knowledgeDocumentDetailResponseDtoErrorCode";
+import type { KnowledgeDocumentDetailResponseDtoError } from "./knowledgeDocumentDetailResponseDtoError";
+import type { KnowledgeDocumentDetailResponseDtoContentText } from "./knowledgeDocumentDetailResponseDtoContentText";
 
 export interface KnowledgeDocumentDetailResponseDto {
+  id: string;
+  projectId: string;
+  sourceType: KnowledgeSourceType;
+  title: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: KnowledgeDocumentStatus;
+  /** @nullable */
+  locale?: KnowledgeDocumentDetailResponseDtoLocale;
   /** @nullable */
   category?: KnowledgeDocumentDetailResponseDtoCategory;
   /** @nullable */
-  contentText?: KnowledgeDocumentDetailResponseDtoContentText;
-  createdAt: string;
+  errorCode?: KnowledgeDocumentDetailResponseDtoErrorCode;
   /** @nullable */
   error?: KnowledgeDocumentDetailResponseDtoError;
-  /** @nullable */
-  errorCode?: KnowledgeDocumentDetailResponseDtoErrorCode;
-  filename: string;
-  id: string;
-  /** @nullable */
-  locale?: KnowledgeDocumentDetailResponseDtoLocale;
-  mimeType: string;
-  projectId: string;
-  sizeBytes: number;
-  sourceType: KnowledgeSourceType;
-  status: KnowledgeDocumentStatus;
-  title: string;
+  createdAt: string;
   updatedAt: string;
+  /** @nullable */
+  contentText?: KnowledgeDocumentDetailResponseDtoContentText;
 }

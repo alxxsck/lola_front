@@ -7,6 +7,6 @@
  */
 
 export interface IntegrationActivityEndUserDto {
-  externalId: string;
   id: string;
+  externalId: string;
 }

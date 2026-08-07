@@ -5,20 +5,20 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCasePriority } from "./supportCasePriority";
 import type { SupportCaseStatus } from "./supportCaseStatus";
+import type { SupportCasePriority } from "./supportCasePriority";
 
 export interface SupportWorkspaceCaseRowResponseDto {
-  attentionRequired: boolean;
-  endUserId: string;
-  groupCode: string;
   id: string;
-  lastActivityAt: string;
-  priority: SupportCasePriority;
+  endUserId: string;
   projectSequence: string;
-  status: SupportCaseStatus;
-  title: string;
-  updatedAt: string;
   /** @minimum 1 */
   version: number;
+  title: string;
+  status: SupportCaseStatus;
+  priority: SupportCasePriority;
+  groupCode: string;
+  attentionRequired: boolean;
+  lastActivityAt: string;
+  updatedAt: string;
 }

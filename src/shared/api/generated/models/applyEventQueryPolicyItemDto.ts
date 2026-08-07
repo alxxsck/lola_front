@@ -9,13 +9,11 @@ import type { ApplyEventQueryPolicyItemDtoAllowedModesItem } from "./applyEventQ
 import type { EventQueryPolicyFieldDto } from "./eventQueryPolicyFieldDto";
 
 export interface ApplyEventQueryPolicyItemDto {
-  allowedModes: ApplyEventQueryPolicyItemDtoAllowedModesItem[];
-  /** Opaque token returned by the latest CMS-facing Event policy read or apply. */
-  concurrencyToken: string;
   /** @maxLength 500 */
   descriptionForAI: string;
-  enabled: boolean;
-  endUserConversationEnabled: boolean;
+  allowedModes: ApplyEventQueryPolicyItemDtoAllowedModesItem[];
+  /** @maxItems 50 */
+  safeFields: EventQueryPolicyFieldDto[];
   /**
    * @minimum 1
    * @maximum 744
@@ -26,6 +24,8 @@ export interface ApplyEventQueryPolicyItemDto {
    * @maximum 2160
    */
   maxVerificationLookbackHours: number;
-  /** @maxItems 50 */
-  safeFields: EventQueryPolicyFieldDto[];
+  /** Opaque token returned by the latest CMS-facing Event policy read or apply. */
+  concurrencyToken: string;
+  enabled: boolean;
+  endUserConversationEnabled: boolean;
 }

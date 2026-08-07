@@ -5,12 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectAiUsageWorkloadBreakdownResponseDtoReasoningEffort } from "./projectAiUsageWorkloadBreakdownResponseDtoReasoningEffort";
 import type { ProjectAiUsageWorkloadBreakdownResponseDtoWorkload } from "./projectAiUsageWorkloadBreakdownResponseDtoWorkload";
+import type { ProjectAiUsageWorkloadBreakdownResponseDtoReasoningEffort } from "./projectAiUsageWorkloadBreakdownResponseDtoReasoningEffort";
 
 export interface ProjectAiUsageWorkloadBreakdownResponseDto {
+  workload: ProjectAiUsageWorkloadBreakdownResponseDtoWorkload;
+  /** @nullable */
+  requestedModel: string | null;
   /** @nullable */
   appliedModel: string | null;
+  /** @nullable */
+  reasoningEffort: ProjectAiUsageWorkloadBreakdownResponseDtoReasoningEffort;
+  /** @minimum 0 */
+  requests: number;
+  /** @minimum 0 */
+  reasoningTokens: number;
   /**
    * Average latency over the terminal records represented by this row.
    * @minimum 0
@@ -20,13 +29,4 @@ export interface ProjectAiUsageWorkloadBreakdownResponseDto {
   effectiveCostUsd: string;
   /** True for an exact per-workload aggregate outside that workload deterministic top 25. */
   isOther: boolean;
-  /** @nullable */
-  reasoningEffort: ProjectAiUsageWorkloadBreakdownResponseDtoReasoningEffort;
-  /** @minimum 0 */
-  reasoningTokens: number;
-  /** @nullable */
-  requestedModel: string | null;
-  /** @minimum 0 */
-  requests: number;
-  workload: ProjectAiUsageWorkloadBreakdownResponseDtoWorkload;
 }

@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsUserProvisioningReplayResponseDtoDeliveryMode } from "./cmsUserProvisioningReplayResponseDtoDeliveryMode";
 import type { CmsUserProvisioningReplayResponseDtoStatus } from "./cmsUserProvisioningReplayResponseDtoStatus";
+import type { CmsUserProvisioningReplayResponseDtoDeliveryMode } from "./cmsUserProvisioningReplayResponseDtoDeliveryMode";
 
 export interface CmsUserProvisioningReplayResponseDto {
   cmsUserId: string;
-  deliveryMode: CmsUserProvisioningReplayResponseDtoDeliveryMode;
-  replayed: boolean;
   status: CmsUserProvisioningReplayResponseDtoStatus;
+  replayed: boolean;
+  deliveryMode: CmsUserProvisioningReplayResponseDtoDeliveryMode;
 }

@@ -7,17 +7,17 @@
  */
 
 export interface SupportRoutingOwnOfferDto {
-  /** @minLength 20 */
-  acceptToken: string;
-  /** @pattern ^"so1\.[A-Za-z0-9_-]{1,32}\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
   assignmentId: string;
+  caseId: string;
+  teamId: string;
+  queueId: string;
   /** @minimum 1 */
   assignmentVersion: number;
-  caseId: string;
-  expiresAt: string;
   /** @minimum 1 */
   fencingVersion: number;
-  queueId: string;
-  teamId: string;
+  expiresAt: string;
+  /** @pattern ^"so1\.[A-Za-z0-9_-]{1,32}\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
+  /** @minLength 20 */
+  acceptToken: string;
 }

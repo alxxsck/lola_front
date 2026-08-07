@@ -7,7 +7,7 @@
  */
 
 export interface ScenarioRunScenarioSummaryDto {
-  code: string;
   id: string;
+  code: string;
   name: string;
 }

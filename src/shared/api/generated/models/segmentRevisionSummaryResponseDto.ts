@@ -7,10 +7,10 @@
  */
 
 export interface SegmentRevisionSummaryResponseDto {
+  segmentRevisionId: string;
+  /** @minimum 1 */
+  revision: number;
   catalogRevision: string;
   contentHash: string;
   publishedAt: string;
-  /** @minimum 1 */
-  revision: number;
-  segmentRevisionId: string;
 }

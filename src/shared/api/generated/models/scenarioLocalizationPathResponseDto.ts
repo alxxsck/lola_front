@@ -8,6 +8,6 @@
 
 export interface ScenarioLocalizationPathResponseDto {
   actionType: string;
-  maxLength: number;
   path: string;
+  maxLength: number;
 }

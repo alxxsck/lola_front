@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioLocalizationPolicyDtoMode } from "./scenarioLocalizationPolicyDtoMode";
 import type { ScenarioLocalizationPolicyDtoVersion } from "./scenarioLocalizationPolicyDtoVersion";
+import type { ScenarioLocalizationPolicyDtoMode } from "./scenarioLocalizationPolicyDtoMode";
 
 export interface ScenarioLocalizationPolicyDto {
+  version: ScenarioLocalizationPolicyDtoVersion;
+  mode: ScenarioLocalizationPolicyDtoMode;
   /** @maxItems 20 */
   locales: string[];
-  mode: ScenarioLocalizationPolicyDtoMode;
-  version: ScenarioLocalizationPolicyDtoVersion;
 }

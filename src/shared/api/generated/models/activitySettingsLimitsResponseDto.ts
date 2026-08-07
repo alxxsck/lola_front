@@ -8,6 +8,6 @@
 import type { ActivitySettingLimitResponseDto } from "./activitySettingLimitResponseDto";
 
 export interface ActivitySettingsLimitsResponseDto {
-  reconnectGraceSeconds: ActivitySettingLimitResponseDto;
   visitInactivitySeconds: ActivitySettingLimitResponseDto;
+  reconnectGraceSeconds: ActivitySettingLimitResponseDto;
 }

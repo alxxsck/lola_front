@@ -8,11 +8,11 @@
 import type { TelegramBroadcastDeliveryStatus } from "./telegramBroadcastDeliveryStatus";
 
 export interface TelegramBroadcastOutcomeDto {
-  createdAt: string;
-  /** @nullable */
-  errorCode?: string | null;
-  /** @nullable */
-  finishedAt?: string | null;
   id: string;
   status: TelegramBroadcastDeliveryStatus;
+  /** @nullable */
+  errorCode?: string | null;
+  createdAt: string;
+  /** @nullable */
+  finishedAt?: string | null;
 }

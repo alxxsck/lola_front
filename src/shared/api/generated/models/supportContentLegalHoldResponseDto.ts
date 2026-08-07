@@ -9,15 +9,15 @@ import type { SupportContentLegalHoldResponseDtoScope } from "./supportContentLe
 import type { SupportContentLegalHoldResponseDtoState } from "./supportContentLegalHoldResponseDtoState";
 
 export interface SupportContentLegalHoldResponseDto {
-  /** @pattern ^"sch1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
-  createdAt: string;
   id: string;
+  scope: SupportContentLegalHoldResponseDtoScope;
+  targetId: string;
+  state: SupportContentLegalHoldResponseDtoState;
   reason: string;
+  version: number;
+  createdAt: string;
   /** @nullable */
   releasedAt: string | null;
-  scope: SupportContentLegalHoldResponseDtoScope;
-  state: SupportContentLegalHoldResponseDtoState;
-  targetId: string;
-  version: number;
+  /** @pattern ^"sch1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
 }

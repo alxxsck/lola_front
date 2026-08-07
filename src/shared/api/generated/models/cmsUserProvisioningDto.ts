@@ -16,12 +16,12 @@ export interface CmsUserProvisioningDto {
    * @minLength 1
    * @maxLength 100
    */
-  familyName: string;
+  givenName: string;
   /**
    * @minLength 1
    * @maxLength 100
    */
-  givenName: string;
+  familyName: string;
   /** @maxItems 64 */
   projectAssignments?: CmsUserProjectAssignmentDto[];
 }

@@ -9,8 +9,8 @@ import type { AiTextToSpeechCurrentPricingResponseDtoCurrency } from "./aiTextTo
 import type { AiTextToSpeechCurrentPricingResponseDtoUnit } from "./aiTextToSpeechCurrentPricingResponseDtoUnit";
 
 export interface AiTextToSpeechCurrentPricingResponseDto {
-  currency: AiTextToSpeechCurrentPricingResponseDtoCurrency;
-  effectiveFrom: string;
   rate: string;
+  currency: AiTextToSpeechCurrentPricingResponseDtoCurrency;
   unit: AiTextToSpeechCurrentPricingResponseDtoUnit;
+  effectiveFrom: string;
 }

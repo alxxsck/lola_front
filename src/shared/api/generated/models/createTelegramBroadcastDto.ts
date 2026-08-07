@@ -9,12 +9,12 @@
 export interface CreateTelegramBroadcastDto {
   /**
    * @minLength 1
-   * @maxLength 4096
-   */
-  text: string;
-  /**
-   * @minLength 1
    * @maxLength 120
    */
   title: string;
+  /**
+   * @minLength 1
+   * @maxLength 4096
+   */
+  text: string;
 }

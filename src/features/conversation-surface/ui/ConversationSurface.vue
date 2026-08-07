@@ -51,6 +51,8 @@ const emit = defineEmits<{
   "retry-reply-translation": [];
   "save-reply-translation": [text: string];
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
+  "check-send-outcome": [];
+  "discard-send-attempt": [];
   "composer-action": [action: ConversationSurfaceComposerAction];
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
@@ -566,6 +568,8 @@ onBeforeUnmount(() => {
       @retry-reply-translation="emit('retry-reply-translation')"
       @save-reply-translation="emit('save-reply-translation', $event)"
       @send-reply-translation="requestTranslatedSend"
+      @check-send-outcome="emit('check-send-outcome')"
+      @discard-send-attempt="emit('discard-send-attempt')"
       @action="emit('composer-action', $event)"
     />
     <p

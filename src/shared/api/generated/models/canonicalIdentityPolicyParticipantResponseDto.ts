@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CanonicalIdentityPolicyParticipantResponseDtoNormalization } from "./canonicalIdentityPolicyParticipantResponseDtoNormalization";
 import type { CanonicalIdentityPolicyParticipantResponseDtoProvider } from "./canonicalIdentityPolicyParticipantResponseDtoProvider";
+import type { CanonicalIdentityPolicyParticipantResponseDtoNormalization } from "./canonicalIdentityPolicyParticipantResponseDtoNormalization";
 
 export interface CanonicalIdentityPolicyParticipantResponseDto {
-  normalization: CanonicalIdentityPolicyParticipantResponseDtoNormalization;
-  provider: CanonicalIdentityPolicyParticipantResponseDtoProvider;
   routeId: string;
   routeRevisionId: string;
+  provider: CanonicalIdentityPolicyParticipantResponseDtoProvider;
   sourcePath: string[];
+  normalization: CanonicalIdentityPolicyParticipantResponseDtoNormalization;
 }

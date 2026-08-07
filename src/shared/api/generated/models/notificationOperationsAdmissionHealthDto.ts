@@ -8,9 +8,9 @@
 import type { NotificationOperationsAdmissionHealthDtoScope } from "./notificationOperationsAdmissionHealthDtoScope";
 
 export interface NotificationOperationsAdmissionHealthDto {
+  scope: NotificationOperationsAdmissionHealthDtoScope;
   /** @minimum 0 */
   exhaustedBucketCount: number;
   /** @minimum 0 */
   maximumRetryDelaySeconds: number;
-  scope: NotificationOperationsAdmissionHealthDtoScope;
 }

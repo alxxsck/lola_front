@@ -9,7 +9,7 @@ import type { EventQueryResultResponseDtoGroupsItemDimensions } from "./eventQue
 import type { EventQueryResultResponseDtoGroupsItemMetrics } from "./eventQueryResultResponseDtoGroupsItemMetrics";
 
 export type EventQueryResultResponseDtoGroupsItem = {
-  dimensions: EventQueryResultResponseDtoGroupsItemDimensions;
   eventCode: string;
+  dimensions: EventQueryResultResponseDtoGroupsItemDimensions;
   metrics: EventQueryResultResponseDtoGroupsItemMetrics;
 };

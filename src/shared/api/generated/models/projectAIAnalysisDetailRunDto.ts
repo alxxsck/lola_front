@@ -5,62 +5,44 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectAIAnalysisDetailRunDtoStatus } from "./projectAIAnalysisDetailRunDtoStatus";
+import type { ProjectAIAnalysisDetailRunDtoInitiatedBy } from "./projectAIAnalysisDetailRunDtoInitiatedBy";
 import type { ProjectAIAnalysisDetailRunDtoBudgetPolicySnapshot } from "./projectAIAnalysisDetailRunDtoBudgetPolicySnapshot";
-import type { ProjectAIAnalysisBudgetReservationDto } from "./projectAIAnalysisBudgetReservationDto";
+import type { ProjectAIAnalysisDetailRunDtoPricingSnapshot } from "./projectAIAnalysisDetailRunDtoPricingSnapshot";
 import type { ProjectAIAnalysisDetailRunDtoCostStatus } from "./projectAIAnalysisDetailRunDtoCostStatus";
 import type { ProjectAIAnalysisDetailRunDtoCostStatusesItem } from "./projectAIAnalysisDetailRunDtoCostStatusesItem";
-import type { ProjectAIAnalysisDetailRunDtoInitiatedBy } from "./projectAIAnalysisDetailRunDtoInitiatedBy";
+import type { ProjectAIAnalysisDetailRunDtoResult } from "./projectAIAnalysisDetailRunDtoResult";
 import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
 import type { ProjectAIAnalysisModelAttemptDto } from "./projectAIAnalysisModelAttemptDto";
-import type { ProjectAIAnalysisDetailRunDtoPricingSnapshot } from "./projectAIAnalysisDetailRunDtoPricingSnapshot";
+import type { ProjectAIAnalysisBudgetReservationDto } from "./projectAIAnalysisBudgetReservationDto";
 import type { ProjectAIAnalysisQueryReceiptDto } from "./projectAIAnalysisQueryReceiptDto";
-import type { ProjectAIAnalysisDetailRunDtoResult } from "./projectAIAnalysisDetailRunDtoResult";
-import type { ProjectAIAnalysisDetailRunDtoStatus } from "./projectAIAnalysisDetailRunDtoStatus";
 
 export interface ProjectAIAnalysisDetailRunDto {
-  /** @pattern ^\d+$ */
-  actualAiCostUsdTicks?: string;
-  /** @pattern ^\d+$ */
-  actualDbWorkUnits?: string;
+  runId: string;
+  attemptNumber: number;
+  /** @nullable */
+  rootAiOperationId?: string | null;
   /** @nullable */
   agentRequestId?: string | null;
-  attemptNumber: number;
-  /** @minimum 1 */
-  budgetPolicyRevision?: number;
-  budgetPolicySnapshot?: ProjectAIAnalysisDetailRunDtoBudgetPolicySnapshot;
-  budgetReconciliationPending?: boolean;
-  budgetReservations?: ProjectAIAnalysisBudgetReservationDto[];
+  status: ProjectAIAnalysisDetailRunDtoStatus;
+  initiatedBy: ProjectAIAnalysisDetailRunDtoInitiatedBy;
   /** @nullable */
-  budgetSettledAt?: string | null;
+  initiatedByCmsUserId?: string | null;
+  costAttributedToCmsUserId?: string;
   /** @nullable */
-  cancelledAt?: string | null;
-  /**
-   * @nullable
-   * @pattern ^[0-9a-f]{64}$
-   */
-  capabilitySetRevision?: string | null;
+  catalogRevisionId?: string | null;
   /**
    * @nullable
    * @pattern ^[0-9a-f]{64}$
    */
   catalogRevisionDigest?: string | null;
   /** @nullable */
-  catalogRevisionId?: string | null;
-  /** @nullable */
-  completedAt?: string | null;
-  costAttributedToCmsUserId?: string;
-  costStatus: ProjectAIAnalysisDetailRunDtoCostStatus;
-  costStatuses: ProjectAIAnalysisDetailRunDtoCostStatusesItem[];
-  createdAt: string;
-  /** @nullable */
-  errorCode?: string | null;
-  /** @nullable */
-  errorMessage?: string | null;
-  initiatedBy: ProjectAIAnalysisDetailRunDtoInitiatedBy;
-  /** @nullable */
-  initiatedByCmsUserId?: string | null;
-  limitationCodes: string[];
-  limitations: ProjectAIAnalysisErrorPresentationDto[];
+  queryPolicyRevisionId?: string | null;
+  /**
+   * @nullable
+   * @pattern ^[0-9a-f]{64}$
+   */
+  capabilitySetRevision?: string | null;
   /** @pattern ^\d+$ */
   maxAiCostUsdTicks?: string;
   /** @pattern ^\d+$ */
@@ -70,31 +52,49 @@ export interface ProjectAIAnalysisDetailRunDto {
    * @nullable
    */
   maxSubjectCount?: number | null;
-  /** @nullable */
-  model?: string | null;
-  modelAttempts?: ProjectAIAnalysisModelAttemptDto[];
-  pricingSnapshot?: ProjectAIAnalysisDetailRunDtoPricingSnapshot;
-  /** @nullable */
-  provider?: string | null;
-  providerResponseIds: string[];
-  /** @nullable */
-  queryPolicyRevisionId?: string | null;
-  receipts: ProjectAIAnalysisQueryReceiptDto[];
-  /** @nullable */
-  redactedAt?: string | null;
   /** @pattern ^\d+$ */
   reservedAiCostUsdTicks?: string;
   /** @pattern ^\d+$ */
+  actualAiCostUsdTicks?: string;
+  /** @pattern ^\d+$ */
   reservedDbWorkUnits?: string;
+  /** @pattern ^\d+$ */
+  actualDbWorkUnits?: string;
+  /** @minimum 1 */
+  budgetPolicyRevision?: number;
+  budgetPolicySnapshot?: ProjectAIAnalysisDetailRunDtoBudgetPolicySnapshot;
+  pricingSnapshot?: ProjectAIAnalysisDetailRunDtoPricingSnapshot;
+  budgetReconciliationPending?: boolean;
+  /** @nullable */
+  budgetSettledAt?: string | null;
+  costStatus: ProjectAIAnalysisDetailRunDtoCostStatus;
+  costStatuses: ProjectAIAnalysisDetailRunDtoCostStatusesItem[];
+  /** @nullable */
+  provider?: string | null;
+  /** @nullable */
+  model?: string | null;
+  providerResponseIds: string[];
   /** @nullable */
   result?: ProjectAIAnalysisDetailRunDtoResult;
   /** @nullable */
   resultHash?: string | null;
+  limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @nullable */
-  rootAiOperationId?: string | null;
-  runId: string;
+  errorCode?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
   /** @nullable */
   startedAt?: string | null;
-  status: ProjectAIAnalysisDetailRunDtoStatus;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  cancelledAt?: string | null;
+  /** @nullable */
+  redactedAt?: string | null;
+  createdAt: string;
   updatedAt: string;
+  modelAttempts?: ProjectAIAnalysisModelAttemptDto[];
+  budgetReservations?: ProjectAIAnalysisBudgetReservationDto[];
+  receipts: ProjectAIAnalysisQueryReceiptDto[];
 }

@@ -6,15 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScenarioAdmissionSettingsSemanticsResponseDtoDailyLimitWindow } from "./scenarioAdmissionSettingsSemanticsResponseDtoDailyLimitWindow";
+import type { ScenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit } from "./scenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit";
 import type { ScenarioAdmissionSettingsSemanticsResponseDtoMinimumIntervalAnchor } from "./scenarioAdmissionSettingsSemanticsResponseDtoMinimumIntervalAnchor";
 import type { ScenarioAdmissionSettingsSemanticsResponseDtoQuietHoursBehavior } from "./scenarioAdmissionSettingsSemanticsResponseDtoQuietHoursBehavior";
 import type { ScenarioAdmissionSettingsSemanticsResponseDtoSecurityBypass } from "./scenarioAdmissionSettingsSemanticsResponseDtoSecurityBypass";
-import type { ScenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit } from "./scenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit";
 
 export interface ScenarioAdmissionSettingsSemanticsResponseDto {
   dailyLimitWindow: ScenarioAdmissionSettingsSemanticsResponseDtoDailyLimitWindow;
+  visitLimitWithoutActiveVisit: ScenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit;
   minimumIntervalAnchor: ScenarioAdmissionSettingsSemanticsResponseDtoMinimumIntervalAnchor;
   quietHoursBehavior: ScenarioAdmissionSettingsSemanticsResponseDtoQuietHoursBehavior;
   securityBypass: ScenarioAdmissionSettingsSemanticsResponseDtoSecurityBypass;
-  visitLimitWithoutActiveVisit: ScenarioAdmissionSettingsSemanticsResponseDtoVisitLimitWithoutActiveVisit;
 }

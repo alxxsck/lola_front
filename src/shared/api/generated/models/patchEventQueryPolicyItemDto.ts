@@ -9,13 +9,15 @@ import type { PatchEventQueryPolicyItemDtoAllowedModesItem } from "./patchEventQ
 import type { EventQueryPolicyFieldDto } from "./eventQueryPolicyFieldDto";
 
 export interface PatchEventQueryPolicyItemDto {
-  allowedModes?: PatchEventQueryPolicyItemDtoAllowedModesItem[];
-  /** @maxLength 500 */
-  descriptionForAI?: string;
-  enabled?: boolean;
-  endUserConversationEnabled?: boolean;
   /** @minimum 0 */
   expectedVersion: number;
+  enabled?: boolean;
+  endUserConversationEnabled?: boolean;
+  /** @maxLength 500 */
+  descriptionForAI?: string;
+  allowedModes?: PatchEventQueryPolicyItemDtoAllowedModesItem[];
+  /** @maxItems 50 */
+  safeFields?: EventQueryPolicyFieldDto[];
   /**
    * @minimum 1
    * @maximum 744
@@ -26,6 +28,4 @@ export interface PatchEventQueryPolicyItemDto {
    * @maximum 2160
    */
   maxVerificationLookbackHours?: number;
-  /** @maxItems 50 */
-  safeFields?: EventQueryPolicyFieldDto[];
 }

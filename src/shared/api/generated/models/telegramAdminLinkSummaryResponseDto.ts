@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TelegramAdminLinkSummaryResponseDtoActiveLink } from "./telegramAdminLinkSummaryResponseDtoActiveLink";
-import type { TelegramAdminLinkEffectiveStatus } from "./telegramAdminLinkEffectiveStatus";
-import type { TelegramAdminLinkSummaryResponseDtoPendingCandidate } from "./telegramAdminLinkSummaryResponseDtoPendingCandidate";
 import type { TelegramAdminLinkSummaryResponseDtoStatus } from "./telegramAdminLinkSummaryResponseDtoStatus";
+import type { TelegramAdminLinkEffectiveStatus } from "./telegramAdminLinkEffectiveStatus";
+import type { TelegramAdminLinkSummaryResponseDtoActiveLink } from "./telegramAdminLinkSummaryResponseDtoActiveLink";
+import type { TelegramAdminLinkSummaryResponseDtoPendingCandidate } from "./telegramAdminLinkSummaryResponseDtoPendingCandidate";
 
 export interface TelegramAdminLinkSummaryResponseDto {
+  linked: boolean;
   /** @nullable */
-  activeLink?: TelegramAdminLinkSummaryResponseDtoActiveLink;
+  status?: TelegramAdminLinkSummaryResponseDtoStatus;
+  effectiveStatus: TelegramAdminLinkEffectiveStatus;
   /** @nullable */
   displayName?: string | null;
-  effectiveStatus: TelegramAdminLinkEffectiveStatus;
-  linked: boolean;
+  /** @nullable */
+  username?: string | null;
   /** @nullable */
   linkedAt?: string | null;
   /** @nullable */
-  pendingCandidate?: TelegramAdminLinkSummaryResponseDtoPendingCandidate;
-  /** @nullable */
   revokedAt?: string | null;
   /** @nullable */
-  status?: TelegramAdminLinkSummaryResponseDtoStatus;
+  activeLink?: TelegramAdminLinkSummaryResponseDtoActiveLink;
   /** @nullable */
-  username?: string | null;
+  pendingCandidate?: TelegramAdminLinkSummaryResponseDtoPendingCandidate;
 }

@@ -5,55 +5,55 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectCountsResponseDto } from "./projectCountsResponseDto";
-import type { CmsSessionProjectContextDtoMembershipStatus } from "./cmsSessionProjectContextDtoMembershipStatus";
-import type { OrganizationResponseDto } from "./organizationResponseDto";
-import type { CmsSessionProjectContextDtoSettings } from "./cmsSessionProjectContextDtoSettings";
 import type { ProjectStatus } from "./projectStatus";
+import type { CmsSessionProjectContextDtoMembershipStatus } from "./cmsSessionProjectContextDtoMembershipStatus";
+import type { CmsSessionProjectContextDtoSettings } from "./cmsSessionProjectContextDtoSettings";
+import type { OrganizationResponseDto } from "./organizationResponseDto";
+import type { ProjectCountsResponseDto } from "./projectCountsResponseDto";
 
 export interface CmsSessionProjectContextDto {
-  /** Present only when the membership grants project.settings.read. */
-  _count?: ProjectCountsResponseDto;
-  /** Present only when the membership grants project.settings.read. */
-  assistantName?: string;
-  /** Present only when the membership grants project.settings.read. */
-  createdAt?: string;
-  /** Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read. */
-  defaultLocale?: string;
-  effectivePermissionCodes: string[];
   id: string;
+  name: string;
+  slug: string;
+  status: ProjectStatus;
   membershipId: string;
   membershipStatus: CmsSessionProjectContextDtoMembershipStatus;
   /** @minimum 1 */
   membershipVersion: number;
-  name: string;
-  /** Present only when the membership grants project.settings.read. */
-  organization?: OrganizationResponseDto;
+  roleKeys: string[];
+  effectivePermissionCodes: string[];
   /** Present only when the membership grants project.settings.read. */
   organizationId?: string;
-  /** Present only when the membership grants project.settings.read. */
-  publicKey?: string;
-  roleKeys: string[];
-  /** Present only when the membership grants project.settings.read. */
-  serverKeyPrefix?: string;
-  /** Present only when the membership grants project.settings.read. */
-  settings?: CmsSessionProjectContextDtoSettings;
-  slug: string;
-  status: ProjectStatus;
-  /** Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read. */
-  supportedLocales?: string[];
-  /** Present only when the membership grants project.settings.read. */
-  systemPrompt?: string;
-  /** Present only when the membership grants project.settings.read. */
-  updatedAt?: string;
   /**
    * Present only when the membership grants project.settings.read.
    * @minimum 1
    */
   version?: number;
+  /** Present only when the membership grants project.settings.read. */
+  publicKey?: string;
+  /** Present only when the membership grants project.settings.read. */
+  serverKeyPrefix?: string;
+  /** Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read. */
+  defaultLocale?: string;
+  /** Present only when the membership grants project.knowledge.read, project.knowledge.write or project.settings.read. */
+  supportedLocales?: string[];
+  /** Present only when the membership grants project.settings.read. */
+  assistantName?: string;
+  /** Present only when the membership grants project.settings.read. */
+  systemPrompt?: string;
   /**
    * Present only when the membership grants project.settings.read.
    * @maxLength 20000
    */
   voiceInstructions?: string;
+  /** Present only when the membership grants project.settings.read. */
+  settings?: CmsSessionProjectContextDtoSettings;
+  /** Present only when the membership grants project.settings.read. */
+  createdAt?: string;
+  /** Present only when the membership grants project.settings.read. */
+  updatedAt?: string;
+  /** Present only when the membership grants project.settings.read. */
+  organization?: OrganizationResponseDto;
+  /** Present only when the membership grants project.settings.read. */
+  _count?: ProjectCountsResponseDto;
 }

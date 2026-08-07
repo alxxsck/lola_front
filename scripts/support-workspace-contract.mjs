@@ -11,6 +11,10 @@ export function validateSupportWorkspaceMessagingContract(document) {
   const workspaceRead = operation(document, "SupportWorkspace_read");
   const messageHistory = operation(document, "AdminConversations_listMessages");
   const sendMessage = operation(document, "AdminMessaging_send");
+  const lookupMessageOutcome = operation(
+    document,
+    "AdminMessaging_lookupOutcome",
+  );
   const workspacePermissions = new Set(
     workspaceRead["x-iam-any-permission"]?.map((value) => value.code) ?? [],
   );
@@ -21,6 +25,7 @@ export function validateSupportWorkspaceMessagingContract(document) {
   }
   requirePermission(messageHistory, "project.conversations.read");
   requirePermission(sendMessage, "project.conversations.reply");
+  requirePermission(lookupMessageOutcome, "project.conversations.reply");
   if (parameter(workspaceRead, "messageLimit").schema?.maximum !== 100) {
     throw new Error(
       "SupportWorkspace_read messageLimit must remain bounded at 100",
@@ -29,6 +34,27 @@ export function validateSupportWorkspaceMessagingContract(document) {
   const idempotencyKey = parameter(sendMessage, "Idempotency-Key");
   if (idempotencyKey.in !== "header" || idempotencyKey.required !== true) {
     throw new Error("AdminMessaging_send must require Idempotency-Key header");
+  }
+  const lookupIdempotencyKey = parameter(
+    lookupMessageOutcome,
+    "Idempotency-Key",
+  );
+  if (
+    lookupIdempotencyKey.in !== "header" ||
+    lookupIdempotencyKey.required !== true
+  ) {
+    throw new Error(
+      "AdminMessaging_lookupOutcome must require Idempotency-Key header",
+    );
+  }
+  if (
+    lookupMessageOutcome.responses?.["200"]?.content?.["application/json"]
+      ?.schema?.$ref !== "#/components/schemas/SendAdminMessageResponseDto" ||
+    !lookupMessageOutcome.responses?.["404"]
+  ) {
+    throw new Error(
+      "AdminMessaging_lookupOutcome must retain typed accepted and not-found outcomes",
+    );
   }
   requireProperties(document, "SupportWorkspaceSelectionResponseDto", [
     "mode",

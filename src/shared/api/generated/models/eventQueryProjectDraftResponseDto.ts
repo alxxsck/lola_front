@@ -7,10 +7,10 @@
  */
 
 export interface EventQueryProjectDraftResponseDto {
-  /** @nullable */
-  currentRevisionId?: string | null;
-  masterEnabled: boolean;
-  updatedAt: string;
   /** @minimum 1 */
   version: number;
+  masterEnabled: boolean;
+  /** @nullable */
+  currentRevisionId?: string | null;
+  updatedAt: string;
 }

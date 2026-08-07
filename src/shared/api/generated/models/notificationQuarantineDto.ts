@@ -8,10 +8,10 @@
 import type { NotificationQuarantineDtoReason } from "./notificationQuarantineDtoReason";
 
 export interface NotificationQuarantineDto {
+  reason: NotificationQuarantineDtoReason;
   /**
    * @minLength 1
    * @maxLength 160
    */
   confirmation: string;
-  reason: NotificationQuarantineDtoReason;
 }

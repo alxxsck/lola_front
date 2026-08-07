@@ -5,42 +5,42 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectAIAnalysisRunSummaryDtoStatus } from "./projectAIAnalysisRunSummaryDtoStatus";
 import type { ProjectAIAnalysisRunSummaryDtoCostStatus } from "./projectAIAnalysisRunSummaryDtoCostStatus";
 import type { ProjectAIAnalysisRunSummaryDtoCostStatusesItem } from "./projectAIAnalysisRunSummaryDtoCostStatusesItem";
 import type { ProjectAIAnalysisErrorPresentationDto } from "./projectAIAnalysisErrorPresentationDto";
-import type { ProjectAIAnalysisRunSummaryDtoStatus } from "./projectAIAnalysisRunSummaryDtoStatus";
 
 export interface ProjectAIAnalysisRunSummaryDto {
+  analysisId: string;
+  /** @nullable */
+  runId?: string | null;
+  status: ProjectAIAnalysisRunSummaryDtoStatus;
+  /** @minimum 1 */
+  version: number;
+  scheduledAt?: string;
+  /** @nullable */
+  rootAiOperationId?: string | null;
+  costAttributedToCmsUserId?: string;
   /** @pattern ^\d+$ */
   actualAiCostUsdTicks?: string;
   /** @pattern ^\d+$ */
+  reservedAiCostUsdTicks?: string;
+  /** @pattern ^\d+$ */
   actualDbWorkUnits?: string;
-  analysisId: string;
   budgetReconciliationPending?: boolean;
-  complete: boolean;
-  /** @nullable */
-  completedAt?: string | null;
-  costAttributedToCmsUserId?: string;
+  /** @minimum 0 */
+  modelAttempts?: number;
   costStatus?: ProjectAIAnalysisRunSummaryDtoCostStatus;
   costStatuses?: ProjectAIAnalysisRunSummaryDtoCostStatusesItem[];
+  /** @nullable */
+  completedAt?: string | null;
+  limitationCodes: string[];
+  limitations: ProjectAIAnalysisErrorPresentationDto[];
   /** @nullable */
   errorCode?: string | null;
   /** @nullable */
   errorMessage?: string | null;
-  eventCodes: string[];
   hasLimitations: boolean;
-  limitationCodes: string[];
-  limitations: ProjectAIAnalysisErrorPresentationDto[];
-  /** @minimum 0 */
-  modelAttempts?: number;
-  /** @pattern ^\d+$ */
-  reservedAiCostUsdTicks?: string;
-  /** @nullable */
-  rootAiOperationId?: string | null;
-  /** @nullable */
-  runId?: string | null;
-  scheduledAt?: string;
-  status: ProjectAIAnalysisRunSummaryDtoStatus;
-  /** @minimum 1 */
-  version: number;
+  complete: boolean;
+  eventCodes: string[];
 }

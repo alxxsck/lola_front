@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkspaceSelectionConversationResponseDtoLastMessage } from "./supportWorkspaceSelectionConversationResponseDtoLastMessage";
 import type { SupportWorkspaceSelectionConversationResponseDtoStatus } from "./supportWorkspaceSelectionConversationResponseDtoStatus";
+import type { SupportWorkspaceSelectionConversationResponseDtoLastMessage } from "./supportWorkspaceSelectionConversationResponseDtoLastMessage";
 
 export interface SupportWorkspaceSelectionConversationResponseDto {
-  /** @nullable */
-  aiSuspensionVersion?: string | null;
-  createdAt: string;
-  /** @minimum 0 */
-  currentInteractionSessionCount: number;
-  endUserId: string;
   id: string;
-  isCurrent: boolean;
-  /** @nullable */
-  lastMessage: SupportWorkspaceSelectionConversationResponseDtoLastMessage;
-  /** @minimum 0 */
-  lastMessageOrdinal: number;
-  /** @minimum 0 */
-  messageCount: number;
-  status: SupportWorkspaceSelectionConversationResponseDtoStatus;
+  endUserId: string;
   /** @nullable */
   title?: string | null;
+  status: SupportWorkspaceSelectionConversationResponseDtoStatus;
+  /** @minimum 0 */
+  messageCount: number;
+  /** @nullable */
+  lastMessage: SupportWorkspaceSelectionConversationResponseDtoLastMessage;
+  isCurrent: boolean;
+  /** @minimum 0 */
+  currentInteractionSessionCount: number;
+  createdAt: string;
   updatedAt: string;
+  /** @minimum 0 */
+  lastMessageOrdinal: number;
+  /** @nullable */
+  aiSuspensionVersion?: string | null;
 }

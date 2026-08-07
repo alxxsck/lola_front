@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TelegramLinkStateResponseDtoActiveLink } from "./telegramLinkStateResponseDtoActiveLink";
-import type { TelegramLinkStateResponseDtoChallengeStatus } from "./telegramLinkStateResponseDtoChallengeStatus";
-import type { TelegramLinkStateResponseDtoPendingCandidate } from "./telegramLinkStateResponseDtoPendingCandidate";
 import type { TelegramLinkStateResponseDtoStatus } from "./telegramLinkStateResponseDtoStatus";
+import type { TelegramLinkStateResponseDtoChallengeStatus } from "./telegramLinkStateResponseDtoChallengeStatus";
+import type { TelegramLinkStateResponseDtoActiveLink } from "./telegramLinkStateResponseDtoActiveLink";
+import type { TelegramLinkStateResponseDtoPendingCandidate } from "./telegramLinkStateResponseDtoPendingCandidate";
 
 export interface TelegramLinkStateResponseDto {
-  /** @nullable */
-  activeLink?: TelegramLinkStateResponseDtoActiveLink;
-  /** @nullable */
-  challengeStatus?: TelegramLinkStateResponseDtoChallengeStatus;
   linked: boolean;
   /** @nullable */
-  pendingCandidate?: TelegramLinkStateResponseDtoPendingCandidate;
+  status?: TelegramLinkStateResponseDtoStatus;
+  /** @nullable */
+  challengeStatus?: TelegramLinkStateResponseDtoChallengeStatus;
   /** @nullable */
   pendingChallengeId?: string | null;
   /** @nullable */
-  status?: TelegramLinkStateResponseDtoStatus;
+  activeLink?: TelegramLinkStateResponseDtoActiveLink;
+  /** @nullable */
+  pendingCandidate?: TelegramLinkStateResponseDtoPendingCandidate;
 }

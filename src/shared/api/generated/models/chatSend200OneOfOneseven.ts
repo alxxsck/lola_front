@@ -5,28 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ChatSend200OneOfOnesevenResponseDisposition } from "./chatSend200OneOfOnesevenResponseDisposition";
+import type { ChatSend200OneOfOnesevenCommandsItem } from "./chatSend200OneOfOnesevenCommandsItem";
+import type { ChatSend200OneOfOnesevenSourcesItem } from "./chatSend200OneOfOnesevenSourcesItem";
 import type { ChatSend200OneOfOnesevenAiSuspension } from "./chatSend200OneOfOnesevenAiSuspension";
 import type { ChatSend200OneOfOnesevenAllowanceNotice } from "./chatSend200OneOfOnesevenAllowanceNotice";
-import type { ChatSend200OneOfOnesevenCommandsItem } from "./chatSend200OneOfOnesevenCommandsItem";
-import type { ChatSend200OneOfOnesevenResponseDisposition } from "./chatSend200OneOfOnesevenResponseDisposition";
-import type { ChatSend200OneOfOnesevenSourcesItem } from "./chatSend200OneOfOnesevenSourcesItem";
 
 export type ChatSend200OneOfOneseven = {
+  responseDisposition: ChatSend200OneOfOnesevenResponseDisposition;
+  userMessageId: string;
+  /** @nullable */
+  assistantMessageId: string | null;
+  /** @nullable */
+  messageId: string | null;
+  threadId: string;
+  conversationId: string;
+  conversationCreated: boolean;
+  /** @nullable */
+  text: string | null;
+  commands: ChatSend200OneOfOnesevenCommandsItem[];
+  sources: ChatSend200OneOfOnesevenSourcesItem[];
   /** */
   aiSuspension: ChatSend200OneOfOnesevenAiSuspension;
   /** @nullable */
   allowanceNotice: ChatSend200OneOfOnesevenAllowanceNotice;
-  /** @nullable */
-  assistantMessageId: string | null;
-  commands: ChatSend200OneOfOnesevenCommandsItem[];
-  conversationCreated: boolean;
-  conversationId: string;
-  /** @nullable */
-  messageId: string | null;
-  responseDisposition: ChatSend200OneOfOnesevenResponseDisposition;
-  sources: ChatSend200OneOfOnesevenSourcesItem[];
-  /** @nullable */
-  text: string | null;
-  threadId: string;
-  userMessageId: string;
 };

@@ -8,7 +8,7 @@
 import type { EventQueryProvenanceResponseDtoSource } from "./eventQueryProvenanceResponseDtoSource";
 
 export interface EventQueryProvenanceResponseDto {
+  source: EventQueryProvenanceResponseDtoSource;
   policyRevisionId?: string;
   snapshotReceivedAt?: string;
-  source: EventQueryProvenanceResponseDtoSource;
 }

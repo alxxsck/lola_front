@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCasePolicyRevisionResponseDtoCompiledPolicy } from "./endUserCasePolicyRevisionResponseDtoCompiledPolicy";
 import type { EndUserCasePolicyRevisionResponseDtoStatus } from "./endUserCasePolicyRevisionResponseDtoStatus";
+import type { EndUserCasePolicyRevisionResponseDtoCompiledPolicy } from "./endUserCasePolicyRevisionResponseDtoCompiledPolicy";
 
 export interface EndUserCasePolicyRevisionResponseDto {
+  /** @nullable */
+  id?: string | null;
+  /** @minimum 1 */
+  version: number;
+  status: EndUserCasePolicyRevisionResponseDtoStatus;
   compiledPolicy: EndUserCasePolicyRevisionResponseDtoCompiledPolicy;
   compiledPolicyHash: string;
   compilerVersion: string;
   /** @nullable */
-  id?: string | null;
-  /** @nullable */
   publishedAt?: string | null;
-  status: EndUserCasePolicyRevisionResponseDtoStatus;
-  /** @minimum 1 */
-  version: number;
 }

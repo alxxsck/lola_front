@@ -8,11 +8,11 @@
 
 export interface AiCostTotalsResponseDto {
   /** @nullable */
-  effectiveCostUsd: string | null;
+  providerReportedCostUsd: string | null;
   /** @nullable */
   estimatedFallbackCostUsd: string | null;
+  /** @nullable */
+  effectiveCostUsd: string | null;
   /** Records with a concrete cost amount. */
   pricedCostRecords: number;
-  /** @nullable */
-  providerReportedCostUsd: string | null;
 }

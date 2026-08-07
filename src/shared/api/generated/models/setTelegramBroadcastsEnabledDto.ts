@@ -7,10 +7,10 @@
  */
 
 export interface SetTelegramBroadcastsEnabledDto {
-  enabled: boolean;
   /**
    * Expected broadcasts settings version, independent of bot credential version.
    * @minimum 1
    */
   expectedVersion: number;
+  enabled: boolean;
 }

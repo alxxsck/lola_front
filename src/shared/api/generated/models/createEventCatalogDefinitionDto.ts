@@ -8,18 +8,18 @@
 import type { CreateEventCatalogDefinitionDtoPayloadSchema } from "./createEventCatalogDefinitionDtoPayloadSchema";
 
 export interface CreateEventCatalogDefinitionDto {
-  clientIngestible?: boolean;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
-  /** Whether a valid frontend occurrence extends Visit and Activity Day. */
-  countsAsActivity?: boolean;
-  /** @maxLength 2000 */
-  description?: string;
-  enabled?: boolean;
   /**
    * @minLength 1
    * @maxLength 120
    */
   name: string;
+  /** @maxLength 2000 */
+  description?: string;
   payloadSchema: CreateEventCatalogDefinitionDtoPayloadSchema;
+  enabled?: boolean;
+  clientIngestible?: boolean;
+  /** Whether a valid frontend occurrence extends Visit and Activity Day. */
+  countsAsActivity?: boolean;
 }

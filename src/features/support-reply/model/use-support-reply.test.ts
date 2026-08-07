@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdminMessageResult } from "@/shared/types/domain";
 import { ApiError } from "@/shared/api/http/api-error";
 import type { SupportWorkspaceSelection } from "@/features/support-workspace/api/support-workspace-source";
@@ -59,7 +59,16 @@ const delivered: AdminMessageResult = {
   deliveryStatus: "PENDING",
 };
 
+function replySource(sendAdminMessage = vi.fn()) {
+  return {
+    sendAdminMessage,
+    lookupAdminMessageOutcome: vi.fn(),
+  };
+}
+
 describe("support reply controller", () => {
+  beforeEach(() => sessionStorage.clear());
+
   it("sends a reply only when the server selection allows it", async () => {
     const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
     const reconcile = vi.fn().mockResolvedValue(undefined);
@@ -70,7 +79,7 @@ describe("support reply controller", () => {
         selection: () => selection(),
         reconcile,
       },
-      { sendAdminMessage },
+      replySource(sendAdminMessage),
     );
     controller.draft.value = "  Добрый день  ";
 
@@ -111,7 +120,7 @@ describe("support reply controller", () => {
         selection: () => currentSelection,
         reconcile: vi.fn(),
       },
-      { sendAdminMessage },
+      replySource(sendAdminMessage),
     );
     controller.draft.value = "Добрый день";
 
@@ -136,7 +145,7 @@ describe("support reply controller", () => {
         selection: () => selection(true, "conversation-1", true),
         reconcile: vi.fn(),
       },
-      { sendAdminMessage },
+      replySource(sendAdminMessage),
     );
     controller.draft.value = "Срочное исходное сообщение";
 
@@ -168,6 +177,7 @@ describe("support reply controller", () => {
             "TRANSLATION_PREVIEW_REQUIRED",
           ),
         ),
+        lookupAdminMessageOutcome: vi.fn(),
       },
     );
     controller.draft.value = "Не отправлять автоматически";
@@ -187,7 +197,7 @@ describe("support reply controller", () => {
         selection: () => selection(false),
         reconcile: vi.fn(),
       },
-      { sendAdminMessage },
+      replySource(sendAdminMessage),
     );
     controller.draft.value = "Не отправлять";
 
@@ -206,7 +216,7 @@ describe("support reply controller", () => {
         selection: () => currentSelection,
         reconcile: vi.fn(),
       },
-      { sendAdminMessage: vi.fn() },
+      replySource(),
     );
 
     controller.syncSelection();
@@ -223,11 +233,11 @@ describe("support reply controller", () => {
     expect(controller.draft.value).toBe("Черновик первого диалога");
   });
 
-  it("reuses the same idempotency key when an unknown outcome is retried", async () => {
+  it("looks up an ambiguous outcome before clearing the draft", async () => {
     const sendAdminMessage = vi
       .fn()
-      .mockRejectedValueOnce(new Error("network timeout"))
-      .mockResolvedValueOnce(delivered);
+      .mockRejectedValueOnce(new TypeError("network timeout"));
+    const lookupAdminMessageOutcome = vi.fn().mockResolvedValue(delivered);
     const controller = createSupportReplyController(
       {
         projectId: () => "project-1",
@@ -235,17 +245,308 @@ describe("support reply controller", () => {
         selection: () => selection(),
         reconcile: vi.fn(),
       },
-      { sendAdminMessage },
+      { sendAdminMessage, lookupAdminMessageOutcome },
     );
     controller.draft.value = "Проверка retry";
 
     await controller.send();
-    await controller.send();
 
     const firstKey = sendAdminMessage.mock.calls[0]?.[2]?.idempotencyKey;
-    const secondKey = sendAdminMessage.mock.calls[1]?.[2]?.idempotencyKey;
     expect(firstKey).toEqual(expect.any(String));
-    expect(secondKey).toBe(firstKey);
+    expect(sendAdminMessage).toHaveBeenCalledTimes(1);
+    expect(lookupAdminMessageOutcome).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      firstKey,
+    );
+    expect(controller.draft.value).toBe("");
+    expect(controller.outcomeState.value).toBe("IDLE");
+  });
+
+  it("retries with the same key only after lookup confirms no accepted message", async () => {
+    const sendAdminMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network timeout"))
+      .mockResolvedValueOnce(delivered);
+    const lookupAdminMessageOutcome = vi
+      .fn()
+      .mockRejectedValue(new ApiError(404, "Not found"));
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage, lookupAdminMessageOutcome },
+    );
+    controller.draft.value = "Проверка retry";
+
+    await controller.send();
+
+    expect(controller.outcomeState.value).toBe("RETRYABLE");
+    expect(controller.draft.value).toBe("Проверка retry");
+    await controller.send();
+    expect(sendAdminMessage).toHaveBeenCalledTimes(2);
+    expect(sendAdminMessage.mock.calls[1]?.[2]?.idempotencyKey).toBe(
+      sendAdminMessage.mock.calls[0]?.[2]?.idempotencyKey,
+    );
+    expect(controller.draft.value).toBe("");
+  });
+
+  it("replays the exact original Case-bound body when the selected Case changes", async () => {
+    const sendAdminMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network timeout"))
+      .mockResolvedValueOnce(delivered);
+    const lookupAdminMessageOutcome = vi
+      .fn()
+      .mockRejectedValue(new ApiError(404, "Not found"));
+    let currentSelection = selection();
+    currentSelection.case = {
+      id: "case-original",
+      title: "Исходное обращение",
+      status: "OPEN",
+      priority: "NORMAL",
+      groupCode: "payments",
+      projectSequence: "7",
+      attentionRequired: false,
+      lastActivityAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      version: 1,
+      latestRevisionId: null,
+      assignee: null,
+      assignment: null,
+    };
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => currentSelection,
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage, lookupAdminMessageOutcome },
+    );
+    controller.draft.value = "Повторить точный запрос";
+
+    await controller.send();
+    currentSelection = selection();
+    await controller.send();
+
+    expect(sendAdminMessage).toHaveBeenCalledTimes(2);
+    expect(sendAdminMessage.mock.calls[1]?.[2]).toEqual(
+      sendAdminMessage.mock.calls[0]?.[2],
+    );
+    expect(sendAdminMessage.mock.calls[1]?.[2]?.endUserCaseId).toBe(
+      "case-original",
+    );
+  });
+
+  it("uses the current Case and a new key when the operator changes a retryable payload", async () => {
+    const sendAdminMessage = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network timeout"))
+      .mockResolvedValueOnce(delivered);
+    const lookupAdminMessageOutcome = vi
+      .fn()
+      .mockRejectedValue(new ApiError(404, "Not found"));
+    let currentSelection = selection();
+    currentSelection.case = {
+      id: "case-original",
+      title: "Исходное обращение",
+      status: "OPEN",
+      priority: "NORMAL",
+      groupCode: "payments",
+      projectSequence: "7",
+      attentionRequired: false,
+      lastActivityAt: "2026-08-06T10:00:00.000Z",
+      updatedAt: "2026-08-06T10:00:00.000Z",
+      version: 1,
+      latestRevisionId: null,
+      assignee: null,
+      assignment: null,
+    };
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => currentSelection,
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage, lookupAdminMessageOutcome },
+    );
+    controller.draft.value = "Исходный текст";
+    await controller.send();
+    const originalKey = sendAdminMessage.mock.calls[0]?.[2]?.idempotencyKey;
+
+    currentSelection = selection();
+    currentSelection.case = {
+      id: "case-current",
+      title: "Текущее обращение",
+      status: "OPEN",
+      priority: "HIGH",
+      groupCode: "retention",
+      projectSequence: "8",
+      attentionRequired: true,
+      lastActivityAt: "2026-08-06T11:00:00.000Z",
+      updatedAt: "2026-08-06T11:00:00.000Z",
+      version: 2,
+      latestRevisionId: null,
+      assignee: null,
+      assignment: null,
+    };
+    controller.draft.value = "Исправленный текст";
+    await controller.send();
+
+    expect(sendAdminMessage.mock.calls[1]?.[2]).toMatchObject({
+      text: "Исправленный текст",
+      endUserCaseId: "case-current",
+    });
+    expect(sendAdminMessage.mock.calls[1]?.[2]?.idempotencyKey).not.toBe(
+      originalKey,
+    );
+  });
+
+  it("restores an unresolved attempt after reload and checks outcome without resending", async () => {
+    const first = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      {
+        sendAdminMessage: vi.fn().mockRejectedValue(new TypeError("offline")),
+        lookupAdminMessageOutcome: vi
+          .fn()
+          .mockRejectedValue(new TypeError("still offline")),
+      },
+    );
+    first.syncSelection();
+    first.draft.value = "Сохранённый ответ";
+    await first.send();
+    expect(first.outcomeState.value).toBe("CHECKING_OUTCOME");
+
+    const sendAdminMessage = vi.fn();
+    const lookupAdminMessageOutcome = vi.fn().mockResolvedValue(delivered);
+    const restored = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      { sendAdminMessage, lookupAdminMessageOutcome },
+    );
+    restored.syncSelection();
+
+    expect(restored.draft.value).toBe("Сохранённый ответ");
+    expect(restored.outcomeState.value).toBe("CHECKING_OUTCOME");
+    await restored.checkOutcome();
+
+    expect(sendAdminMessage).not.toHaveBeenCalled();
+    expect(lookupAdminMessageOutcome).toHaveBeenCalledTimes(1);
+    expect(restored.draft.value).toBe("");
+  });
+
+  it("blocks a reused idempotency key without losing the operator draft", async () => {
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      {
+        sendAdminMessage: vi.fn().mockRejectedValue(
+          new ApiError(
+            409,
+            "Key reused",
+            undefined,
+            undefined,
+            "IDEMPOTENCY_KEY_REUSED",
+          ),
+        ),
+        lookupAdminMessageOutcome: vi.fn(),
+      },
+    );
+    controller.draft.value = "Не потерять при конфликте";
+
+    await controller.send();
+
+    expect(controller.draft.value).toBe("Не потерять при конфликте");
+    expect(controller.outcomeState.value).toBe("BLOCKED");
+    expect(controller.error.value).toContain("Черновик сохранён");
+  });
+
+  it("discards only a conflicting attempt and starts a new key with the preserved draft", async () => {
+    const blockedSend = vi.fn().mockRejectedValueOnce(
+        new ApiError(
+          409,
+          "Key reused",
+          undefined,
+          undefined,
+          "IDEMPOTENCY_KEY_REUSED",
+        ),
+      );
+    const blocked = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      replySource(blockedSend),
+    );
+    blocked.draft.value = "Сохранённый после конфликта текст";
+
+    await blocked.send();
+    const blockedKey = blockedSend.mock.calls[0]?.[2]?.idempotencyKey;
+
+    const retrySend = vi.fn().mockResolvedValueOnce(delivered);
+    const restored = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      replySource(retrySend),
+    );
+    restored.syncSelection();
+    expect(restored.outcomeState.value).toBe("BLOCKED");
+    expect(restored.draft.value).toBe("Сохранённый после конфликта текст");
+    restored.discardBlockedAttempt();
+    await restored.send();
+
+    expect(retrySend).toHaveBeenCalledTimes(1);
+    expect(retrySend.mock.calls[0]?.[2]?.idempotencyKey).not.toBe(
+      blockedKey,
+    );
+    expect(restored.draft.value).toBe("");
+  });
+
+  it("preserves the draft and refreshes authority after reply permission is revoked", async () => {
+    const reconcile = vi.fn().mockResolvedValue(undefined);
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile,
+      },
+      {
+        sendAdminMessage: vi.fn().mockRejectedValue(new ApiError(403, "Forbidden")),
+        lookupAdminMessageOutcome: vi.fn(),
+      },
+    );
+    controller.draft.value = "Сохранить после revoke";
+
+    await controller.send();
+
+    expect(controller.draft.value).toBe("Сохранить после revoke");
+    expect(controller.outcomeState.value).toBe("IDLE");
+    expect(reconcile).toHaveBeenCalledOnce();
   });
 
   it("keeps an accepted reply accepted when the following reconcile fails", async () => {
@@ -257,7 +558,7 @@ describe("support reply controller", () => {
         selection: () => selection(),
         reconcile: vi.fn().mockRejectedValue(new Error("refresh unavailable")),
       },
-      { sendAdminMessage },
+      replySource(sendAdminMessage),
     );
     controller.draft.value = "Сообщение уже принято";
 
@@ -280,7 +581,7 @@ describe("support reply controller", () => {
         selection: () => selection(),
         reconcile: vi.fn(),
       },
-      { sendAdminMessage: vi.fn() },
+      replySource(),
     );
 
     controller.syncSelection();

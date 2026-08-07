@@ -5,91 +5,91 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EndUserCaseResponseDtoActiveEscalation } from "./endUserCaseResponseDtoActiveEscalation";
-import type { EndUserCaseResponseDtoAssignee } from "./endUserCaseResponseDtoAssignee";
+import type { EndUserCaseResponseDtoType } from "./endUserCaseResponseDtoType";
+import type { EndUserCaseResponseDtoStatus } from "./endUserCaseResponseDtoStatus";
 import type { EndUserCaseResponseDtoAvailableStatusesItem } from "./endUserCaseResponseDtoAvailableStatusesItem";
-import type { EndUserCaseResponseDtoChannelsItem } from "./endUserCaseResponseDtoChannelsItem";
-import type { EndUserCaseResponseDtoCurrentTone } from "./endUserCaseResponseDtoCurrentTone";
-import type { EndUserCaseResponseDtoDegradedReason } from "./endUserCaseResponseDtoDegradedReason";
-import type { EndUserCaseEndUserResponseDto } from "./endUserCaseEndUserResponseDto";
+import type { EndUserCaseResolutionResponseDto } from "./endUserCaseResolutionResponseDto";
 import type { EndUserCaseResponseDtoImpact } from "./endUserCaseResponseDtoImpact";
-import type { EndUserCaseResponseDtoInitialTone } from "./endUserCaseResponseDtoInitialTone";
+import type { EndUserCaseResponseDtoUrgency } from "./endUserCaseResponseDtoUrgency";
 import type { EndUserCaseResponseDtoPriority } from "./endUserCaseResponseDtoPriority";
 import type { EndUserCaseResponseDtoPrioritySource } from "./endUserCaseResponseDtoPrioritySource";
-import type { EndUserCaseResolutionResponseDto } from "./endUserCaseResolutionResponseDto";
-import type { EndUserCaseSplitEvidenceResponseDto } from "./endUserCaseSplitEvidenceResponseDto";
-import type { EndUserCaseResponseDtoStatus } from "./endUserCaseResponseDtoStatus";
+import type { EndUserCaseResponseDtoInitialTone } from "./endUserCaseResponseDtoInitialTone";
+import type { EndUserCaseResponseDtoCurrentTone } from "./endUserCaseResponseDtoCurrentTone";
 import type { EndUserCaseResponseDtoToneTrend } from "./endUserCaseResponseDtoToneTrend";
-import type { EndUserCaseResponseDtoType } from "./endUserCaseResponseDtoType";
-import type { EndUserCaseResponseDtoUrgency } from "./endUserCaseResponseDtoUrgency";
+import type { EndUserCaseResponseDtoChannelsItem } from "./endUserCaseResponseDtoChannelsItem";
+import type { EndUserCaseEndUserResponseDto } from "./endUserCaseEndUserResponseDto";
+import type { EndUserCaseResponseDtoAssignee } from "./endUserCaseResponseDtoAssignee";
+import type { EndUserCaseResponseDtoActiveEscalation } from "./endUserCaseResponseDtoActiveEscalation";
+import type { EndUserCaseResponseDtoDegradedReason } from "./endUserCaseResponseDtoDegradedReason";
 import type { EndUserCaseWorkSummaryResponseDto } from "./endUserCaseWorkSummaryResponseDto";
+import type { EndUserCaseSplitEvidenceResponseDto } from "./endUserCaseSplitEvidenceResponseDto";
 
 export interface EndUserCaseResponseDto {
+  id: string;
+  /** JSON-safe project-local sequence. */
+  projectSequence: string;
+  /** @minimum 1 */
+  version: number;
+  type: EndUserCaseResponseDtoType;
+  groupCode: string;
   /** @nullable */
-  activeEscalation?: EndUserCaseResponseDtoActiveEscalation;
+  suggestedGroup?: string | null;
+  title: string;
+  goal: string;
+  summary: string;
+  status: EndUserCaseResponseDtoStatus;
+  availableStatuses: EndUserCaseResponseDtoAvailableStatusesItem[];
+  resolution: EndUserCaseResolutionResponseDto;
+  impact: EndUserCaseResponseDtoImpact;
+  urgency: EndUserCaseResponseDtoUrgency;
+  priority: EndUserCaseResponseDtoPriority;
+  prioritySource: EndUserCaseResponseDtoPrioritySource;
+  priorityReasons: string[];
+  initialTone: EndUserCaseResponseDtoInitialTone;
+  currentTone: EndUserCaseResponseDtoCurrentTone;
+  toneTrend: EndUserCaseResponseDtoToneTrend;
   /** @nullable */
-  aggregationDirtyAt?: string | null;
+  primaryLanguage?: string | null;
+  languages: string[];
+  channels: EndUserCaseResponseDtoChannelsItem[];
+  endUser: EndUserCaseEndUserResponseDto;
   /** @nullable */
   assignee?: EndUserCaseResponseDtoAssignee;
-  availableStatuses: EndUserCaseResponseDtoAvailableStatusesItem[];
-  channels: EndUserCaseResponseDtoChannelsItem[];
+  requiresSpecialist: boolean;
   /** @nullable */
-  closedAt?: string | null;
-  createdAt: string;
-  currentTone: EndUserCaseResponseDtoCurrentTone;
-  /** @nullable */
-  degradedReason?: EndUserCaseResponseDtoDegradedReason;
-  endUser: EndUserCaseEndUserResponseDto;
+  activeEscalation?: EndUserCaseResponseDtoActiveEscalation;
   /** @minimum 0 */
-  endUserRecontactCount: number;
+  messageCount: number;
   firstObservedAt: string;
-  goal: string;
-  groupCode: string;
-  id: string;
-  impact: EndUserCaseResponseDtoImpact;
-  initialTone: EndUserCaseResponseDtoInitialTone;
-  languages: string[];
   lastActivityAt: string;
   /** @nullable */
   lastEndUserRecontactAt?: string | null;
-  /** @nullable */
-  latestVerificationRunId?: string | null;
-  /** @nullable */
-  mergedIntoCaseId?: string | null;
   /** @minimum 0 */
-  messageCount: number;
+  endUserRecontactCount: number;
   /** @nullable */
-  nextAggregationAt?: string | null;
-  /** @nullable */
-  primaryLanguage?: string | null;
-  priority: EndUserCaseResponseDtoPriority;
-  priorityReasons: string[];
-  prioritySource: EndUserCaseResponseDtoPrioritySource;
-  /** JSON-safe project-local sequence. */
-  projectSequence: string;
-  /** @nullable */
-  reopenedAt?: string | null;
-  requiresSpecialist: boolean;
-  resolution: EndUserCaseResolutionResponseDto;
+  waitingSince?: string | null;
   /** @nullable */
   resolvedAt?: string | null;
-  splitEvidence?: EndUserCaseSplitEvidenceResponseDto[];
+  /** @nullable */
+  closedAt?: string | null;
+  /** @nullable */
+  reopenedAt?: string | null;
+  /** @nullable */
+  mergedIntoCaseId?: string | null;
   /** @nullable */
   splitFromCaseId?: string | null;
   /** @nullable */
   staleAt?: string | null;
-  status: EndUserCaseResponseDtoStatus;
   /** @nullable */
-  suggestedGroup?: string | null;
-  summary: string;
-  title: string;
-  toneTrend: EndUserCaseResponseDtoToneTrend;
-  type: EndUserCaseResponseDtoType;
-  updatedAt: string;
-  urgency: EndUserCaseResponseDtoUrgency;
-  /** @minimum 1 */
-  version: number;
+  aggregationDirtyAt?: string | null;
   /** @nullable */
-  waitingSince?: string | null;
+  nextAggregationAt?: string | null;
+  /** @nullable */
+  degradedReason?: EndUserCaseResponseDtoDegradedReason;
   workSummary?: EndUserCaseWorkSummaryResponseDto;
+  splitEvidence?: EndUserCaseSplitEvidenceResponseDto[];
+  /** @nullable */
+  latestVerificationRunId?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

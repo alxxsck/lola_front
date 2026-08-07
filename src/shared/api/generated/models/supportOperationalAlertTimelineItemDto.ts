@@ -5,29 +5,35 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportOperationalAlertActorDto } from "./supportOperationalAlertActorDto";
 import type { SupportOperationalAlertTimelineItemDtoEventKind } from "./supportOperationalAlertTimelineItemDtoEventKind";
 import type { SupportOperationalAlertTimelineItemDtoSourceKind } from "./supportOperationalAlertTimelineItemDtoSourceKind";
+import type { SupportOperationalAlertActorDto } from "./supportOperationalAlertActorDto";
 
 export interface SupportOperationalAlertTimelineItemDto {
-  actor: SupportOperationalAlertActorDto;
+  id: string;
   /** @minimum 1 */
-  afterVersion: number;
+  eventSequence: number;
+  eventKind: SupportOperationalAlertTimelineItemDtoEventKind;
+  /** @minimum 1 */
+  generation: number;
+  policyRevisionId: string;
+  /** @nullable */
+  sourceKind: SupportOperationalAlertTimelineItemDtoSourceKind;
+  /** @nullable */
+  sourceId: string | null;
+  /**
+   * @nullable
+   * @pattern ^[1-9][0-9]*$
+   */
+  sourceHighWater: string | null;
   /**
    * @minimum 1
    * @nullable
    */
-  beforeVersion: number | null;
-  eventKind: SupportOperationalAlertTimelineItemDtoEventKind;
-  /** @minimum 1 */
-  eventSequence: number;
-  /** @minimum 1 */
-  generation: number;
-  id: string;
-  occurredAt: string;
+  sourceVersion: number | null;
+  actor: SupportOperationalAlertActorDto;
   /** @nullable */
   ownerCmsUserId: string | null;
-  policyRevisionId: string;
   /** @nullable */
   previousOwnerCmsUserId: string | null;
   /**
@@ -36,17 +42,11 @@ export interface SupportOperationalAlertTimelineItemDto {
    */
   reasonCode: string | null;
   /**
-   * @nullable
-   * @pattern ^[1-9][0-9]*$
-   */
-  sourceHighWater: string | null;
-  /** @nullable */
-  sourceId: string | null;
-  /** @nullable */
-  sourceKind: SupportOperationalAlertTimelineItemDtoSourceKind;
-  /**
    * @minimum 1
    * @nullable
    */
-  sourceVersion: number | null;
+  beforeVersion: number | null;
+  /** @minimum 1 */
+  afterVersion: number;
+  occurredAt: string;
 }

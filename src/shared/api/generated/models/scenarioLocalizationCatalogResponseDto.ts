@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioLocalizationCatalogResponseDtoVersion } from "./scenarioLocalizationCatalogResponseDtoVersion";
 import type { ScenarioLocalizationLocaleResponseDto } from "./scenarioLocalizationLocaleResponseDto";
+import type { ScenarioLocalizationCatalogResponseDtoPolicyModesItem } from "./scenarioLocalizationCatalogResponseDtoPolicyModesItem";
 import type { ScenarioLocalizationCatalogResponseDtoLocalizedValueSchemaVersion } from "./scenarioLocalizationCatalogResponseDtoLocalizedValueSchemaVersion";
 import type { ScenarioLocalizationPathResponseDto } from "./scenarioLocalizationPathResponseDto";
-import type { ScenarioLocalizationCatalogResponseDtoPolicyModesItem } from "./scenarioLocalizationCatalogResponseDtoPolicyModesItem";
-import type { ScenarioLocalizationCatalogResponseDtoVersion } from "./scenarioLocalizationCatalogResponseDtoVersion";
 
 export interface ScenarioLocalizationCatalogResponseDto {
-  /** @nullable */
-  attributeContractRevision?: number | null;
+  version: ScenarioLocalizationCatalogResponseDtoVersion;
+  enabled: boolean;
   /** @nullable */
   attributeKey?: string | null;
+  /** @nullable */
+  attributeContractRevision?: number | null;
   defaultLocale: string;
-  enabled: boolean;
   locales: ScenarioLocalizationLocaleResponseDto[];
+  policyModes: ScenarioLocalizationCatalogResponseDtoPolicyModesItem[];
   localizedValueSchemaVersion: ScenarioLocalizationCatalogResponseDtoLocalizedValueSchemaVersion;
   paths: ScenarioLocalizationPathResponseDto[];
-  policyModes: ScenarioLocalizationCatalogResponseDtoPolicyModesItem[];
-  version: ScenarioLocalizationCatalogResponseDtoVersion;
 }

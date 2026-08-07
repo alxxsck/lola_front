@@ -8,7 +8,7 @@
 import type { EventQueryPolicyDocumentDto } from "./eventQueryPolicyDocumentDto";
 
 export interface SaveEventQueryPolicyDraftDto {
-  document: EventQueryPolicyDocumentDto;
   /** @minimum 0 */
   expectedVersion: number;
+  document: EventQueryPolicyDocumentDto;
 }

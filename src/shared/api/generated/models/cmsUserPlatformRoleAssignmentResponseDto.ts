@@ -8,9 +8,9 @@
 
 export interface CmsUserPlatformRoleAssignmentResponseDto {
   cmsUserId: string;
-  effectivePermissionCodes: string[];
-  roleIds: string[];
-  roleKeys: string[];
   /** @minimum 1 */
   version: number;
+  roleIds: string[];
+  roleKeys: string[];
+  effectivePermissionCodes: string[];
 }

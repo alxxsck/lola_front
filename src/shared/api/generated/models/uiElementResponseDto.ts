@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UiElementResponseDtoConfig } from "./uiElementResponseDtoConfig";
 import type { UiElementKind } from "./uiElementKind";
+import type { UiElementResponseDtoConfig } from "./uiElementResponseDtoConfig";
 
 export interface UiElementResponseDto {
-  aiAliases: string[];
-  /** @nullable */
-  aiDescription?: string | null;
-  aiEnabled: boolean;
+  id: string;
+  projectId: string;
   code: string;
-  config: UiElementResponseDtoConfig;
-  createdAt: string;
-  enabled: boolean;
+  name: string;
+  kind: UiElementKind;
+  /** @nullable */
+  selector?: string | null;
+  /**
+   * PAGE route passed to the product router.
+   * @nullable
+   */
+  route?: string | null;
+  /**
+   * MODAL key passed to the product modal registry.
+   * @nullable
+   */
+  modalName?: string | null;
   /**
    * Legacy CMS value. Runtime commands never use this field.
    * @deprecated
    * @nullable
    */
   handler?: string | null;
-  id: string;
-  kind: UiElementKind;
-  /**
-   * MODAL key passed to the product modal registry.
-   * @nullable
-   */
-  modalName?: string | null;
-  name: string;
-  projectId: string;
-  /**
-   * PAGE route passed to the product router.
-   * @nullable
-   */
-  route?: string | null;
+  config: UiElementResponseDtoConfig;
+  enabled: boolean;
+  aiEnabled: boolean;
   /** @nullable */
-  selector?: string | null;
+  aiDescription?: string | null;
+  aiAliases: string[];
+  createdAt: string;
   updatedAt: string;
 }

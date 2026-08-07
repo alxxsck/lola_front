@@ -7,7 +7,7 @@
  */
 
 export interface ProjectCountsResponseDto {
-  eventLogs: number;
-  scenarios: number;
   users: number;
+  scenarios: number;
+  eventLogs: number;
 }

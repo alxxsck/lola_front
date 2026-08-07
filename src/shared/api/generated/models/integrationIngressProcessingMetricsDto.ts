@@ -8,13 +8,13 @@
 
 export interface IntegrationIngressProcessingMetricsDto {
   /** @minimum 0 */
-  activeLeases: number;
-  /** @minimum 0 */
   attempts: number;
+  /** @minimum 0 */
+  recentErrors: number;
+  /** @minimum 0 */
+  activeLeases: number;
   /** @minimum 0 */
   expiredLeases: number;
   /** @minimum 0 */
   missingFences: number;
-  /** @minimum 0 */
-  recentErrors: number;
 }

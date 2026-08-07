@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminConversationMessageCountResponseDto } from "./adminConversationMessageCountResponseDto";
-import type { ConversationAISuspensionSummaryResponseDto } from "./conversationAISuspensionSummaryResponseDto";
-import type { AdminConversationPreviewMessageResponseDto } from "./adminConversationPreviewMessageResponseDto";
 import type { ThreadStatus } from "./threadStatus";
+import type { AdminConversationMessageCountResponseDto } from "./adminConversationMessageCountResponseDto";
+import type { AdminConversationPreviewMessageResponseDto } from "./adminConversationPreviewMessageResponseDto";
+import type { ConversationAISuspensionSummaryResponseDto } from "./conversationAISuspensionSummaryResponseDto";
 
 export interface AdminConversationResponseDto {
-  _count: AdminConversationMessageCountResponseDto;
-  aiSuspension: ConversationAISuspensionSummaryResponseDto;
-  createdAt: string;
-  /** @minimum 0 */
-  currentInteractionSessionCount: number;
-  endUserId: string;
   id: string;
-  isCurrent: boolean;
-  messages: AdminConversationPreviewMessageResponseDto[];
   projectId: string;
+  endUserId: string;
   /** @nullable */
   sessionId?: string | null;
-  status: ThreadStatus;
   /** @nullable */
   title?: string | null;
+  status: ThreadStatus;
+  createdAt: string;
   updatedAt: string;
+  _count: AdminConversationMessageCountResponseDto;
+  messages: AdminConversationPreviewMessageResponseDto[];
+  isCurrent: boolean;
+  /** @minimum 0 */
+  currentInteractionSessionCount: number;
+  aiSuspension: ConversationAISuspensionSummaryResponseDto;
 }

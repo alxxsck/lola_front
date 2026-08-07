@@ -7,36 +7,36 @@
  */
 import type { ScenarioRunAudienceResponseDtoDecision } from "./scenarioRunAudienceResponseDtoDecision";
 import type { ScenarioRunAudienceResponseDtoFidelity } from "./scenarioRunAudienceResponseDtoFidelity";
-import type { ScenarioRunAudienceResponseDtoFreshness } from "./scenarioRunAudienceResponseDtoFreshness";
-import type { ScenarioRunAudienceResponseDtoLastRecheck } from "./scenarioRunAudienceResponseDtoLastRecheck";
-import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
 import type { ScenarioRunAudienceResponseDtoSource } from "./scenarioRunAudienceResponseDtoSource";
 import type { ScenarioRunAudienceResponseDtoTruth } from "./scenarioRunAudienceResponseDtoTruth";
+import type { ScenarioRunAudienceResponseDtoFreshness } from "./scenarioRunAudienceResponseDtoFreshness";
+import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
+import type { ScenarioRunAudienceResponseDtoLastRecheck } from "./scenarioRunAudienceResponseDtoLastRecheck";
 
 export interface ScenarioRunAudienceResponseDto {
+  decision: ScenarioRunAudienceResponseDtoDecision;
+  fidelity: ScenarioRunAudienceResponseDtoFidelity;
+  /** @nullable */
+  evaluatedAt?: string | null;
+  /** @nullable */
+  source?: ScenarioRunAudienceResponseDtoSource;
+  truth?: ScenarioRunAudienceResponseDtoTruth;
+  /** @nullable */
+  profileVersion?: string | null;
+  /** @nullable */
+  contractRevision?: number | null;
+  /** @nullable */
+  observedAt?: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   ageSeconds?: number | null;
-  attributeRevisionIds: string[];
-  /** @nullable */
-  contractRevision?: number | null;
-  decision: ScenarioRunAudienceResponseDtoDecision;
-  /** @nullable */
-  evaluatedAt?: string | null;
-  fidelity: ScenarioRunAudienceResponseDtoFidelity;
   /** @nullable */
   freshness?: ScenarioRunAudienceResponseDtoFreshness;
-  /** @nullable */
-  lastRecheck?: ScenarioRunAudienceResponseDtoLastRecheck;
-  /** @nullable */
-  observedAt?: string | null;
-  /** @nullable */
-  profileVersion?: string | null;
   root: AudienceExplanationNodeResponseDto;
   segmentRevisionIds: string[];
+  attributeRevisionIds: string[];
   /** @nullable */
-  source?: ScenarioRunAudienceResponseDtoSource;
-  truth?: ScenarioRunAudienceResponseDtoTruth;
+  lastRecheck?: ScenarioRunAudienceResponseDtoLastRecheck;
 }

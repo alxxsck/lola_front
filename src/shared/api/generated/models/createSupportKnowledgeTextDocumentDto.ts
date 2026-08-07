@@ -9,20 +9,20 @@
 export interface CreateSupportKnowledgeTextDocumentDto {
   /**
    * @minLength 1
+   * @maxLength 240
+   */
+  title: string;
+  /**
+   * @minLength 1
    * @maxLength 1048576
    */
   contentText: string;
   /** @maxLength 35 */
   language?: string;
-  /** @maxItems 50 */
-  languageTags?: string[];
   /** @maxItems 100 */
   teamIds?: string[];
-  /**
-   * @minLength 1
-   * @maxLength 240
-   */
-  title: string;
   /** @maxItems 39 */
   topicCodes?: string[];
+  /** @maxItems 50 */
+  languageTags?: string[];
 }

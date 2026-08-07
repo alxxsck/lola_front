@@ -9,31 +9,31 @@ import type { CreateScenarioAuthoringMetadataDtoConversationPolicy } from "./cre
 import type { CreateScenarioAuthoringMetadataDtoImportanceClass } from "./createScenarioAuthoringMetadataDtoImportanceClass";
 
 export interface CreateScenarioAuthoringMetadataDto {
-  activeFrom?: string;
-  activeTo?: string;
   /** @pattern ^[a-z][a-z0-9_.-]*$ */
   code: string;
-  conversationPolicy?: CreateScenarioAuthoringMetadataDtoConversationPolicy;
-  /** @minimum 0 */
-  cooldownSeconds?: number;
-  /** @maxLength 2000 */
-  description?: string;
-  importanceClass?: CreateScenarioAuthoringMetadataDtoImportanceClass;
-  /**
-   * @minimum 1
-   * @nullable
-   */
-  maxRunsPerUser?: number | null;
   /**
    * @minLength 1
    * @maxLength 120
    */
   name: string;
+  /** @maxLength 2000 */
+  description?: string;
+  triggerEventDefinitionRevisionId: string;
+  conversationPolicy?: CreateScenarioAuthoringMetadataDtoConversationPolicy;
   /**
    * @minimum -1000
    * @maximum 1000
    */
   priority?: number;
+  importanceClass?: CreateScenarioAuthoringMetadataDtoImportanceClass;
   respectsQuietHours?: boolean;
-  triggerEventDefinitionRevisionId: string;
+  /** @minimum 0 */
+  cooldownSeconds?: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  maxRunsPerUser?: number | null;
+  activeFrom?: string;
+  activeTo?: string;
 }

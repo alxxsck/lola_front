@@ -7,17 +7,17 @@
  */
 
 export interface TelegramBroadcastApprovalEvidenceDto {
-  approvedAt: string;
-  approvedByActorId: string;
-  approvedByActorType: string;
-  audiencePolicy: string;
-  contentHash: string;
   id: string;
+  revisionId: string;
+  successfulTestId: string;
+  contentHash: string;
+  audiencePolicy: string;
   /**
    * @minimum 0
    * @maximum 10000
    */
   recipientCount: number;
-  revisionId: string;
-  successfulTestId: string;
+  approvedByActorType: string;
+  approvedByActorId: string;
+  approvedAt: string;
 }

@@ -8,10 +8,10 @@
 import type { SupportMacroCompiledDraftDto } from "./supportMacroCompiledDraftDto";
 
 export interface SupportMacroDraftProjectionDto {
-  configuration: SupportMacroCompiledDraftDto;
-  contentHash: string;
   /** @minimum 1 */
   generation: number;
   /** @minimum 1 */
   version: number;
+  contentHash: string;
+  configuration: SupportMacroCompiledDraftDto;
 }

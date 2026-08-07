@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeManagedScanAttemptResponseDtoOutcome } from "./supportKnowledgeManagedScanAttemptResponseDtoOutcome";
 import type { SupportKnowledgeManagedScanAttemptResponseDtoState } from "./supportKnowledgeManagedScanAttemptResponseDtoState";
+import type { SupportKnowledgeManagedScanAttemptResponseDtoOutcome } from "./supportKnowledgeManagedScanAttemptResponseDtoOutcome";
 
 export interface SupportKnowledgeManagedScanAttemptResponseDto {
   /** @minimum 1 */
   attemptNumber: number;
-  availableAt: string;
+  state: SupportKnowledgeManagedScanAttemptResponseDtoState;
   /** @nullable */
-  completedAt?: string | null;
+  outcome?: SupportKnowledgeManagedScanAttemptResponseDtoOutcome;
   /**
    * @nullable
    * @pattern ^[A-Z][A-Z0-9_]{0,99}$
    */
   errorCode?: string | null;
-  /** @nullable */
-  outcome?: SupportKnowledgeManagedScanAttemptResponseDtoOutcome;
+  availableAt: string;
   /** @nullable */
   startedAt?: string | null;
-  state: SupportKnowledgeManagedScanAttemptResponseDtoState;
+  /** @nullable */
+  completedAt?: string | null;
 }

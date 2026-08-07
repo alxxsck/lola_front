@@ -7,14 +7,14 @@
  */
 
 export interface AiCostCategoryResponseDto {
-  category: string;
-  /** @nullable */
-  effectiveCostUsd: string | null;
-  /** @nullable */
-  estimatedFallbackCostUsd: string | null;
-  /** Records with a concrete cost amount. */
-  pricedCostRecords: number;
   /** @nullable */
   providerReportedCostUsd: string | null;
+  /** @nullable */
+  estimatedFallbackCostUsd: string | null;
+  /** @nullable */
+  effectiveCostUsd: string | null;
+  /** Records with a concrete cost amount. */
+  pricedCostRecords: number;
+  category: string;
   records: number;
 }

@@ -7,7 +7,7 @@
  */
 
 export interface SupportWorkforceTeamSnapshotResponseDto {
-  code: string;
   id: string;
+  code: string;
   name: string;
 }

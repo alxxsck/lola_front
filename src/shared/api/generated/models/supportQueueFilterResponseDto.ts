@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueFilterResponseDtoPredicate } from "./supportQueueFilterResponseDtoPredicate";
 import type { SupportQueueFilterResponseDtoSchemaVersion } from "./supportQueueFilterResponseDtoSchemaVersion";
+import type { SupportQueueFilterResponseDtoPredicate } from "./supportQueueFilterResponseDtoPredicate";
 
 export interface SupportQueueFilterResponseDto {
-  predicate: SupportQueueFilterResponseDtoPredicate;
   schemaVersion: SupportQueueFilterResponseDtoSchemaVersion;
+  predicate: SupportQueueFilterResponseDtoPredicate;
 }

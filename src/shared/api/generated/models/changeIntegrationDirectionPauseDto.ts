@@ -7,9 +7,9 @@
  */
 
 export interface ChangeIntegrationDirectionPauseDto {
-  expectedPaused: boolean;
   /** @minimum 1 */
   expectedVersion: number;
+  expectedPaused: boolean;
   /**
    * @minLength 1
    * @maxLength 500

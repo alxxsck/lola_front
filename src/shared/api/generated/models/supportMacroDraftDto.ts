@@ -5,25 +5,25 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportMacroVariableDto } from "./supportMacroVariableDto";
 import type { SupportMacroVisibilityDto } from "./supportMacroVisibilityDto";
+import type { SupportMacroVariableDto } from "./supportMacroVariableDto";
 
 export interface SupportMacroDraftDto {
-  /**
-   * @minLength 1
-   * @maxLength 10240
-   */
-  body: string;
-  /** @maxLength 35 */
-  locale: string;
-  /** @maxItems 10 */
-  shortcuts?: string[];
   /**
    * @minLength 1
    * @maxLength 160
    */
   title: string;
+  /** @maxItems 10 */
+  shortcuts?: string[];
+  /** @maxLength 35 */
+  locale: string;
+  /**
+   * @minLength 1
+   * @maxLength 10240
+   */
+  body: string;
+  visibility: SupportMacroVisibilityDto;
   /** @maxItems 20 */
   variables: SupportMacroVariableDto[];
-  visibility: SupportMacroVisibilityDto;
 }

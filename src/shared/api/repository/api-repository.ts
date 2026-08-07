@@ -24,6 +24,7 @@ import {
   productApiRequestLogGet,
   productApiRequestLogList,
   adminMessagingSend,
+  adminMessagingLookupOutcome,
   presenceList,
   adminConversationsList,
   adminProjectConversationsList,
@@ -84,6 +85,29 @@ function unsupported(capability: keyof RepositoryCapabilities): never {
 
 const optionalString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
+
+function mapAdminMessageResult(
+  response: Awaited<ReturnType<typeof adminMessagingSend>>,
+) {
+  return {
+    duplicate: response.duplicate,
+    messageId: response.message.id,
+    threadId: response.message.threadId,
+    commandIds: response.commandIds,
+    status: response.message.status,
+    deliveryStatus: response.delivery?.status,
+    ...(response.aiSuspension
+      ? {
+          aiSuspension: {
+            ...response.aiSuspension,
+            state: mapConversationAISuspensionDetail(
+              response.aiSuspension.state,
+            ),
+          },
+        }
+      : {}),
+  };
+}
 export const apiRepository: ReteniveRepository = {
   mode: "api",
   capabilities,
@@ -488,24 +512,14 @@ export const apiRepository: ReteniveRepository = {
       },
       { headers: { "Idempotency-Key": idempotencyKey } },
     );
-    return {
-      duplicate: response.duplicate,
-      messageId: response.message.id,
-      threadId: response.message.threadId,
-      commandIds: response.commandIds,
-      status: response.message.status,
-      deliveryStatus: response.delivery?.status,
-      ...(response.aiSuspension
-        ? {
-            aiSuspension: {
-              ...response.aiSuspension,
-              state: mapConversationAISuspensionDetail(
-                response.aiSuspension.state,
-              ),
-            },
-          }
-        : {}),
-    };
+    return mapAdminMessageResult(response);
+  },
+
+  async lookupAdminMessageOutcome(projectId, userId, idempotencyKey) {
+    const response = await adminMessagingLookupOutcome(projectId, userId, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
+    return mapAdminMessageResult(response);
   },
 
   async getStats(projectId, effectivePermissionCodes) {

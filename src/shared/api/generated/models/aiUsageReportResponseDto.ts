@@ -5,26 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiUsageRangeResponseDto } from "./aiUsageRangeResponseDto";
+import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
+import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
 import type { AiUsageBreakdownResponseDto } from "./aiUsageBreakdownResponseDto";
 import type { AiUsageCategoryBreakdownResponseDto } from "./aiUsageCategoryBreakdownResponseDto";
-import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
 import type { AiUsageProviderBreakdownsResponseDto } from "./aiUsageProviderBreakdownsResponseDto";
-import type { AiUsageRangeResponseDto } from "./aiUsageRangeResponseDto";
-import type { AiTextToSpeechPricingContextResponseDto } from "./aiTextToSpeechPricingContextResponseDto";
-import type { AiUsageTotalsResponseDto } from "./aiUsageTotalsResponseDto";
 import type { ProjectAiUsageWorkloadProjectionResponseDto } from "./projectAiUsageWorkloadProjectionResponseDto";
+import type { AiUsageRecordResponseDto } from "./aiUsageRecordResponseDto";
 
 export interface AiUsageReportResponseDto {
+  projectId: string;
+  range: AiUsageRangeResponseDto;
+  totals: AiUsageTotalsResponseDto;
+  textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
   breakdown: AiUsageBreakdownResponseDto[];
   categories: AiUsageCategoryBreakdownResponseDto[];
+  providers: AiUsageProviderBreakdownsResponseDto;
+  /** Bounded cross-ledger workload projection. Present on the Project-level AI Usage report. */
+  workloads?: ProjectAiUsageWorkloadProjectionResponseDto;
   items: AiUsageRecordResponseDto[];
   /** @nullable */
   nextCursor: string | null;
-  projectId: string;
-  providers: AiUsageProviderBreakdownsResponseDto;
-  range: AiUsageRangeResponseDto;
-  textToSpeechPricing: AiTextToSpeechPricingContextResponseDto;
-  totals: AiUsageTotalsResponseDto;
-  /** Bounded cross-ledger workload projection. Present on the Project-level AI Usage report. */
-  workloads?: ProjectAiUsageWorkloadProjectionResponseDto;
 }

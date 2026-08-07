@@ -8,12 +8,12 @@
 import type { ScenarioDeliveryWaitExplainResponseDtoOutcome } from "./scenarioDeliveryWaitExplainResponseDtoOutcome";
 
 export interface ScenarioDeliveryWaitExplainResponseDto {
+  waitId: string;
+  /** @nullable */
+  stepId?: string | null;
   /** @nullable */
   deadlineAt?: string | null;
   outcome: ScenarioDeliveryWaitExplainResponseDtoOutcome;
   /** @nullable */
   resolvedAt?: string | null;
-  /** @nullable */
-  stepId?: string | null;
-  waitId: string;
 }

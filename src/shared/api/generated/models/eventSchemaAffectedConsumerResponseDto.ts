@@ -7,8 +7,8 @@
  */
 
 export interface EventSchemaAffectedConsumerResponseDto {
-  consumerId: string;
   consumerType: string;
-  fieldKeys: string[];
+  consumerId: string;
   reasonCodes: string[];
+  fieldKeys: string[];
 }

@@ -5,39 +5,39 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
-import type { SupportLeadCapacityRisksDataDto } from "./supportLeadCapacityRisksDataDto";
-import type { SupportLeadCapacityRisksResponseDtoEffectiveWindow } from "./supportLeadCapacityRisksResponseDtoEffectiveWindow";
 import type { SupportLeadCapacityRisksResponseDtoFreshnessState } from "./supportLeadCapacityRisksResponseDtoFreshnessState";
-import type { SupportLeadCapacityRisksResponseDtoKind } from "./supportLeadCapacityRisksResponseDtoKind";
+import type { SupportLeadCapacityRisksResponseDtoEffectiveWindow } from "./supportLeadCapacityRisksResponseDtoEffectiveWindow";
 import type { SupportLeadCapacityRisksResponseDtoSlaRolloutState } from "./supportLeadCapacityRisksResponseDtoSlaRolloutState";
+import type { SupportLeadCapabilitiesDto } from "./supportLeadCapabilitiesDto";
+import type { SupportLeadCapacityRisksResponseDtoKind } from "./supportLeadCapacityRisksResponseDtoKind";
 import type { SupportLeadCapacityRisksResponseDtoView } from "./supportLeadCapacityRisksResponseDtoView";
+import type { SupportLeadCapacityRisksDataDto } from "./supportLeadCapacityRisksDataDto";
 
 export interface SupportLeadCapacityRisksResponseDto {
-  capabilities: SupportLeadCapabilitiesDto;
+  /** @minimum 1 */
+  projectionGeneration: number;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   checkpoint: string | null;
-  computedAt: string;
-  data: SupportLeadCapacityRisksDataDto;
-  /** @nullable */
-  effectiveWindow: SupportLeadCapacityRisksResponseDtoEffectiveWindow;
-  freshnessState: SupportLeadCapacityRisksResponseDtoFreshnessState;
-  kind: SupportLeadCapacityRisksResponseDtoKind;
-  /**
-   * @maxLength 2048
-   * @nullable
-   */
-  nextCursor: string | null;
-  /** @minimum 1 */
-  projectionGeneration: number;
-  slaRolloutState: SupportLeadCapacityRisksResponseDtoSlaRolloutState;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$
    */
   sourceHighWater: string | null;
+  freshnessState: SupportLeadCapacityRisksResponseDtoFreshnessState;
+  computedAt: string;
+  /**
+   * @maxLength 2048
+   * @nullable
+   */
+  nextCursor: string | null;
+  /** @nullable */
+  effectiveWindow: SupportLeadCapacityRisksResponseDtoEffectiveWindow;
+  slaRolloutState: SupportLeadCapacityRisksResponseDtoSlaRolloutState;
+  capabilities: SupportLeadCapabilitiesDto;
+  kind: SupportLeadCapacityRisksResponseDtoKind;
   view: SupportLeadCapacityRisksResponseDtoView;
+  data: SupportLeadCapacityRisksDataDto;
 }

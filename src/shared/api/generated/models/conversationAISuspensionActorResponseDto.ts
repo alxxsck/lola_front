@@ -7,6 +7,6 @@
  */
 
 export interface ConversationAISuspensionActorResponseDto {
-  displayName: string;
   id: string;
+  displayName: string;
 }

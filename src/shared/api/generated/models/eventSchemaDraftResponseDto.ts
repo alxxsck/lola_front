@@ -9,14 +9,14 @@ import type { EventSchemaDraftResponseDtoPayloadSchema } from "./eventSchemaDraf
 import type { EventSchemaDraftResponseDtoValidation } from "./eventSchemaDraftResponseDtoValidation";
 
 export interface EventSchemaDraftResponseDto {
-  baseRevisionId: string;
-  changed: boolean;
+  id: string;
   definitionKeyId: string;
+  baseRevisionId: string;
   /** @minimum 1 */
   draftVersion: number;
-  id: string;
   payloadSchema: EventSchemaDraftResponseDtoPayloadSchema;
   schemaHash: string;
-  updatedAt: string;
   validation: EventSchemaDraftResponseDtoValidation;
+  updatedAt: string;
+  changed: boolean;
 }

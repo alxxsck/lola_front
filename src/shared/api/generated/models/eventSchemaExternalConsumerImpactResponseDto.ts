@@ -6,29 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventSchemaExternalConsumerImpactResponseDtoConsumerKind } from "./eventSchemaExternalConsumerImpactResponseDtoConsumerKind";
+import type { EventSchemaExternalConsumerImpactResponseDtoState } from "./eventSchemaExternalConsumerImpactResponseDtoState";
 import type { EventSchemaExternalConsumerImpactResponseDtoExposuresItem } from "./eventSchemaExternalConsumerImpactResponseDtoExposuresItem";
-import type { EventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem } from "./eventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem";
-import type { EventSchemaExternalConsumerImpactResponseDtoManageTarget } from "./eventSchemaExternalConsumerImpactResponseDtoManageTarget";
 import type { EventSchemaExternalConsumerImpactResponseDtoMatchingMode } from "./eventSchemaExternalConsumerImpactResponseDtoMatchingMode";
+import type { EventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem } from "./eventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem";
 import type { EventSchemaExternalConsumerImpactResponseDtoResolutionActionsItem } from "./eventSchemaExternalConsumerImpactResponseDtoResolutionActionsItem";
 import type { EventSchemaExternalConsumerImpactResponseDtoResolutionPlanItem } from "./eventSchemaExternalConsumerImpactResponseDtoResolutionPlanItem";
-import type { EventSchemaExternalConsumerImpactResponseDtoState } from "./eventSchemaExternalConsumerImpactResponseDtoState";
+import type { EventSchemaExternalConsumerImpactResponseDtoManageTarget } from "./eventSchemaExternalConsumerImpactResponseDtoManageTarget";
 
 export interface EventSchemaExternalConsumerImpactResponseDto {
-  blocking: boolean;
-  consumerKind: EventSchemaExternalConsumerImpactResponseDtoConsumerKind;
-  consumerResourceId: string;
-  consumerRevisionId: string;
   dependencyId: string;
+  consumerKind: EventSchemaExternalConsumerImpactResponseDtoConsumerKind;
   /** @nullable */
   displayName: string | null;
+  state: EventSchemaExternalConsumerImpactResponseDtoState;
   exposures: EventSchemaExternalConsumerImpactResponseDtoExposuresItem[];
-  fieldDependencies: EventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem[];
-  /** @nullable */
-  manageTarget: EventSchemaExternalConsumerImpactResponseDtoManageTarget;
+  consumerResourceId: string;
+  consumerRevisionId: string;
   matchingMode: EventSchemaExternalConsumerImpactResponseDtoMatchingMode;
+  fieldDependencies: EventSchemaExternalConsumerImpactResponseDtoFieldDependenciesItem[];
   reasonCodes: string[];
+  blocking: boolean;
   resolutionActions: EventSchemaExternalConsumerImpactResponseDtoResolutionActionsItem[];
   resolutionPlan: EventSchemaExternalConsumerImpactResponseDtoResolutionPlanItem[];
-  state: EventSchemaExternalConsumerImpactResponseDtoState;
+  /** @nullable */
+  manageTarget: EventSchemaExternalConsumerImpactResponseDtoManageTarget;
 }

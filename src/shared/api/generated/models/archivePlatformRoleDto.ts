@@ -7,6 +7,8 @@
  */
 
 export interface ArchivePlatformRoleDto {
+  /** @minimum 1 */
+  version: number;
   /**
    * @minimum 0
    * @maximum 1000
@@ -18,6 +20,4 @@ export interface ArchivePlatformRoleDto {
    * @maxLength 500
    */
   reason: string;
-  /** @minimum 1 */
-  version: number;
 }

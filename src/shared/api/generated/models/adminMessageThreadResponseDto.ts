@@ -8,14 +8,14 @@
 import type { ThreadStatus } from "./threadStatus";
 
 export interface AdminMessageThreadResponseDto {
-  createdAt: string;
-  endUserId: string;
   id: string;
   projectId: string;
+  endUserId: string;
   /** @nullable */
   sessionId?: string | null;
-  status: ThreadStatus;
   /** @nullable */
   title?: string | null;
+  status: ThreadStatus;
+  createdAt: string;
   updatedAt: string;
 }

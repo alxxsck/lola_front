@@ -8,25 +8,25 @@
 
 export interface EndUserCaseSummaryResponseDto {
   /** @minimum 0 */
-  attentionCount: number;
-  calculatedAt: string;
+  openCount: number;
   /** @minimum 0 */
-  cancelledCount: number;
+  attentionCount: number;
   /** @minimum 0 */
   criticalCount: number;
   /** @minimum 0 */
-  degradedCount: number;
-  lastProjectSequence: string;
-  /** @minimum 0 */
-  openCount: number;
-  /** @minimum 0 */
-  resolvedCount: number;
+  unassignedCount: number;
   /** @minimum 0 */
   staleCount: number;
   /** @minimum 0 */
-  totalCount: number;
+  degradedCount: number;
   /** @minimum 0 */
-  unassignedCount: number;
+  resolvedCount: number;
   /** @minimum 0 */
   unresolvedCount: number;
+  /** @minimum 0 */
+  cancelledCount: number;
+  /** @minimum 0 */
+  totalCount: number;
+  lastProjectSequence: string;
+  calculatedAt: string;
 }

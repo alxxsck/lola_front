@@ -9,25 +9,25 @@ import type { ProductApiRequestLogDetailDtoOutcome } from "./productApiRequestLo
 import type { ProductApiRequestLogDetailDtoPayload } from "./productApiRequestLogDetailDtoPayload";
 
 export interface ProductApiRequestLogDetailDto {
-  credentialId: string;
-  /** @minimum 0 */
-  durationMs: number;
-  /** @nullable */
-  externalUserId?: string | null;
   id: string;
-  method: string;
-  outcome: ProductApiRequestLogDetailDtoOutcome;
-  path: string;
-  payload: ProductApiRequestLogDetailDtoPayload;
-  /** @minimum 0 */
-  payloadBytes: number;
-  receivedAt: string;
+  credentialId: string;
   /** @nullable */
   requestId?: string | null;
-  retainUntil: string;
+  /** @nullable */
+  externalUserId?: string | null;
+  method: string;
+  path: string;
+  /** @minimum 0 */
+  payloadBytes: number;
   /**
    * @minimum 100
    * @maximum 599
    */
   statusCode: number;
+  outcome: ProductApiRequestLogDetailDtoOutcome;
+  /** @minimum 0 */
+  durationMs: number;
+  receivedAt: string;
+  retainUntil: string;
+  payload: ProductApiRequestLogDetailDtoPayload;
 }

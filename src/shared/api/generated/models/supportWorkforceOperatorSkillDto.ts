@@ -7,11 +7,11 @@
  */
 
 export interface SupportWorkforceOperatorSkillDto {
-  preferred?: boolean;
+  skillId: string;
   /**
    * @minimum 1
    * @maximum 5
    */
   proficiency: number;
-  skillId: string;
+  preferred?: boolean;
 }

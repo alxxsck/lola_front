@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AttributeContractArtifactFieldResponseDtoAllowedValuesItem } from "./attributeContractArtifactFieldResponseDtoAllowedValuesItem";
 import type { AttributeConstraintsDto } from "./attributeConstraintsDto";
 import type { AttributeConsumerPoliciesDto } from "./attributeConsumerPoliciesDto";
+import type { AttributeContractArtifactFieldResponseDtoAllowedValuesItem } from "./attributeContractArtifactFieldResponseDtoAllowedValuesItem";
 
 export interface AttributeContractArtifactFieldResponseDto {
+  definitionId?: string;
+  key: string;
+  label: string;
+  /** @nullable */
+  description?: string | null;
+  valueType: string;
+  constraints: AttributeConstraintsDto;
+  /** @nullable */
+  semanticRole?: string | null;
+  classification: string;
+  /** @nullable */
+  purpose?: string | null;
+  policies: AttributeConsumerPoliciesDto;
+  requirement: string;
+  lifecycle: string;
+  /** @nullable */
+  replacementDefinitionId?: string | null;
+  /** @nullable */
+  sunsetAt?: string | null;
   /** @nullable */
   allowedValues?:
     AttributeContractArtifactFieldResponseDtoAllowedValuesItem[] | null;
-  classification: string;
-  constraints: AttributeConstraintsDto;
-  definitionId?: string;
-  /** @nullable */
-  description?: string | null;
-  key: string;
-  label: string;
-  lifecycle: string;
-  policies: AttributeConsumerPoliciesDto;
-  /** @nullable */
-  purpose?: string | null;
-  /** @nullable */
-  replacementDefinitionId?: string | null;
-  requirement: string;
-  /** @nullable */
-  semanticRole?: string | null;
-  /** @nullable */
-  sunsetAt?: string | null;
-  valueType: string;
 }

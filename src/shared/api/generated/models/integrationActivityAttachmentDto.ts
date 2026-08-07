@@ -7,9 +7,9 @@
  */
 
 export interface IntegrationActivityAttachmentDto {
-  filename: string;
   kind: string;
   mimeType: string;
+  filename: string;
   /** @minimum 0 */
   sizeBytes: number;
 }

@@ -11,12 +11,7 @@ export interface SupportRoutingQueueWeightsDto {
    * @minimum 0
    * @maximum 10000
    */
-  age?: number;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   */
-  escalation?: number;
+  sla?: number;
   /**
    * @minimum 0
    * @maximum 10000
@@ -26,5 +21,10 @@ export interface SupportRoutingQueueWeightsDto {
    * @minimum 0
    * @maximum 10000
    */
-  sla?: number;
+  escalation?: number;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  age?: number;
 }

@@ -9,8 +9,8 @@ import type { LatestFieldEqualsPredicateDtoOperator } from "./latestFieldEqualsP
 import type { LatestFieldEqualsPredicateDtoValue } from "./latestFieldEqualsPredicateDtoValue";
 
 export interface LatestFieldEqualsPredicateDto {
-  field: string;
   operator: LatestFieldEqualsPredicateDtoOperator;
   queryKey: string;
+  field: string;
   value: LatestFieldEqualsPredicateDtoValue;
 }

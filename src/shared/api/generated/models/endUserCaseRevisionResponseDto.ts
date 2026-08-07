@@ -8,9 +8,9 @@
 import type { EndUserCaseRevisionResponseDtoProducer } from "./endUserCaseRevisionResponseDtoProducer";
 
 export interface EndUserCaseRevisionResponseDto {
-  createdAt: string;
   id: string;
-  producer: EndUserCaseRevisionResponseDtoProducer;
   /** @minimum 1 */
   version: number;
+  producer: EndUserCaseRevisionResponseDtoProducer;
+  createdAt: string;
 }

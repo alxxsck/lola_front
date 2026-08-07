@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsSessionProjectContextDto } from "./cmsSessionProjectContextDto";
 import type { CmsSessionIdentityResponseDto } from "./cmsSessionIdentityResponseDto";
+import type { CmsSessionProjectContextDto } from "./cmsSessionProjectContextDto";
 
 export interface CmsSessionContextResponseDto {
+  user: CmsSessionIdentityResponseDto;
   platformPermissionCodes: string[];
   projects: CmsSessionProjectContextDto[];
-  user: CmsSessionIdentityResponseDto;
 }

@@ -8,8 +8,8 @@
 import type { IntegrationDispatchMetricSeriesDto } from "./integrationDispatchMetricSeriesDto";
 
 export interface IntegrationDispatchMetricsResponseDto {
-  series: IntegrationDispatchMetricSeriesDto[];
   /** @minimum 1 */
   seriesLimit: number;
   truncated: boolean;
+  series: IntegrationDispatchMetricSeriesDto[];
 }

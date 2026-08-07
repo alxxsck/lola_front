@@ -8,15 +8,15 @@
 
 export interface NotificationOperationsRetentionHealthDto {
   /** @minimum 0 */
+  notificationPayloadBacklog: number;
+  /** @minimum 0 */
+  personalContentBacklog: number;
+  /** @minimum 0 */
   broadcastContentBacklog: number;
-  /** @nullable */
-  lastSuccessfulBatchAt?: string | null;
   /** @minimum 0 */
   linkSecretBacklog: number;
   /** @minimum 0 */
-  notificationPayloadBacklog: number;
-  /** @minimum 0 */
   operationalEvidenceBacklog: number;
-  /** @minimum 0 */
-  personalContentBacklog: number;
+  /** @nullable */
+  lastSuccessfulBatchAt?: string | null;
 }

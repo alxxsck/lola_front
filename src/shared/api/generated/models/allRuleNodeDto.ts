@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AllRuleNodeDtoChildrenItem } from "./allRuleNodeDtoChildrenItem";
 import type { AllRuleNodeDtoKind } from "./allRuleNodeDtoKind";
+import type { AllRuleNodeDtoChildrenItem } from "./allRuleNodeDtoChildrenItem";
 
 export interface AllRuleNodeDto {
+  kind: AllRuleNodeDtoKind;
   /**
    * @minItems 1
    * @maxItems 20
    */
   children: AllRuleNodeDtoChildrenItem[];
-  kind: AllRuleNodeDtoKind;
 }

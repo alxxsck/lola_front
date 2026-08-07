@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkspaceActionRevisionsResponseDto } from "./supportWorkspaceActionRevisionsResponseDto";
-import type { SupportWorkspaceCapabilitiesResponseDto } from "./supportWorkspaceCapabilitiesResponseDto";
-import type { SupportWorkspaceSelectionResponseDtoCase } from "./supportWorkspaceSelectionResponseDtoCase";
-import type { SupportWorkspaceClassificationOptionResponseDto } from "./supportWorkspaceClassificationOptionResponseDto";
-import type { SupportWorkspaceSelectionResponseDtoConversation } from "./supportWorkspaceSelectionResponseDtoConversation";
-import type { SupportWorkspaceEndUserResponseDto } from "./supportWorkspaceEndUserResponseDto";
-import type { SupportWorkspaceMessagePageResponseDto } from "./supportWorkspaceMessagePageResponseDto";
 import type { SupportWorkspaceSelectionResponseDtoMode } from "./supportWorkspaceSelectionResponseDtoMode";
+import type { SupportWorkspaceEndUserResponseDto } from "./supportWorkspaceEndUserResponseDto";
+import type { SupportWorkspaceSelectionResponseDtoCase } from "./supportWorkspaceSelectionResponseDtoCase";
+import type { SupportWorkspaceSelectionResponseDtoConversation } from "./supportWorkspaceSelectionResponseDtoConversation";
+import type { SupportWorkspaceMessagePageResponseDto } from "./supportWorkspaceMessagePageResponseDto";
 import type { SupportWorkspaceCaseRowResponseDto } from "./supportWorkspaceCaseRowResponseDto";
 import type { SupportWorkspaceConversationRowResponseDto } from "./supportWorkspaceConversationRowResponseDto";
+import type { SupportWorkspaceClassificationOptionResponseDto } from "./supportWorkspaceClassificationOptionResponseDto";
+import type { SupportWorkspaceCapabilitiesResponseDto } from "./supportWorkspaceCapabilitiesResponseDto";
+import type { SupportWorkspaceActionRevisionsResponseDto } from "./supportWorkspaceActionRevisionsResponseDto";
 
 export interface SupportWorkspaceSelectionResponseDto {
-  actionRevisions: SupportWorkspaceActionRevisionsResponseDto;
-  capabilities: SupportWorkspaceCapabilitiesResponseDto;
-  capabilitiesRevision: string;
+  mode: SupportWorkspaceSelectionResponseDtoMode;
+  endUser: SupportWorkspaceEndUserResponseDto;
   /** @nullable */
   case: SupportWorkspaceSelectionResponseDtoCase;
-  checkpoint: string;
-  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
   /** @nullable */
   conversation: SupportWorkspaceSelectionResponseDtoConversation;
-  endUser: SupportWorkspaceEndUserResponseDto;
   messages: SupportWorkspaceMessagePageResponseDto;
-  mode: SupportWorkspaceSelectionResponseDtoMode;
   relatedCases: SupportWorkspaceCaseRowResponseDto[];
-  relatedCasesTruncated: boolean;
   relatedConversations: SupportWorkspaceConversationRowResponseDto[];
+  relatedCasesTruncated: boolean;
   relatedConversationsTruncated: boolean;
+  classificationOptions: SupportWorkspaceClassificationOptionResponseDto[];
+  capabilities: SupportWorkspaceCapabilitiesResponseDto;
+  capabilitiesRevision: string;
+  actionRevisions: SupportWorkspaceActionRevisionsResponseDto;
+  checkpoint: string;
 }

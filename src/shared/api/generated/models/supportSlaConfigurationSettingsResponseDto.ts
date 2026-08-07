@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaConfigurationSettingsResponseDtoDraft } from "./supportSlaConfigurationSettingsResponseDtoDraft";
 import type { SupportSlaConfigurationSettingsResponseDtoMode } from "./supportSlaConfigurationSettingsResponseDtoMode";
-import type { SupportSlaConfigurationSettingsResponseDtoPublishedConfiguration } from "./supportSlaConfigurationSettingsResponseDtoPublishedConfiguration";
 import type { SupportSlaConfigurationSettingsResponseDtoRolloutState } from "./supportSlaConfigurationSettingsResponseDtoRolloutState";
+import type { SupportSlaConfigurationSettingsResponseDtoDraft } from "./supportSlaConfigurationSettingsResponseDtoDraft";
+import type { SupportSlaConfigurationSettingsResponseDtoPublishedConfiguration } from "./supportSlaConfigurationSettingsResponseDtoPublishedConfiguration";
 
 export interface SupportSlaConfigurationSettingsResponseDto {
-  /** @pattern ^"ssla1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
-  /** @nullable */
-  draft?: SupportSlaConfigurationSettingsResponseDtoDraft;
   mode: SupportSlaConfigurationSettingsResponseDtoMode;
-  /** @nullable */
-  publishedConfiguration?: SupportSlaConfigurationSettingsResponseDtoPublishedConfiguration;
-  /** @nullable */
-  reconciliationCheckpoint?: string | null;
-  rolloutState: SupportSlaConfigurationSettingsResponseDtoRolloutState;
   /** @minimum 0 */
   rootVersion: number;
+  /** @pattern ^"ssla1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
+  rolloutState: SupportSlaConfigurationSettingsResponseDtoRolloutState;
+  /** @nullable */
+  reconciliationCheckpoint?: string | null;
+  /** @nullable */
+  draft?: SupportSlaConfigurationSettingsResponseDtoDraft;
+  /** @nullable */
+  publishedConfiguration?: SupportSlaConfigurationSettingsResponseDtoPublishedConfiguration;
 }

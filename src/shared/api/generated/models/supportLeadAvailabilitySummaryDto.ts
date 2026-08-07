@@ -10,9 +10,9 @@ export interface SupportLeadAvailabilitySummaryDto {
   /** @minimum 0 */
   AVAILABLE: number;
   /** @minimum 0 */
-  AWAY: number;
-  /** @minimum 0 */
   BUSY: number;
+  /** @minimum 0 */
+  AWAY: number;
   /** @minimum 0 */
   DRAINING: number;
   /** @minimum 0 */

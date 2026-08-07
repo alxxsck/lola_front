@@ -8,11 +8,11 @@
 import type { SupportInternalNoteRevisionResponseDtoAuthor } from "./supportInternalNoteRevisionResponseDtoAuthor";
 
 export interface SupportInternalNoteRevisionResponseDto {
-  author: SupportInternalNoteRevisionResponseDtoAuthor;
-  body: string;
-  createdAt: string;
   id: string;
   noteId: string;
-  reasonCode: string;
   revisionNumber: number;
+  body: string;
+  reasonCode: string;
+  author: SupportInternalNoteRevisionResponseDtoAuthor;
+  createdAt: string;
 }

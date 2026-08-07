@@ -108,6 +108,7 @@ test("workspace messaging contract requires the published read and send operatio
     "SupportWorkspace_read",
     "AdminConversations_listMessages",
     "AdminMessaging_send",
+    "AdminMessaging_lookupOutcome",
   ];
 
   for (const operationId of operationIds) {
@@ -147,6 +148,11 @@ test("workspace operations retain authority, pagination bounds and send idempote
     },
     (contract) => {
       operation(contract, "AdminMessaging_send").parameters.find(
+        (parameter) => parameter.name === "Idempotency-Key",
+      ).required = false;
+    },
+    (contract) => {
+      operation(contract, "AdminMessaging_lookupOutcome").parameters.find(
         (parameter) => parameter.name === "Idempotency-Key",
       ).required = false;
     },

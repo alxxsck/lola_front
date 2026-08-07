@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceAttributeV2ResponseDto } from "./audienceAttributeV2ResponseDto";
-import type { AudienceFreshnessPolicyV2ResponseDto } from "./audienceFreshnessPolicyV2ResponseDto";
-import type { AudienceSegmentSourceResponseDto } from "./audienceSegmentSourceResponseDto";
-import type { AudienceSnapshotPolicyV2ResponseDto } from "./audienceSnapshotPolicyV2ResponseDto";
-import type { AudienceCatalogV2ResponseDtoSource } from "./audienceCatalogV2ResponseDtoSource";
 import type { AudienceCatalogV2ResponseDtoVersion } from "./audienceCatalogV2ResponseDtoVersion";
+import type { AudienceCatalogV2ResponseDtoSource } from "./audienceCatalogV2ResponseDtoSource";
+import type { AudienceAttributeV2ResponseDto } from "./audienceAttributeV2ResponseDto";
+import type { AudienceSegmentSourceResponseDto } from "./audienceSegmentSourceResponseDto";
+import type { AudienceFreshnessPolicyV2ResponseDto } from "./audienceFreshnessPolicyV2ResponseDto";
+import type { AudienceSnapshotPolicyV2ResponseDto } from "./audienceSnapshotPolicyV2ResponseDto";
 
 export interface AudienceCatalogV2ResponseDto {
-  attributes: AudienceAttributeV2ResponseDto[];
-  freshnessPolicies: AudienceFreshnessPolicyV2ResponseDto[];
-  revision: string;
-  segmentSource: AudienceSegmentSourceResponseDto;
-  snapshotPolicy: AudienceSnapshotPolicyV2ResponseDto;
-  source: AudienceCatalogV2ResponseDtoSource;
   version: AudienceCatalogV2ResponseDtoVersion;
+  revision: string;
+  source: AudienceCatalogV2ResponseDtoSource;
+  attributes: AudienceAttributeV2ResponseDto[];
+  segmentSource: AudienceSegmentSourceResponseDto;
+  freshnessPolicies: AudienceFreshnessPolicyV2ResponseDto[];
+  snapshotPolicy: AudienceSnapshotPolicyV2ResponseDto;
 }

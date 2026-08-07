@@ -10,13 +10,13 @@ import type { TelegramPersonalAttemptOutcome } from "./telegramPersonalAttemptOu
 export interface TelegramPersonalMessageAttemptDto {
   /** @minimum 1 */
   attemptNumber: number;
-  /** @nullable */
-  errorCode?: string | null;
-  finishedAt: string;
   outcome: TelegramPersonalAttemptOutcome;
   /** @nullable */
   providerMessageId?: string | null;
   /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
   retryAfterMs?: number | null;
   startedAt: string;
+  finishedAt: string;
 }

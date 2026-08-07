@@ -8,10 +8,10 @@
 import type { SupportRoutingPolicyDraftDto } from "./supportRoutingPolicyDraftDto";
 
 export interface CreateSupportRoutingPolicyDto {
-  draft: SupportRoutingPolicyDraftDto;
   /**
    * @minLength 2
    * @maxLength 64
    */
   stableCode: string;
+  draft: SupportRoutingPolicyDraftDto;
 }

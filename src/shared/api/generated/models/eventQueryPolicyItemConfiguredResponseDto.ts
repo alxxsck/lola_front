@@ -8,7 +8,7 @@
 import type { EventQueryPolicyItemConfigurationDto } from "./eventQueryPolicyItemConfigurationDto";
 
 export interface EventQueryPolicyItemConfiguredResponseDto {
-  configuration: EventQueryPolicyItemConfigurationDto;
   enabled: boolean;
   endUserConversationEnabled: boolean;
+  configuration: EventQueryPolicyItemConfigurationDto;
 }

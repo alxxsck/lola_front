@@ -5,17 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueFreshnessResponseDto } from "./supportQueueFreshnessResponseDto";
 import type { SupportQueueEntryResponseDto } from "./supportQueueEntryResponseDto";
+import type { SupportQueueFreshnessResponseDto } from "./supportQueueFreshnessResponseDto";
 
 export interface SupportQueueCasesPageResponseDto {
-  /**
-   * Exact count is returned only for the protected project-wide Lead read.
-   * @minimum 0
-   * @nullable
-   */
-  count: number | null;
-  freshness: SupportQueueFreshnessResponseDto;
+  queueId: string;
+  revisionId: string;
   generationId: string;
   /** @maxItems 200 */
   items: SupportQueueEntryResponseDto[];
@@ -24,6 +19,11 @@ export interface SupportQueueCasesPageResponseDto {
    * @nullable
    */
   nextCursor: string | null;
-  queueId: string;
-  revisionId: string;
+  /**
+   * Exact count is returned only for the protected project-wide Lead read.
+   * @minimum 0
+   * @nullable
+   */
+  count: number | null;
+  freshness: SupportQueueFreshnessResponseDto;
 }

@@ -8,12 +8,12 @@
 import type { EventSchemaEventQueryPolicyImpactResponseDtoResolutionActionsItem } from "./eventSchemaEventQueryPolicyImpactResponseDtoResolutionActionsItem";
 
 export interface EventSchemaEventQueryPolicyImpactResponseDto {
-  blocking: boolean;
-  eventCode: string;
-  fieldKeys: string[];
-  reasonCodes: string[];
-  resolutionActions: EventSchemaEventQueryPolicyImpactResponseDtoResolutionActionsItem[];
   revisionId: string;
   /** @minimum 1 */
   version: number;
+  eventCode: string;
+  blocking: boolean;
+  reasonCodes: string[];
+  fieldKeys: string[];
+  resolutionActions: EventSchemaEventQueryPolicyImpactResponseDtoResolutionActionsItem[];
 }

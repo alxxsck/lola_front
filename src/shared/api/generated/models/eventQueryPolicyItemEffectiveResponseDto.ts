@@ -7,6 +7,6 @@
  */
 
 export interface EventQueryPolicyItemEffectiveResponseDto {
-  endUserConversation: boolean;
   internalAi: boolean;
+  endUserConversation: boolean;
 }

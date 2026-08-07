@@ -8,17 +8,17 @@
 import type { ScenarioRevisionListItemResponseDtoImportanceClass } from "./scenarioRevisionListItemResponseDtoImportanceClass";
 
 export interface ScenarioRevisionListItemResponseDto {
-  catalogRevision: string;
-  contentHash: string;
-  current: boolean;
-  editable: boolean;
   id: string;
+  scenarioId: string;
+  /** @minimum 1 */
+  revisionNumber: number;
+  contentHash: string;
+  catalogRevision: string;
   importanceClass: ScenarioRevisionListItemResponseDtoImportanceClass;
+  respectsQuietHours: boolean;
   publishedAt: string;
   /** @nullable */
   publishedByAdminId?: string | null;
-  respectsQuietHours: boolean;
-  /** @minimum 1 */
-  revisionNumber: number;
-  scenarioId: string;
+  current: boolean;
+  editable: boolean;
 }

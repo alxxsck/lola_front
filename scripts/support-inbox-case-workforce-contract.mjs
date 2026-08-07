@@ -86,16 +86,12 @@ function requireRequestSchema(operationValue, schemaName) {
   }
 }
 
-function requireUntypedResponse(operationValue, status) {
-  const response = operationValue.responses?.[status];
-  if (!response) {
+function requireResponseSchema(operationValue, status, schemaName) {
+  const responseSchema =
+    operationValue.responses?.[status]?.content?.["application/json"]?.schema;
+  if (responseSchema?.$ref !== `#/components/schemas/${schemaName}`) {
     throw new Error(
-      `${operationValue.operationId} must retain response ${status}`,
-    );
-  }
-  if (response.content?.["application/json"]?.schema) {
-    throw new Error(
-      `${operationValue.operationId} ${status} became typed; update the capability baseline`,
+      `${operationValue.operationId} ${status} must return ${schemaName}`,
     );
   }
 }
@@ -672,19 +668,46 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     document,
     "SupportSearch_conversations",
   );
-  for (const operationValue of [searchCases, searchConversations]) {
+  const searchMessages = operation(document, "SupportSearch_messages");
+  const searchUsers = operation(document, "SupportSearch_users");
+  const searchContracts = [
+    [searchCases, "SupportCaseSearchQueryDto", "SupportSearchCasePageResponseDto"],
+    [
+      searchConversations,
+      "SupportConversationSearchQueryDto",
+      "SupportSearchConversationPageResponseDto",
+    ],
+    [
+      searchMessages,
+      "SupportMessageSearchQueryDto",
+      "SupportSearchMessagePageResponseDto",
+    ],
+    [
+      searchUsers,
+      "SupportEndUserSearchQueryDto",
+      "SupportSearchEndUserPageResponseDto",
+    ],
+  ];
+  for (const [operationValue, requestSchema, responseSchema] of searchContracts) {
     requirePermission(operationValue, "project.support.search.read");
-    requireRequestSchema(operationValue, "SupportSearchQueryDto");
-    requireUntypedResponse(operationValue, "200");
+    requireRequestSchema(operationValue, requestSchema);
+    requireResponseSchema(operationValue, "200", responseSchema);
   }
-  const searchQuery = schema(document, "SupportSearchQueryDto").properties;
-  if (
-    searchQuery?.limit?.maximum !== 100 ||
-    searchQuery?.cursor?.maxLength !== 2048 ||
-    searchQuery?.phrase?.minLength !== 2 ||
-    searchQuery?.phrase?.maxLength !== 256
-  ) {
-    throw new Error("SupportSearchQueryDto bounds changed");
+  for (const schemaName of [
+    "SupportCaseSearchQueryDto",
+    "SupportConversationSearchQueryDto",
+    "SupportMessageSearchQueryDto",
+    "SupportEndUserSearchQueryDto",
+  ]) {
+    const searchQuery = schema(document, schemaName).properties;
+    if (
+      searchQuery?.limit?.maximum !== 100 ||
+      searchQuery?.cursor?.maxLength !== 2048 ||
+      searchQuery?.phrase?.minLength !== 2 ||
+      searchQuery?.phrase?.maxLength !== 256
+    ) {
+      throw new Error(`${schemaName} bounds changed`);
+    }
   }
 
   const savedViewCatalog = operation(document, "SavedSupportView_catalog");
@@ -735,11 +758,31 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "TEAM",
     "PROJECT",
   ]);
-  requireUntypedResponse(savedViewCatalog, "200");
-  requireUntypedResponse(savedViewCreate, "200");
-  requireUntypedResponse(savedViewReplace, "200");
-  requireUntypedResponse(savedViewPublish, "200");
-  requireUntypedResponse(savedViewArchive, "200");
-  requireUntypedResponse(savedViewQuery, "201");
-  requireUntypedResponse(activePresetQuery, "200");
+  requireResponseSchema(
+    savedViewCatalog,
+    "200",
+    "SavedSupportViewCatalogResponseDto",
+  );
+  for (const operationValue of [
+    savedViewCreate,
+    savedViewReplace,
+    savedViewPublish,
+    savedViewArchive,
+  ]) {
+    requireResponseSchema(
+      operationValue,
+      "200",
+      "SavedSupportViewMutationResponseDto",
+    );
+  }
+  requireResponseSchema(
+    savedViewQuery,
+    "200",
+    "SavedSupportViewQueryResponseDto",
+  );
+  requireResponseSchema(
+    activePresetQuery,
+    "200",
+    "SupportViewPresetCaseQueryResponseDto",
+  );
 }

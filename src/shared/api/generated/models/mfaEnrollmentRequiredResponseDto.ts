@@ -8,7 +8,7 @@
 import type { MfaEnrollmentRequiredResponseDtoKind } from "./mfaEnrollmentRequiredResponseDtoKind";
 
 export interface MfaEnrollmentRequiredResponseDto {
+  kind: MfaEnrollmentRequiredResponseDtoKind;
   readonly ceremonyToken: string;
   expiresAt: string;
-  kind: MfaEnrollmentRequiredResponseDtoKind;
 }

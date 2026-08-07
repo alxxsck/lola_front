@@ -8,6 +8,15 @@
 import type { PlatformRoleResponseDtoStatus } from "./platformRoleResponseDtoStatus";
 
 export interface PlatformRoleResponseDto {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  status: PlatformRoleResponseDtoStatus;
+  managed: boolean;
+  /** @minimum 1 */
+  version: number;
+  permissionCodes: string[];
   /**
    * @minimum 0
    * @maximum 1000
@@ -15,14 +24,5 @@ export interface PlatformRoleResponseDto {
   assignedUserCount: number;
   assignedUserCountCapped: boolean;
   createdAt: string;
-  description: string;
-  id: string;
-  key: string;
-  managed: boolean;
-  name: string;
-  permissionCodes: string[];
-  status: PlatformRoleResponseDtoStatus;
   updatedAt: string;
-  /** @minimum 1 */
-  version: number;
 }

@@ -5,22 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceRuleReportResponseDto } from "./audienceRuleReportResponseDto";
-import type { ValidateScenarioDraftResponseDtoCost } from "./validateScenarioDraftResponseDtoCost";
-import type { ValidateScenarioDraftResponseDtoDeliveryPolicy } from "./validateScenarioDraftResponseDtoDeliveryPolicy";
-import type { ScenarioRuleDependencyResponseDto } from "./scenarioRuleDependencyResponseDto";
 import type { ScenarioRuleIssueResponseDto } from "./scenarioRuleIssueResponseDto";
+import type { ScenarioRuleDependencyResponseDto } from "./scenarioRuleDependencyResponseDto";
+import type { ValidateScenarioDraftResponseDtoCost } from "./validateScenarioDraftResponseDtoCost";
 import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
+import type { AudienceRuleReportResponseDto } from "./audienceRuleReportResponseDto";
+import type { ValidateScenarioDraftResponseDtoDeliveryPolicy } from "./validateScenarioDraftResponseDtoDeliveryPolicy";
 
 export interface ValidateScenarioDraftResponseDto {
+  valid: boolean;
+  issues: ScenarioRuleIssueResponseDto[];
+  dependencies: ScenarioRuleDependencyResponseDto[];
+  /** @nullable */
+  cost: ValidateScenarioDraftResponseDtoCost;
+  warnings: ScenarioWarningResponseDto[];
   audience?: AudienceRuleReportResponseDto;
   catalogRevision: string;
   /** @nullable */
-  cost: ValidateScenarioDraftResponseDtoCost;
-  /** @nullable */
   deliveryPolicy?: ValidateScenarioDraftResponseDtoDeliveryPolicy;
-  dependencies: ScenarioRuleDependencyResponseDto[];
-  issues: ScenarioRuleIssueResponseDto[];
-  valid: boolean;
-  warnings: ScenarioWarningResponseDto[];
 }

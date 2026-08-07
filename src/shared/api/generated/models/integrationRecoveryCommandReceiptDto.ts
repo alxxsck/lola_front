@@ -7,17 +7,17 @@
  */
 
 export interface IntegrationRecoveryCommandReceiptDto {
+  id: string;
   commandType: string;
-  /** @nullable */
-  completedAt: string | null;
-  createdAt: string;
+  status: string;
   /** @minimum 1 */
   expectedOperationsVersion: number;
-  id: string;
   /**
    * @minimum 1
    * @nullable
    */
   resultOperationsVersion: number | null;
-  status: string;
+  createdAt: string;
+  /** @nullable */
+  completedAt: string | null;
 }

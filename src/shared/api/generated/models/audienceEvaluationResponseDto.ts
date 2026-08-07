@@ -5,34 +5,34 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceEvaluationResponseDtoCost } from "./audienceEvaluationResponseDtoCost";
-import type { AudienceDependenciesResponseDto } from "./audienceDependenciesResponseDto";
-import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
-import type { AudienceFreshnessSelectionV2ResponseDto } from "./audienceFreshnessSelectionV2ResponseDto";
 import type { AudienceIssueResponseDto } from "./audienceIssueResponseDto";
-import type { AudienceEvaluationResponseDtoTruth } from "./audienceEvaluationResponseDtoTruth";
+import type { AudienceDependenciesResponseDto } from "./audienceDependenciesResponseDto";
+import type { AudienceEvaluationResponseDtoCost } from "./audienceEvaluationResponseDtoCost";
 import type { AudienceEvaluationResponseDtoWarningsItem } from "./audienceEvaluationResponseDtoWarningsItem";
+import type { AudienceExplanationNodeResponseDto } from "./audienceExplanationNodeResponseDto";
+import type { AudienceEvaluationResponseDtoTruth } from "./audienceEvaluationResponseDtoTruth";
+import type { AudienceFreshnessSelectionV2ResponseDto } from "./audienceFreshnessSelectionV2ResponseDto";
 
 export interface AudienceEvaluationResponseDto {
+  valid: boolean;
+  issues: AudienceIssueResponseDto[];
+  dependencies: AudienceDependenciesResponseDto;
+  /** @nullable */
+  cost?: AudienceEvaluationResponseDtoCost;
+  warnings: AudienceEvaluationResponseDtoWarningsItem[];
+  matched?: boolean;
+  explanation?: AudienceExplanationNodeResponseDto;
+  truth?: AudienceEvaluationResponseDtoTruth;
+  profileVersion?: string;
+  /** @nullable */
+  contractRevision?: number | null;
+  /** @nullable */
+  observedAt?: string | null;
   /**
    * @minimum 0
    * @nullable
    */
   ageSeconds?: number | null;
-  /** @nullable */
-  contractRevision?: number | null;
-  /** @nullable */
-  cost?: AudienceEvaluationResponseDtoCost;
-  dependencies: AudienceDependenciesResponseDto;
   evaluatedAt?: string;
-  explanation?: AudienceExplanationNodeResponseDto;
   freshness?: AudienceFreshnessSelectionV2ResponseDto;
-  issues: AudienceIssueResponseDto[];
-  matched?: boolean;
-  /** @nullable */
-  observedAt?: string | null;
-  profileVersion?: string;
-  truth?: AudienceEvaluationResponseDtoTruth;
-  valid: boolean;
-  warnings: AudienceEvaluationResponseDtoWarningsItem[];
 }

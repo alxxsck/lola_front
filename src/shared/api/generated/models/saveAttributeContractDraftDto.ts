@@ -8,7 +8,7 @@
 import type { AttributeContractDocumentDto } from "./attributeContractDocumentDto";
 
 export interface SaveAttributeContractDraftDto {
-  document: AttributeContractDocumentDto;
   /** @minimum 0 */
   expectedDraftVersion: number;
+  document: AttributeContractDocumentDto;
 }

@@ -9,12 +9,12 @@ import type { PutDefaultAllowancePlanDtoWarningContentOneOfThreeMode } from "./p
 import type { PutDefaultAllowancePlanDtoWarningContentOneOfThreeTranslations } from "./putDefaultAllowancePlanDtoWarningContentOneOfThreeTranslations";
 
 export type PutDefaultAllowancePlanDtoWarningContentOneOfThree = {
+  mode: PutDefaultAllowancePlanDtoWarningContentOneOfThreeMode;
   /**
    * @minLength 1
    * @maxLength 64
    */
   defaultLocale: string;
-  mode: PutDefaultAllowancePlanDtoWarningContentOneOfThreeMode;
   /** Complete locale map keyed by canonical BCP-47 Project Locales. Replacement semantics: omitted keys are removed. */
   translations: PutDefaultAllowancePlanDtoWarningContentOneOfThreeTranslations;
 };

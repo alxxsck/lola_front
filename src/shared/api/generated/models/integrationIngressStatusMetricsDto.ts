@@ -8,23 +8,23 @@
 
 export interface IntegrationIngressStatusMetricsDto {
   /** @minimum 0 */
-  ACCEPTED: number;
-  /** @minimum 0 */
-  FAILED_PERMANENT: number;
-  /** @minimum 0 */
-  LOOP_SUPPRESSED: number;
-  /** @minimum 0 */
-  PROCESSING: number;
-  /** @minimum 0 */
-  QUARANTINED: number;
-  /** @minimum 0 */
   RECEIVED: number;
   /** @minimum 0 */
   RETRY_WAIT: number;
+  /** @minimum 0 */
+  PROCESSING: number;
+  /** @minimum 0 */
+  ACCEPTED: number;
+  /** @minimum 0 */
+  UNMAPPED: number;
+  /** @minimum 0 */
+  QUARANTINED: number;
   /** @minimum 0 */
   SCHEMA_INVALID: number;
   /** @minimum 0 */
   STALE: number;
   /** @minimum 0 */
-  UNMAPPED: number;
+  LOOP_SUPPRESSED: number;
+  /** @minimum 0 */
+  FAILED_PERMANENT: number;
 }

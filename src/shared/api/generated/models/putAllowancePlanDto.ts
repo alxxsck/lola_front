@@ -5,15 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PutAllowancePlanCategoryRuleDto } from "./putAllowancePlanCategoryRuleDto";
 import type { PutAllowancePlanDtoPeriod } from "./putAllowancePlanDtoPeriod";
+import type { PutAllowancePlanCategoryRuleDto } from "./putAllowancePlanCategoryRuleDto";
 
 export interface PutAllowancePlanDto {
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  amountUsd: string;
-  categoryRules?: PutAllowancePlanCategoryRuleDto[];
-  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
-  dailyCapUsd?: string;
   /**
    * Project-wide allowance configuration generation returned by the latest allowance read.
    * @pattern ^(?:0|[1-9]\d{0,19})$
@@ -21,7 +16,12 @@ export interface PutAllowancePlanDto {
   expectedProjectPolicyVersion: string;
   /** @maxLength 160 */
   name: string;
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  amountUsd: string;
   period: PutAllowancePlanDtoPeriod;
+  /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
+  dailyCapUsd?: string;
+  categoryRules?: PutAllowancePlanCategoryRuleDto[];
   /** @maxLength 500 */
   reason: string;
 }

@@ -7,14 +7,14 @@
  */
 
 export interface UpdateUserMemorySettingsDto {
+  /** @minimum 1 */
+  expectedVersion: number;
+  enabled: boolean;
   /**
    * @minimum 1
    * @maximum 100000
    */
   dailyExtractionCallLimit: number;
-  enabled: boolean;
-  /** @minimum 1 */
-  expectedVersion: number;
   /**
    * @minimum 1
    * @maximum 3650

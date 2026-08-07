@@ -16,6 +16,7 @@ import {
   scenarioAuthoringListScenarios,
   scenarioAuthoringUpdateScenarioMetadata,
   adminMessagingSend,
+  adminMessagingLookupOutcome,
   adminProjectConversationsList,
   presenceList,
   adminConversationsList,
@@ -61,6 +62,7 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   platformOperationsUsers: vi.fn(),
   platformOperationsUsersPage: vi.fn(),
   adminMessagingSend: vi.fn(),
+  adminMessagingLookupOutcome: vi.fn(),
   adminProjectConversationsList: vi.fn(),
   scenarioRunsList: vi.fn(),
   presenceList: vi.fn(),
@@ -684,6 +686,41 @@ describe("api repository adapter", () => {
     });
   });
 
+  it("looks up an ambiguous admin-message outcome with the original idempotency key", async () => {
+    vi.mocked(adminMessagingLookupOutcome).mockResolvedValue({
+      duplicate: true,
+      commandIds: [],
+      message: {
+        id: "message-1",
+        threadId: "conversation-1",
+        status: "COMPLETED",
+      },
+      delivery: { status: "PENDING" },
+    } as never);
+
+    const result = await apiRepository.lookupAdminMessageOutcome(
+      "project-1",
+      "user-1",
+      "2d77b597-1bc0-4b0f-a783-77597bb71483",
+    );
+
+    expect(adminMessagingLookupOutcome).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      {
+        headers: {
+          "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483",
+        },
+      },
+    );
+    expect(result).toMatchObject({
+      duplicate: true,
+      messageId: "message-1",
+      threadId: "conversation-1",
+      deliveryStatus: "PENDING",
+    });
+  });
+
   it("управляет приостановкой AI только через выбранный диалог и сохраняет ключ команды", async () => {
     const state = {
       mode: "SUSPENDED",
@@ -890,6 +927,10 @@ describe("api repository adapter", () => {
           role: "USER",
           status: "COMPLETED",
           text: "Hello",
+          contentState: "ACTIVE",
+          contentVersion: 1,
+          revisionNumber: 1,
+          attachments: [],
           createdAt: "2026-07-13T08:59:00.000Z",
           updatedAt: "2026-07-13T08:59:00.000Z",
         },

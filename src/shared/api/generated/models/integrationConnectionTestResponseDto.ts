@@ -8,24 +8,24 @@
 import type { IntegrationConnectionTestResponseDtoStatus } from "./integrationConnectionTestResponseDtoStatus";
 
 export interface IntegrationConnectionTestResponseDto {
+  id: string;
+  projectId: string;
+  connectionId: string;
+  /** @minimum 1 */
+  credentialRevision: number;
+  status: IntegrationConnectionTestResponseDtoStatus;
   /** @minimum 0 */
   attemptCount: number;
-  connectionId: string;
+  /** @nullable */
+  errorCode: string | null;
   /**
    * @minimum 1
    * @nullable
    */
   connectionResultVersion: number | null;
   createdAt: string;
-  /** @minimum 1 */
-  credentialRevision: number;
-  /** @nullable */
-  errorCode: string | null;
-  /** @nullable */
-  finishedAt: string | null;
-  id: string;
-  projectId: string;
   /** @nullable */
   startedAt: string | null;
-  status: IntegrationConnectionTestResponseDtoStatus;
+  /** @nullable */
+  finishedAt: string | null;
 }

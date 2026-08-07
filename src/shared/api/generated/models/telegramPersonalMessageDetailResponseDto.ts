@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { TelegramPersonalMessageAttemptDto } from "./telegramPersonalMessageAttemptDto";
 import type { TelegramPersonalMessageKind } from "./telegramPersonalMessageKind";
 import type { TelegramPersonalMessageStatus } from "./telegramPersonalMessageStatus";
+import type { TelegramPersonalMessageAttemptDto } from "./telegramPersonalMessageAttemptDto";
 
 export interface TelegramPersonalMessageDetailResponseDto {
+  id: string;
+  projectId: string;
+  endUserId: string;
+  kind: TelegramPersonalMessageKind;
+  status: TelegramPersonalMessageStatus;
   /** @minimum 0 */
   attemptCount: number;
-  attempts: TelegramPersonalMessageAttemptDto[];
-  createdAt: string;
-  endUserId: string;
-  /** @nullable */
-  errorCode?: string | null;
-  /** @nullable */
-  finishedAt?: string | null;
-  id: string;
-  kind: TelegramPersonalMessageKind;
-  /** @nullable */
-  nextAttemptAt?: string | null;
-  projectId: string;
   /**
    * Telegram message_id represented losslessly as a decimal string.
    * @nullable
    */
   providerMessageId?: string | null;
   /** @nullable */
+  errorCode?: string | null;
+  /** @nullable */
+  nextAttemptAt?: string | null;
+  /** @nullable */
   sentAt?: string | null;
-  status: TelegramPersonalMessageStatus;
+  createdAt: string;
   updatedAt: string;
+  /** @nullable */
+  finishedAt?: string | null;
+  attempts: TelegramPersonalMessageAttemptDto[];
 }

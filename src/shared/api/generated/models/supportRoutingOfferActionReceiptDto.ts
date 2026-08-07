@@ -8,12 +8,12 @@
 import type { SupportRoutingOfferActionReceiptDtoOutcome } from "./supportRoutingOfferActionReceiptDtoOutcome";
 
 export interface SupportRoutingOfferActionReceiptDto {
+  outcome: SupportRoutingOfferActionReceiptDtoOutcome;
   assignmentId: string;
-  /** @minimum 1 */
-  assignmentRootVersion: number;
   /** @minimum 1 */
   assignmentVersion: number;
   /** @minimum 1 */
+  assignmentRootVersion: number;
+  /** @minimum 1 */
   caseVersion: number;
-  outcome: SupportRoutingOfferActionReceiptDtoOutcome;
 }

@@ -9,8 +9,8 @@
 export interface ManualAllowanceGrantDto {
   /** @pattern ^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$ */
   amountUsd: string;
+  validFrom: string;
   expiresAt: string;
   /** @maxLength 500 */
   reason: string;
-  validFrom: string;
 }

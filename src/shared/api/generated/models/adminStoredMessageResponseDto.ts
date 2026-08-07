@@ -5,43 +5,45 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
-import type { AdminStoredMessageResponseDtoContent } from "./adminStoredMessageResponseDtoContent";
-import type { AdminStoredMessageResponseDtoMetadata } from "./adminStoredMessageResponseDtoMetadata";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
+import type { AdminStoredMessageResponseDtoContent } from "./adminStoredMessageResponseDtoContent";
+import type { AdminStoredMessageResponseDtoMetadata } from "./adminStoredMessageResponseDtoMetadata";
+import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
+import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
 import type { AdminMessageThreadResponseDto } from "./adminMessageThreadResponseDto";
 
 export interface AdminStoredMessageResponseDto {
-  /** @nullable */
-  author: AdminStoredMessageResponseDtoAuthor;
-  /** @nullable */
-  clientMessageId?: string | null;
-  commands: unknown[];
+  id: string;
+  threadId: string;
+  role: MessageRole;
+  status: MessageStatus;
+  text: string;
   /** @nullable */
   content?: AdminStoredMessageResponseDtoContent;
-  createdAt: string;
-  id: string;
+  commands: unknown[];
+  metadata: AdminStoredMessageResponseDtoMetadata;
+  /** @nullable */
+  provider?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @nullable */
+  inputTokens?: number | null;
+  /** @nullable */
+  outputTokens?: number | null;
+  /** @nullable */
+  clientMessageId?: string | null;
   /**
    * Internal idempotency fingerprint returned by the current service.
    * @nullable
    */
   idempotencyKey?: string | null;
-  /** @nullable */
-  inputTokens?: number | null;
-  metadata: AdminStoredMessageResponseDtoMetadata;
-  /** @nullable */
-  model?: string | null;
   /** @minimum 1 */
   ordinal: number;
   /** @nullable */
-  outputTokens?: number | null;
-  /** @nullable */
-  provider?: string | null;
-  role: MessageRole;
-  status: MessageStatus;
-  text: string;
-  thread: AdminMessageThreadResponseDto;
-  threadId: string;
+  author: AdminStoredMessageResponseDtoAuthor;
+  attachments: ChatAttachmentMessageSnapshotResponseDto[];
+  createdAt: string;
   updatedAt: string;
+  thread: AdminMessageThreadResponseDto;
 }

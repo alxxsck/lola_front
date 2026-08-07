@@ -106,6 +106,10 @@ const fullSelectionSuccess = {
         role: "ADMIN",
         status: "COMPLETED",
         text: "Проверяю результат",
+        contentState: "ACTIVE",
+        contentVersion: 1,
+        revisionNumber: 1,
+        attachments: [],
         author: {
           type: "CMS_USER",
           cmsUserId: "50000000-0000-4000-8000-000000000001",
@@ -169,7 +173,8 @@ export const supportWorkspaceContractFixtures = {
   },
   unknownSendOutcome: {
     kind: "TRANSPORT_UNKNOWN_OUTCOME",
-    recovery: "REPEAT_SAME_IDEMPOTENCY_KEY",
-    lookupOperation: "NOT_PUBLISHED",
+    recovery: "LOOKUP_THEN_REPEAT_SAME_IDEMPOTENCY_KEY",
+    lookupOperation: "AdminMessaging_lookupOutcome",
+    publication: "PUBLISHED",
   },
 } as const;

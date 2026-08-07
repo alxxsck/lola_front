@@ -11,15 +11,15 @@ export interface PasswordSetupRequestDto {
    * @minLength 1
    * @maxLength 512
    */
+  setupToken: string;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
   newPassword: string;
   /**
    * @minLength 1
    * @maxLength 512
    */
   passwordConfirmation: string;
-  /**
-   * @minLength 1
-   * @maxLength 512
-   */
-  setupToken: string;
 }

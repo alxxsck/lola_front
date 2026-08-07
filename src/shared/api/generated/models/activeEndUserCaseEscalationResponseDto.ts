@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActiveEndUserCaseEscalationResponseDtoClaimant } from "./activeEndUserCaseEscalationResponseDtoClaimant";
-import type { ActiveEndUserCaseEscalationResponseDtoSource } from "./activeEndUserCaseEscalationResponseDtoSource";
 import type { ActiveEndUserCaseEscalationResponseDtoStatus } from "./activeEndUserCaseEscalationResponseDtoStatus";
+import type { ActiveEndUserCaseEscalationResponseDtoSource } from "./activeEndUserCaseEscalationResponseDtoSource";
+import type { ActiveEndUserCaseEscalationResponseDtoClaimant } from "./activeEndUserCaseEscalationResponseDtoClaimant";
 
 export interface ActiveEndUserCaseEscalationResponseDto {
+  id: string;
+  status: ActiveEndUserCaseEscalationResponseDtoStatus;
+  source: ActiveEndUserCaseEscalationResponseDtoSource;
+  reasonCode: string;
+  requestedAt: string;
   /** @nullable */
   claimant?: ActiveEndUserCaseEscalationResponseDtoClaimant;
   /** @nullable */
   claimedAt?: string | null;
-  id: string;
-  reasonCode: string;
-  requestedAt: string;
-  source: ActiveEndUserCaseEscalationResponseDtoSource;
-  status: ActiveEndUserCaseEscalationResponseDtoStatus;
 }

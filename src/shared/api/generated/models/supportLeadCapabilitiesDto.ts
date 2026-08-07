@@ -7,12 +7,12 @@
  */
 import type { SupportLeadCapabilitiesDtoNoEligibleOperator } from "./supportLeadCapabilitiesDtoNoEligibleOperator";
 import type { SupportLeadCapabilitiesDtoSavedQueues } from "./supportLeadCapabilitiesDtoSavedQueues";
-import type { SupportLeadCapabilitiesDtoSla } from "./supportLeadCapabilitiesDtoSla";
 import type { SupportLeadCapabilitiesDtoTeamSkillLanguageCapacity } from "./supportLeadCapabilitiesDtoTeamSkillLanguageCapacity";
+import type { SupportLeadCapabilitiesDtoSla } from "./supportLeadCapabilitiesDtoSla";
 
 export interface SupportLeadCapabilitiesDto {
   noEligibleOperator: SupportLeadCapabilitiesDtoNoEligibleOperator;
   savedQueues: SupportLeadCapabilitiesDtoSavedQueues;
-  sla: SupportLeadCapabilitiesDtoSla;
   teamSkillLanguageCapacity: SupportLeadCapabilitiesDtoTeamSkillLanguageCapacity;
+  sla: SupportLeadCapabilitiesDtoSla;
 }

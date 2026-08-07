@@ -710,6 +710,13 @@ const requiredOperations = new Map([
     },
   ],
   [
+    "AdminMessaging_lookupOutcome",
+    {
+      label: "admin messaging outcome lookup",
+      response: "SendAdminMessageResponseDto",
+    },
+  ],
+  [
     "ProjectAuditEvents_list",
     {
       label: "project audit events",

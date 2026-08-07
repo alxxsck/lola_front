@@ -8,8 +8,8 @@
 import type { EndUserCaseSplitEvidenceResponseDtoKind } from "./endUserCaseSplitEvidenceResponseDtoKind";
 
 export interface EndUserCaseSplitEvidenceResponseDto {
-  contribution: string;
   id: string;
   kind: EndUserCaseSplitEvidenceResponseDtoKind;
+  contribution: string;
   observedAt: string;
 }

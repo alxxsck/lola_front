@@ -22,6 +22,8 @@ const emit = defineEmits<{
   "retry-reply-translation": [];
   "save-reply-translation": [text: string];
   "send-reply-translation": [text?: string];
+  "check-send-outcome": [];
+  "discard-send-attempt": [];
   action: [action: ConversationSurfaceComposerAction];
 }>();
 
@@ -30,6 +32,8 @@ const blocked = computed(
   () =>
     props.composer.visibility !== "ENABLED" ||
     props.composer.sending ||
+    props.composer.outcome?.state === "CHECKING_OUTCOME" ||
+    props.composer.outcome?.state === "BLOCKED" ||
     props.composer.sendCapability.kind === "BLOCKED",
 );
 const sourceSendEnabled = computed(
@@ -101,6 +105,14 @@ function handleKeydown(event: KeyboardEvent): void {
 function runAction(action: ConversationSurfaceComposerAction): void {
   actionMenuVisible.value = false;
   emit("action", action);
+}
+
+function runOutcomeAction(): void {
+  if (props.composer.outcome?.action?.kind === "DISCARD") {
+    emit("discard-send-attempt");
+    return;
+  }
+  emit("check-send-outcome");
 }
 </script>
 
@@ -209,6 +221,43 @@ function runAction(action: ConversationSurfaceComposerAction): void {
         @click="emit('request-reply-translation')"
       />
     </div>
+
+    <p
+      v-if="composer.outcome"
+      class="conversation-composer__outcome"
+      :class="`is-${composer.outcome.state.toLowerCase()}`"
+      role="status"
+      aria-live="polite"
+    >
+      <span>
+        <i
+          :class="
+            composer.outcome.state === 'CHECKING_OUTCOME'
+              ? 'pi pi-search'
+              : composer.outcome.state === 'RETRYABLE'
+                ? 'pi pi-refresh'
+                : 'pi pi-lock'
+          "
+          aria-hidden="true"
+        />
+        {{ composer.outcome.label }}
+      </span>
+      <Button
+        v-if="composer.outcome.action"
+        type="button"
+        :label="composer.outcome.action.label"
+        :icon="
+          composer.outcome.action.kind === 'DISCARD'
+            ? 'pi pi-refresh'
+            : 'pi pi-search'
+        "
+        severity="secondary"
+        outlined
+        size="small"
+        :loading="composer.sending"
+        @click="runOutcomeAction"
+      />
+    </p>
 
     <p
       v-if="blockedReason"
@@ -371,7 +420,11 @@ function runAction(action: ConversationSurfaceComposerAction): void {
           v-if="composer.sendCapability.kind !== 'TRANSLATED_PREVIEW'"
           type="submit"
           :label="
-            composer.mode === 'INTERNAL_NOTE' ? 'Добавить заметку' : 'Отправить'
+            composer.mode === 'INTERNAL_NOTE'
+              ? 'Добавить заметку'
+              : composer.outcome?.state === 'RETRYABLE'
+                ? 'Повторить отправку'
+                : 'Отправить'
           "
           :icon="
             composer.mode === 'INTERNAL_NOTE' ? 'pi pi-lock' : 'pi pi-send'
@@ -506,6 +559,36 @@ function runAction(action: ConversationSurfaceComposerAction): void {
   margin: 0;
   color: var(--status-warning-text);
   font-size: 11px;
+}
+.conversation-composer__outcome {
+  display: flex;
+  grid-column: 1 / -1;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--palette-blue-200);
+  border-radius: 10px;
+  background: var(--status-accent-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.conversation-composer__outcome > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.conversation-composer__outcome.is-retryable {
+  border-color: var(--status-warning-border, var(--border-default));
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.conversation-composer__outcome.is-blocked {
+  border-color: var(--status-danger-border, var(--border-default));
+  background: var(--status-danger-soft, var(--surface-subtle));
+  color: var(--status-danger);
 }
 .conversation-composer__footer {
   display: flex;

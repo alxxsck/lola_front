@@ -9,17 +9,17 @@ import type { NotificationOperationsDeliveryResponseDtoChannel } from "./notific
 import type { NotificationOperationsDeliveryResponseDtoReplayEligibility } from "./notificationOperationsDeliveryResponseDtoReplayEligibility";
 
 export interface NotificationOperationsDeliveryResponseDto {
+  id: string;
+  projectId: string;
+  channel: NotificationOperationsDeliveryResponseDtoChannel;
+  status: string;
+  errorCategory: string;
   /** @minimum 0 */
   attemptCount: number;
-  channel: NotificationOperationsDeliveryResponseDtoChannel;
-  contentAvailable: boolean;
-  createdAt: string;
-  errorCategory: string;
-  id: string;
   /** @minimum 1 */
   operationsVersion: number;
-  projectId: string;
   replayEligibility: NotificationOperationsDeliveryResponseDtoReplayEligibility;
-  status: string;
+  contentAvailable: boolean;
+  createdAt: string;
   updatedAt: string;
 }

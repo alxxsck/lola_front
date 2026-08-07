@@ -5,11 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportOperationalAlertItemDtoCurrentSeverity } from "./supportOperationalAlertItemDtoCurrentSeverity";
 import type { SupportOperationalAlertItemDtoSourceKind } from "./supportOperationalAlertItemDtoSourceKind";
 import type { SupportOperationalAlertItemDtoState } from "./supportOperationalAlertItemDtoState";
+import type { SupportOperationalAlertItemDtoCurrentSeverity } from "./supportOperationalAlertItemDtoCurrentSeverity";
 
 export interface SupportOperationalAlertItemDto {
+  id: string;
+  sourceKind: SupportOperationalAlertItemDtoSourceKind;
+  sourceId: string;
+  state: SupportOperationalAlertItemDtoState;
+  currentSeverity: SupportOperationalAlertItemDtoCurrentSeverity;
+  /** @minimum 1 */
+  currentGeneration: number;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  occurrenceCount: number;
+  /** @pattern ^[1-9][0-9]*$ */
+  sourceHighWater: string;
+  /** @minimum 1 */
+  sourceVersion: number;
+  currentPolicyRevisionId: string;
+  /** @nullable */
+  ownerCmsUserId: string | null;
+  firstObservedAt: string;
+  lastObservedAt: string;
+  generationOpenedAt: string;
   /** @nullable */
   acknowledgedAt: string | null;
   /**
@@ -17,32 +38,11 @@ export interface SupportOperationalAlertItemDto {
    * @nullable
    */
   acknowledgementReasonCode: string | null;
-  /** @minimum 1 */
-  currentGeneration: number;
-  currentPolicyRevisionId: string;
-  currentSeverity: SupportOperationalAlertItemDtoCurrentSeverity;
-  firstObservedAt: string;
-  generationOpenedAt: string;
-  id: string;
-  lastObservedAt: string;
-  /** @minimum 1 */
-  occurrenceCount: number;
   /** @nullable */
-  ownerCmsUserId: string | null;
+  resolvedAt: string | null;
   /**
    * @maxLength 64
    * @nullable
    */
   resolutionReasonCode: string | null;
-  /** @nullable */
-  resolvedAt: string | null;
-  /** @pattern ^[1-9][0-9]*$ */
-  sourceHighWater: string;
-  sourceId: string;
-  sourceKind: SupportOperationalAlertItemDtoSourceKind;
-  /** @minimum 1 */
-  sourceVersion: number;
-  state: SupportOperationalAlertItemDtoState;
-  /** @minimum 1 */
-  version: number;
 }

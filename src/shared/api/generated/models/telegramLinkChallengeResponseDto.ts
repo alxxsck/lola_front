@@ -7,11 +7,11 @@
  */
 
 export interface TelegramLinkChallengeResponseDto {
+  id: string;
+  expiresAt: string;
   botUsername: string;
   /** Telegram deep link. Token is returned once. */
   deepLink: string;
-  expiresAt: string;
-  id: string;
   /** Manual /start command. Token is returned once. */
   manualCommand: string;
 }

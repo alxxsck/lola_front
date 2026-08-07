@@ -8,14 +8,14 @@
 import type { AiOperationSubjectManifestDtoState } from "./aiOperationSubjectManifestDtoState";
 
 export interface AiOperationSubjectManifestDto {
-  complete: boolean;
   manifestId: string;
-  /** @nullable */
-  redactedAt?: string | null;
-  sealedAt: string;
-  snapshotKind: string;
-  snapshotReference: string;
   sourceDataAccessReceiptStepIds: string[];
   state: AiOperationSubjectManifestDtoState;
+  snapshotKind: string;
+  snapshotReference: string;
   subjectCount: number;
+  complete: boolean;
+  sealedAt: string;
+  /** @nullable */
+  redactedAt?: string | null;
 }

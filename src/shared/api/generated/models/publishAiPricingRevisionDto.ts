@@ -7,10 +7,10 @@
  */
 
 export interface PublishAiPricingRevisionDto {
+  ratePerMillionCharacters: string;
   /**
    * @minLength 3
    * @maxLength 500
    */
   changeReason: string;
-  ratePerMillionCharacters: string;
 }

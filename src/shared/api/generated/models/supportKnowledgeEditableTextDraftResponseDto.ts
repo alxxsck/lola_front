@@ -7,7 +7,7 @@
  */
 
 export interface SupportKnowledgeEditableTextDraftResponseDto {
+  revisionId: string;
   /** @maxLength 1048576 */
   contentText: string;
-  revisionId: string;
 }

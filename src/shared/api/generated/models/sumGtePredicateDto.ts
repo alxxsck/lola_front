@@ -8,10 +8,10 @@
 import type { SumGtePredicateDtoOperator } from "./sumGtePredicateDtoOperator";
 
 export interface SumGtePredicateDto {
-  currency: string;
-  field: string;
   operator: SumGtePredicateDtoOperator;
   queryKey: string;
+  field: string;
+  currency: string;
   /** Exact decimal string. */
   value: string;
 }

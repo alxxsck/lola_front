@@ -5,21 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ExplainValueResponseDto } from "./explainValueResponseDto";
 import type { AudienceExplanationNodeResponseDtoKind } from "./audienceExplanationNodeResponseDtoKind";
 import type { AudienceExplanationNodeResponseDtoTruth } from "./audienceExplanationNodeResponseDtoTruth";
 import type { AudienceExplanationNodeResponseDtoUnknownReason } from "./audienceExplanationNodeResponseDtoUnknownReason";
+import type { ExplainValueResponseDto } from "./explainValueResponseDto";
 
 export interface AudienceExplanationNodeResponseDto {
-  actual?: ExplainValueResponseDto;
-  children?: AudienceExplanationNodeResponseDto[];
-  definitionId?: string;
-  definitionRevisionId?: string;
-  expected?: ExplainValueResponseDto;
   kind: AudienceExplanationNodeResponseDtoKind;
   matched: boolean;
-  segmentId?: string;
-  segmentRevisionId?: string;
   truth?: AudienceExplanationNodeResponseDtoTruth;
   unknownReason?: AudienceExplanationNodeResponseDtoUnknownReason;
+  actual?: ExplainValueResponseDto;
+  expected?: ExplainValueResponseDto;
+  definitionId?: string;
+  definitionRevisionId?: string;
+  segmentId?: string;
+  segmentRevisionId?: string;
+  children?: AudienceExplanationNodeResponseDto[];
 }

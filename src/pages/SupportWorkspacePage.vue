@@ -318,7 +318,40 @@ const supportConversationComposer = computed<
       selection?.conversation?.updatedAt ??
       "unselected",
     sending: reply.sending.value,
-    recipientStatus: null,
+    outcome:
+      reply.outcomeState.value === "IDLE" ||
+      reply.outcomeState.value === "SENDING"
+        ? undefined
+        : {
+            state: reply.outcomeState.value,
+            label:
+              reply.outcomeState.value === "CHECKING_OUTCOME"
+                ? "Результат пока неизвестен. Сообщение не отправляется заново."
+                : reply.outcomeState.value === "RETRYABLE"
+                  ? "Отправка не найдена. Черновик сохранён."
+                  : "Отправка заблокирована. Черновик сохранён.",
+            ...(reply.outcomeState.value === "CHECKING_OUTCOME" &&
+            !reply.sending.value
+              ? {
+                  action: {
+                    kind: "CHECK" as const,
+                    label: "Проверить результат",
+                  },
+                }
+              : reply.outcomeState.value === "BLOCKED"
+                ? {
+                    action: {
+                      kind: "DISCARD" as const,
+                      label: "Начать новую попытку",
+                    },
+                  }
+                : {}),
+          },
+    recipientStatus: selection?.conversation
+      ? selection.conversation.currentInteractionSessionCount > 0
+        ? { label: "Пользователь онлайн", tone: "ONLINE" as const }
+        : { label: "Пользователь офлайн", tone: "OFFLINE" as const }
+      : null,
     actions: {
       attachment: {
         visibility: "DISABLED",
@@ -1461,6 +1494,8 @@ watch(
   ],
   () => {
     reply.syncSelection();
+    if (reply.outcomeState.value === "CHECKING_OUTCOME")
+      void reply.checkOutcome();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
@@ -1715,6 +1750,8 @@ onBeforeUnmount(() => {
               @retry-reply-translation="translation.retryReplyPreview"
               @save-reply-translation="translation.editReplyTranslation"
               @send-reply-translation="sendSupportTranslatedReply"
+              @check-send-outcome="reply.checkOutcome"
+              @discard-send-attempt="reply.discardBlockedAttempt"
               @composer-action="handleSupportComposerAction"
               @start-ai-suspension="openAiSuspensionDialog('START')"
               @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
@@ -1724,7 +1761,7 @@ onBeforeUnmount(() => {
               Выбранный диалог недоступен.
             </p>
             <Message
-              v-if="reply.error.value"
+              v-if="reply.error.value && reply.outcomeState.value === 'IDLE'"
               severity="error"
               :closable="false"
               class="support-reply-error"

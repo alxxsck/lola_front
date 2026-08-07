@@ -8,11 +8,11 @@
 
 export interface SupportWorkspaceActionRevisionsResponseDto {
   /** @nullable */
-  aiSuspensionVersion?: string | null;
+  caseVersion?: number | null;
   /** @nullable */
   assignmentVersion?: number | null;
   /** @nullable */
-  caseVersion?: number | null;
-  /** @nullable */
   conversationUpdatedAt?: string | null;
+  /** @nullable */
+  aiSuspensionVersion?: string | null;
 }

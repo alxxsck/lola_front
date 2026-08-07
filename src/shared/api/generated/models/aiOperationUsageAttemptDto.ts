@@ -7,23 +7,23 @@
  */
 
 export interface AiOperationUsageAttemptDto {
-  /** @nullable */
-  billedCost: string | null;
-  costStatus: string;
-  /** @nullable */
-  estimatedCost: string | null;
   id: string;
-  inputTokens: number;
+  provider: string;
   /** @nullable */
   model: string | null;
-  /** @nullable */
-  modelAttemptStepId: string | null;
-  occurredAt: string;
   operation: string;
-  outputTokens: number;
-  provider: string;
   providerRequestId: string;
   /** @nullable */
   status: string | null;
+  costStatus: string;
+  /** @nullable */
+  billedCost: string | null;
+  /** @nullable */
+  estimatedCost: string | null;
   totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  occurredAt: string;
+  /** @nullable */
+  modelAttemptStepId: string | null;
 }

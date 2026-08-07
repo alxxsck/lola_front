@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportLeadInvestigationTimelineSourcesDtoAssignmentHistory } from "./supportLeadInvestigationTimelineSourcesDtoAssignmentHistory";
 import type { SupportLeadInvestigationTimelineSourcesDtoCaseHistory } from "./supportLeadInvestigationTimelineSourcesDtoCaseHistory";
+import type { SupportLeadInvestigationTimelineSourcesDtoAssignmentHistory } from "./supportLeadInvestigationTimelineSourcesDtoAssignmentHistory";
+import type { SupportLeadInvestigationTimelineSourcesDtoSlaHistory } from "./supportLeadInvestigationTimelineSourcesDtoSlaHistory";
+import type { SupportLeadInvestigationTimelineSourcesDtoReplyHistory } from "./supportLeadInvestigationTimelineSourcesDtoReplyHistory";
 import type { SupportLeadInvestigationTimelineSourcesDtoDeliveryHistory } from "./supportLeadInvestigationTimelineSourcesDtoDeliveryHistory";
 import type { SupportLeadInvestigationTimelineSourcesDtoInterventionHistory } from "./supportLeadInvestigationTimelineSourcesDtoInterventionHistory";
-import type { SupportLeadInvestigationTimelineSourcesDtoReplyHistory } from "./supportLeadInvestigationTimelineSourcesDtoReplyHistory";
-import type { SupportLeadInvestigationTimelineSourcesDtoSlaHistory } from "./supportLeadInvestigationTimelineSourcesDtoSlaHistory";
 
 export interface SupportLeadInvestigationTimelineSourcesDto {
-  assignmentHistory: SupportLeadInvestigationTimelineSourcesDtoAssignmentHistory;
   caseHistory: SupportLeadInvestigationTimelineSourcesDtoCaseHistory;
+  assignmentHistory: SupportLeadInvestigationTimelineSourcesDtoAssignmentHistory;
+  slaHistory: SupportLeadInvestigationTimelineSourcesDtoSlaHistory;
+  replyHistory: SupportLeadInvestigationTimelineSourcesDtoReplyHistory;
   deliveryHistory: SupportLeadInvestigationTimelineSourcesDtoDeliveryHistory;
   interventionHistory: SupportLeadInvestigationTimelineSourcesDtoInterventionHistory;
-  replyHistory: SupportLeadInvestigationTimelineSourcesDtoReplyHistory;
-  slaHistory: SupportLeadInvestigationTimelineSourcesDtoSlaHistory;
 }

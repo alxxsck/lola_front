@@ -5,28 +5,28 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportKnowledgeManagedScanResponseDto } from "./supportKnowledgeManagedScanResponseDto";
-import type { SupportKnowledgeManagedRevisionResponseDtoSourceType } from "./supportKnowledgeManagedRevisionResponseDtoSourceType";
 import type { SupportKnowledgeManagedRevisionResponseDtoState } from "./supportKnowledgeManagedRevisionResponseDtoState";
+import type { SupportKnowledgeManagedRevisionResponseDtoSourceType } from "./supportKnowledgeManagedRevisionResponseDtoSourceType";
 import type { SupportKnowledgeManagedVisibilityResponseDto } from "./supportKnowledgeManagedVisibilityResponseDto";
+import type { SupportKnowledgeManagedScanResponseDto } from "./supportKnowledgeManagedScanResponseDto";
 
 export interface SupportKnowledgeManagedRevisionResponseDto {
-  createdAt: string;
-  displayFilename: string;
-  /** @nullable */
-  language?: string | null;
-  mimeType: string;
-  /** @nullable */
-  publishedAt?: string | null;
   revisionId: string;
   /** @minimum 1 */
   revisionNumber: number;
-  scan: SupportKnowledgeManagedScanResponseDto;
+  state: SupportKnowledgeManagedRevisionResponseDtoState;
+  sourceType: SupportKnowledgeManagedRevisionResponseDtoSourceType;
+  title: string;
+  displayFilename: string;
+  mimeType: string;
   /** @minimum 1 */
   sizeBytes: number;
-  sourceType: SupportKnowledgeManagedRevisionResponseDtoSourceType;
-  state: SupportKnowledgeManagedRevisionResponseDtoState;
-  title: string;
-  updatedAt: string;
+  /** @nullable */
+  language?: string | null;
   visibility: SupportKnowledgeManagedVisibilityResponseDto;
+  scan: SupportKnowledgeManagedScanResponseDto;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  publishedAt?: string | null;
 }

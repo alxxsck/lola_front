@@ -9,10 +9,10 @@ import type { SupportContentRetentionPolicyResponseDtoDraft } from "./supportCon
 import type { SupportContentRetentionPolicyResponseDtoPublishedRevision } from "./supportContentRetentionPolicyResponseDtoPublishedRevision";
 
 export interface SupportContentRetentionPolicyResponseDto {
-  /** @pattern ^"scp1\.[A-Za-z0-9_-]{43}"$ */
-  actionEtag: string;
+  version: number;
   draft: SupportContentRetentionPolicyResponseDtoDraft;
   /** @nullable */
   publishedRevision: SupportContentRetentionPolicyResponseDtoPublishedRevision;
-  version: number;
+  /** @pattern ^"scp1\.[A-Za-z0-9_-]{43}"$ */
+  actionEtag: string;
 }

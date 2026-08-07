@@ -74,6 +74,32 @@ describe("демонстрационное хранилище", () => {
     vi.useRealTimers();
   });
 
+  it("возвращает опубликованный conflict code при повторе ключа с другим body", async () => {
+    const request = {
+      text: "Первый текст",
+      conversationId: "conv_1",
+      idempotencyKey: "22222222-2222-4222-8222-222222222222",
+    };
+    const first = mockRepository.sendAdminMessage(
+      "prj_retenive_demo",
+      "usr_1",
+      request,
+    );
+    await vi.runAllTimersAsync();
+    await first;
+
+    await expect(
+      mockRepository.sendAdminMessage("prj_retenive_demo", "usr_1", {
+        ...request,
+        text: "Другой текст",
+      }),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "IDEMPOTENCY_KEY_REUSED",
+    });
+    vi.useRealTimers();
+  });
+
   it("filters active waits by the requested stable Event Definition key", async () => {
     const matchingPromise = mockRepository.getScenarioRunsPage(
       "prj_retenive_demo",

@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQueueFilterResponseDto } from "./supportQueueFilterResponseDto";
-import type { SupportQueueCompiledDraftResponseDtoRouting } from "./supportQueueCompiledDraftResponseDtoRouting";
-import type { SupportQueueSortResponseDto } from "./supportQueueSortResponseDto";
 import type { SupportQueueCompiledDraftResponseDtoVisibility } from "./supportQueueCompiledDraftResponseDtoVisibility";
+import type { SupportQueueFilterResponseDto } from "./supportQueueFilterResponseDto";
+import type { SupportQueueSortResponseDto } from "./supportQueueSortResponseDto";
+import type { SupportQueueCompiledDraftResponseDtoRouting } from "./supportQueueCompiledDraftResponseDtoRouting";
 
 export interface SupportQueueCompiledDraftResponseDto {
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
-  /**
-   * @maxLength 1000
-   * @nullable
-   */
-  description: string | null;
   /**
    * @minLength 2
    * @maxLength 120
    */
   displayName: string;
+  /**
+   * @maxLength 1000
+   * @nullable
+   */
+  description: string | null;
+  visibility: SupportQueueCompiledDraftResponseDtoVisibility;
   filter: SupportQueueFilterResponseDto;
-  routing: SupportQueueCompiledDraftResponseDtoRouting;
   /**
    * @minItems 1
    * @maxItems 5
    */
   sort: SupportQueueSortResponseDto[];
-  visibility: SupportQueueCompiledDraftResponseDtoVisibility;
+  routing: SupportQueueCompiledDraftResponseDtoRouting;
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
 }

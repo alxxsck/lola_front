@@ -10,12 +10,12 @@ import type { CmsPasswordChangedResponseDtoTokenType } from "./cmsPasswordChange
 import type { CmsAuthenticatedUserResponseDto } from "./cmsAuthenticatedUserResponseDto";
 
 export interface CmsPasswordChangedResponseDto {
+  kind: CmsPasswordChangedResponseDtoKind;
+  tokenType: CmsPasswordChangedResponseDtoTokenType;
   readonly accessToken: string;
   /** @minimum 1 */
   expiresIn: number;
-  kind: CmsPasswordChangedResponseDtoKind;
   /** @minimum 1 */
   refreshExpiresIn: number;
-  tokenType: CmsPasswordChangedResponseDtoTokenType;
   user: CmsAuthenticatedUserResponseDto;
 }

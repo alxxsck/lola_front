@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProjectPermissionDto } from "./projectPermissionDto";
 import type { ProjectPermissionGroupDtoScope } from "./projectPermissionGroupDtoScope";
+import type { ProjectPermissionDto } from "./projectPermissionDto";
 
 export interface ProjectPermissionGroupDto {
-  category: string;
-  permissions: ProjectPermissionDto[];
-  risk: string;
   scope: ProjectPermissionGroupDtoScope;
+  category: string;
+  risk: string;
+  permissions: ProjectPermissionDto[];
 }

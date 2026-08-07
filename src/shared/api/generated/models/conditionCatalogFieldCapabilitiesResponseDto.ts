@@ -9,7 +9,7 @@ import type { ConditionCatalogOperatorCapabilityResponseDto } from "./conditionC
 import type { ConditionCatalogMeasureCapabilityResponseDto } from "./conditionCatalogMeasureCapabilityResponseDto";
 
 export interface ConditionCatalogFieldCapabilitiesResponseDto {
+  currentEvent: ConditionCatalogOperatorCapabilityResponseDto;
   aggregateFilter: ConditionCatalogOperatorCapabilityResponseDto;
   aggregateMeasure: ConditionCatalogMeasureCapabilityResponseDto;
-  currentEvent: ConditionCatalogOperatorCapabilityResponseDto;
 }

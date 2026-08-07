@@ -9,6 +9,6 @@ import type { FirstPlatformOperatorReplayResponseDtoStatus } from "./firstPlatfo
 
 export interface FirstPlatformOperatorReplayResponseDto {
   cmsUserId: string;
-  replayed: boolean;
   status: FirstPlatformOperatorReplayResponseDtoStatus;
+  replayed: boolean;
 }

@@ -7,11 +7,23 @@
  */
 
 export interface UpdatePlatformRoleDto {
+  /** @minimum 1 */
+  version: number;
+  /**
+   * @minLength 2
+   * @maxLength 100
+   */
+  name?: string;
   /**
    * @minLength 2
    * @maxLength 500
    */
   description?: string;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  permissionCodes?: string[];
   /**
    * @minimum 0
    * @maximum 1000
@@ -19,20 +31,8 @@ export interface UpdatePlatformRoleDto {
   expectedAssignedUserCount: number;
   expectedAssignedUserCountCapped: boolean;
   /**
-   * @minLength 2
-   * @maxLength 100
-   */
-  name?: string;
-  /**
-   * @minItems 1
-   * @maxItems 100
-   */
-  permissionCodes?: string[];
-  /**
    * @minLength 10
    * @maxLength 500
    */
   reason: string;
-  /** @minimum 1 */
-  version: number;
 }

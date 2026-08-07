@@ -5,13 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateProjectDtoSettings } from "./updateProjectDtoSettings";
 import type { MutableProjectStatus } from "./mutableProjectStatus";
+import type { UpdateProjectDtoSettings } from "./updateProjectDtoSettings";
 
 export interface UpdateProjectDto {
-  /** @maxLength 80 */
-  assistantName?: string;
-  defaultLocale?: string;
   /** @minimum 1 */
   expectedVersion: number;
   /**
@@ -19,11 +16,12 @@ export interface UpdateProjectDto {
    * @maxLength 100
    */
   name?: string;
-  /** General project settings. */
-  settings?: UpdateProjectDtoSettings;
   status?: MutableProjectStatus;
+  defaultLocale?: string;
   /** @maxItems 20 */
   supportedLocales?: string[];
+  /** @maxLength 80 */
+  assistantName?: string;
   /** @maxLength 20000 */
   systemPrompt?: string;
   /**
@@ -31,4 +29,6 @@ export interface UpdateProjectDto {
    * @maxLength 20000
    */
   voiceInstructions?: string;
+  /** General project settings. */
+  settings?: UpdateProjectDtoSettings;
 }

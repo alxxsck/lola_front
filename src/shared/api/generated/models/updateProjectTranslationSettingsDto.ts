@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateProjectTranslationSettingsDtoVersion } from "./updateProjectTranslationSettingsDtoVersion";
+import type { UpdateProjectTranslationSettingsDtoOutgoingTone } from "./updateProjectTranslationSettingsDtoOutgoingTone";
 import type { UpdateProjectTranslationSettingsDtoFormality } from "./updateProjectTranslationSettingsDtoFormality";
 import type { ProjectTranslationGlossaryEntryDto } from "./projectTranslationGlossaryEntryDto";
 import type { UpdateProjectTranslationSettingsDtoInboundMode } from "./updateProjectTranslationSettingsDtoInboundMode";
 import type { UpdateProjectTranslationSettingsDtoOutboundMode } from "./updateProjectTranslationSettingsDtoOutboundMode";
-import type { UpdateProjectTranslationSettingsDtoOutgoingTone } from "./updateProjectTranslationSettingsDtoOutgoingTone";
-import type { UpdateProjectTranslationSettingsDtoVersion } from "./updateProjectTranslationSettingsDtoVersion";
 
 export interface UpdateProjectTranslationSettingsDto {
-  enabled: boolean;
   /** @minimum 1 */
   expectedProjectVersion: number;
-  formality: UpdateProjectTranslationSettingsDtoFormality;
-  /** @maxItems 50 */
-  glossary: ProjectTranslationGlossaryEntryDto[];
-  inboundMode: UpdateProjectTranslationSettingsDtoInboundMode;
-  outboundMode: UpdateProjectTranslationSettingsDtoOutboundMode;
-  outgoingTone: UpdateProjectTranslationSettingsDtoOutgoingTone;
   version: UpdateProjectTranslationSettingsDtoVersion;
+  enabled: boolean;
   /**
    * @minLength 1
    * @maxLength 64
    */
   workingLocale: string;
+  outgoingTone: UpdateProjectTranslationSettingsDtoOutgoingTone;
+  formality: UpdateProjectTranslationSettingsDtoFormality;
+  /** @maxItems 50 */
+  glossary: ProjectTranslationGlossaryEntryDto[];
+  inboundMode: UpdateProjectTranslationSettingsDtoInboundMode;
+  outboundMode: UpdateProjectTranslationSettingsDtoOutboundMode;
 }

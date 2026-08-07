@@ -5,31 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { EndUserCaseCommandResponseDtoStatus } from "./endUserCaseCommandResponseDtoStatus";
+import type { EndUserCaseCommandResponseDtoType } from "./endUserCaseCommandResponseDtoType";
 import type { EndUserCaseCommandResponseDtoImpact } from "./endUserCaseCommandResponseDtoImpact";
+import type { EndUserCaseCommandResponseDtoUrgency } from "./endUserCaseCommandResponseDtoUrgency";
 import type { EndUserCaseCommandResponseDtoPriority } from "./endUserCaseCommandResponseDtoPriority";
 import type { EndUserCaseCommandResponseDtoResolutionAssessment } from "./endUserCaseCommandResponseDtoResolutionAssessment";
 import type { EndUserCaseCommandResponseDtoResolutionSource } from "./endUserCaseCommandResponseDtoResolutionSource";
-import type { EndUserCaseCommandResponseDtoStatus } from "./endUserCaseCommandResponseDtoStatus";
-import type { EndUserCaseCommandResponseDtoType } from "./endUserCaseCommandResponseDtoType";
-import type { EndUserCaseCommandResponseDtoUrgency } from "./endUserCaseCommandResponseDtoUrgency";
 
 export interface EndUserCaseCommandResponseDto {
+  id: string;
+  /** @minimum 1 */
+  version: number;
+  status: EndUserCaseCommandResponseDtoStatus;
   /** @nullable */
   assignedCmsUserId?: string | null;
-  /** @nullable */
-  closedAt?: string | null;
+  type?: EndUserCaseCommandResponseDtoType;
   groupCode?: string;
-  id: string;
   impact?: EndUserCaseCommandResponseDtoImpact;
+  urgency?: EndUserCaseCommandResponseDtoUrgency;
   priority?: EndUserCaseCommandResponseDtoPriority;
   resolutionAssessment?: EndUserCaseCommandResponseDtoResolutionAssessment;
   /** @nullable */
   resolutionSource?: EndUserCaseCommandResponseDtoResolutionSource;
   /** @nullable */
   resolvedAt?: string | null;
-  status: EndUserCaseCommandResponseDtoStatus;
-  type?: EndUserCaseCommandResponseDtoType;
-  urgency?: EndUserCaseCommandResponseDtoUrgency;
-  /** @minimum 1 */
-  version: number;
+  /** @nullable */
+  closedAt?: string | null;
 }

@@ -9,9 +9,11 @@ import type { EventQueryPolicyItemConfigurationDtoAllowedModesItem } from "./eve
 import type { EventQueryPolicyFieldDto } from "./eventQueryPolicyFieldDto";
 
 export interface EventQueryPolicyItemConfigurationDto {
-  allowedModes: EventQueryPolicyItemConfigurationDtoAllowedModesItem[];
   /** @maxLength 500 */
   descriptionForAI: string;
+  allowedModes: EventQueryPolicyItemConfigurationDtoAllowedModesItem[];
+  /** @maxItems 50 */
+  safeFields: EventQueryPolicyFieldDto[];
   /**
    * @minimum 1
    * @maximum 744
@@ -22,6 +24,4 @@ export interface EventQueryPolicyItemConfigurationDto {
    * @maximum 2160
    */
   maxVerificationLookbackHours: number;
-  /** @maxItems 50 */
-  safeFields: EventQueryPolicyFieldDto[];
 }

@@ -6,12 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AdminMessageAuthorResponseDtoType } from "./adminMessageAuthorResponseDtoType";
+import type { AdminMessageAuthorResponseDtoAvatarAsset } from "./adminMessageAuthorResponseDtoAvatarAsset";
 
 export interface AdminMessageAuthorResponseDto {
-  /** @nullable */
-  avatarUrl: string | null;
+  type: AdminMessageAuthorResponseDtoType;
   /** @nullable */
   cmsUserId: string | null;
   displayName: string;
-  type: AdminMessageAuthorResponseDtoType;
+  /** @nullable */
+  avatarUrl: string | null;
+  /** @nullable */
+  avatarAsset?: AdminMessageAuthorResponseDtoAvatarAsset;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  presentationVersion?: number | null;
 }

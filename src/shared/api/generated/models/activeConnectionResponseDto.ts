@@ -8,11 +8,11 @@
 import type { ActiveConnectionResponseDtoTransport } from "./activeConnectionResponseDtoTransport";
 
 export interface ActiveConnectionResponseDto {
-  connectedAt: string;
-  /** @nullable */
-  currentConversationId?: string | null;
   id: string;
-  lastHeartbeatAt: string;
   sessionId: string;
   transport: ActiveConnectionResponseDtoTransport;
+  connectedAt: string;
+  lastHeartbeatAt: string;
+  /** @nullable */
+  currentConversationId?: string | null;
 }

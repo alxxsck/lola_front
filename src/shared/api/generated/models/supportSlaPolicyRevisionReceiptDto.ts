@@ -7,12 +7,12 @@
  */
 
 export interface SupportSlaPolicyRevisionReceiptDto {
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
   id: string;
-  publishedAt: string;
   /** @minimum 1 */
   revisionNumber: number;
   /** @minimum 1 */
   sourceDraftGeneration: number;
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
+  publishedAt: string;
 }

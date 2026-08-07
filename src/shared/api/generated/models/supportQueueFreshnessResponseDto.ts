@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportQueueFreshnessResponseDtoState } from "./supportQueueFreshnessResponseDtoState";
 import type { SupportQueueSourceHighWaterResponseDto } from "./supportQueueSourceHighWaterResponseDto";
 import type { SupportQueueOwnerLagResponseDto } from "./supportQueueOwnerLagResponseDto";
-import type { SupportQueueFreshnessResponseDtoState } from "./supportQueueFreshnessResponseDtoState";
 
 export interface SupportQueueFreshnessResponseDto {
+  state: SupportQueueFreshnessResponseDtoState;
   computedAt: string;
+  sourceHighWater: SupportQueueSourceHighWaterResponseDto;
   currentSourceHighWater: SupportQueueSourceHighWaterResponseDto;
   lagMilliseconds: SupportQueueOwnerLagResponseDto;
-  sourceHighWater: SupportQueueSourceHighWaterResponseDto;
-  state: SupportQueueFreshnessResponseDtoState;
 }

@@ -10,15 +10,15 @@ import type { CanonicalIdentityPolicyParticipantResponseDto } from "./canonicalI
 import type { CanonicalIdentityPolicyResponseDtoRuntimeActivation } from "./canonicalIdentityPolicyResponseDtoRuntimeActivation";
 
 export interface CanonicalIdentityPolicyResponseDto {
-  canonicalKeyName: string;
-  eventDefinitionKeyId: string;
   mode: CanonicalIdentityPolicyResponseDtoMode;
-  participants: CanonicalIdentityPolicyParticipantResponseDto[];
   policyId: string;
   policyRevisionId: string;
   /** @minimum 1 */
   revision: number;
-  runtimeActivation: CanonicalIdentityPolicyResponseDtoRuntimeActivation;
   /** @minimum 1 */
   version: number;
+  eventDefinitionKeyId: string;
+  canonicalKeyName: string;
+  participants: CanonicalIdentityPolicyParticipantResponseDto[];
+  runtimeActivation: CanonicalIdentityPolicyResponseDtoRuntimeActivation;
 }

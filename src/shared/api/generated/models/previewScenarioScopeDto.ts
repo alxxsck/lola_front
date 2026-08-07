@@ -8,6 +8,6 @@
 import type { PreviewScenarioScopeDtoKind } from "./previewScenarioScopeDtoKind";
 
 export interface PreviewScenarioScopeDto {
-  eventLogId: string;
   kind: PreviewScenarioScopeDtoKind;
+  eventLogId: string;
 }

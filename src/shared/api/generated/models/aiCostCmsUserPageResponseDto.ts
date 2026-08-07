@@ -5,14 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AiCostRangeResponseDto } from "./aiCostRangeResponseDto";
+import type { AiCostProjectionResponseDto } from "./aiCostProjectionResponseDto";
 import type { AiCostCmsUserItemResponseDto } from "./aiCostCmsUserItemResponseDto";
 import type { AiCostPaginationResponseDto } from "./aiCostPaginationResponseDto";
-import type { AiCostProjectionResponseDto } from "./aiCostProjectionResponseDto";
-import type { AiCostRangeResponseDto } from "./aiCostRangeResponseDto";
 
 export interface AiCostCmsUserPageResponseDto {
+  range: AiCostRangeResponseDto;
+  projection: AiCostProjectionResponseDto;
   items: AiCostCmsUserItemResponseDto[];
   pagination: AiCostPaginationResponseDto;
-  projection: AiCostProjectionResponseDto;
-  range: AiCostRangeResponseDto;
 }

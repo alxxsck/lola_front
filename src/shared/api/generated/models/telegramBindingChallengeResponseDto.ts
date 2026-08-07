@@ -7,8 +7,8 @@
  */
 
 export interface TelegramBindingChallengeResponseDto {
-  botUsername: string;
+  id: string;
   command: string;
   expiresAt: string;
-  id: string;
+  botUsername: string;
 }

@@ -9,7 +9,7 @@
 /**
  */
 export type ChatSend200OneOfOnesevenAiSuspension = {
+  version: string;
   serverTime: string;
   suspendedUntil: string;
-  version: string;
 };

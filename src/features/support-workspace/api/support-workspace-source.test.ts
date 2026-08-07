@@ -295,6 +295,10 @@ describe("support workspace selection contract mapper", () => {
             role: "ADMIN",
             status: "COMPLETED",
             text: "Проверяю результат",
+            contentState: "ACTIVE",
+            contentVersion: 1,
+            revisionNumber: 1,
+            attachments: [],
             author: {
               type: "CMS_USER",
               cmsUserId: "operator-1",

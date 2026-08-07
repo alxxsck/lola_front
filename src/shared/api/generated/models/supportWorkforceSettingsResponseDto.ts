@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkforceSettingsResponseDtoDraft } from "./supportWorkforceSettingsResponseDtoDraft";
 import type { SupportWorkforceSettingsResponseDtoMode } from "./supportWorkforceSettingsResponseDtoMode";
-import type { SupportWorkforceSettingsResponseDtoPublishedRevision } from "./supportWorkforceSettingsResponseDtoPublishedRevision";
-import type { SupportWorkforceIdentityResponseDto } from "./supportWorkforceIdentityResponseDto";
-import type { SupportWorkforceIdentityPageResponseDto } from "./supportWorkforceIdentityPageResponseDto";
 import type { SupportWorkforceSettingsResponseDtoView } from "./supportWorkforceSettingsResponseDtoView";
+import type { SupportWorkforceIdentityPageResponseDto } from "./supportWorkforceIdentityPageResponseDto";
+import type { SupportWorkforceIdentityResponseDto } from "./supportWorkforceIdentityResponseDto";
+import type { SupportWorkforceSettingsResponseDtoDraft } from "./supportWorkforceSettingsResponseDtoDraft";
+import type { SupportWorkforceSettingsResponseDtoPublishedRevision } from "./supportWorkforceSettingsResponseDtoPublishedRevision";
 
 export interface SupportWorkforceSettingsResponseDto {
+  mode: SupportWorkforceSettingsResponseDtoMode;
+  view: SupportWorkforceSettingsResponseDtoView;
+  /** @minimum 0 */
+  rootVersion: number;
   actionEtag: string;
   /** @minimum 0 */
   currentRevisionNumber: number;
-  /** @nullable */
-  draft?: SupportWorkforceSettingsResponseDtoDraft;
-  mode: SupportWorkforceSettingsResponseDtoMode;
-  /** @nullable */
-  publishedRevision?: SupportWorkforceSettingsResponseDtoPublishedRevision;
-  /** @minimum 0 */
-  rootVersion: number;
-  skill?: SupportWorkforceIdentityResponseDto;
+  teams?: SupportWorkforceIdentityPageResponseDto;
   skills?: SupportWorkforceIdentityPageResponseDto;
   team?: SupportWorkforceIdentityResponseDto;
-  teams?: SupportWorkforceIdentityPageResponseDto;
-  view: SupportWorkforceSettingsResponseDtoView;
+  skill?: SupportWorkforceIdentityResponseDto;
+  /** @nullable */
+  draft?: SupportWorkforceSettingsResponseDtoDraft;
+  /** @nullable */
+  publishedRevision?: SupportWorkforceSettingsResponseDtoPublishedRevision;
 }

@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { CmsAgentConfirmationResponseDtoEvidence } from "./cmsAgentConfirmationResponseDtoEvidence";
 import type { CmsAgentConfirmationResponseDtoStatus } from "./cmsAgentConfirmationResponseDtoStatus";
+import type { CmsAgentConfirmationResponseDtoEvidence } from "./cmsAgentConfirmationResponseDtoEvidence";
 
 export interface CmsAgentConfirmationResponseDto {
-  capabilityKey: string;
-  capabilityVersion: number;
   confirmationId: string;
   confirmationKind: string;
+  capabilityKey: string;
+  capabilityVersion: number;
   confirmingCmsUserId: string;
+  status: CmsAgentConfirmationResponseDtoStatus;
+  evidence: CmsAgentConfirmationResponseDtoEvidence;
+  originatingIamSecurityEventId: string;
+  /** @nullable */
+  consumedIamSecurityEventId?: string | null;
+  expiresAt: string;
   /** @nullable */
   consumedAt?: string | null;
   /** @nullable */
-  consumedIamSecurityEventId?: string | null;
-  createdAt: string;
-  evidence: CmsAgentConfirmationResponseDtoEvidence;
-  expiresAt: string;
-  originatingIamSecurityEventId: string;
-  /** @nullable */
   revokedAt?: string | null;
-  status: CmsAgentConfirmationResponseDtoStatus;
+  createdAt: string;
 }

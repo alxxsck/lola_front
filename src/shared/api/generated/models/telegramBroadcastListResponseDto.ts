@@ -9,8 +9,8 @@ import type { TelegramBroadcastResponseDto } from "./telegramBroadcastResponseDt
 
 export interface TelegramBroadcastListResponseDto {
   items: TelegramBroadcastResponseDto[];
-  /** @nullable */
-  nextCursor?: string | null;
   /** @minimum 0 */
   total: number;
+  /** @nullable */
+  nextCursor?: string | null;
 }

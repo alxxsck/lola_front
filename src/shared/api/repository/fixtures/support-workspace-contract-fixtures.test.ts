@@ -16,7 +16,7 @@ describe("support workspace contract fixture catalog", () => {
     ]);
   });
 
-  it("does not present unpublished error or lookup contracts as production truth", () => {
+  it("keeps unpublished workspace errors separate from the published send lookup", () => {
     expect(supportWorkspaceContractFixtures.forbiddenSelection).toMatchObject({
       status: 403,
       publication: "NOT_PUBLISHED",
@@ -31,8 +31,9 @@ describe("support workspace contract fixture catalog", () => {
     });
     expect(supportWorkspaceContractFixtures.unknownSendOutcome).toEqual({
       kind: "TRANSPORT_UNKNOWN_OUTCOME",
-      recovery: "REPEAT_SAME_IDEMPOTENCY_KEY",
-      lookupOperation: "NOT_PUBLISHED",
+      recovery: "LOOKUP_THEN_REPEAT_SAME_IDEMPOTENCY_KEY",
+      lookupOperation: "AdminMessaging_lookupOutcome",
+      publication: "PUBLISHED",
     });
   });
 });

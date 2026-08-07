@@ -12,15 +12,15 @@ export interface LinkEndUserCaseMessageDto {
   expectedVersion: number;
   idempotencyKey: string;
   messageId: string;
-  /**
-   * @minLength 1
-   * @maxLength 2000
-   */
-  reason: string;
   relation: LinkEndUserCaseMessageDtoRelation;
   /**
    * @minimum 0
    * @maximum 1
    */
   relevance: number;
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  reason: string;
 }

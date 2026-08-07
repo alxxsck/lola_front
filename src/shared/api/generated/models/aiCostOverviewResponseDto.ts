@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiCostCategoryResponseDto } from "./aiCostCategoryResponseDto";
-import type { AiCostCompletenessResponseDto } from "./aiCostCompletenessResponseDto";
-import type { AiCostDailyResponseDto } from "./aiCostDailyResponseDto";
-import type { AiCostProjectionResponseDto } from "./aiCostProjectionResponseDto";
 import type { AiCostRangeResponseDto } from "./aiCostRangeResponseDto";
+import type { AiCostProjectionResponseDto } from "./aiCostProjectionResponseDto";
 import type { AiCostTotalsResponseDto } from "./aiCostTotalsResponseDto";
+import type { AiCostCompletenessResponseDto } from "./aiCostCompletenessResponseDto";
+import type { AiCostCategoryResponseDto } from "./aiCostCategoryResponseDto";
+import type { AiCostDailyResponseDto } from "./aiCostDailyResponseDto";
 
 export interface AiCostOverviewResponseDto {
-  categories: AiCostCategoryResponseDto[];
-  completeness: AiCostCompletenessResponseDto;
-  daily: AiCostDailyResponseDto[];
-  projection: AiCostProjectionResponseDto;
   range: AiCostRangeResponseDto;
   timezone: string;
+  projection: AiCostProjectionResponseDto;
   totals: AiCostTotalsResponseDto;
+  completeness: AiCostCompletenessResponseDto;
+  categories: AiCostCategoryResponseDto[];
+  daily: AiCostDailyResponseDto[];
 }

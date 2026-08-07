@@ -11,10 +11,10 @@ export interface AiUsageEventQueryBreakdownResponseDto {
   /** @minimum 0 */
   calls: number;
   /** @minimum 0 */
+  resultBytes: number;
+  /** @minimum 0 */
   estimatedAddedInputTokens: number;
   linkedAiUsage: AiUsageEventQueryLinkedUsageResponseDto;
   /** Always true: linked tokens and cost are attribution of existing xAI records and must not be added again. */
   linkedUsageIncludedInProviderTotals: boolean;
-  /** @minimum 0 */
-  resultBytes: number;
 }

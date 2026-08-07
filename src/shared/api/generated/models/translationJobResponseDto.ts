@@ -8,10 +8,10 @@
 import type { TranslationTargetResponseDto } from "./translationTargetResponseDto";
 
 export interface TranslationJobResponseDto {
-  createdAt: string;
   jobId: string;
-  sourceHash: string;
-  sourceLocale: string;
   status: string;
+  sourceHash: string;
+  createdAt: string;
+  sourceLocale: string;
   targets: TranslationTargetResponseDto[];
 }

@@ -8,25 +8,25 @@
 import type { CmsUserReactivationResponseDtoStatus } from "./cmsUserReactivationResponseDtoStatus";
 
 export interface CmsUserReactivationResponseDto {
+  id: string;
+  email: string;
+  givenName: string;
+  familyName: string;
+  displayName: string;
+  status: CmsUserReactivationResponseDtoStatus;
+  emailVerified: boolean;
+  projectCount: number;
+  /** @nullable */
+  lastLoginAt: string | null;
+  version: number;
   createdAt: string;
+  updatedAt: string;
+  platformRoleKeys: string[];
+  platformPermissionCodes: string[];
   /** @nullable */
   deactivatedAt: string | null;
   /** @nullable */
   deactivationReason: string | null;
-  displayName: string;
-  email: string;
-  emailVerified: boolean;
-  familyName: string;
-  givenName: string;
-  id: string;
-  initialAccessExpiresAt?: string;
   readonly initialAccessSecret?: string;
-  /** @nullable */
-  lastLoginAt: string | null;
-  platformPermissionCodes: string[];
-  platformRoleKeys: string[];
-  projectCount: number;
-  status: CmsUserReactivationResponseDtoStatus;
-  updatedAt: string;
-  version: number;
+  initialAccessExpiresAt?: string;
 }

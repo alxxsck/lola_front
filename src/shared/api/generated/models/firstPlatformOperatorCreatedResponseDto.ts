@@ -9,8 +9,8 @@ import type { FirstPlatformOperatorCreatedResponseDtoStatus } from "./firstPlatf
 
 export interface FirstPlatformOperatorCreatedResponseDto {
   cmsUserId: string;
-  expiresAt: string;
-  readonly initialAccessSecret: string;
-  replayed: boolean;
   status: FirstPlatformOperatorCreatedResponseDtoStatus;
+  replayed: boolean;
+  readonly initialAccessSecret: string;
+  expiresAt: string;
 }

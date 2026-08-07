@@ -8,9 +8,9 @@
 import type { CmsAgentImmediateInterpretationResponseDtoOutcome } from "./cmsAgentImmediateInterpretationResponseDtoOutcome";
 
 export interface CmsAgentImmediateInterpretationResponseDto {
-  code?: string;
-  model?: string;
   outcome: CmsAgentImmediateInterpretationResponseDtoOutcome;
-  providerRequestId?: string;
   replayed?: boolean;
+  code?: string;
+  providerRequestId?: string;
+  model?: string;
 }

@@ -8,13 +8,13 @@
 import type { TelegramChannelTestStatus } from "./telegramChannelTestStatus";
 
 export interface TelegramChannelTestResponseDto {
-  createdAt: string;
+  id: string;
+  status: TelegramChannelTestStatus;
+  /** @minimum 1 */
+  installationVersion: number;
   /** @nullable */
   errorCode?: string | null;
   /** @nullable */
   finishedAt?: string | null;
-  id: string;
-  /** @minimum 1 */
-  installationVersion: number;
-  status: TelegramChannelTestStatus;
+  createdAt: string;
 }

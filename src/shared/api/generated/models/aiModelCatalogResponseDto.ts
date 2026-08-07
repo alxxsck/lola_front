@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AiModelCatalogItemResponseDto } from "./aiModelCatalogItemResponseDto";
 import type { AiModelCatalogResponseDtoWorkload } from "./aiModelCatalogResponseDtoWorkload";
+import type { AiModelCatalogItemResponseDto } from "./aiModelCatalogItemResponseDto";
 
 export interface AiModelCatalogResponseDto {
-  fetchedAt: string;
-  items: AiModelCatalogItemResponseDto[];
-  maxStaleAt: string;
-  stale: boolean;
   workload: AiModelCatalogResponseDtoWorkload;
+  stale: boolean;
+  fetchedAt: string;
+  maxStaleAt: string;
+  items: AiModelCatalogItemResponseDto[];
 }

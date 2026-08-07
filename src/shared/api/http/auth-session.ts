@@ -7,6 +7,7 @@ import {
 const PROJECT_KEY = "retenive-cms-selected-project-v1";
 const TRANSLATION_JOB_PREFIX = "retenive:translation-jobs:";
 const REPLY_TRANSLATION_DRAFT_PREFIX = "retenive:reply-translation-draft:";
+const SUPPORT_REPLY_ATTEMPT_PREFIX = "retenive:support-reply-attempt:";
 const AMPLITUDE_PENDING_TEST_PREFIX = "retenive:amplitude-pending-tests:";
 const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = "retenive:amplitude-unresolved-secret:";
 const AMPLITUDE_PENDING_ROUTE_CREATE_PREFIX =
@@ -77,6 +78,7 @@ function clearTabSessionStorage(): void {
     if (
       key?.startsWith(TRANSLATION_JOB_PREFIX) ||
       key?.startsWith(REPLY_TRANSLATION_DRAFT_PREFIX) ||
+      key?.startsWith(SUPPORT_REPLY_ATTEMPT_PREFIX) ||
       key?.startsWith(AMPLITUDE_PENDING_TEST_PREFIX) ||
       key?.startsWith(AMPLITUDE_UNRESOLVED_SECRET_PREFIX) ||
       key?.startsWith(AMPLITUDE_PENDING_ROUTE_CREATE_PREFIX)

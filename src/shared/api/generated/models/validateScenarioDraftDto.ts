@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ScenarioRuleDto } from "./scenarioRuleDto";
 import type { AudienceRuleDto } from "./audienceRuleDto";
+import type { ValidateScenarioDraftDtoProfileFreshness } from "./validateScenarioDraftDtoProfileFreshness";
 import type { ValidateScenarioDraftDtoDeliveryPolicy } from "./validateScenarioDraftDtoDeliveryPolicy";
 import type { ScenarioSourceGraphDto } from "./scenarioSourceGraphDto";
 import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
-import type { ValidateScenarioDraftDtoProfileFreshness } from "./validateScenarioDraftDtoProfileFreshness";
-import type { ScenarioRuleDto } from "./scenarioRuleDto";
 
 export interface ValidateScenarioDraftDto {
-  audience?: AudienceRuleDto;
   /**
    * @minLength 1
    * @maxLength 128
    */
   catalogRevision: string;
+  rule?: ScenarioRuleDto;
+  audience?: AudienceRuleDto;
+  profileFreshness?: ValidateScenarioDraftDtoProfileFreshness;
   deliveryPolicy: ValidateScenarioDraftDtoDeliveryPolicy;
   graph: ScenarioSourceGraphDto;
   localization?: ScenarioLocalizationPolicyDto;
-  profileFreshness?: ValidateScenarioDraftDtoProfileFreshness;
-  rule?: ScenarioRuleDto;
 }

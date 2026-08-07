@@ -7,11 +7,11 @@
  */
 
 export interface SupportWorkspaceEndUserResponseDto {
-  createdAt: string;
-  externalId: string;
   id: string;
+  externalId: string;
   isGuest: boolean;
-  lastSeenAt: string;
   /** @nullable */
   locale?: string | null;
+  lastSeenAt: string;
+  createdAt: string;
 }

@@ -7,19 +7,19 @@
  */
 
 export interface AiCostPaginationResponseDto {
-  hasMore: boolean;
   /**
    * @minimum 1
    * @maximum 200
    */
   limit: number;
-  /** @nullable */
-  nextOffset: number | null;
   /**
    * @minimum 0
    * @maximum 10000
    */
   offset: number;
+  hasMore: boolean;
+  /** @nullable */
+  nextOffset: number | null;
   /** More rows exist but the bounded offset window requires narrower filters. */
   truncated: boolean;
 }

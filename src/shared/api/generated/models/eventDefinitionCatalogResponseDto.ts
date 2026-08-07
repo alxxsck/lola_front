@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventDefinitionCatalogResponseDtoCurrentRevision } from "./eventDefinitionCatalogResponseDtoCurrentRevision";
-import type { EventDefinitionLifecycle } from "./eventDefinitionLifecycle";
 import type { EventDefinitionOrigin } from "./eventDefinitionOrigin";
+import type { EventDefinitionLifecycle } from "./eventDefinitionLifecycle";
 import type { EventIngestionPolicyResponseDto } from "./eventIngestionPolicyResponseDto";
+import type { EventDefinitionCatalogResponseDtoCurrentRevision } from "./eventDefinitionCatalogResponseDtoCurrentRevision";
 
 export interface EventDefinitionCatalogResponseDto {
-  code: string;
-  /** @nullable */
-  currentRevision: EventDefinitionCatalogResponseDtoCurrentRevision;
-  /** @nullable */
-  description: string | null;
   /** Stable Event Definition Key ID. */
   id: string;
+  projectId: string;
+  code: string;
+  name: string;
+  /** @nullable */
+  description: string | null;
+  origin: EventDefinitionOrigin;
   lifecycle: EventDefinitionLifecycle;
-  lifecycleUpdatedAt: string;
   /** @minimum 1 */
   lifecycleVersion: number;
+  lifecycleUpdatedAt: string;
   metadataUpdatedAt: string;
-  name: string;
-  origin: EventDefinitionOrigin;
   policy: EventIngestionPolicyResponseDto;
-  projectId: string;
+  /** @nullable */
+  currentRevision: EventDefinitionCatalogResponseDtoCurrentRevision;
   readOnly: boolean;
 }

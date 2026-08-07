@@ -8,15 +8,15 @@
 import type { AiPricingRevisionActorDto } from "./aiPricingRevisionActorDto";
 
 export interface AiPricingRevisionResponseDto {
-  changeReason: string;
-  createdAt: string;
-  createdBy: AiPricingRevisionActorDto;
-  currency: string;
-  effectiveFrom: string;
   id: string;
-  operation: string;
   provider: string;
-  rate: string;
-  sourceUrl: string;
+  operation: string;
+  currency: string;
   unit: string;
+  rate: string;
+  effectiveFrom: string;
+  sourceUrl: string;
+  changeReason: string;
+  createdBy: AiPricingRevisionActorDto;
+  createdAt: string;
 }

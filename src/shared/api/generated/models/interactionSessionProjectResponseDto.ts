@@ -8,9 +8,9 @@
 import type { InteractionSessionProjectResponseDtoSettings } from "./interactionSessionProjectResponseDtoSettings";
 
 export interface InteractionSessionProjectResponseDto {
-  assistantName: string;
-  defaultLocale: string;
   id: string;
   name: string;
+  assistantName: string;
+  defaultLocale: string;
   settings: InteractionSessionProjectResponseDtoSettings;
 }

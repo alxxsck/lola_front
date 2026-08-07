@@ -5,16 +5,16 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { EventSchemaActiveWaitImpactResponseDto } from "./eventSchemaActiveWaitImpactResponseDto";
 import type { EventSchemaConsumerImpactResponseDto } from "./eventSchemaConsumerImpactResponseDto";
-import type { EventSchemaEventQueryPolicyImpactResponseDto } from "./eventSchemaEventQueryPolicyImpactResponseDto";
 import type { EventSchemaExternalConsumerImpactResponseDto } from "./eventSchemaExternalConsumerImpactResponseDto";
+import type { EventSchemaActiveWaitImpactResponseDto } from "./eventSchemaActiveWaitImpactResponseDto";
+import type { EventSchemaEventQueryPolicyImpactResponseDto } from "./eventSchemaEventQueryPolicyImpactResponseDto";
 import type { EventSchemaImpactSummaryResponseDto } from "./eventSchemaImpactSummaryResponseDto";
 
 export interface EventSchemaImpactDetailResponseDto {
-  activeWaits: EventSchemaActiveWaitImpactResponseDto[];
   consumers: EventSchemaConsumerImpactResponseDto[];
-  eventQueryPolicies: EventSchemaEventQueryPolicyImpactResponseDto[];
   externalConsumers: EventSchemaExternalConsumerImpactResponseDto[];
+  activeWaits: EventSchemaActiveWaitImpactResponseDto[];
+  eventQueryPolicies: EventSchemaEventQueryPolicyImpactResponseDto[];
   summary: EventSchemaImpactSummaryResponseDto;
 }

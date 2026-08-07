@@ -8,16 +8,16 @@
 import type { ApiErrorIssueResponseDto } from "./apiErrorIssueResponseDto";
 
 export interface ApiErrorDetailsResponseDto {
-  currentCatalogRevision?: string;
-  /** @nullable */
-  currentRevisionId?: string | null;
-  /** @minimum 1 */
-  currentVersion?: number;
-  expectedCatalogRevision?: string;
-  /** @nullable */
-  expectedCurrentRevisionId?: string | null;
-  issues?: ApiErrorIssueResponseDto[];
-  reason?: string;
   /** @minimum 1 */
   retryAfterSeconds?: number;
+  reason?: string;
+  issues?: ApiErrorIssueResponseDto[];
+  /** @nullable */
+  expectedCurrentRevisionId?: string | null;
+  /** @nullable */
+  currentRevisionId?: string | null;
+  expectedCatalogRevision?: string;
+  currentCatalogRevision?: string;
+  /** @minimum 1 */
+  currentVersion?: number;
 }

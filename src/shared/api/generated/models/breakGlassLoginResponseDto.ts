@@ -9,6 +9,6 @@ import type { BreakGlassLoginResponseDtoTokenType } from "./breakGlassLoginRespo
 
 export interface BreakGlassLoginResponseDto {
   accessToken: string;
-  expiresIn: number;
   tokenType: BreakGlassLoginResponseDtoTokenType;
+  expiresIn: number;
 }

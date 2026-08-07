@@ -5,23 +5,23 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioAuthoringSourceResponseDtoAudience } from "./scenarioAuthoringSourceResponseDtoAudience";
-import type { ScenarioAuthoringSourceResponseDtoDeliveryPolicy } from "./scenarioAuthoringSourceResponseDtoDeliveryPolicy";
-import type { ScenarioAuthoringSourceResponseDtoGraph } from "./scenarioAuthoringSourceResponseDtoGraph";
-import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
-import type { ScenarioAuthoringSourceResponseDtoProfileFreshness } from "./scenarioAuthoringSourceResponseDtoProfileFreshness";
 import type { ScenarioAuthoringSourceResponseDtoRule } from "./scenarioAuthoringSourceResponseDtoRule";
+import type { ScenarioAuthoringSourceResponseDtoAudience } from "./scenarioAuthoringSourceResponseDtoAudience";
+import type { ScenarioAuthoringSourceResponseDtoGraph } from "./scenarioAuthoringSourceResponseDtoGraph";
+import type { ScenarioAuthoringSourceResponseDtoDeliveryPolicy } from "./scenarioAuthoringSourceResponseDtoDeliveryPolicy";
+import type { ScenarioAuthoringSourceResponseDtoProfileFreshness } from "./scenarioAuthoringSourceResponseDtoProfileFreshness";
+import type { ScenarioLocalizationPolicyDto } from "./scenarioLocalizationPolicyDto";
 
 export interface ScenarioAuthoringSourceResponseDto {
   /** @nullable */
+  rule?: ScenarioAuthoringSourceResponseDtoRule;
+  /** @nullable */
   audience?: ScenarioAuthoringSourceResponseDtoAudience;
-  catalogRevision: string;
-  deliveryPolicy: ScenarioAuthoringSourceResponseDtoDeliveryPolicy;
   /** @nullable */
   graph?: ScenarioAuthoringSourceResponseDtoGraph;
-  localization: ScenarioLocalizationPolicyDto;
+  deliveryPolicy: ScenarioAuthoringSourceResponseDtoDeliveryPolicy;
   /** @nullable */
   profileFreshness?: ScenarioAuthoringSourceResponseDtoProfileFreshness;
-  /** @nullable */
-  rule?: ScenarioAuthoringSourceResponseDtoRule;
+  catalogRevision: string;
+  localization: ScenarioLocalizationPolicyDto;
 }

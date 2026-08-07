@@ -5,32 +5,32 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProfileFieldCoverageResponseDto } from "./profileFieldCoverageResponseDto";
-import type { ProfileHealthResponseDtoInvalidReasons } from "./profileHealthResponseDtoInvalidReasons";
-import type { OldContractIntegrationResponseDto } from "./oldContractIntegrationResponseDto";
 import type { ProfileHealthResponseDtoOutcomes } from "./profileHealthResponseDtoOutcomes";
+import type { ProfileHealthResponseDtoInvalidReasons } from "./profileHealthResponseDtoInvalidReasons";
+import type { ProfileFieldCoverageResponseDto } from "./profileFieldCoverageResponseDto";
 import type { ProfileAgeDistributionResponseDto } from "./profileAgeDistributionResponseDto";
+import type { OldContractIntegrationResponseDto } from "./oldContractIntegrationResponseDto";
 import type { ProfileReadinessResponseDto } from "./profileReadinessResponseDto";
 
 export interface ProfileHealthResponseDto {
+  since: string;
+  requestCount: number;
+  outcomes: ProfileHealthResponseDtoOutcomes;
+  usersWithSnapshot: number;
+  totalUsers: number;
   /**
    * @minimum 0
    * @maximum 1
    */
   coverage: number;
-  fieldCoverage: ProfileFieldCoverageResponseDto[];
-  idempotencyConflicts: number;
-  invalidReasons: ProfileHealthResponseDtoInvalidReasons;
   /** @nullable */
   lastSuccessfulSnapshotAt?: string | null;
-  oldContractIntegrations: OldContractIntegrationResponseDto[];
-  outcomes: ProfileHealthResponseDtoOutcomes;
-  profileAgeDistribution: ProfileAgeDistributionResponseDto;
-  readiness: ProfileReadinessResponseDto;
-  requestCount: number;
-  sessionRequestsWithoutSnapshot: number;
   sessionRequestsWithSnapshot: number;
-  since: string;
-  totalUsers: number;
-  usersWithSnapshot: number;
+  sessionRequestsWithoutSnapshot: number;
+  invalidReasons: ProfileHealthResponseDtoInvalidReasons;
+  idempotencyConflicts: number;
+  fieldCoverage: ProfileFieldCoverageResponseDto[];
+  profileAgeDistribution: ProfileAgeDistributionResponseDto;
+  oldContractIntegrations: OldContractIntegrationResponseDto[];
+  readiness: ProfileReadinessResponseDto;
 }

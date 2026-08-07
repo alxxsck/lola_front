@@ -8,15 +8,15 @@
 
 export interface UpdateProjectMembershipDto {
   /**
-   * @minLength 10
-   * @maxLength 500
-   */
-  reason: string;
-  /**
    * @minItems 1
    * @maxItems 5
    */
   roleIds: string[];
+  /**
+   * @minLength 10
+   * @maxLength 500
+   */
+  reason: string;
   /** @minimum 1 */
   version: number;
 }

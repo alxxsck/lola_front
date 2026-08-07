@@ -7,15 +7,15 @@
  */
 import type { TranslationAvailabilityResponseDto } from "./translationAvailabilityResponseDto";
 import type { ConversationTranslationBudgetResponseDto } from "./conversationTranslationBudgetResponseDto";
-import type { ConversationLanguageDecisionResponseDto } from "./conversationLanguageDecisionResponseDto";
 import type { ConversationTranslationPreferenceResponseDto } from "./conversationTranslationPreferenceResponseDto";
+import type { ConversationLanguageDecisionResponseDto } from "./conversationLanguageDecisionResponseDto";
 
 export interface ConversationTranslationResponseDto {
   availability: TranslationAvailabilityResponseDto;
   budget: ConversationTranslationBudgetResponseDto;
-  configRevision: string;
-  language: ConversationLanguageDecisionResponseDto;
-  preference: ConversationTranslationPreferenceResponseDto;
   projectVersion: number;
   supportedLocales: string[];
+  configRevision: string;
+  preference: ConversationTranslationPreferenceResponseDto;
+  language: ConversationLanguageDecisionResponseDto;
 }

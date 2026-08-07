@@ -7,11 +7,11 @@
  */
 
 export interface CmsSessionSummaryDto {
-  createdAt: string;
+  id: string;
   current: boolean;
   /** @maxLength 160 */
   device: string;
-  expiresAt: string;
-  id: string;
+  createdAt: string;
   lastSeenAt: string;
+  expiresAt: string;
 }

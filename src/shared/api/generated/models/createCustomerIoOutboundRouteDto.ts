@@ -11,6 +11,11 @@ export interface CreateCustomerIoOutboundRouteDto {
   connectionId: string;
   /**
    * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 1
    * @maxLength 500
    */
   description?: string;
@@ -20,12 +25,7 @@ export interface CreateCustomerIoOutboundRouteDto {
    * @minLength 1
    * @maxLength 120
    */
-  name: string;
+  providerEventName: string;
   /** @maxItems 32 */
   propertyBindings: IntegrationEventPropertyBindingDto[];
-  /**
-   * @minLength 1
-   * @maxLength 120
-   */
-  providerEventName: string;
 }

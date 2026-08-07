@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceRuleReportResponseDto } from "./audienceRuleReportResponseDto";
-import type { ValidateScenarioRuleResponseDtoCost } from "./validateScenarioRuleResponseDtoCost";
-import type { ScenarioRuleDependencyResponseDto } from "./scenarioRuleDependencyResponseDto";
 import type { ScenarioRuleIssueResponseDto } from "./scenarioRuleIssueResponseDto";
+import type { ScenarioRuleDependencyResponseDto } from "./scenarioRuleDependencyResponseDto";
+import type { ValidateScenarioRuleResponseDtoCost } from "./validateScenarioRuleResponseDtoCost";
 import type { ScenarioWarningResponseDto } from "./scenarioWarningResponseDto";
+import type { AudienceRuleReportResponseDto } from "./audienceRuleReportResponseDto";
 
 export interface ValidateScenarioRuleResponseDto {
-  audience?: AudienceRuleReportResponseDto;
+  valid: boolean;
+  issues: ScenarioRuleIssueResponseDto[];
+  dependencies: ScenarioRuleDependencyResponseDto[];
   /** @nullable */
   cost: ValidateScenarioRuleResponseDtoCost;
-  dependencies: ScenarioRuleDependencyResponseDto[];
-  issues: ScenarioRuleIssueResponseDto[];
-  valid: boolean;
   warnings: ScenarioWarningResponseDto[];
+  audience?: AudienceRuleReportResponseDto;
 }

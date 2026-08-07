@@ -5,13 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ResolvedAiModelSettingsResponseDto } from "./resolvedAiModelSettingsResponseDto";
 import type { AiModelSettingsResponseDtoSaved } from "./aiModelSettingsResponseDtoSaved";
+import type { ResolvedAiModelSettingsResponseDto } from "./resolvedAiModelSettingsResponseDto";
 
 export interface AiModelSettingsResponseDto {
   /** @minimum 1 */
   projectVersion: number;
-  resolved: ResolvedAiModelSettingsResponseDto;
   /** @nullable */
   saved: AiModelSettingsResponseDtoSaved;
+  resolved: ResolvedAiModelSettingsResponseDto;
 }

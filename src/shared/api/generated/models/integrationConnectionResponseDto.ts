@@ -5,41 +5,41 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationConnectionResponseDtoCredential } from "./integrationConnectionResponseDtoCredential";
-import type { IntegrationConnectionResponseDtoHealth } from "./integrationConnectionResponseDtoHealth";
-import type { IntegrationConnectionResponseDtoInbound } from "./integrationConnectionResponseDtoInbound";
-import type { IntegrationConnectionResponseDtoLifecycle } from "./integrationConnectionResponseDtoLifecycle";
 import type { IntegrationConnectionResponseDtoProvider } from "./integrationConnectionResponseDtoProvider";
 import type { IntegrationConnectionResponseDtoRegion } from "./integrationConnectionResponseDtoRegion";
+import type { IntegrationConnectionResponseDtoInbound } from "./integrationConnectionResponseDtoInbound";
+import type { IntegrationConnectionResponseDtoLifecycle } from "./integrationConnectionResponseDtoLifecycle";
+import type { IntegrationConnectionResponseDtoHealth } from "./integrationConnectionResponseDtoHealth";
+import type { IntegrationConnectionResponseDtoCredential } from "./integrationConnectionResponseDtoCredential";
 
 export interface IntegrationConnectionResponseDto {
-  /** @nullable */
-  credential: IntegrationConnectionResponseDtoCredential;
-  displayName: string;
-  health: IntegrationConnectionResponseDtoHealth;
   id: string;
-  /** Safe inbound setup projection. It never exposes the secret or public routing key. */
-  inbound: IntegrationConnectionResponseDtoInbound;
+  projectId: string;
+  provider: IntegrationConnectionResponseDtoProvider;
+  displayName: string;
+  region: IntegrationConnectionResponseDtoRegion;
+  /** @nullable */
+  remoteProjectLabel: string | null;
   inboundEnabled: boolean;
   inboundPaused: boolean;
-  /** @nullable */
-  lastSuccessfulTestAt: string | null;
-  /** @nullable */
-  lastTestErrorCode: string | null;
+  /** Safe inbound setup projection. It never exposes the secret or public routing key. */
+  inbound: IntegrationConnectionResponseDtoInbound;
+  outboundEnabled: boolean;
+  outboundPaused: boolean;
   lifecycle: IntegrationConnectionResponseDtoLifecycle;
+  health: IntegrationConnectionResponseDtoHealth;
   /** @nullable */
   outboundCircuitOpenUntil: string | null;
   outboundCircuitPermanent: boolean;
   /** @nullable */
   outboundCircuitReason: string | null;
-  outboundEnabled: boolean;
-  outboundPaused: boolean;
-  projectId: string;
-  provider: IntegrationConnectionResponseDtoProvider;
-  region: IntegrationConnectionResponseDtoRegion;
   /** @nullable */
-  remoteProjectLabel: string | null;
-  updatedAt: string;
+  credential: IntegrationConnectionResponseDtoCredential;
+  /** @nullable */
+  lastSuccessfulTestAt: string | null;
+  /** @nullable */
+  lastTestErrorCode: string | null;
   /** @minimum 1 */
   version: number;
+  updatedAt: string;
 }

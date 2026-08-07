@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AudienceSegmentSourceResponseDtoAuthoringAvailability } from "./audienceSegmentSourceResponseDtoAuthoringAvailability";
-import type { AudienceSegmentSourceResponseDtoControl } from "./audienceSegmentSourceResponseDtoControl";
 import type { AudienceSegmentSourceResponseDtoOperatorsItem } from "./audienceSegmentSourceResponseDtoOperatorsItem";
+import type { AudienceSegmentSourceResponseDtoControl } from "./audienceSegmentSourceResponseDtoControl";
+import type { AudienceSegmentSourceResponseDtoAuthoringAvailability } from "./audienceSegmentSourceResponseDtoAuthoringAvailability";
 
 export interface AudienceSegmentSourceResponseDto {
-  authoringAvailability: AudienceSegmentSourceResponseDtoAuthoringAvailability;
-  control: AudienceSegmentSourceResponseDtoControl;
   operators: AudienceSegmentSourceResponseDtoOperatorsItem[];
   searchEndpoint: string;
+  control: AudienceSegmentSourceResponseDtoControl;
+  authoringAvailability: AudienceSegmentSourceResponseDtoAuthoringAvailability;
   /** @nullable */
   unsupportedReason?: string | null;
 }

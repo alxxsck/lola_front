@@ -5,12 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActivitySettingsSemanticsResponseDtoReconnectGraceSeconds } from "./activitySettingsSemanticsResponseDtoReconnectGraceSeconds";
 import type { ActivitySettingsSemanticsResponseDtoTimezone } from "./activitySettingsSemanticsResponseDtoTimezone";
 import type { ActivitySettingsSemanticsResponseDtoVisitInactivitySeconds } from "./activitySettingsSemanticsResponseDtoVisitInactivitySeconds";
+import type { ActivitySettingsSemanticsResponseDtoReconnectGraceSeconds } from "./activitySettingsSemanticsResponseDtoReconnectGraceSeconds";
 
 export interface ActivitySettingsSemanticsResponseDto {
-  reconnectGraceSeconds: ActivitySettingsSemanticsResponseDtoReconnectGraceSeconds;
   timezone: ActivitySettingsSemanticsResponseDtoTimezone;
   visitInactivitySeconds: ActivitySettingsSemanticsResponseDtoVisitInactivitySeconds;
+  reconnectGraceSeconds: ActivitySettingsSemanticsResponseDtoReconnectGraceSeconds;
 }

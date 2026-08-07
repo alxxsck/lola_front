@@ -5,27 +5,27 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ScenarioActionExplainResponseDto } from "./scenarioActionExplainResponseDto";
-import type { ScenarioRunAudienceResponseDto } from "./scenarioRunAudienceResponseDto";
-import type { ScenarioContinuationExplainResponseDto } from "./scenarioContinuationExplainResponseDto";
-import type { ScenarioDeliveryExplainResponseDto } from "./scenarioDeliveryExplainResponseDto";
-import type { ScenarioRunEligibilityResponseDto } from "./scenarioRunEligibilityResponseDto";
-import type { ScenarioGoalResolutionResponseDto } from "./scenarioGoalResolutionResponseDto";
 import type { ScenarioRunExplainRunResponseDto } from "./scenarioRunExplainRunResponseDto";
 import type { ScenarioRunExplainResponseDtoScenarioRevision } from "./scenarioRunExplainResponseDtoScenarioRevision";
-import type { ScenarioTimelineEntryResponseDto } from "./scenarioTimelineEntryResponseDto";
 import type { ScenarioRunExplainTriggerResponseDto } from "./scenarioRunExplainTriggerResponseDto";
+import type { ScenarioRunEligibilityResponseDto } from "./scenarioRunEligibilityResponseDto";
+import type { ScenarioRunAudienceResponseDto } from "./scenarioRunAudienceResponseDto";
+import type { ScenarioGoalResolutionResponseDto } from "./scenarioGoalResolutionResponseDto";
+import type { ScenarioDeliveryExplainResponseDto } from "./scenarioDeliveryExplainResponseDto";
+import type { ScenarioActionExplainResponseDto } from "./scenarioActionExplainResponseDto";
+import type { ScenarioContinuationExplainResponseDto } from "./scenarioContinuationExplainResponseDto";
+import type { ScenarioTimelineEntryResponseDto } from "./scenarioTimelineEntryResponseDto";
 
 export interface ScenarioRunExplainResponseDto {
-  actions: ScenarioActionExplainResponseDto[];
-  audience: ScenarioRunAudienceResponseDto;
-  continuations: ScenarioContinuationExplainResponseDto[];
-  delivery: ScenarioDeliveryExplainResponseDto;
-  eligibility: ScenarioRunEligibilityResponseDto;
-  goalResolutions: ScenarioGoalResolutionResponseDto[];
   run: ScenarioRunExplainRunResponseDto;
   /** @nullable */
   scenarioRevision?: ScenarioRunExplainResponseDtoScenarioRevision;
-  timeline: ScenarioTimelineEntryResponseDto[];
   trigger: ScenarioRunExplainTriggerResponseDto;
+  eligibility: ScenarioRunEligibilityResponseDto;
+  audience: ScenarioRunAudienceResponseDto;
+  goalResolutions: ScenarioGoalResolutionResponseDto[];
+  delivery: ScenarioDeliveryExplainResponseDto;
+  actions: ScenarioActionExplainResponseDto[];
+  continuations: ScenarioContinuationExplainResponseDto[];
+  timeline: ScenarioTimelineEntryResponseDto[];
 }

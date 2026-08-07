@@ -11,12 +11,7 @@ export interface SupportRoutingWeightsDto {
    * @minimum 0
    * @maximum 10000
    */
-  continuity?: number;
-  /**
-   * @minimum 0
-   * @maximum 10000
-   */
-  idle?: number;
+  skill?: number;
   /**
    * @minimum 0
    * @maximum 10000
@@ -31,5 +26,10 @@ export interface SupportRoutingWeightsDto {
    * @minimum 0
    * @maximum 10000
    */
-  skill?: number;
+  continuity?: number;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  idle?: number;
 }

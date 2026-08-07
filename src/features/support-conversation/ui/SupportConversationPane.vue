@@ -37,6 +37,8 @@ const emit = defineEmits<{
   "retry-reply-translation": [];
   "save-reply-translation": [text: string];
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
+  "check-send-outcome": [];
+  "discard-send-attempt": [];
   "composer-action": [action: ConversationSurfaceComposerAction];
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
@@ -70,6 +72,8 @@ const surfaceMessages = computed(() =>
     @retry-reply-translation="emit('retry-reply-translation')"
     @save-reply-translation="emit('save-reply-translation', $event)"
     @send-reply-translation="emit('send-reply-translation', $event)"
+    @check-send-outcome="emit('check-send-outcome')"
+    @discard-send-attempt="emit('discard-send-attempt')"
     @composer-action="emit('composer-action', $event)"
     @start-ai-suspension="emit('start-ai-suspension')"
     @show-ai-suspension-history="emit('show-ai-suspension-history')"

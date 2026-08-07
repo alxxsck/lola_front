@@ -5,19 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { IntegrationRecoveryCommandResultDtoCommandType } from "./integrationRecoveryCommandResultDtoCommandType";
-import type { IntegrationRecoveryCommandResultDtoDirection } from "./integrationRecoveryCommandResultDtoDirection";
 import type { IntegrationRecoveryCommandResultDtoOperationKind } from "./integrationRecoveryCommandResultDtoOperationKind";
+import type { IntegrationRecoveryCommandResultDtoCommandType } from "./integrationRecoveryCommandResultDtoCommandType";
 import type { IntegrationRecoveryCommandResultDtoStatus } from "./integrationRecoveryCommandResultDtoStatus";
+import type { IntegrationRecoveryCommandResultDtoDirection } from "./integrationRecoveryCommandResultDtoDirection";
 
 export interface IntegrationRecoveryCommandResultDto {
-  commandType: IntegrationRecoveryCommandResultDtoCommandType;
-  completedAt: string;
-  direction?: IntegrationRecoveryCommandResultDtoDirection;
   operationId: string;
   operationKind: IntegrationRecoveryCommandResultDtoOperationKind;
+  targetId: string;
+  commandType: IntegrationRecoveryCommandResultDtoCommandType;
+  status: IntegrationRecoveryCommandResultDtoStatus;
+  direction?: IntegrationRecoveryCommandResultDtoDirection;
   /** @minimum 2 */
   operationsVersion: number;
-  status: IntegrationRecoveryCommandResultDtoStatus;
-  targetId: string;
+  completedAt: string;
 }

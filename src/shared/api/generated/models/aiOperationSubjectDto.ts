@@ -8,13 +8,13 @@
 import type { AiOperationSubjectDtoRolesItem } from "./aiOperationSubjectDtoRolesItem";
 
 export interface AiOperationSubjectDto {
-  /** Whether this End User was the charged allowance subject. Project-budget admin analyses are false. */
-  charged: boolean;
+  subjectRowId: string;
   /** @nullable */
   endUserId?: string | null;
+  subjectReference: string;
+  /** Whether this End User was the charged allowance subject. Project-budget admin analyses are false. */
+  charged: boolean;
+  roles: AiOperationSubjectDtoRolesItem[];
   /** @nullable */
   redactedAt?: string | null;
-  roles: AiOperationSubjectDtoRolesItem[];
-  subjectReference: string;
-  subjectRowId: string;
 }

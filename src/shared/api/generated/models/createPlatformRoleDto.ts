@@ -7,11 +7,6 @@
  */
 
 export interface CreatePlatformRoleDto {
-  /**
-   * @minLength 2
-   * @maxLength 500
-   */
-  description: string;
   /** @pattern ^[A-Z][A-Z0-9_]{2,63}$ */
   key: string;
   /**
@@ -19,6 +14,11 @@ export interface CreatePlatformRoleDto {
    * @maxLength 100
    */
   name: string;
+  /**
+   * @minLength 2
+   * @maxLength 500
+   */
+  description: string;
   /**
    * @minItems 1
    * @maxItems 100

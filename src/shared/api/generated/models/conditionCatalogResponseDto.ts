@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ConditionCatalogResponseDtoAudience } from "./conditionCatalogResponseDtoAudience";
+import type { ConditionCatalogResponseDtoVersion } from "./conditionCatalogResponseDtoVersion";
 import type { ConditionCatalogEventResponseDto } from "./conditionCatalogEventResponseDto";
+import type { ConditionCatalogResponseDtoAudience } from "./conditionCatalogResponseDtoAudience";
 import type { ScenarioLocalizationCatalogResponseDto } from "./scenarioLocalizationCatalogResponseDto";
 import type { ScenarioTranslationCatalogResponseDto } from "./scenarioTranslationCatalogResponseDto";
-import type { ConditionCatalogResponseDtoVersion } from "./conditionCatalogResponseDtoVersion";
 
 export interface ConditionCatalogResponseDto {
-  audience?: ConditionCatalogResponseDtoAudience;
-  events: ConditionCatalogEventResponseDto[];
-  localization: ScenarioLocalizationCatalogResponseDto;
-  projectId: string;
-  revision: string;
-  translation: ScenarioTranslationCatalogResponseDto;
   version: ConditionCatalogResponseDtoVersion;
+  revision: string;
+  projectId: string;
+  events: ConditionCatalogEventResponseDto[];
+  audience?: ConditionCatalogResponseDtoAudience;
+  localization: ScenarioLocalizationCatalogResponseDto;
+  translation: ScenarioTranslationCatalogResponseDto;
 }

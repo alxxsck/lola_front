@@ -292,7 +292,7 @@ test("search and Saved View request contracts stay bounded and visibly response-
       delete operation(contract, "SupportSearch_cases")["x-iam-permission"];
     },
     (contract) => {
-      contract.components.schemas.SupportSearchQueryDto.properties.limit.maximum = 1_000;
+      contract.components.schemas.SupportCaseSearchQueryDto.properties.limit.maximum = 1_000;
     },
     (contract) => {
       operation(contract, "SavedSupportView_publish").parameters.find(

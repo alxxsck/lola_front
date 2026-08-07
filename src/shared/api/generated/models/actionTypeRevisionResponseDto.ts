@@ -7,25 +7,25 @@
  */
 import type { ActionExecutorAdapter } from "./actionExecutorAdapter";
 import type { ActionTypeRevisionResponseDtoInputSchema } from "./actionTypeRevisionResponseDtoInputSchema";
-import type { ActionTypeRevisionResponseDtoProjectConfigSchema } from "./actionTypeRevisionResponseDtoProjectConfigSchema";
 import type { ActionTypeRevisionResponseDtoResultSchema } from "./actionTypeRevisionResponseDtoResultSchema";
-import type { ActionSurface } from "./actionSurface";
+import type { ActionTypeRevisionResponseDtoProjectConfigSchema } from "./actionTypeRevisionResponseDtoProjectConfigSchema";
 import type { ActionTypeRevisionResponseDtoUiSchema } from "./actionTypeRevisionResponseDtoUiSchema";
+import type { ActionSurface } from "./actionSurface";
 
 export interface ActionTypeRevisionResponseDto {
-  confirmationPolicy: string;
-  description: string;
-  executorAdapter: ActionExecutorAdapter;
   id: string;
-  inputSchema: ActionTypeRevisionResponseDtoInputSchema;
-  multipleInstances: boolean;
-  name: string;
-  projectConfigSchema: ActionTypeRevisionResponseDtoProjectConfigSchema;
-  publishedAt?: string;
-  resultSchema: ActionTypeRevisionResponseDtoResultSchema;
-  risk: string;
-  supportedSurfaces: ActionSurface[];
-  uiSchema: ActionTypeRevisionResponseDtoUiSchema;
   /** @minimum 1 */
   version: number;
+  name: string;
+  description: string;
+  executorAdapter: ActionExecutorAdapter;
+  inputSchema: ActionTypeRevisionResponseDtoInputSchema;
+  resultSchema: ActionTypeRevisionResponseDtoResultSchema;
+  projectConfigSchema: ActionTypeRevisionResponseDtoProjectConfigSchema;
+  uiSchema: ActionTypeRevisionResponseDtoUiSchema;
+  supportedSurfaces: ActionSurface[];
+  risk: string;
+  confirmationPolicy: string;
+  multipleInstances: boolean;
+  publishedAt?: string;
 }

@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ProfileSyncIssueResponseDto } from "./profileSyncIssueResponseDto";
 import type { ProfileSyncResponseDtoStatus } from "./profileSyncResponseDtoStatus";
+import type { ProfileSyncIssueResponseDto } from "./profileSyncIssueResponseDto";
 
 export interface ProfileSyncResponseDto {
+  status: ProfileSyncResponseDtoStatus;
   /** @nullable */
   activeContractRevision?: number | null;
-  issues?: ProfileSyncIssueResponseDto[];
   /** @pattern ^\d+$ */
   profileVersion: string;
-  status: ProfileSyncResponseDtoStatus;
   warnings: ProfileSyncIssueResponseDto[];
+  issues?: ProfileSyncIssueResponseDto[];
 }
