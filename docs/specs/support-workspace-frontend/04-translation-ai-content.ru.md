@@ -6,7 +6,10 @@
 Conversation, ручной target locale, persisted translations, preview/edit/send,
 conflict handling, realtime reconcile и fail-closed provider/budget поведение.
 Support Workspace должен переиспользовать её repository и state machines, а не
-создавать второй переводчик внутри нового chat component.
+создавать второй переводчик внутри нового chat component. Более того, Users и
+Support обязаны монтировать один Conversation Surface: общий message renderer,
+translation controller и существующий header toggle. Переиспользование только
+repository при двух разных UI-реализациях не считается выполнением требования.
 
 Нормативная существующая спецификация:
 [support-chat-translation-frontend-release-proof.ru.md](../../support-chat-translation-frontend-release-proof.ru.md).
@@ -46,8 +49,12 @@ target, billing или автоматической отправки.
 
 ## 4. Inbound перевод
 
-- Conversation toggle: `Перевод` / `Оригинал`;
-- у translated Message есть локальный toggle, не меняющий всю ленту;
+- единый Conversation toggle из текущего user chat: `Оригинал` /
+  `Перевод · <Working Locale>`; он одинаков в Users и Support;
+- Support не добавляет отдельную кнопку, dropdown, menu-only action или второй
+  локальный state переключения всей ленты;
+- original конкретного Message можно открыть только как secondary inspect
+  action общего message renderer; это не альтернативный Support-only toggle;
 - label: «Переведено с испанского» + persisted/error state;
 - original остаётся доступен разрешённому оператору;
 - original и translation не рендерятся постоянно двумя bubbles;

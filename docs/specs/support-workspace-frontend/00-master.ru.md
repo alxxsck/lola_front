@@ -27,8 +27,10 @@
 
 Долгоживущая работа оператора должна происходить на route-level странице, а не
 в модальном окне. `UserWorkspaceDialog` на переходном этапе остаётся быстрым
-входом из `/users`, `/live` и `/cases`, но открывает deep link в Support
-Workspace. `/live` остаётся диагностикой присутствия, а не превращается в inbox.
+входом из `/users` и `/live` и монтирует тот же общий Conversation Surface, что
+и Support Workspace, либо открывает его deep link. Отдельной реализации чата в
+dialog и Support быть не может. `/live` остаётся диагностикой присутствия, а не
+превращается в inbox.
 
 ## 2. Что входит в frontend-проект
 
@@ -155,10 +157,14 @@ End User не получает CMS routes и CMS permissions. Он видит т
   accepted/delivered/read визуально и программно разделены;
 - все action surfaces используют effective permissions и allowed actions;
 - перевод и AI Suspension сохраняют текущие fail-closed гарантии;
+- Users chat и Support используют один Conversation Surface, один message
+  renderer/composer и один toggle `Оригинал / Перевод`; второй chat renderer
+  отсутствует;
 - reconnect/reload не создаёт дублей и восстанавливает authoritative state;
 - 1440×1000, 1024×768 и 390×844 проходят visual и keyboard QA;
 - axe не находит критических нарушений в основных сценариях;
 - QA и analytics не строятся из сырых сообщений в браузере;
-- legacy modal либо удалена, либо оставлена только как совместимый launcher;
+- legacy modal либо удалена, либо оставлена как совместимый adapter общего
+  Conversation Surface/launcher без собственной chat implementation;
 - rollout можно отключить project feature flag без миграции пользовательских
   данных назад.
