@@ -230,11 +230,23 @@ watch(draftKey, (next, previous) => {
   draft.value = drafts.get(next) ?? props.composer.initialDraft;
 });
 
+function acceptExternalDraft(value: string): void {
+  draft.value = value;
+  drafts.set(draftKey.value, value);
+}
+
 watch(
   () => props.composer.draftRevision,
   () => {
-    draft.value = props.composer.initialDraft;
-    drafts.set(draftKey.value, draft.value);
+    acceptExternalDraft(props.composer.initialDraft);
+  },
+);
+
+watch(
+  () => props.composer.initialDraft,
+  (value) => {
+    if (value === draft.value) return;
+    acceptExternalDraft(value);
   },
 );
 
@@ -290,6 +302,7 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
       >
         <button
           type="button"
+          data-action="show-original-messages"
           :class="{ active: translation.mode === 'ORIGINAL' }"
           :aria-pressed="translation.mode === 'ORIGINAL'"
           :disabled="translation.changing"
@@ -299,6 +312,7 @@ onMounted(() => void nextTick(() => scrollToLatest(false)));
         </button>
         <button
           type="button"
+          data-action="show-translated-messages"
           :class="{ active: translation.mode === 'TRANSLATED' }"
           :aria-pressed="translation.mode === 'TRANSLATED'"
           :disabled="translation.loading || translation.changing"

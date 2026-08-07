@@ -164,6 +164,13 @@ export function useAdminConversationConsole(
     );
   }
 
+  function clearDrafts(): void {
+    replyText.value = "";
+    drafts.clear();
+    replyAttempt = null;
+    newConversationAttempt = null;
+  }
+
   function applyPresence(sessions: OnlineSession[], endUserId: string): void {
     const active = sessions.filter(
       (session) => session.userId === endUserId && session.status === "ONLINE",
@@ -813,6 +820,7 @@ export function useAdminConversationConsole(
     newMessageCount,
     reset,
     hasAnyDraft,
+    clearDrafts,
     refreshPresence,
     loadConversations,
     loadMoreConversations,

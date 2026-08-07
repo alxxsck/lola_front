@@ -127,7 +127,10 @@ describe("демонстрационное хранилище", () => {
       }),
     );
 
-    const pending = mockRepository.getConversations("prj_retenive_demo", "usr_1");
+    const pending = mockRepository.getConversations(
+      "prj_retenive_demo",
+      "usr_1",
+    );
     await vi.runAllTimersAsync();
 
     await expect(pending).resolves.toMatchObject({
@@ -137,6 +140,47 @@ describe("демонстрационное хранилище", () => {
           isCurrent: true,
           currentInteractionSessionCount: 1,
         },
+      ],
+    });
+    vi.useRealTimers();
+  });
+
+  it("дополняет server ordinals в сохранённых до миграции demo-сообщениях", async () => {
+    localStorage.setItem(
+      "retenive-cms-demo-data-v2",
+      JSON.stringify({
+        messages: [
+          {
+            id: "newer",
+            conversationId: "conv_1",
+            author: "USER",
+            text: "Новое",
+            status: "COMPLETED",
+            createdAt: "2026-07-20T13:00:00.000Z",
+          },
+          {
+            id: "older",
+            conversationId: "conv_1",
+            author: "ASSISTANT",
+            text: "Старое",
+            status: "COMPLETED",
+            createdAt: "2026-07-20T12:00:00.000Z",
+          },
+        ],
+      }),
+    );
+
+    const pending = mockRepository.getMessages(
+      "prj_retenive_demo",
+      "usr_1",
+      "conv_1",
+    );
+    await vi.runAllTimersAsync();
+
+    await expect(pending).resolves.toMatchObject({
+      items: [
+        { id: "newer", ordinal: 2 },
+        { id: "older", ordinal: 1 },
       ],
     });
     vi.useRealTimers();

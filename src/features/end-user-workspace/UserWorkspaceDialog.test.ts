@@ -1,10 +1,15 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import { reactive, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import UserWorkspaceDialog from "./UserWorkspaceDialog.vue";
+import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
+import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
 import { conversationTranslationApi } from "@/features/conversation-translation/api/conversation-translation.api";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
 import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
+import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
+import { runConversationSurfaceBehaviorSuite } from "@/features/conversation-surface/testing/conversation-surface-behavior-suite";
 import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
 
 const mocks = vi.hoisted(() => ({
@@ -26,6 +31,19 @@ const mocks = vi.hoisted(() => ({
   stateHandler: undefined as ((value: string) => void) | undefined,
   reconcileHandler: undefined as (() => Promise<void>) | undefined,
   toastAdd: vi.fn(),
+  suspensionLoadDetail: vi.fn(),
+  suspensionEntry: undefined as
+    | {
+        summary: typeof automatic;
+        endUserId: string;
+        loading: boolean;
+        mutating: null;
+        error: null;
+        locallyExpired: boolean;
+        cancellationRequested: boolean;
+        serverOffsetMs: number;
+      }
+    | undefined,
   logout: vi.fn(),
   replace: vi.fn(),
   route: { fullPath: "/users?userId=user-1" },
@@ -37,13 +55,17 @@ const mocks = vi.hoisted(() => ({
     "project.conversations.ai_suspend",
     "project.ai_usage.read",
   ],
+  permissionRevision: undefined as { value: number } | undefined,
 }));
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
     logout: mocks.logout,
     project: {
-      effectivePermissionCodes: mocks.permissions,
+      get effectivePermissionCodes() {
+        void mocks.permissionRevision?.value;
+        return mocks.permissions;
+      },
     },
   }),
 }));
@@ -68,8 +90,8 @@ vi.mock(
   () => ({
     useConversationAISuspensionStore: () => ({
       ingestConversations: vi.fn(),
-      loadDetail: vi.fn(),
-      getEntry: vi.fn(),
+      loadDetail: mocks.suspensionLoadDetail,
+      getEntry: () => mocks.suspensionEntry,
       applyConfirmedState: vi.fn(),
       start: vi.fn(),
       extend: vi.fn(),
@@ -148,18 +170,18 @@ describe("единое рабочее пространство пользова�
       value: vi.fn(),
     });
     vi.clearAllMocks();
-    mocks.permissions.splice(
-      0,
-      mocks.permissions.length,
+    mocks.permissionRevision = ref(0);
+    mocks.permissions = reactive([
       "project.profiles.read",
       "project.end_users.read",
       "project.conversations.read",
       "project.conversations.reply",
       "project.conversations.ai_suspend",
       "project.ai_usage.read",
-    );
+    ]);
     mocks.messageHandler = undefined;
     mocks.translationHandler = undefined;
+    mocks.suspensionEntry = undefined;
     mocks.stateHandler = undefined;
     mocks.reconcileHandler = undefined;
     mocks.subscribe.mockImplementation(
@@ -218,6 +240,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "user-message",
           conversationId: current.id,
+          ordinal: 1,
           author: "USER",
           status: "COMPLETED",
           text: "Сообщение пользователя",
@@ -226,6 +249,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "operator-message",
           conversationId: current.id,
+          ordinal: 2,
           author: "ADMIN",
           status: "COMPLETED",
           text: "Ответ оператора",
@@ -344,6 +368,77 @@ describe("единое рабочее пространство пользова�
     });
   }
 
+  runConversationSurfaceBehaviorSuite({
+    name: "Users adapter",
+    mount: async () => {
+      mocks.permissions.push("project.translation.create");
+      const wrapper = mountWorkspace(current.id);
+      await flushPromises();
+      return wrapper;
+    },
+    expectedMessageIds: ["user-message", "operator-message"],
+    translationAvailable: true,
+  });
+
+  it("renders the selected Users chat through the canonical Conversation Surface", async () => {
+    mocks.permissions.push("project.translation.create");
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    const surface = wrapper.findComponent(ConversationSurface);
+    expect(surface.exists()).toBe(true);
+    expect(surface.findComponent(ConversationComposer).exists()).toBe(true);
+    expect(surface.findAll("[data-message-id]")).toHaveLength(2);
+    expect(surface.text()).toContain("Сообщение пользователя");
+    expect(surface.text()).toContain("Ответ оператора");
+    expect(wrapper.find(".message-history").exists()).toBe(false);
+    expect(wrapper.find(".message-bubble").exists()).toBe(false);
+    expect(
+      wrapper.findAll('[aria-label="Режим отображения сообщений"]'),
+    ).toHaveLength(1);
+  });
+
+  it("keeps AI suspension controls beside the shared Surface and revokes mutation authority at runtime", async () => {
+    mocks.suspensionEntry = {
+      summary: automatic,
+      endUserId: "user-1",
+      loading: false,
+      mutating: null,
+      error: null,
+      locallyExpired: false,
+      cancellationRequested: false,
+      serverOffsetMs: 0,
+    };
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+
+    expect(wrapper.findComponent(ConversationSurface).exists()).toBe(true);
+    expect(
+      wrapper.findComponent(ConversationAISuspensionHeaderActions).exists(),
+    ).toBe(true);
+    expect(mocks.suspensionLoadDetail).toHaveBeenCalledWith(
+      "user-1",
+      current.id,
+    );
+
+    await wrapper.get('[aria-label="Приостановить AI"]').trigger("click");
+    const dialog = wrapper.getComponent(ConversationAISuspensionDialog);
+    expect(dialog.props("visible")).toBe(true);
+    expect(dialog.props("mode")).toBe("START");
+
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.conversations.ai_suspend"),
+      1,
+    );
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+
+    expect(wrapper.find('[aria-label="Приостановить AI"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.findComponent(ConversationSurface).exists()).toBe(true);
+  });
+
   it("shows the independently authorized Telegram panel in the profile workspace", async () => {
     mocks.permissions.push("project.telegram.links.read");
     const wrapper = mountWorkspace();
@@ -372,11 +467,17 @@ describe("единое рабочее пространство пользова�
       "data-project-id": "project-1",
       "data-end-user-id": "user-1",
     });
-    expect(wrapper.text()).not.toContain("Сообщение пользователя");
+    expect(
+      wrapper.get<HTMLElement>('[data-testid="chat-workspace"]').element.style
+        .display,
+    ).toBe("none");
 
     await wrapper.get('[data-action="open-chat"]').trigger("click");
     await flushPromises();
-    expect(wrapper.get('[data-testid="chat-workspace"]')).toBeTruthy();
+    expect(
+      wrapper.get<HTMLElement>('[data-testid="chat-workspace"]').element.style
+        .display,
+    ).toBe("");
     expect(wrapper.text()).toContain("Сообщение пользователя");
 
     await wrapper.get('[data-action="open-profile"]').trigger("click");
@@ -530,11 +631,8 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    const skeletons = wrapper.get(".message-skeletons");
-    expect(skeletons.classes()).toContain("message-skeletons--bottom");
-    expect(skeletons.classes()).toContain("message-skeletons--message-sized");
-    expect(skeletons.classes()).toContain("message-skeletons--full-width");
-    expect(skeletons.findAll(":scope > span")).toHaveLength(20);
+    const skeletons = wrapper.get(".conversation-surface__skeletons");
+    expect(skeletons.findAll(":scope > i")).toHaveLength(5);
     expect(wrapper.find(".conversation-composer.is-blocked").exists()).toBe(
       true,
     );
@@ -544,7 +642,9 @@ describe("единое рабочее пространство пользова�
 
     resolveMessages?.({ items: [], nextCursor: null });
     await flushPromises();
-    expect(wrapper.find(".message-skeletons").exists()).toBe(false);
+    expect(wrapper.find(".conversation-surface__skeletons").exists()).toBe(
+      false,
+    );
   });
 
   it("показывает прогресс массового перевода без перестановки сообщений", async () => {
@@ -556,6 +656,7 @@ describe("единое рабочее пространство пользова�
       items: [1, 2, 3].map((index) => ({
         id: `message-${index}`,
         conversationId: current.id,
+        ordinal: index,
         author: "USER" as const,
         status: "COMPLETED" as const,
         text: `Nachricht ${index}`,
@@ -581,14 +682,16 @@ describe("единое рабочее пространство пользова�
       .trigger("click");
     await flushPromises();
 
-    expect(wrapper.get(".bulk-translation-progress").text()).toContain(
-      "0 из 3",
-    );
-    expect(wrapper.findAll(".message-bubble")).toHaveLength(3);
+    expect(
+      wrapper.get(".conversation-surface__translation-progress").text(),
+    ).toContain("0 из 3");
+    expect(wrapper.findAll("[data-message-id]")).toHaveLength(3);
 
     resolveTranslation?.({ items: [], queued: false });
     await flushPromises();
-    expect(wrapper.find(".bulk-translation-progress").exists()).toBe(false);
+    expect(
+      wrapper.find(".conversation-surface__translation-progress").exists(),
+    ).toBe(false);
   });
 
   it("размещает историю синхронизации в карточке доступного профиля", async () => {
@@ -746,6 +849,7 @@ describe("единое рабочее пространство пользова�
       message: {
         id: "live",
         threadId: current.id,
+        ordinal: 3,
         role: "USER",
         status: "COMPLETED",
         text: "Live-сообщение",
@@ -828,6 +932,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "translated-message",
           conversationId: current.id,
+          ordinal: 1,
           author: "USER",
           status: "COMPLETED",
           text: "Guten Tag",
@@ -876,6 +981,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "translated-message",
           conversationId: current.id,
+          ordinal: 1,
           author: "USER",
           status: "COMPLETED",
           text: "Guten Tag",
@@ -926,6 +1032,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "german-message",
           conversationId: current.id,
+          ordinal: 1,
           author: "USER",
           status: "COMPLETED",
           text: "Meine Einzahlung ist nicht angekommen",
@@ -990,6 +1097,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "english-message-1",
           conversationId: current.id,
+          ordinal: 1,
           author: "USER",
           status: "COMPLETED",
           text: "hello i need help",
@@ -998,6 +1106,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "english-message-2",
           conversationId: current.id,
+          ordinal: 2,
           author: "USER",
           status: "COMPLETED",
           text: "i have a problem with my deposit, i cant see it",
@@ -1014,7 +1123,6 @@ describe("единое рабочее пространство пользова�
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
 
-    expect(wrapper.get(".conversation-language-fact strong").text()).toBe("EN");
     expect(wrapper.get(".conversation-badge.accent").text()).toBe("EN");
     expect(getTranslation).not.toHaveBeenCalled();
   });
@@ -1030,6 +1138,7 @@ describe("единое рабочее пространство пользова�
         {
           id: "russian-message",
           conversationId: current.id,
+          ordinal: 1,
           author: "SCENARIO",
           status: "COMPLETED",
           text: "Почему не пришёл депозит?",
@@ -1087,7 +1196,7 @@ describe("единое рабочее пространство пользова�
         .findAll("button")
         .some((button) => button.text().trim() === "Диалоги"),
     ).toBe(false);
-    expect(wrapper.find(".message-bubble button").exists()).toBe(false);
+    expect(wrapper.find("[data-message-id] button").exists()).toBe(false);
   });
 
   it("блокирует скролл страницы, пока рабочее пространство открыто", async () => {
@@ -1268,12 +1377,16 @@ describe("единое рабочее пространство пользова�
   });
 
   it("сохраняет визуальный anchor при добавлении предыдущей страницы истории", async () => {
+    let resolveOlder:
+      | ((value: Awaited<ReturnType<typeof mocks.getMessages>>) => void)
+      | undefined;
     mocks.getMessages
       .mockResolvedValueOnce({
         items: [
           {
             id: "current-message",
             conversationId: current.id,
+            ordinal: 2,
             author: "USER",
             status: "COMPLETED",
             text: "Текущее сообщение",
@@ -1282,32 +1395,19 @@ describe("единое рабочее пространство пользова�
         ],
         nextCursor: "older",
       })
-      .mockResolvedValueOnce({
-        items: [
-          {
-            id: "older-message",
-            conversationId: current.id,
-            author: "ASSISTANT",
-            status: "COMPLETED",
-            text: "Предыдущее сообщение",
-            createdAt: "2026-07-19T12:59:00.000Z",
-          },
-        ],
-        nextCursor: null,
-      });
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOlder = resolve;
+        }),
+      );
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
-    const history = wrapper.get<HTMLElement>(".message-history").element;
+    const history = wrapper.get<HTMLElement>(
+      ".conversation-surface__log",
+    ).element;
     Object.defineProperties(history, {
       clientHeight: { configurable: true, value: 300 },
-      scrollHeight: {
-        configurable: true,
-        get: vi
-          .fn()
-          .mockReturnValueOnce(600)
-          .mockReturnValueOnce(600)
-          .mockReturnValue(900),
-      },
+      scrollHeight: { configurable: true, value: 600 },
       scrollTop: { configurable: true, value: 40, writable: true },
     });
 
@@ -1315,11 +1415,29 @@ describe("единое рабочее пространство пользова�
       .findAll("button")
       .find((button) => button.text().includes("Показать предыдущие сообщения"))
       ?.trigger("click");
+    Object.defineProperty(history, "scrollHeight", {
+      configurable: true,
+      value: 900,
+    });
+    resolveOlder?.({
+      items: [
+        {
+          id: "older-message",
+          conversationId: current.id,
+          ordinal: 1,
+          author: "ASSISTANT",
+          status: "COMPLETED",
+          text: "Предыдущее сообщение",
+          createdAt: "2026-07-19T12:59:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
     await flushPromises();
 
     expect(history.scrollTop).toBe(340);
     expect(
-      wrapper.findAll(".message-bubble").map((message) => message.text()),
+      wrapper.findAll("[data-message-id]").map((message) => message.text()),
     ).toEqual([
       expect.stringContaining("Предыдущее сообщение"),
       expect.stringContaining("Текущее сообщение"),
@@ -1329,7 +1447,9 @@ describe("единое рабочее пространство пользова�
   it("следует за live-сообщением только у нижней границы истории", async () => {
     const wrapper = mountWorkspace(current.id);
     await flushPromises();
-    const history = wrapper.get<HTMLElement>(".message-history").element;
+    const history = wrapper.get<HTMLElement>(
+      ".conversation-surface__log",
+    ).element;
     const scrollTo = vi.mocked(history.scrollTo);
     let scrollTop = 660;
     Object.defineProperties(history, {
@@ -1352,6 +1472,7 @@ describe("единое рабочее пространство пользова�
       message: {
         id: "near-bottom-message",
         threadId: current.id,
+        ordinal: 3,
         role: "USER",
         status: "COMPLETED",
         text: "Сообщение у нижней границы",
@@ -1364,7 +1485,9 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 1000, behavior: "auto" });
-    expect(wrapper.find(".new-message-pill").exists()).toBe(false);
+    expect(wrapper.find(".conversation-surface__new-messages").exists()).toBe(
+      false,
+    );
 
     scrollTop = 200;
     scrollTo.mockClear();
@@ -1373,6 +1496,7 @@ describe("единое рабочее пространство пользова�
       message: {
         ...event.message,
         id: "while-reading-message",
+        ordinal: 4,
         text: "Сообщение во время чтения истории",
         createdAt: "2026-07-20T13:02:00.000Z",
         updatedAt: "2026-07-20T13:02:00.000Z",
@@ -1381,7 +1505,7 @@ describe("единое рабочее пространство пользова�
     await flushPromises();
 
     expect(scrollTo).not.toHaveBeenCalled();
-    expect(wrapper.get(".new-message-pill").text()).toContain(
+    expect(wrapper.get(".conversation-surface__new-messages").text()).toContain(
       "1 новых сообщений",
     );
   });
@@ -1405,6 +1529,7 @@ describe("единое рабочее пространство пользова�
           {
             id: `message-${conversationId}`,
             conversationId,
+            ordinal: 1,
             author: "USER",
             status: "COMPLETED",
             text: `Сообщение ${conversationId}`,
@@ -1442,6 +1567,271 @@ describe("единое рабочее пространство пользова�
     );
   });
 
+  it("сохраняет Surface, draft и history anchor при переходе профиль → чат", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    const surface = wrapper.get(".conversation-surface").element;
+    const history = wrapper.get<HTMLElement>(
+      ".conversation-surface__log",
+    ).element;
+    history.scrollTop = 184;
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .setValue("Черновик до просмотра профиля");
+
+    await wrapper.get('[data-action="open-profile"]').trigger("click");
+    expect(
+      wrapper.get<HTMLElement>('[data-testid="chat-workspace"]').element.style
+        .display,
+    ).toBe("none");
+    await wrapper.get('[data-action="open-chat"]').trigger("click");
+
+    expect(wrapper.get(".conversation-surface").element).toBe(surface);
+    expect(history.scrollTop).toBe(184);
+    expect(
+      (
+        wrapper.get('textarea[aria-label="Ответ пользователю"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("Черновик до просмотра профиля");
+  });
+
+  it("purges the scoped Surface draft on project and user switch", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    const previousSurface = wrapper.get(".conversation-surface").element;
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .setValue("Чувствительный черновик user-1");
+
+    await wrapper.setProps({ projectId: "project-2", endUserId: "user-2" });
+    await flushPromises();
+
+    expect(mocks.unwatchConversation).toHaveBeenCalledWith(current.id);
+    expect(wrapper.get(".conversation-surface").element).not.toBe(
+      previousSurface,
+    );
+    expect(
+      (
+        wrapper.get('textarea[aria-label="Ответ пользователю"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("");
+  });
+
+  it("purges the selected conversation and draft when read permission is revoked", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .setValue("Секрет из отозванного диалога");
+
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.conversations.read"),
+      1,
+    );
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+
+    expect(mocks.unwatchConversation).toHaveBeenCalledWith(current.id);
+    expect(wrapper.findComponent(ConversationSurface).exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Секрет из отозванного диалога");
+  });
+
+  it("purges the composer attempt and draft when reply permission is revoked", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .get('textarea[aria-label="Ответ пользователю"]')
+      .setValue("Секретный черновик ответа");
+
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.conversations.reply"),
+      1,
+    );
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+    expect(
+      wrapper.find('textarea[aria-label="Ответ пользователю"]').exists(),
+    ).toBe(false);
+
+    mocks.permissions.push("project.conversations.reply");
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+
+    expect(
+      (
+        wrapper.get('textarea[aria-label="Ответ пользователю"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("");
+    expect(wrapper.text()).not.toContain("Секретный черновик ответа");
+  });
+
+  it("closes and purges the new-conversation draft when reply permission is revoked", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().trim() === "Новый")!
+      .trigger("click");
+    await wrapper
+      .get('textarea[aria-label="Первое сообщение нового диалога"]')
+      .setValue("Секретный черновик нового диалога");
+
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.conversations.reply"),
+      1,
+    );
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+
+    expect(
+      wrapper
+        .find('textarea[aria-label="Первое сообщение нового диалога"]')
+        .exists(),
+    ).toBe(false);
+    expect(wrapper.text()).not.toContain("Секретный черновик нового диалога");
+
+    mocks.permissions.push("project.conversations.reply");
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().trim() === "Новый")!
+      .trigger("click");
+
+    expect(
+      (
+        wrapper.get('textarea[aria-label="Первое сообщение нового диалога"]')
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("");
+  });
+
+  it("purges cached translations and returns to original mode when translation permission is revoked", async () => {
+    mocks.permissions.push(
+      "project.translation.create",
+      "project.translation.provider_details.read",
+    );
+    vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
+      translationState(true),
+    );
+    vi.spyOn(conversationTranslationApi, "translateMessages").mockResolvedValue(
+      { items: [], queued: false },
+    );
+    mocks.getMessages.mockResolvedValue({
+      items: [
+        {
+          id: "translated-sensitive-message",
+          conversationId: current.id,
+          ordinal: 1,
+          author: "USER",
+          status: "COMPLETED",
+          text: "Sensitive original",
+          createdAt: "2026-07-20T12:59:00.000Z",
+          translation: {
+            id: "translation-sensitive",
+            direction: "INBOUND",
+            status: "COMPLETED",
+            originalText: "Sensitive original",
+            translatedText: "Секретный перевод",
+            deliveredText: null,
+            viewText: "Секретный перевод",
+            sourceLocale: "de",
+            targetLocale: "ru",
+            errorCode: null,
+            warnings: [],
+            updatedAt: "2026-07-20T13:00:00.000Z",
+          },
+        },
+      ],
+      nextCursor: null,
+    });
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Секретный перевод");
+
+    mocks.permissions.splice(
+      mocks.permissions.indexOf("project.translation.create"),
+      1,
+    );
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Sensitive original");
+    expect(wrapper.text()).not.toContain("Секретный перевод");
+    expect(
+      wrapper.find('[aria-label="Режим отображения сообщений"]').exists(),
+    ).toBe(false);
+
+    mocks.translationHandler?.({
+      contractVersion: 1,
+      projectId: "project-1",
+      endUserId: "user-1",
+      conversationId: current.id,
+      messageId: "translated-sensitive-message",
+      translation: {
+        id: "late-sensitive-translation",
+        direction: "INBOUND",
+        status: "COMPLETED",
+        originalText: "Sensitive original",
+        translatedText: "Поздний секретный перевод",
+        deliveredText: null,
+        viewText: "Поздний секретный перевод",
+        sourceLocale: "de",
+        targetLocale: "ru",
+        errorCode: null,
+        warnings: [],
+        updatedAt: "2026-07-20T13:01:00.000Z",
+      },
+    });
+    mocks.permissions.push("project.translation.create");
+    mocks.permissionRevision!.value += 1;
+    await flushPromises();
+    await wrapper
+      .get('[data-action="show-translated-messages"]')
+      .trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Поздний секретный перевод");
+  });
+
+  it("treats realtime without a server ordinal as a REST reconcile hint", async () => {
+    const wrapper = mountWorkspace(current.id);
+    await flushPromises();
+    mocks.getMessages.mockClear();
+
+    mocks.messageHandler?.({
+      contractVersion: 1,
+      projectId: "project-1",
+      endUserId: "user-1",
+      conversationId: current.id,
+      message: {
+        id: "ordinal-less-hint",
+        threadId: current.id,
+        role: "USER",
+        status: "COMPLETED",
+        text: "Непроверенная realtime-проекция",
+        createdAt: "2026-07-20T13:01:00.000Z",
+        updatedAt: "2026-07-20T13:01:00.000Z",
+      },
+    });
+    await flushPromises();
+
+    expect(mocks.getMessages).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      current.id,
+      { limit: 20 },
+    );
+    expect(wrapper.text()).not.toContain("Непроверенная realtime-проекция");
+  });
+
   it("не отсекает substantive Cyrillic future realtime до backend", async () => {
     mocks.permissions.push("project.translation.create");
     vi.spyOn(conversationTranslationApi, "getConversation").mockResolvedValue(
@@ -1471,6 +1861,7 @@ describe("единое рабочее пространство пользова�
       message: {
         id: "future-german",
         threadId: current.id,
+        ordinal: 3,
         role: "USER",
         status: "COMPLETED",
         text: "Danke für Ihre Hilfe",
@@ -1485,6 +1876,7 @@ describe("единое рабочее пространство пользова�
       message: {
         ...event.message,
         id: "future-russian",
+        ordinal: 4,
         text: "Спасибо за помощь",
       },
     });

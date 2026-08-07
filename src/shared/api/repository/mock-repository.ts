@@ -30,6 +30,7 @@ import type {
   UserAttributeDefinition,
   UserAttributeSchema,
 } from "@/shared/types/domain";
+import { isConversationMessageOrdinal } from "@/shared/types/domain";
 import type { ConversationAISuspensionHistoryItemResponseDto } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
@@ -115,6 +116,43 @@ const initialData = (): DemoData =>
     adminMessageIdempotency: {},
   });
 
+function restoreMessageOrdinals(
+  messages: ConversationMessage[],
+): ConversationMessage[] {
+  const ordinalsById = new Map<string, number>();
+  const byConversation = new Map<string, ConversationMessage[]>();
+  for (const message of messages) {
+    const conversationMessages =
+      byConversation.get(message.conversationId) ?? [];
+    conversationMessages.push(message);
+    byConversation.set(message.conversationId, conversationMessages);
+  }
+  for (const conversationMessages of byConversation.values()) {
+    const used = new Set(
+      conversationMessages.flatMap((message) =>
+        isConversationMessageOrdinal(message.ordinal) ? [message.ordinal] : [],
+      ),
+    );
+    let nextOrdinal = 1;
+    for (const message of [...conversationMessages].sort((left, right) =>
+      left.createdAt.localeCompare(right.createdAt),
+    )) {
+      if (isConversationMessageOrdinal(message.ordinal)) {
+        ordinalsById.set(message.id, message.ordinal);
+        continue;
+      }
+      while (used.has(nextOrdinal)) nextOrdinal += 1;
+      ordinalsById.set(message.id, nextOrdinal);
+      used.add(nextOrdinal);
+      nextOrdinal += 1;
+    }
+  }
+  return messages.map((message) => ({
+    ...message,
+    ordinal: ordinalsById.get(message.id)!,
+  }));
+}
+
 const readDemo = (): DemoData => {
   const raw = localStorage.getItem(DATA_KEY);
   if (!raw) return initialData();
@@ -127,6 +165,7 @@ const readDemo = (): DemoData => {
       suspensionHistory: data.suspensionHistory ?? {},
       suspensionIdempotency: data.suspensionIdempotency ?? {},
       adminMessageIdempotency: data.adminMessageIdempotency ?? {},
+      messages: restoreMessageOrdinals(data.messages ?? initialData().messages),
       conversations: (data.conversations ?? initialData().conversations).map(
         (conversation) => {
           const seeded = demoConversations.find(

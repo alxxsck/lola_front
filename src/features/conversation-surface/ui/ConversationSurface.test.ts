@@ -7,6 +7,7 @@ import type {
   ConversationSurfaceMessage,
   ConversationSurfaceTranslation,
 } from "../model/conversation-surface-contract";
+import { runConversationSurfaceBehaviorSuite } from "../testing/conversation-surface-behavior-suite";
 
 const messages: ConversationSurfaceMessage[] = [
   {
@@ -155,6 +156,13 @@ function mountSurface(
     },
   });
 }
+
+runConversationSurfaceBehaviorSuite({
+  name: "canonical component",
+  mount: () => mountSurface(),
+  expectedMessageIds: ["message-1", "message-2"],
+  translationAvailable: true,
+});
 
 describe("ConversationSurface", () => {
   it("preserves the compact Users composer visual contract", () => {
@@ -372,6 +380,22 @@ describe("ConversationSurface", () => {
     await wrapper.setProps({ composer: composer("conversation-1") });
     expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
       "Черновик ответа",
+    );
+  });
+
+  it("synchronizes an externally applied template without changing the draft scope", async () => {
+    const wrapper = mountSurface();
+    await wrapper.get("textarea").setValue("Черновик оператора");
+
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        initialDraft: "Шаблон ответа пользователю",
+      },
+    });
+
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Шаблон ответа пользователю",
     );
   });
 

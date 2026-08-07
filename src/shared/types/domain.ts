@@ -410,6 +410,10 @@ export interface ConversationMessage {
   };
 }
 
+export function isConversationMessageOrdinal(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) > 0;
+}
+
 /**
  * Safe project-wide projection used by the operator inbox. It intentionally
  * excludes profile attributes and session/device details.

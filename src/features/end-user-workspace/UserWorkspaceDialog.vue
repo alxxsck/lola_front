@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -30,16 +23,18 @@ import ConversationAISuspensionHistory from "@/features/conversation-ai-suspensi
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
-import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
+  ConversationSurfaceHistory,
+  ConversationSurfaceSendRequest,
+  ConversationSurfaceTranslation,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
 import {
   defaultConversationReplyTemplates,
   type ConversationReplyTemplate,
 } from "@/features/conversation-surface/model/conversation-reply-templates";
-import ConversationComposer from "@/features/conversation-surface/ui/ConversationComposer.vue";
+import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
 import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import type {
   ExtendConversationAISuspensionDto,
@@ -50,7 +45,10 @@ import type {
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import { formatDate, relativeTime } from "@/shared/lib/format";
 import { inferLocaleFromText, localeDisplayName } from "@/shared/lib/locale";
-import type { ConversationMessage } from "@/shared/types/domain";
+import {
+  isConversationMessageOrdinal,
+  type ConversationMessage,
+} from "@/shared/types/domain";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
 import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
@@ -62,6 +60,7 @@ import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOpe
 import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import { repository } from "@/shared/api/repository";
 import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
+import { adaptUsersConversationMessages } from "./model/user-conversation-surface-adapter";
 
 type WorkspaceMode = "PROFILE" | "CHAT";
 type MobilePane = "LIST" | "CHAT";
@@ -76,7 +75,8 @@ interface ConversationMessageUpsertEvent {
   message: {
     id: string;
     threadId: string;
-    role: "USER" | "ASSISTANT" | "ADMIN" | "SCENARIO";
+    ordinal?: number;
+    role: "USER" | "ASSISTANT" | "ADMIN" | "SCENARIO" | "SYSTEM";
     status: "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
     text: string;
     createdAt: string;
@@ -109,7 +109,6 @@ const workspaceMode = ref<WorkspaceMode>("PROFILE");
 const mobilePane = ref<MobilePane>("CHAT");
 const messageViewMode = ref<MessageViewMode>("TRANSLATED");
 const conversationSearch = ref("");
-const historyElement = ref<HTMLElement | null>(null);
 const newChatOpen = ref(false);
 const newChatText = ref("");
 const suspensionDialogVisible = ref(false);
@@ -123,7 +122,6 @@ const allowanceJournalVisible = ref(false);
 const allowanceJournalCursor = ref("");
 const allowanceRefreshKey = ref(0);
 const allowanceFreshLoginPending = ref(false);
-const liveMessageIds = ref<string[]>([]);
 const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
@@ -170,7 +168,6 @@ const {
   replyText,
   sendingReply,
   creatingConversation,
-  newMessageCount,
 } = consoleState;
 
 const selectedSuspensionEntry = computed(() =>
@@ -449,12 +446,51 @@ const bulkTranslationCompleted = computed(
       return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
     }).length,
 );
-const bulkTranslationProgress = computed(() => {
-  if (!bulkTranslationIds.value.length) return 0;
-  return Math.round(
-    (bulkTranslationCompleted.value / bulkTranslationIds.value.length) * 100,
-  );
-});
+const userConversationMessages = computed(() =>
+  adaptUsersConversationMessages(
+    messages.value,
+    translation.messageTranslations.value,
+  ),
+);
+const userConversationHistory = computed<ConversationSurfaceHistory>(() => ({
+  loading: messagesLoading.value,
+  loadingOlder: messagesLoadingMore.value,
+  hasOlder: Boolean(nextMessageCursor.value),
+  error:
+    !messagesLoading.value && !messages.value.length
+      ? conversationError.value || undefined
+      : undefined,
+}));
+const userConversationTranslation = computed<ConversationSurfaceTranslation>(
+  () => ({
+    available: canManageTranslation.value,
+    mode: messageViewMode.value,
+    changing: translation.loading.value || translation.savingPreference.value,
+    workingLocaleLabel: workingLocaleLabel.value,
+    loading: translation.loading.value,
+    progress: bulkTranslationActive.value
+      ? {
+          completed: bulkTranslationCompleted.value,
+          total: bulkTranslationIds.value.length,
+          cancellable: true,
+        }
+      : null,
+  }),
+);
+
+async function changeTranslationMode(
+  mode: "ORIGINAL" | "TRANSLATED",
+): Promise<void> {
+  if (mode === "ORIGINAL") {
+    messageViewMode.value = "ORIGINAL";
+    return;
+  }
+  await showTranslatedMessages();
+}
+
+function changeSurfaceDraft(request: ConversationSurfaceSendRequest): void {
+  replyText.value = request.text;
+}
 async function setTranslationEnabled(enabled: boolean): Promise<void> {
   if (!(await ensureTranslationLoaded())) return;
   await translation.updatePreference({ enabled });
@@ -637,7 +673,6 @@ watch(
     sendWithoutTranslationReason.value = "";
     sendWithoutTranslationVisible.value = false;
     if (!conversationId || !props.endUserId || !visible.value) return;
-    liveMessageIds.value = [];
     if (conversationAISuspensionEnabled)
       void suspensionStore.loadDetail(props.endUserId, conversationId);
     if (canManageTranslation.value && translation.hasStoredReplyDraft()) {
@@ -645,8 +680,6 @@ watch(
       replyTranslationRequested.value = Boolean(translation.draft.value);
     }
     mobilePane.value = "CHAT";
-    await nextTick();
-    scrollToLatest(false);
   },
 );
 watch(
@@ -669,47 +702,104 @@ watch(canReadAllowance, (canRead) => {
   allowanceJournalCursor.value = "";
 });
 
+function stopConversationRealtime(): void {
+  unsubscribeMessage?.();
+  unsubscribeTranslation?.();
+  unsubscribeReconcile?.();
+  unsubscribeMessage = undefined;
+  unsubscribeTranslation = undefined;
+  unsubscribeReconcile = undefined;
+  if (presenceTimer) clearInterval(presenceTimer);
+  presenceTimer = undefined;
+}
+
+function startConversationRealtime(): void {
+  if (!canReadConversations.value || unsubscribeMessage) return;
+  unsubscribeMessage = cmsRealtimeClient.subscribe(
+    ["conversation.message.upserted.v1"],
+    handleMessageUpsert,
+  );
+  unsubscribeTranslation = cmsRealtimeClient.subscribe(
+    ["conversation.message.translation.upserted.v1"],
+    (value) => {
+      if (canReadConversations.value && canManageTranslation.value)
+        translation.mergeRealtimeTranslation(value);
+    },
+  );
+  unsubscribeReconcile = cmsRealtimeClient.reconcile(async () => {
+    if (!visible.value || !canReadConversations.value) return;
+    await consoleState.reconcileSelected();
+    if (
+      canManageTranslation.value &&
+      selectedConversation.value &&
+      translationFeedbackEnabled.value
+    ) {
+      await translation.load();
+    }
+  });
+  presenceTimer = setInterval(() => {
+    if (visible.value && canReadConversations.value)
+      void consoleState.refreshPresence();
+  }, 15_000);
+}
+
+watch(canReadConversations, (canRead, couldRead) => {
+  if (canRead === couldRead) return;
+  if (!canRead) {
+    stopConversationRealtime();
+    const conversationId = selectedConversation.value?.id;
+    if (conversationId) cmsRealtimeClient.unwatchConversation(conversationId);
+    consoleState.reset();
+    translation.reset();
+    replyTranslationRequested.value = false;
+    conversationMenuVisible.value = false;
+    ticketDrawerVisible.value = false;
+    replyTemplateGalleryVisible.value = false;
+    workspaceMode.value = "PROFILE";
+    emit("profileSelected");
+    return;
+  }
+  startConversationRealtime();
+  if (visible.value && props.endUserId)
+    void openWorkspace(props.endUserId, props.preferredConversationId);
+});
+
+watch(canReply, (allowed, wasAllowed) => {
+  if (allowed || !wasAllowed) return;
+  consoleState.clearDrafts();
+  translation.reset();
+  replyTranslationRequested.value = false;
+  sendWithoutTranslationReason.value = "";
+  sendWithoutTranslationVisible.value = false;
+  replyTemplateGalleryVisible.value = false;
+  newChatOpen.value = false;
+  newChatText.value = "";
+});
+
+watch(
+  [canManageTranslation, canReadTranslationDetails],
+  ([canManage, canRead], [couldManage, couldRead]) => {
+    if ((!couldManage || canManage) && (!couldRead || canRead)) return;
+    messageViewMode.value = "ORIGINAL";
+    translation.reset();
+    translationFeedbackEnabled.value = false;
+    replyTranslationRequested.value = false;
+    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationVisible.value = false;
+  },
+);
+
 onMounted(() => {
   document.body.classList.toggle("workspace-scroll-locked", visible.value);
   unsubscribeRealtimeState = cmsRealtimeClient.onState((state) => {
     realtimeState.value = state;
   });
-  if (canReadConversations.value) {
-    unsubscribeMessage = cmsRealtimeClient.subscribe(
-      ["conversation.message.upserted.v1"],
-      handleMessageUpsert,
-    );
-    unsubscribeTranslation = cmsRealtimeClient.subscribe(
-      ["conversation.message.translation.upserted.v1"],
-      (value) => {
-        translation.mergeRealtimeTranslation(value);
-      },
-    );
-    unsubscribeReconcile = cmsRealtimeClient.reconcile(async () => {
-      if (!visible.value) return;
-      await consoleState.reconcileSelected();
-      if (
-        canManageTranslation.value &&
-        selectedConversation.value &&
-        translationFeedbackEnabled.value
-      ) {
-        await translation.load();
-      }
-    });
-  }
-  if (canReadConversations.value) {
-    presenceTimer = setInterval(() => {
-      if (visible.value) void consoleState.refreshPresence();
-    }, 15_000);
-  }
+  startConversationRealtime();
 });
 onBeforeUnmount(() => {
   document.body.classList.remove("workspace-scroll-locked");
   unsubscribeRealtimeState?.();
-  unsubscribeMessage?.();
-  unsubscribeTranslation?.();
-  unsubscribeReconcile?.();
-  if (presenceTimer) clearInterval(presenceTimer);
+  stopConversationRealtime();
   closeWorkspace();
 });
 
@@ -726,7 +816,9 @@ async function openWorkspace(
   conversationSearch.value = "";
   mobilePane.value = "CHAT";
   workspaceMode.value = preferredConversationId ? "CHAT" : "PROFILE";
-  liveMessageIds.value = [];
+  const previousConversationId = selectedConversation.value?.id;
+  if (previousConversationId)
+    cmsRealtimeClient.unwatchConversation(previousConversationId);
   consoleState.reset();
   const profilePromise = canReadProfiles.value
     ? loadProfile(endUserId)
@@ -806,7 +898,6 @@ function closeWorkspace(): void {
   detail.value = null;
   detailLoading.value = false;
   newChatOpen.value = false;
-  liveMessageIds.value = [];
   telegramDraftDirty.value = false;
   sendWithoutTranslationReason.value = "";
   sendWithoutTranslationVisible.value = false;
@@ -828,8 +919,6 @@ async function openChat(): Promise<void> {
   mobilePane.value = selectedConversation.value ? "CHAT" : "LIST";
   if (selectedConversation.value) {
     emit("conversationSelected", selectedConversation.value.id);
-    await nextTick();
-    scrollToLatest(false);
   }
 }
 
@@ -877,6 +966,7 @@ function messageFromEvent(
   return {
     id: event.message.id,
     conversationId: event.message.threadId,
+    ordinal: event.message.ordinal,
     author: event.message.role,
     status: event.message.status,
     text: event.message.text,
@@ -911,7 +1001,13 @@ function conversationIsSuspended(
 }
 
 function handleMessageUpsert(value: unknown): void {
-  if (!visible.value || !props.endUserId || !value || typeof value !== "object")
+  if (
+    !visible.value ||
+    !canReadConversations.value ||
+    !props.endUserId ||
+    !value ||
+    typeof value !== "object"
+  )
     return;
   const event = value as ConversationMessageUpsertEvent;
   const roles = ["USER", "ASSISTANT", "ADMIN", "SCENARIO", "SYSTEM"];
@@ -930,14 +1026,14 @@ function handleMessageUpsert(value: unknown): void {
     !Number.isFinite(Date.parse(event.message.updatedAt))
   )
     return;
-  const nearLatest = isNearLatest();
+  if (!isConversationMessageOrdinal(event.message.ordinal)) {
+    void consoleState.reconcileSelected();
+    return;
+  }
   const previousMessage = messages.value.find(
     (message) => message.id === event.message.id,
   );
-  const isNewMessage = !previousMessage;
-  if (!consoleState.upsertMessage(messageFromEvent(event), !nearLatest)) return;
-  if (isNewMessage)
-    liveMessageIds.value = [...liveMessageIds.value, event.message.id];
+  if (!consoleState.upsertMessage(messageFromEvent(event))) return;
   if (
     previousMessage?.status !== "COMPLETED" &&
     isFrontendTranslationCandidate(
@@ -949,37 +1045,10 @@ function handleMessageUpsert(value: unknown): void {
   ) {
     void translation.translateMessage(event.message.id);
   }
-  if (nearLatest) void nextTick(() => scrollToLatest(false));
 }
 
-function isNearLatest(): boolean {
-  const element = historyElement.value;
-  if (!element) return true;
-  return element.scrollHeight - element.scrollTop - element.clientHeight < 96;
-}
-
-function scrollToLatest(smooth = true): void {
-  const element = historyElement.value;
-  if (!element) return;
-  element.scrollTo({
-    top: element.scrollHeight,
-    behavior: smooth ? "smooth" : "auto",
-  });
-  consoleState.clearNewMessageCount();
-}
-
-async function handleHistoryScroll(force = false): Promise<void> {
-  const element = historyElement.value;
-  if (!element) return;
-  if (isNearLatest()) consoleState.clearNewMessageCount();
-  if (
-    (!force && element.scrollTop > 72) ||
-    !nextMessageCursor.value ||
-    messagesLoadingMore.value
-  )
-    return;
-  const previousHeight = element.scrollHeight;
-  const previousTop = element.scrollTop;
+async function loadOlderMessagesThroughSurface(): Promise<void> {
+  if (!nextMessageCursor.value || messagesLoadingMore.value) return;
   const previousIds = new Set(messages.value.map((message) => message.id));
   const added = await consoleState.loadOlderMessages();
   if (!added) return;
@@ -1000,8 +1069,6 @@ async function handleHistoryScroll(force = false): Promise<void> {
       .map((message) => message.id);
     void translation.translateMessages(newEligibleIds);
   }
-  await nextTick();
-  element.scrollTop = previousTop + element.scrollHeight - previousHeight;
 }
 
 async function selectConversation(
@@ -1010,8 +1077,6 @@ async function selectConversation(
   workspaceMode.value = "CHAT";
   mobilePane.value = "CHAT";
   await consoleState.loadMessages(conversation);
-  await nextTick();
-  scrollToLatest(false);
 }
 
 function applyReplyTemplate(template: ConversationReplyTemplate): void {
@@ -1548,7 +1613,7 @@ function displayField(
     </section>
 
     <div
-      v-if="workspaceMode === 'CHAT'"
+      v-show="workspaceMode === 'CHAT'"
       class="workspace-grid"
       :data-mobile-pane="mobilePane"
       data-testid="chat-workspace"
@@ -1701,37 +1766,6 @@ function displayField(
               }}
             </span>
           </div>
-          <div v-if="canManageTranslation" class="conversation-language-fact">
-            <span>Пользователь пишет на</span>
-            <strong>{{ (conversationLocale ?? "—").toUpperCase() }}</strong>
-          </div>
-          <div
-            v-if="canManageTranslation"
-            class="message-view-switch"
-            role="group"
-            aria-label="Режим отображения сообщений"
-          >
-            <button
-              type="button"
-              data-action="show-original-messages"
-              :class="{ active: messageViewMode === 'ORIGINAL' }"
-              :aria-pressed="messageViewMode === 'ORIGINAL'"
-              @click="messageViewMode = 'ORIGINAL'"
-            >
-              Оригинал
-            </button>
-            <button
-              type="button"
-              data-action="show-translated-messages"
-              :class="{ active: messageViewMode === 'TRANSLATED' }"
-              :aria-pressed="messageViewMode === 'TRANSLATED'"
-              :disabled="translation.loading.value"
-              @click="showTranslatedMessages"
-            >
-              Перевод ·
-              {{ workingLocaleLabel }}
-            </button>
-          </div>
           <template
             v-if="conversationAISuspensionEnabled && selectedSuspensionEntry"
           >
@@ -1828,117 +1862,31 @@ function displayField(
             </div>
           </div>
         </div>
-        <div
-          v-if="selectedConversation"
-          ref="historyElement"
-          class="message-history"
-          role="log"
-          :aria-live="messagesLoading || messagesLoadingMore ? 'off' : 'polite'"
-          :aria-busy="messagesLoading || messagesLoadingMore"
-          aria-relevant="additions text"
-          tabindex="0"
-          @scroll.passive="handleHistoryScroll()"
-        >
-          <div v-if="messagesLoadingMore" class="history-loader">
-            <i class="pi pi-spin pi-spinner" /> Загружаем историю
-          </div>
-          <Button
-            v-else-if="nextMessageCursor"
-            label="Показать предыдущие сообщения"
-            icon="pi pi-history"
-            severity="secondary"
-            text
-            size="small"
-            class="older-button"
-            @click="handleHistoryScroll(true)"
-          />
-          <section
-            v-if="bulkTranslationActive"
-            class="bulk-translation-progress"
-            role="status"
-            aria-live="polite"
-          >
-            <div>
-              <i class="pi pi-spin pi-spinner" aria-hidden="true" />
-              <span>
-                Переводим {{ bulkTranslationIds.length }} сообщений на
-                {{
-                  (
-                    translation.state.value?.preference.workingLocale ?? "ru"
-                  ).toUpperCase()
-                }}… {{ bulkTranslationCompleted }} из
-                {{ bulkTranslationIds.length }}
-              </span>
-              <button
-                type="button"
-                class="bulk-translation-progress__cancel"
-                @click="translation.cancelMessageTranslations"
-              >
-                Отменить
-              </button>
-            </div>
-            <span class="bulk-translation-progress__track" aria-hidden="true">
-              <i :style="{ width: `${bulkTranslationProgress}%` }" />
-            </span>
-          </section>
-          <div
-            v-if="messagesLoading"
-            class="message-skeletons message-skeletons--bottom message-skeletons--message-sized message-skeletons--full-width"
-          >
-            <span v-for="item in 20" :key="item" />
-          </div>
-          <div v-else-if="!messages.length" class="message-empty">
-            <strong>Пока нет сообщений</strong>
-            <span>
-              Напишите первым. Язык пользователя определится по первому
-              сообщению.
-            </span>
-          </div>
-          <article
-            v-for="message in messages"
-            v-else
-            :key="message.id"
-            class="message-bubble"
-            :class="[
-              message.author.toLowerCase(),
-              message.status.toLowerCase(),
-              { 'live-enter': liveMessageIds.includes(message.id) },
-            ]"
-          >
-            <div class="message-bubble__meta">
-              <strong>{{ authorLabel(message.author) }}</strong
-              ><time :datetime="message.createdAt">{{
-                formatDate(message.createdAt)
-              }}</time>
-            </div>
-            <div class="message-bubble__surface">
-              <div
-                v-if="message.status === 'WRITING' && !message.text"
-                class="typing-indicator"
-                aria-label="Пользователь печатает"
-              >
-                <i /><i /><i /><span>пользователь печатает</span>
-              </div>
-              <TranslatedMessageBody
-                v-else
-                :message="message"
-                :requested="
-                  translation.messageTranslations.value.get(message.id)
-                "
-                :view-mode="messageViewMode"
-              />
-              <small v-if="message.status === 'FAILED'"
-                ><i class="pi pi-exclamation-circle" /> Не доставлено</small
-              >
-              <small v-else-if="message.status === 'WRITING' && message.text"
-                ><i class="pi pi-spin pi-spinner" /> Обновляется…</small
-              >
-              <small v-else-if="message.status === 'CANCELLED'"
-                ><i class="pi pi-ban" /> Ответ остановлен оператором</small
-              >
-            </div>
-          </article>
-        </div>
+        <ConversationSurface
+          v-if="canReadConversations && selectedConversation"
+          :key="`${projectId}:${auth.user?.id ?? 'current-operator'}:${endUserId ?? 'none'}`"
+          class="user-conversation-surface"
+          :title="selectedConversation.title"
+          :messages="userConversationMessages"
+          :history="userConversationHistory"
+          :translation="userConversationTranslation"
+          :composer="userConversationComposer"
+          @load-older="loadOlderMessagesThroughSurface"
+          @cancel-translation="translation.cancelMessageTranslations"
+          @change-translation-mode="changeTranslationMode"
+          @reconcile-required="consoleState.reconcileSelected"
+          @draft-change="changeSurfaceDraft"
+          @send="
+            changeSurfaceDraft($event);
+            sendReply();
+          "
+          @request-reply-translation="prepareReplyTranslation"
+          @reconcile-reply-translation="translation.reconcileReplyPreview"
+          @retry-reply-translation="translation.retryReplyPreview"
+          @save-reply-translation="translation.editReplyTranslation"
+          @send-reply-translation="sendTranslatedReply($event.text)"
+          @composer-action="handleConversationComposerAction"
+        />
         <div v-else class="empty-state chat-empty">
           <i class="pi pi-comment" /><strong>Выберите диалог</strong>
           <span>История и live-сообщения появятся здесь.</span>
@@ -1952,27 +1900,6 @@ function displayField(
             @click="openProfile"
           />
         </div>
-        <button
-          v-if="newMessageCount"
-          class="new-message-pill"
-          @click="scrollToLatest()"
-        >
-          {{ newMessageCount }} новых сообщений <i class="pi pi-arrow-down" />
-        </button>
-        <ConversationComposer
-          v-if="selectedConversation && canReply"
-          :composer="userConversationComposer"
-          :draft="replyText"
-          :working-locale-label="workingLocaleLabel"
-          @update:draft="replyText = $event"
-          @send-source="sendReply"
-          @request-reply-translation="prepareReplyTranslation"
-          @reconcile-reply-translation="translation.reconcileReplyPreview"
-          @retry-reply-translation="translation.retryReplyPreview"
-          @save-reply-translation="translation.editReplyTranslation"
-          @send-reply-translation="sendTranslatedReply"
-          @action="handleConversationComposerAction"
-        />
         <ConversationTicketDrawer
           v-if="selectedConversation"
           :visible="ticketDrawerVisible"
@@ -2465,86 +2392,6 @@ function displayField(
     var(--surface-card)
   );
 }
-.conversation-open-state,
-.conversation-language-fact {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
-  min-height: 30px;
-  border-radius: 9px;
-  white-space: nowrap;
-}
-.conversation-open-state {
-  gap: 7px;
-  padding: 0 9px;
-  background: var(--surface-card);
-  color: var(--text-secondary);
-  font-size: 0.64rem;
-  font-weight: 700;
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-.conversation-open-state i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-}
-.conversation-open-state[data-open="true"] {
-  color: var(--status-success-text);
-}
-.conversation-open-state[data-open="true"] i {
-  background: currentColor;
-  box-shadow: 0 0 0 4px var(--status-success-soft);
-}
-.conversation-language-fact {
-  gap: 5px;
-  padding: 0 3px;
-  color: var(--text-secondary);
-  font-size: 0.61rem;
-}
-.conversation-language-fact strong {
-  color: var(--text-primary);
-  font-size: 0.67rem;
-}
-.message-view-switch {
-  display: inline-flex;
-  align-self: center;
-  flex: 0 0 auto;
-  gap: 3px;
-  margin: 0;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-subtle);
-}
-.message-view-switch button {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 0.66rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    color 0.16s ease,
-    background 0.16s ease,
-    box-shadow 0.16s ease;
-}
-.message-view-switch button:hover {
-  color: var(--text-primary);
-}
-.message-view-switch button.active {
-  background: var(--surface-card);
-  color: var(--text-primary);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
-}
-.message-view-switch button:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 1px;
-}
 .compact-message {
   margin-bottom: 10px;
   font-size: 0.72rem;
@@ -2679,115 +2526,6 @@ function displayField(
   border-radius: 50%;
   background: var(--status-success-text);
   box-shadow: 0 0 0 4px var(--status-success-soft);
-}
-.message-history {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 10px 18px;
-  border-radius: 15px;
-  background:
-    radial-gradient(
-      circle at 100% 0,
-      color-mix(in srgb, var(--status-accent-soft) 22%, transparent),
-      transparent 34%
-    ),
-    color-mix(in srgb, var(--surface-subtle) 34%, var(--surface-card));
-  scrollbar-gutter: stable;
-}
-.history-loader,
-.older-button {
-  align-self: center;
-}
-.history-loader {
-  padding: 8px;
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-}
-.message-skeletons {
-  width: 100%;
-}
-.message-bubble {
-  align-self: flex-start;
-  max-width: min(76%, 680px);
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 15px 15px 15px 4px;
-  background: var(--surface-card);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--text-primary) 4%, transparent);
-}
-.message-bubble.live-enter {
-  animation: message-enter 0.2s ease-out;
-}
-.message-bubble.admin,
-.message-bubble.assistant,
-.message-bubble.scenario {
-  align-self: flex-end;
-  border-radius: 15px 15px 4px 15px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 78%,
-    var(--surface-card)
-  );
-  color: var(--text-primary);
-}
-.message-bubble.admin {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
-  background: var(--brand-soft);
-}
-.message-bubble.system {
-  align-self: center;
-  max-width: 90%;
-  border-style: dashed;
-  border-radius: 999px;
-  background: transparent;
-  text-align: center;
-}
-.message-bubble__meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-}
-.message-bubble strong,
-.message-bubble time,
-.message-bubble small {
-  font-size: 0.61rem;
-}
-.message-bubble time,
-.message-bubble small {
-  color: var(--text-secondary);
-}
-.message-bubble p {
-  margin: 5px 0 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 0.78rem;
-  line-height: 1.48;
-}
-.message-bubble.failed {
-  border-color: var(--status-danger-border);
-}
-.message-bubble.cancelled {
-  opacity: 0.72;
-}
-.new-message-pill {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  bottom: 116px;
-  translate: -50% 0;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-card);
-  color: var(--text-primary);
-  box-shadow: var(--shadow);
-  font-size: 0.7rem;
-  cursor: pointer;
 }
 .send-without-translation {
   display: grid;
@@ -3156,6 +2894,10 @@ function displayField(
   padding: 0;
   background: var(--surface-card);
 }
+.user-conversation-surface {
+  flex: 1;
+  min-height: 0;
+}
 .conversation-state-rail {
   position: relative;
   z-index: 5;
@@ -3186,45 +2928,6 @@ function displayField(
   margin-top: 1px;
   color: var(--text-tertiary);
   font-size: 12px;
-}
-.conversation-open-state {
-  display: none;
-}
-.conversation-language-fact {
-  min-height: 32px;
-  gap: 7px;
-  padding: 0 11px;
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  background: var(--surface-card);
-  color: var(--text-small-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-.conversation-language-fact strong {
-  color: var(--text-primary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: 12px;
-}
-.message-view-switch {
-  height: 34px;
-  padding: 3px;
-  border-color: var(--border-default);
-  border-radius: 9px;
-  background: var(--surface-hover);
-}
-.message-view-switch button {
-  min-height: 26px;
-  padding: 0 11px;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-.message-view-switch button.active {
-  background: var(--action-primary);
-  color: var(--on-action-primary);
-  box-shadow: none;
 }
 .conversation-menu-anchor {
   position: relative;
@@ -3309,259 +3012,6 @@ function displayField(
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.message-history {
-  gap: 14px;
-  padding: 16px 24px;
-  border-radius: 0;
-  background: var(--surface-card);
-  overscroll-behavior-y: contain;
-  scrollbar-gutter: stable;
-}
-.message-bubble {
-  display: flex;
-  max-width: 62%;
-  flex-direction: column;
-  gap: 5px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.message-bubble:first-of-type {
-  margin-top: auto;
-}
-.message-bubble.admin,
-.message-bubble.assistant,
-.message-bubble.scenario {
-  align-self: flex-end;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.message-bubble.system {
-  max-width: 90%;
-}
-.message-bubble__meta {
-  justify-content: flex-start;
-  gap: 8px;
-  padding-left: 2px;
-}
-.message-bubble.admin .message-bubble__meta,
-.message-bubble.assistant .message-bubble__meta,
-.message-bubble.scenario .message-bubble__meta {
-  flex-direction: row-reverse;
-  padding-right: 2px;
-  padding-left: 0;
-}
-.message-bubble strong {
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 700;
-}
-.message-bubble.assistant strong {
-  color: var(--status-accent-text);
-}
-.message-bubble.admin strong {
-  color: var(--status-success-text);
-}
-.message-bubble.scenario strong {
-  color: var(--status-warning-text);
-}
-.message-bubble time,
-.message-bubble small {
-  color: var(--text-tertiary);
-  font-size: 11px;
-}
-.message-bubble__surface {
-  position: relative;
-  padding: 12px 15px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px 14px 14px;
-  background: var(--surface-subtle);
-  color: var(--text-primary);
-}
-.message-bubble.assistant .message-bubble__surface {
-  border-color: var(--palette-blue-200);
-  border-radius: 14px 4px 14px 14px;
-  background: var(--status-accent-soft);
-}
-.message-bubble.admin .message-bubble__surface {
-  border-color: var(--palette-green-200);
-  border-radius: 14px 4px 14px 14px;
-  background: var(--status-success-soft);
-}
-.message-bubble.scenario .message-bubble__surface {
-  border-color: var(--palette-amber-200);
-  border-radius: 14px 4px 14px 14px;
-  background: var(--status-warning-soft);
-}
-.message-bubble.system .message-bubble__surface {
-  padding: 8px 12px;
-  border-style: dashed;
-  border-radius: 999px;
-  background: var(--surface-card);
-}
-.message-bubble :deep(.translated-message > p) {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-}
-.message-bubble__surface > small {
-  display: block;
-  margin-top: 7px;
-}
-.typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-.typing-indicator > i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--border-strong);
-  animation: typing-pulse 1.2s infinite;
-}
-.typing-indicator > i:nth-child(2) {
-  animation-delay: 150ms;
-}
-.typing-indicator > i:nth-child(3) {
-  animation-delay: 300ms;
-}
-.bulk-translation-progress {
-  position: sticky;
-  z-index: 3;
-  top: 0;
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--palette-blue-200);
-  border-radius: 11px;
-  background: var(--status-accent-soft);
-  color: var(--status-accent-text);
-}
-.bulk-translation-progress > div {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.bulk-translation-progress__cancel {
-  margin-left: auto;
-  padding: 3px 5px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.bulk-translation-progress__cancel:hover {
-  text-decoration: underline;
-}
-.bulk-translation-progress__track {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: var(--palette-blue-100);
-}
-.bulk-translation-progress__track i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--action-primary);
-  transition: width 180ms ease;
-}
-.message-skeletons {
-  display: flex;
-  flex: 1;
-  flex-direction: column-reverse;
-  gap: 14px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  scrollbar-width: none;
-}
-.message-skeletons::-webkit-scrollbar {
-  display: none;
-}
-.message-skeletons > span {
-  flex: 0 0 52px;
-  width: 58%;
-  border-radius: 4px 14px 14px;
-  background: linear-gradient(
-    90deg,
-    var(--surface-active) 25%,
-    var(--surface-hover) 37%,
-    var(--surface-active) 63%
-  );
-  background-size: 360px 100%;
-  animation: skeleton-shimmer 1.3s infinite;
-}
-.message-skeletons > span:nth-child(3n + 2) {
-  flex-basis: 74px;
-  width: 66%;
-  align-self: flex-end;
-  border-radius: 14px 4px 14px 14px;
-  animation-delay: 150ms;
-}
-.message-skeletons > span:nth-child(3n + 3) {
-  width: 44%;
-  animation-delay: 300ms;
-}
-.message-empty {
-  display: flex;
-  min-height: 180px;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px dashed var(--border-default);
-  border-radius: 12px;
-  background: var(--surface-subtle);
-  text-align: center;
-}
-.message-empty strong {
-  color: var(--text-primary);
-  font-size: 14px;
-}
-.message-empty span {
-  max-width: 300px;
-  color: var(--text-tertiary);
-  font-size: 12px;
-  line-height: 1.45;
-}
-@keyframes skeleton-shimmer {
-  from {
-    background-position: -360px 0;
-  }
-  to {
-    background-position: 360px 0;
-  }
-}
-@keyframes typing-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-@keyframes message-enter {
-  from {
-    opacity: 0;
-    transform: translateY(7px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes profile-enter {
   from {
     opacity: 0;
@@ -3584,13 +3034,7 @@ function displayField(
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .message-bubble {
-    animation: none;
-  }
   .conversation-list button {
-    transition: none;
-  }
-  .message-view-switch button {
     transition: none;
   }
   .connection-status[data-state="connected"] .connection-live-dot {
@@ -3602,9 +3046,6 @@ function displayField(
   }
 }
 @media (max-width: 1150px) {
-  .conversation-language-fact {
-    display: none;
-  }
   .conversation-state-rail {
     gap: 6px;
   }
@@ -3663,9 +3104,6 @@ function displayField(
   .conversation-state-rail {
     flex-wrap: wrap;
     min-height: auto;
-  }
-  .conversation-state-rail .message-view-switch {
-    order: 1;
   }
   .conversation-state-rail :deep(.translation-banner) {
     order: 2;
@@ -3728,15 +3166,6 @@ function displayField(
   .conversation-state-rail .chat-heading {
     grid-column: 2;
   }
-  .conversation-language-fact {
-    display: none;
-  }
-  .conversation-state-rail .message-view-switch {
-    grid-column: 1 / 3;
-    grid-row: 2;
-    justify-self: start;
-    order: initial;
-  }
   .conversation-state-rail :deep(.ai-suspension-header-actions),
   .conversation-state-rail :deep(.suspension-banner.compact) {
     grid-column: 3;
@@ -3765,18 +3194,6 @@ function displayField(
     max-height: calc(100dvh - 100px);
     overflow-y: auto;
     border-radius: 18px;
-  }
-  .message-bubble {
-    max-width: 86%;
-  }
-  .message-history {
-    padding: 14px;
-  }
-  .message-bubble :deep(.translated-message > p) {
-    font-size: 14px;
-  }
-  .new-message-pill {
-    bottom: 126px;
   }
   :global(.new-chat-dialog.p-dialog) {
     width: 100vw !important;
@@ -3820,9 +3237,6 @@ function displayField(
     justify-content: space-between;
     width: 100%;
   }
-  .message-bubble {
-    max-width: 94%;
-  }
   .chat-header {
     align-items: flex-start;
     flex-direction: column;
@@ -3836,17 +3250,6 @@ function displayField(
   .conversation-state-rail {
     padding: 5px;
     border-radius: 12px;
-  }
-  .conversation-open-state {
-    min-height: 28px;
-  }
-  .message-view-switch {
-    max-width: calc(100vw - 130px);
-    overflow-x: auto;
-  }
-  .message-view-switch button {
-    padding-inline: 8px;
-    white-space: nowrap;
   }
 }
 </style>
