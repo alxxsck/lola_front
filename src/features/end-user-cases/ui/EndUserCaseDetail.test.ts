@@ -132,7 +132,7 @@ describe("EndUserCaseDetail", () => {
     await wrapper.get('[data-test="status-select"]').trigger("click");
     expect(wrapper.emitted("requestTransition")?.[0]).toEqual(["IN_PROGRESS"]);
     expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toContain(
-      "Связанные сообщения",
+      "Доказательства",
     );
     expect(wrapper.find("#case-messages-panel").exists()).toBe(true);
     await wrapper
@@ -190,7 +190,12 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("1 успешно");
     expect(wrapper.text()).toContain("Нет ETA провайдера");
     expect(wrapper.text()).toContain("Возвраты к цели");
-    expect(wrapper.text()).toContain("Открыть диалог");
+    expect(wrapper.text()).toContain("Открыть в диалоге");
+    expect(wrapper.find(".message-row").exists()).toBe(false);
+    expect(wrapper.findAll(".case-message-evidence")).toHaveLength(1);
+    expect(wrapper.get(".case-message-evidence a").attributes("data-to")).toContain(
+      '"conversationId":"thread-1"',
+    );
     expect(wrapper.text()).toContain("Текст, Голос");
     expect(wrapper.text()).toContain("Обеспокоен → Спокоен");
     expect(wrapper.text()).not.toContain("check_deposit");
@@ -293,7 +298,7 @@ describe("EndUserCaseDetail", () => {
 
     await wrapper
       .findAll("button")
-      .find((button) => button.text() === "Показать ещё сообщения")!
+      .find((button) => button.text() === "Показать ещё доказательства")!
       .trigger("click");
     expect(wrapper.emitted("loadMoreMessages")).toHaveLength(1);
   });
@@ -319,8 +324,51 @@ describe("EndUserCaseDetail", () => {
       },
     });
 
-    expect(wrapper.text()).not.toContain("Открыть диалог");
+    expect(wrapper.text()).not.toContain("Открыть в диалоге");
     expect(wrapper.text()).toContain("Диалог thread-1");
+  });
+
+  it("opens each evidence item in its own canonical conversation", () => {
+    const value = structuredClone(detail) as unknown as EndUserCaseDetailBundle;
+    value.messages.items.push({
+      ...value.messages.items[0]!,
+      relation: "SUPPORTING",
+      message: {
+        ...value.messages.items[0]!.message,
+        id: "message-2",
+        threadId: "thread-2",
+      },
+    });
+    const wrapper = mount(EndUserCaseDetail, {
+      props: {
+        value,
+        loading: false,
+        canReadEndUser: true,
+        canReadConversation: true,
+      },
+      global: {
+        stubs: {
+          Button: true,
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: true,
+          RouterLink: {
+            props: ["to"],
+            template: '<a :data-to="JSON.stringify(to)"><slot /></a>',
+          },
+        },
+      },
+    });
+
+    const targets = wrapper
+      .findAll(".case-message-evidence a")
+      .map((link) => link.attributes("data-to") ?? "");
+    expect(targets).toEqual([
+      expect.stringContaining('"conversationId":"thread-1"'),
+      expect.stringContaining('"conversationId":"thread-2"'),
+    ]);
+    expect(targets.every((target) => target.includes('"name":"users"'))).toBe(
+      true,
+    );
   });
 
   it("renders loading, retryable error and empty selection states", async () => {
@@ -356,7 +404,7 @@ describe("EndUserCaseDetail", () => {
     expect(empty.text()).toContain("Выберите обращение");
   });
 
-  it("groups channel evidence with explicit gaps and emits every correction action", async () => {
+  it("renders bounded evidence cards and emits every correction action", async () => {
     const value = structuredClone(detail) as unknown as EndUserCaseDetailBundle;
     value.case.mergedIntoCaseId = "case-main";
     value.case.degradedReason = "BUDGET";
@@ -438,7 +486,8 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Сводка ещё формируется");
     expect(wrapper.text()).toContain("Каналы: не определены");
     expect(wrapper.text()).toContain("Инструменты Retenive ещё не использовались");
-    expect(wrapper.text()).toContain("Часть диалога не относится");
+    expect(wrapper.findAll(".case-message-evidence")).toHaveLength(3);
+    expect(wrapper.find(".message-row").exists()).toBe(false);
     expect(wrapper.text()).toContain("Администратор");
     await wrapper.get("#case-history-tab").trigger("click");
     expect(wrapper.text()).toContain("Назначен исполнитель");
@@ -486,6 +535,6 @@ describe("EndUserCaseDetail", () => {
     });
     expect(wrapper.text()).toContain("customer-42");
     expect(wrapper.html()).not.toContain('"users"');
-    expect(wrapper.text()).not.toContain("Открыть диалог");
+    expect(wrapper.text()).not.toContain("Открыть в диалоге");
   });
 });

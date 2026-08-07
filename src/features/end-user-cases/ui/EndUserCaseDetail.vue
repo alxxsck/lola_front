@@ -129,24 +129,6 @@ const messageChannel = (message: {
   return metadata.source === "voice" ? "VOICE" : "TEXT";
 };
 
-const beginsMessageGroup = (
-  items: EndUserCaseDetailBundle["messages"]["items"],
-  index: number,
-): boolean =>
-  index === 0 ||
-  items[index - 1]?.message.threadId !== items[index]?.message.threadId ||
-  messageChannel(items[index - 1]!.message) !==
-    messageChannel(items[index]!.message);
-
-const hasMessageGap = (
-  items: EndUserCaseDetailBundle["messages"]["items"],
-  index: number,
-): boolean =>
-  index > 0 &&
-  !beginsMessageGroup(items, index) &&
-  new Date(items[index]!.message.createdAt).getTime() -
-    new Date(items[index - 1]!.message.createdAt).getTime() >
-    5 * 60 * 1_000;
 </script>
 
 <template>
@@ -438,7 +420,7 @@ const hasMessageGap = (
             @click="activeRelatedTab = 'messages'"
             @keydown="handleRelatedTabKeydown($event, 'messages')"
           >
-            Связанные сообщения
+            Доказательства
             <strong>{{ value.messages.items.length }}</strong>
           </button>
           <button
@@ -463,94 +445,67 @@ const hasMessageGap = (
           role="tabpanel"
           aria-labelledby="case-messages-tab"
         >
-          <div v-if="value.messages.items[0]" class="panel-context">
+          <div v-if="value.messages.items.length" class="panel-context">
             <span>
-              <strong>{{
-                endUserCaseChannelLabel(
-                  messageChannel(value.messages.items[0].message),
-                )
-              }}</strong>
-              · {{ value.messages.items.length }} из обращения, не весь диалог
-            </span>
-            <RouterLink
-              v-if="canReadEndUser && canReadConversation"
-              :to="{
-                name: 'users',
-                params: { endUserId: value.case.endUser.id },
-                query: {
-                  conversationId: value.messages.items[0].message.threadId,
-                  endUserCaseId: value.case.id,
-                },
-              }"
-            >
-              Открыть диалог
-            </RouterLink>
-            <span v-else>
-              Диалог
-              {{ value.messages.items[0].message.threadId.slice(0, 8) }}
+              Материалов обращения:
+              <strong>{{ value.messages.items.length }}</strong>
+              · здесь показаны только материалы обращения, не весь диалог
             </span>
           </div>
           <div v-if="!value.messages.items.length" class="empty-copy">
-            Связанных сообщений пока нет.
+            Связанных доказательств пока нет.
           </div>
-          <template
-            v-for="(link, index) in value.messages.items"
-            :key="link.message.id"
-          >
-            <div
-              v-if="
-                index > 0 && beginsMessageGroup(value.messages.items, index)
-              "
-              class="message-group"
+          <div v-if="value.messages.items.length" class="case-evidence-list">
+            <article
+              v-for="link in value.messages.items"
+              :key="link.message.id"
+              class="case-message-evidence"
             >
-              <strong>{{
-                endUserCaseChannelLabel(messageChannel(link.message))
-              }}</strong>
-              <RouterLink
-                v-if="canReadEndUser && canReadConversation"
-                :to="{
-                  name: 'users',
-                  params: { endUserId: value.case.endUser.id },
-                  query: {
-                    conversationId: link.message.threadId,
-                    endUserCaseId: value.case.id,
-                  },
-                }"
-              >
-                Открыть диалог
-              </RouterLink>
-              <span v-else>Диалог {{ link.message.threadId.slice(0, 8) }}</span>
-            </div>
-            <div
-              v-else-if="hasMessageGap(value.messages.items, index)"
-              class="message-gap"
-            >
-              Часть диалога не относится к этому обращению
-            </div>
-            <article class="message-row">
-              <div class="message-meta">
+              <div class="evidence-meta">
                 <strong>{{ roleLabel(link.message.role) }}</strong>
                 <span>{{
                   link.relation === "PRIMARY" ? "Основное" : "Контекст"
+                }}</span>
+                <span>{{
+                  endUserCaseChannelLabel(messageChannel(link.message))
                 }}</span>
                 <time :datetime="link.message.createdAt">
                   {{ formatDate(link.message.createdAt) }}
                 </time>
               </div>
-              <p>{{ link.message.text }}</p>
-              <Button
-                v-if="canManage"
-                label="Исключить"
-                severity="secondary"
-                text
-                size="small"
-                @click="$emit('requestUnlink', link.message.id)"
-              />
+              <p class="evidence-excerpt">{{ link.message.text }}</p>
+              <div class="evidence-actions">
+                <RouterLink
+                  v-if="canReadEndUser && canReadConversation"
+                  :to="{
+                    name: 'users',
+                    params: { endUserId: value.case.endUser.id },
+                    query: {
+                      conversationId: link.message.threadId,
+                      endUserCaseId: value.case.id,
+                    },
+                  }"
+                >
+                  Открыть в диалоге
+                  <i class="pi pi-arrow-up-right" aria-hidden="true" />
+                </RouterLink>
+                <span v-else>
+                  Диалог {{ link.message.threadId.slice(0, 8) }}
+                </span>
+                <Button
+                  v-if="canManage"
+                  label="Исключить"
+                  severity="secondary"
+                  text
+                  size="small"
+                  @click="$emit('requestUnlink', link.message.id)"
+                />
+              </div>
             </article>
-          </template>
+          </div>
           <Button
             v-if="value.messages.nextCursor"
-            label="Показать ещё сообщения"
+            label="Показать ещё доказательства"
             icon="pi pi-chevron-down"
             severity="secondary"
             outlined
@@ -586,7 +541,7 @@ const hasMessageGap = (
     <div v-else class="placeholder">
       <i class="pi pi-comments" />
       <strong>Выберите обращение</strong>
-      <p>Здесь появятся сводка, связанные сообщения, решения и история.</p>
+      <p>Здесь появятся сводка, доказательства, решения и история.</p>
     </div>
   </div>
 </template>
@@ -615,7 +570,7 @@ const hasMessageGap = (
 .kicker,
 .badges,
 .section-heading,
-.message-meta,
+.evidence-meta,
 .status-actions,
 .workflow-tools,
 .timeline-row {
@@ -642,7 +597,7 @@ const hasMessageGap = (
 }
 .detail-header p,
 .overview-card p,
-.message-row p {
+.evidence-excerpt {
   margin-bottom: 0;
   color: var(--text-secondary);
   line-height: 1.55;
@@ -773,7 +728,7 @@ const hasMessageGap = (
 }
 .related-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   border-bottom: 1px solid var(--border-subtle);
 }
 .related-tabs button {
@@ -829,37 +784,46 @@ const hasMessageGap = (
   color: var(--text-link);
   font-weight: 700;
 }
-.message-row {
-  padding: 13px 0;
-  border-top: 1px solid var(--border-subtle);
-}
-.message-group,
-.message-gap {
-  display: flex;
-  justify-content: space-between;
+.case-evidence-list {
+  display: grid;
   gap: 10px;
-  margin-top: 12px;
-  padding: 7px 9px;
-  border-radius: 8px;
+}
+.case-message-evidence {
+  padding: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
   background: var(--surface-subtle);
-  color: var(--text-tertiary);
-  font-size: 0.66rem;
 }
-.message-gap {
-  justify-content: center;
-  border: 1px dashed var(--border-default);
-  background: transparent;
-}
-.message-row:first-of-type {
-  border-top: 0;
-}
-.message-meta {
+.evidence-meta {
   gap: 9px;
   color: var(--text-tertiary);
   font-size: 0.67rem;
 }
-.message-meta time {
+.evidence-meta time {
   margin-left: auto;
+}
+.evidence-excerpt {
+  display: -webkit-box;
+  margin: 8px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: var(--font-size-body-small);
+}
+.evidence-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+}
+.evidence-actions a {
+  color: var(--text-link);
+  font-weight: 700;
 }
 .timeline-row {
   gap: 9px;
@@ -913,7 +877,7 @@ const hasMessageGap = (
     grid-template-columns: 1fr;
   }
   .related-tabs {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .related-tabs button {
     padding: 11px 4px;
@@ -926,6 +890,14 @@ const hasMessageGap = (
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
+  }
+  .evidence-meta {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .evidence-meta time {
+    width: 100%;
+    margin-left: 0;
   }
 }
 </style>

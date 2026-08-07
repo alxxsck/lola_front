@@ -12,7 +12,7 @@
     "build": "node scripts/validate-vercel-env.mjs && npm run api:check && vue-tsc -b && vite build",
     "typecheck": "vue-tsc -b",
     "lint": "eslint . --max-warnings=0 && npm run architecture:check",
-    "architecture:check": "node scripts/check-iam-authority.mjs",
+    "architecture:check": "node scripts/check-iam-authority.mjs && node scripts/check-conversation-surface-cutover.mjs",
     "test": "vitest run",
     "test:scripts": "node --test scripts/*.test-node.mjs",
     "test:watch": "vitest",
