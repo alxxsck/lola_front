@@ -4,6 +4,7 @@
 Версия: 1
 Дата: 7 августа 2026 года
 Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
+Assignment contract update: `bdf8116`
 Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b55647719a948aa0e`
 
 Документ отделяет опубликованный transport contract от возможности построить
@@ -32,34 +33,34 @@ range. Это не делает Saved Views готовыми: клиент не 
 
 ## 2. Case workflow и классификация
 
-| Capability                   | Operation / contract                       | Permission                      | OCC / audit                                                     | Status                                                    |
-| ---------------------------- | ------------------------------------------ | ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
-| Case detail                  | `EndUserCases_detail`                      | `project.cases.read`            | Case `version`; server `availableStatuses`                      | `READY`                                                   |
-| Workflow correction          | `EndUserCases_workflow`                    | `project.cases.manage`          | `expectedVersion`, UUID `idempotencyKey`, обязательный `reason` | `READY`; typed `400/403/404/409`                           |
-| Classification correction    | `EndUserCases_classification`              | `project.cases.manage`          | те же preconditions; type/group/impact/urgency/priority         | `READY`; server проверяет floor/override                   |
-| Workflow allowed transitions | `EndUserCaseResponseDto.availableStatuses` | read authority Case             | server-owned список переходов                                   | `READY` только для workflow                               |
-| Case action authority        | `EndUserCaseResponseDto.allowedActions`    | effective project permission    | server-owned workflow/classification/priority actions            | `READY`                                                   |
-| Priority floor               | Case detail classification policy          | read authority Case             | effective floor, bounded reasons, immutable policy pin           | `READY`                                                   |
+| Capability                   | Operation / contract                       | Permission                   | OCC / audit                                                     | Status                                   |
+| ---------------------------- | ------------------------------------------ | ---------------------------- | --------------------------------------------------------------- | ---------------------------------------- |
+| Case detail                  | `EndUserCases_detail`                      | `project.cases.read`         | Case `version`; server `availableStatuses`                      | `READY`                                  |
+| Workflow correction          | `EndUserCases_workflow`                    | `project.cases.manage`       | `expectedVersion`, UUID `idempotencyKey`, обязательный `reason` | `READY`; typed `400/403/404/409`         |
+| Classification correction    | `EndUserCases_classification`              | `project.cases.manage`       | те же preconditions; type/group/impact/urgency/priority         | `READY`; server проверяет floor/override |
+| Workflow allowed transitions | `EndUserCaseResponseDto.availableStatuses` | read authority Case          | server-owned список переходов                                   | `READY` только для workflow              |
+| Case action authority        | `EndUserCaseResponseDto.allowedActions`    | effective project permission | server-owned workflow/classification/priority actions           | `READY`                                  |
+| Priority floor               | Case detail classification policy          | read authority Case          | effective floor, bounded reasons, immutable policy pin          | `READY`                                  |
 
 Frontend не вычисляет priority floor и разрешения локально: использует effective floor,
 `allowedActions` и policy pin из Case projection. Backend gate Task 16 закрыт в `2113c99`.
 
 ## 3. Assignment и routing offers
 
-| Capability           | Operation                            | Permission / allowed action                                             | OCC / idempotency                                          | Status                                                    |
-| -------------------- | ------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
-| Claim                | `SupportCaseAssignment_claim`        | `project.support.assignments.self_manage` + selection `claimAssignment` | Case version + обязательный `Idempotency-Key`              | `RELEASE_GATED`                                           |
-| Lead assign          | `SupportCaseAssignment_assign`       | `project.support.assignments.override` + selection `assignCase`         | Case version, reason code, idempotency                     | command `RELEASE_GATED`; picker targets `NOT_PUBLISHED`   |
-| Release              | `SupportCaseAssignment_release`      | self-manage/override + selection `releaseAssignment`                    | assignment version, `sa1` ETag, reason, idempotency        | `RELEASE_GATED`                                           |
-| Transfer             | `SupportCaseAssignment_transfer`     | override + selection `transferAssignment`                               | assignment version, `sa1` ETag, reason, idempotency        | command `RELEASE_GATED`; eligible targets `NOT_PUBLISHED` |
-| Own offers           | `SupportRoutingOffer_list`           | `project.support.assignments.self_manage`                               | offer expiry, fencing/version, opaque token, `so1` ETag    | `RELEASE_GATED`                                           |
-| Accept/decline offer | `SupportRoutingOffer_accept/decline` | self-manage                                                             | `If-Match`, `Idempotency-Key`, expected assignment version | success typed; expiry/conflict errors `NOT_PUBLISHED`     |
-| Bulk assignment      | операции нет                         | не опубликовано                                                         | нет per-item receipt                                       | `NOT_PUBLISHED`                                           |
+| Capability           | Operation                            | Permission / allowed action                                         | OCC / idempotency                                          | Status                                                 |
+| -------------------- | ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
+| Claim                | `SupportCaseAssignment_claim`        | `project.support.assignments.self_manage` + server candidate action | Case version/read token + обязательный `Idempotency-Key`   | `RELEASE_GATED`; Case target authority `READY`         |
+| Lead assign          | `SupportCaseAssignment_assign`       | `project.support.assignments.override` + server candidate action    | Case version/read token, reason code, idempotency          | command `RELEASE_GATED`; picker targets `READY`        |
+| Release              | `SupportCaseAssignment_release`      | self-manage/override + selection `releaseAssignment`                | assignment version, `sa1` ETag, reason, idempotency        | `RELEASE_GATED`                                        |
+| Transfer             | `SupportCaseAssignment_transfer`     | override + server candidate action                                  | assignment version, `sa1` ETag, reason, idempotency        | command `RELEASE_GATED`; eligible targets `READY`      |
+| Own offers           | `SupportRoutingOffer_list`           | `project.support.assignments.self_manage`                           | offer expiry, fencing/version, opaque token, `so1` ETag    | `RELEASE_GATED`                                        |
+| Accept/decline offer | `SupportRoutingOffer_accept/decline` | self-manage                                                         | `If-Match`, `Idempotency-Key`, expected assignment version | canonical typed success/expiry/conflict errors `READY` |
+| Bulk assignment      | операции нет                         | не опубликовано                                                     | нет per-item receipt                                       | `NOT_PUBLISHED`                                        |
 
 Assignment mutations публикуют typed `400/403/404/409` с current version/ETag,
-capacity и drift evidence. Reason enums закреплены contract gate. Общего
-Case-specific каталога eligible Team/operator нет: Workforce config и legacy
-assignee list не являются target authority.
+capacity и drift evidence. Reason enums закреплены contract gate. Case-specific
+`SupportCaseAssignment_candidatesForCase` — единственный target authority; Workforce config,
+legacy assignee list, inbox и presence не используются как кандидаты.
 
 Backend gates: `SUPPORT_PLATFORM_WORKFORCE_API_ENABLED` и
 `SUPPORT_PLATFORM_ASSIGNMENT_API_ENABLED`, плюс project cutover predicate.
@@ -105,7 +106,7 @@ Unpublished forbidden/stale/expired-offer/bulk/unknown-outcome сценарии 
 | Gap                                                         | Следующий owner                     |
 | ----------------------------------------------------------- | ----------------------------------- |
 | typed search/Saved View responses и закрытая filter grammar | backend search + Task 11            |
-| eligible assignment targets и offer errors                  | backend assignment + Tasks 17–18    |
+| explicit Lead bypass, bulk receipt и outcome lookup         | backend assignment + Task 18        |
 | live capacity, current routing reason/reservation           | backend workforce/routing + Task 19 |
 | selected-Case SLA clock projection/action ETag              | backend SLA/workspace + Task 19     |
 | bulk partial receipt и unknown-outcome lookup               | backend assignment + Task 18        |

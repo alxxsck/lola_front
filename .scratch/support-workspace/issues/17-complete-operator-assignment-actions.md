@@ -4,10 +4,11 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 16 — Завершить Case workflow и классификацию.
 
-**Status:** partially-blocked-by-backend
+**Status:** ready-for-frontend
 
-**Backend gate (audit 2026-08-07):** release и own offers доступны; manual claim/transfer
-ждут Case-scoped eligible Team/operator targets. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#17--действия-оператора-с-назначением).
+**Backend gate:** снят в backend `main` `bdf8116`. Case-scoped eligible targets, server action
+matrix и typed own-offer errors опубликованы и проверены; можно брать задачу в разработку. См.
+[аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#17--действия-оператора-с-назначением).
 
 - [ ] Operator может claim Case и принять/отклонить routing offer, если это разрешено.
 - [ ] Release и transfer показываются только по effective permission + server allowed action.

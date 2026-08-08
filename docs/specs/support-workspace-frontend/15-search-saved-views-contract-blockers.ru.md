@@ -109,3 +109,19 @@ Timeline содержит typed actor/reason/previous/next/server timestamp бе
 Проверено: полный suite 3864 теста без failures, build/Prisma/architecture, 534 clean migrations,
 PostgreSQL upgrade и lock serialization, нагрузка 20k Cases/100 concurrent readers с p95 ниже
 500 мс, production `/health` 200 и два повторных независимых strict review без P0/P1.
+
+### Ticket 17 — действия оператора с назначением
+
+**Готово, можно проверять и брать в разработку.**
+
+Backend `main` `bdf8116` публикует Case-scoped authoritative catalog eligible Team/operator targets,
+server-owned `UNASSIGNED|RESERVED|ASSIGNED` и action matrix для claim/release/transfer. Reservation
+не раскрывает candidate identity. Own offer accept/decline возвращают canonical typed
+expiry/version/terminal/eligibility/rollout errors; current IAM повторно проверяется внутри owner
+transaction, а revoke получает безопасный audit без раскрытия offer или Project.
+
+Проверено: полный suite 3877 тестов без failures, build/Prisma/architecture, 534 clean migrations,
+PostgreSQL assignment и LIVE-routing races, production `/health` 200. Worst-case catalog gate:
+20k Cases, 500 operators/2000 Team bindings, 100 concurrent full reads при pool 20 — p95 1218,9 мс,
+payload 336351 bytes, max pool wait 80; concurrent Case update 132,8 мс при `lock_timeout=100ms`.
+Повторные spec/standards/architecture/security/scalability review — CLEAN.

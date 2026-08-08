@@ -67,46 +67,54 @@ draft. **Блокер снят; можно проверять и брать за
 lookup-before-retry, tab-scoped recovery после reload, compact Conversation
 Surface states и e2e без дублирования Message.
 
+### 17 — Действия оператора с назначением
+
+**Сделано на backend `main`:** `bdf8116` (`Support Platform: complete operator assignment
+actions`). Опубликованы Case-scoped authoritative eligible targets и action matrix, безопасная
+`RESERVED` occupancy semantics и canonical typed offer conflicts/expiry. **Блокер снят; можно
+проверять и брать задачу 17 в работу.**
+
 ## Итоговая карта
 
-Сводно: **12** задач не имеют прямого backend-блокера, **10** имеют полный blocker,
-**9** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через core.
+Сводно с учётом оперативных обновлений: **18** задач не имеют прямого backend-блокера, **7** имеют
+полный blocker, **6** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через
+core.
 
-| № | Задача | Backend-статус | Что именно мешает полному завершению |
-|---:|---|---|---|
-| 01 | Workspace/messaging contract sync | Нет | Pin и source revision проверены на свежем main |
-| 02 | Inbox/Case/workforce contract sync | Нет | Pinned contract семантически совпадает со свежим main |
-| 03 | Content/Lead/notifications contract sync | Нет | Sync может честно отметить отсутствующие vertical как unpublished |
-| 04 | Shared Conversation Surface | Нет | Frontend architecture |
-| 05 | Users migration | Нет | Существующие Conversation/translation/AI suspension операции опубликованы |
-| 06 | Support migration | Нет | Workspace/history/send capabilities опубликованы |
-| 07 | Remove legacy duplicates | Нет | Frontend cutover |
-| 08 | Full-tab shell | Нет | Frontend presentation |
-| 09 | Unified Case/Conversation inbox | Нет | `SupportWorkspace_read` публикует оба режима и selection |
-| 10 | Search/filters/sort | Нет (снят `9da7bc9`) | Typed surface-specific search опубликован |
-| 11 | Saved Views | Нет (снят `9da7bc9`) | Typed Saved Views/presets/count/freshness опубликованы |
-| 12 | Responsive route stack | Нет | Frontend routing/layout |
-| 13 | Durable send/idempotency recovery | Нет (снят `3791c37`); frontend complete | `AdminMessaging_lookupOutcome` опубликован и подключён |
-| 14 | Read/unread/first-unread | Нет (снят `75739a1`) | Reader-scoped read state и monotonic ACK опубликованы |
-| 15 | Delivery/reconnect reconciliation | Нет (снят `0f5404f`) | Lookup/retry и полный typed realtime contract опубликованы |
-| 16 | Case workflow/classification | Нет (снят `2113c99`) | Полный server-owned workflow/classification contract опубликован |
-| 17 | Operator assignment actions | **Частичный** | Нет Case-scoped eligible Team/operator targets и typed offer errors |
-| 18 | Lead assignment overrides | **Частичный** | Нет eligible targets, explicit override action, bulk receipt и outcome lookup |
-| 19 | SLA/routing/availability context | **Частичный** | Нет selected-Case clocks, current routing reason/reservation и live load projection |
-| 20 | Sensitive inspector tabs | Нет прямого; наследует 16 | Нужные profile/event/activity reads опубликованы; Case mutations ждут 16 |
-| 21 | Viewers/typing/collision | **Полный** | Нет operator watch/viewer/typing TTL/generation contract |
-| 22 | Internal-note composer | **Частичный** | Нет Case-scoped note actions, reason catalog и typed conflict/lifecycle errors |
-| 23 | Public/note attachments | **Полный** | Нет upload/scan/grant/attachment-send контрактов |
-| 24 | Support Macros | **Частичный** | Нет полного preview/history/rollback и typed failure/provenance read contract |
-| 25 | Support Internal Knowledge | **Частичный** | Нет document revision rollback и отдельного Knowledge retention/rollout contract |
-| 26 | Lead Control | **Частичный** | Capacity/routing недоступны; owner/assignment target catalogs и drill-down search отсутствуют |
-| 27 | Browser notification settings | **Полный** | Нет browser preference/subscription/device/deep-link API в main |
-| 28 | Legacy entry-point cutover | **Частичный, транзитивный** | Core cutover ждёт незакрытые backend gaps 10–19; нет project shell rollout contract |
-| 29 | Pilot/rollback hardening | **Частичный, транзитивный** | Pilot ждёт core cutover и typed project rollout/admission |
-| 30 | JSM/HelpDesk contract sync | **Полный** | External Work существует только как нормативная спека, API отсутствует |
-| 31 | Integration Settings/External Work | **Полный** | Нет connection/catalog/mapping/inbox/receipt APIs |
-| 32 | Case External Work actions | **Полный** | Нет Case link/create/comment/unlink/lookup APIs |
-| 33 | Support Quality/Analytics | **Полный** | Нет QA/IAM/scorecard/analytics metric contracts |
+|   № | Задача                                   | Backend-статус                          | Что именно мешает полному завершению                                                          |
+| --: | ---------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------- |
+|  01 | Workspace/messaging contract sync        | Нет                                     | Pin и source revision проверены на свежем main                                                |
+|  02 | Inbox/Case/workforce contract sync       | Нет                                     | Pinned contract семантически совпадает со свежим main                                         |
+|  03 | Content/Lead/notifications contract sync | Нет                                     | Sync может честно отметить отсутствующие vertical как unpublished                             |
+|  04 | Shared Conversation Surface              | Нет                                     | Frontend architecture                                                                         |
+|  05 | Users migration                          | Нет                                     | Существующие Conversation/translation/AI suspension операции опубликованы                     |
+|  06 | Support migration                        | Нет                                     | Workspace/history/send capabilities опубликованы                                              |
+|  07 | Remove legacy duplicates                 | Нет                                     | Frontend cutover                                                                              |
+|  08 | Full-tab shell                           | Нет                                     | Frontend presentation                                                                         |
+|  09 | Unified Case/Conversation inbox          | Нет                                     | `SupportWorkspace_read` публикует оба режима и selection                                      |
+|  10 | Search/filters/sort                      | Нет (снят `9da7bc9`)                    | Typed surface-specific search опубликован                                                     |
+|  11 | Saved Views                              | Нет (снят `9da7bc9`)                    | Typed Saved Views/presets/count/freshness опубликованы                                        |
+|  12 | Responsive route stack                   | Нет                                     | Frontend routing/layout                                                                       |
+|  13 | Durable send/idempotency recovery        | Нет (снят `3791c37`); frontend complete | `AdminMessaging_lookupOutcome` опубликован и подключён                                        |
+|  14 | Read/unread/first-unread                 | Нет (снят `75739a1`)                    | Reader-scoped read state и monotonic ACK опубликованы                                         |
+|  15 | Delivery/reconnect reconciliation        | Нет (снят `0f5404f`)                    | Lookup/retry и полный typed realtime contract опубликованы                                    |
+|  16 | Case workflow/classification             | Нет (снят `2113c99`)                    | Полный server-owned workflow/classification contract опубликован                              |
+|  17 | Operator assignment actions              | Нет (снят `bdf8116`)                    | Case-scoped eligible targets и typed offer errors опубликованы                                |
+|  18 | Lead assignment overrides                | **Частичный**                           | Нет explicit bypass action, bulk receipt и outcome lookup                                     |
+|  19 | SLA/routing/availability context         | **Частичный**                           | Нет selected-Case clocks, current routing reason/reservation и live load projection           |
+|  20 | Sensitive inspector tabs                 | Нет прямого; наследует 16               | Нужные profile/event/activity reads опубликованы; Case mutations ждут 16                      |
+|  21 | Viewers/typing/collision                 | **Полный**                              | Нет operator watch/viewer/typing TTL/generation contract                                      |
+|  22 | Internal-note composer                   | **Частичный**                           | Нет Case-scoped note actions, reason catalog и typed conflict/lifecycle errors                |
+|  23 | Public/note attachments                  | **Полный**                              | Нет upload/scan/grant/attachment-send контрактов                                              |
+|  24 | Support Macros                           | **Частичный**                           | Нет полного preview/history/rollback и typed failure/provenance read contract                 |
+|  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract              |
+|  26 | Lead Control                             | **Частичный**                           | Capacity/routing недоступны; owner/assignment target catalogs и drill-down search отсутствуют |
+|  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                               |
+|  28 | Legacy entry-point cutover               | **Частичный, транзитивный**             | Core cutover ждёт незакрытые backend gaps 10–19; нет project shell rollout contract           |
+|  29 | Pilot/rollback hardening                 | **Частичный, транзитивный**             | Pilot ждёт core cutover и typed project rollout/admission                                     |
+|  30 | JSM/HelpDesk contract sync               | **Полный**                              | External Work существует только как нормативная спека, API отсутствует                        |
+|  31 | Integration Settings/External Work       | **Полный**                              | Нет connection/catalog/mapping/inbox/receipt APIs                                             |
+|  32 | Case External Work actions               | **Полный**                              | Нет Case link/create/comment/unlink/lookup APIs                                               |
+|  33 | Support Quality/Analytics                | **Полный**                              | Нет QA/IAM/scorecard/analytics metric contracts                                               |
 
 ## По каждой задаче
 
@@ -337,38 +345,42 @@ spec/standards/security/architecture/scalability review без P0/P1.
 
 ### 17 — Действия оператора с назначением
 
-**Статус: частичный backend-блокер.**
+**Статус: нет backend-блокера (`bdf8116`), можно брать в frontend-разработку.**
 
 Готово: typed `SupportCaseAssignment_claim/assign/release/transfer`, Case/assignment OCC,
-idempotency, reason codes, typed assignment errors; own offer list и accept/decline success receipt.
+idempotency, reason codes, typed assignment errors; own offer list и accept/decline receipt.
+`SupportCaseAssignment_candidatesForCase` возвращает exact published Workforce revision,
+server-owned Case/Assignment state, action matrix, Case read token, current Assignment ETag и
+eligible Team/operator targets после current Membership/IAM, availability и capacity checks.
 
-Не хватает Case-scoped authoritative eligible Team/operator catalog для claim/transfer. Общий
-Workforce config и legacy assignees list не доказывают eligibility конкретного Case. Offer
-accept/decline также не публикуют typed expiry/conflict error bodies.
+`RESERVED` показывает только occupancy и не раскрывает routing candidate. Merged/terminal Case
+read-only; self-manage не может release чужого owner. Offer list/accept/decline повторно валидируют
+current IAM в transaction и публикуют canonical typed actor/version/terminal/expired/ineligible/
+disabled results; неизвестный или чужой offer остаётся concealed.
 
-Что может frontend сейчас: release current assignment, показать own offers и принять/отклонить их;
-manual claim/transfer picker нельзя строить из browser data.
+Что может frontend сейчас: строить claim/transfer picker только из Case-scoped catalog, показывать
+server actions, release current assignment и безопасно обрабатывать own offer success/conflicts.
 
 Evidence: `src/composition/support-workspace/support-case-assignment.controller.ts`,
-`src/composition/support-workspace/support-routing-offer.controller.ts`,
-`ClaimSupportCaseAssignmentDto`, `TransferSupportCaseAssignmentDto`.
+`src/modules/support-operations/persistence/prisma-support-case-assignment-candidates-read.ts`,
+`src/composition/support-workspace/support-routing-offer.controller.ts`, backend `bdf8116`.
 
 ### 18 — Назначение и override для лида
 
 **Статус: частичный backend-блокер.**
 
-Готово: single-Case assign/transfer/release commands и operator availability override command.
+Готово: single-Case assign/transfer/release commands, Case-specific target authority из `bdf8116`
+и operator availability override command.
 
 Не хватает:
 
-- eligible Team/operator targets с Case-specific target authority;
 - отдельного allowed action для обхода availability/capacity;
 - bulk assignment command с per-item success/failure receipt;
 - lookup неизвестного outcome bulk/single command;
 - безопасного target catalog для alert owner/Lead drill-down.
 
-Что может frontend сейчас: общий command/reconcile layer и существующий assignment read/release.
-Production lead picker, override confirmation и bulk result screen полностью закрыть нельзя.
+Что может frontend сейчас: общий command/reconcile layer, Case-scoped Lead picker и обычные
+assign/transfer/release. Override confirmation и bulk result screen полностью закрыть нельзя.
 
 ### 19 — SLA, routing и availability context
 
@@ -664,17 +676,16 @@ schemas.
    filter/sort grammar, system preset catalog. Разблокирует 10, 11, часть 26 и core cutover.
 2. **Messaging recovery/read state** — idempotency outcome lookup, reader high-water/unread/first
    unread, delivery lookup/retry, typed realtime admission. Разблокирует 13–15.
-3. **Case desk authority** — workflow/classification закрыты в `2113c99`; остаются eligible
-   assignment targets, bulk receipts, selected-Case SLA/routing/load projection. Разблокирует
-   17–19 и оставшуюся часть 26.
+3. **Case desk authority** — workflow/classification закрыты в `2113c99`, operator assignment — в
+   `bdf8116`; остаются Lead bypass/bulk receipts и selected-Case SLA/routing/load projection.
+   Разблокирует 18–19 и оставшуюся часть 26.
 4. **Collaboration/files/content completion** — typing/viewers contract, Message/Note attachments,
    note actions, Macro/Knowledge missing lifecycle/error/provenance contracts. Разблокирует 21–25.
 5. **Project rollout** — typed Support Workspace/Lead Control admission для 28–29.
 6. **Browser notifications** — полностью выполнить backend Ticket 20a и повторно экспортировать
    OpenAPI. Разблокирует 27.
 7. **External Work** — foundation + JSM/HelpDesk adapters и typed API. Разблокирует 30–32.
-8. **Support QA/Analytics + IAM handoff** — отдельные domain/API/permission contracts. Разблокирует
-   33.
+8. **Support QA/Analytics + IAM handoff** — отдельные domain/API/permission contracts. Разблокирует 33.
 
 До публикации этих slices frontend может продолжать задачи без backend-блокеров и независимые части
 partial tickets, но не должен компенсировать gaps локальными DTO, N+1 reads, socket inference или
