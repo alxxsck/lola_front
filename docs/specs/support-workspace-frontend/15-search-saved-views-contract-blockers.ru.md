@@ -191,3 +191,25 @@ logs. Actor/Project rate budget возвращает typed 429, хранится
 smoke с typed `200/400/401/403/404`. PostgreSQL load: 50 000 Events, из них 90% вне recipe,
 100 reads при concurrency 10 — p95 19,6 мс, deep page 5,0 мс; 100 rate admissions — p95 23,3 мс.
 Финальные независимые spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 21 — viewers, typing и collision warning
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `df62f44` публикует полный typed collaboration contract: project/Conversation/actor-
+scoped watch с 60-секундной lease, exact generation, renew/unwatch и terminal generation-fenced
+revoke. Viewer snapshots содержат coherent generation+expiry; body-bearing message/translation/
+delivery события получают только сокеты с текущей DB lease и повторно проверенными session/IAM.
+
+Typing использует exact watch generation и отдельную monotonic transition revision, TTL 5 секунд,
+actor+Conversation budget и idempotent stop. Stale/reordered события и reconnect fenced. Для
+потерянных realtime hints доступен `SupportConversationCollaboration_read`: bounded `no-store`
+authoritative read viewers/typers и collision fact `OTHER_OPERATOR_REPLIED` без message body/draft.
+`SupportRealtime_deliveryContract` публикует явные request/success/error/event schema refs и
+signed-int64 bounds для frontend generator/reconcile.
+
+Проверено: 541 clean migrations, build/TypeScript/Prisma/lint, 90/90 targeted contracts и live
+HTTP/DB smoke. PostgreSQL load: 100 разных операторов с отдельными MFA sessions/memberships,
+100 authoritative reads при concurrency 10 — p95 99,4 мс. Failed-switch rollback, stale typing,
+rate reject/no-op stop и stale-revoke CAS races доказаны real-PG regressions. Финальные независимые
+spec/standards/architecture/security/scalability review — CLEAN.
