@@ -8,6 +8,7 @@ import type {
 } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 import {
+  expectedSupportLeadAssignmentReceiptIntent,
   SupportLeadAssignmentIntegrityError,
   type SupportLeadAssignmentIntent,
   type SupportLeadAssignmentReceipt,
@@ -87,6 +88,9 @@ export function createSupportLeadAssignmentController(
 
   const hasAuthority = computed(
     () => Boolean(context.projectId()) && context.canOverride(),
+  );
+  const hasForceAuthority = computed(
+    () => hasAuthority.value && context.canForce(),
   );
 
   function scopeIsCurrent(projectId: string, selectedCaseId: string): boolean {
@@ -306,12 +310,17 @@ export function createSupportLeadAssignmentController(
         action.projectId,
         action.caseId,
         action.idempotencyKey,
+        expectedSupportLeadAssignmentReceiptIntent(action.intent),
         controller.signal,
       );
       await applyKnownReceipt(action, receipt);
     } catch (cause) {
       if (!actionScopeIsCurrent(action)) return;
-      if (cause instanceof ApiError && cause.status === 404) {
+      if (
+        cause instanceof ApiError &&
+        cause.status === 404 &&
+        cause.code === "ASSIGNMENT_COMMAND_OUTCOME_NOT_FOUND"
+      ) {
         unknownOutcome.value = true;
         error.value =
           "Сервер пока не нашёл результат команды. Проверьте статус ещё раз.";
@@ -443,6 +452,7 @@ export function createSupportLeadAssignmentController(
     auditLoading,
     auditError,
     hasAuthority,
+    hasForceAuthority,
     open,
     load,
     loadAudit,

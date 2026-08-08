@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSupportLeadAssignmentBatchController } from "./use-support-lead-assignment-batch";
 import type { SupportAssignmentSnapshot } from "@/features/support-case-assignment/api/support-assignment-source";
+import type { SupportCaseAssignmentBatchResponseDto } from "@/shared/api/generated/models";
 
 function snapshot(
   caseId: string,
@@ -153,5 +154,98 @@ describe("support Lead assignment batch controller", () => {
       "batch-key-2",
       expect.any(AbortSignal),
     );
+  });
+
+  it("keeps a processing batch recoverable with the original idempotency key", async () => {
+    const processing = {
+      batchId: "batch-1",
+      status: "PROCESSING" as const,
+      outcome: "PENDING" as const,
+      itemCount: 1,
+      processedCount: 0,
+      succeededCount: 0,
+      failedCount: 0,
+      items: [{ clientItemId: "item-1", caseId: "case-1", status: "PENDING" as const }],
+    };
+    const completed = {
+      ...processing,
+      status: "COMPLETED" as const,
+      outcome: "SUCCEEDED" as const,
+      processedCount: 1,
+      succeededCount: 1,
+      items: [{ clientItemId: "item-1", caseId: "case-1", status: "SUCCEEDED" as const }],
+    };
+    const source = {
+      readCase: vi.fn().mockResolvedValue(snapshot("case-1")),
+      execute: vi.fn(),
+      lookupOutcome: vi.fn(),
+      executeBatch: vi.fn().mockResolvedValue(processing),
+      lookupBatchOutcome: vi.fn().mockResolvedValue(completed),
+      readAudit: vi.fn(),
+    };
+    const controller = createSupportLeadAssignmentBatchController(source, {
+      projectId: () => "project-1",
+      canOverride: () => true,
+      canForce: () => true,
+      createIdempotencyKey: () => "batch-key-processing",
+    });
+    await controller.prepare(["case-1"]);
+    controller.reasonNote.value = "Распределение очереди";
+
+    await controller.submit();
+    expect(controller.result.value?.outcome).toBe("PENDING");
+    expect(controller.unknownOutcome.value).toBe(true);
+
+    await controller.reconcileUnknownOutcome();
+    expect(source.lookupBatchOutcome).toHaveBeenCalledWith(
+      "project-1",
+      "batch-key-processing",
+      expect.any(Array),
+      expect.any(AbortSignal),
+    );
+    expect(controller.result.value?.outcome).toBe("SUCCEEDED");
+    expect(controller.unknownOutcome.value).toBe(false);
+  });
+
+  it("ignores a late batch receipt after reset", async () => {
+    let resolveBatch!: (value: SupportCaseAssignmentBatchResponseDto) => void;
+    const source = {
+      readCase: vi.fn().mockResolvedValue(snapshot("case-1")),
+      execute: vi.fn(),
+      lookupOutcome: vi.fn(),
+      executeBatch: vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveBatch = resolve;
+        }),
+      ),
+      lookupBatchOutcome: vi.fn(),
+      readAudit: vi.fn(),
+    };
+    const changed = vi.fn();
+    const controller = createSupportLeadAssignmentBatchController(source, {
+      projectId: () => "project-1",
+      canOverride: () => true,
+      canForce: () => true,
+      onChanged: changed,
+      createIdempotencyKey: () => "batch-key-late",
+    });
+    await controller.prepare(["case-1"]);
+    controller.reasonNote.value = "Распределение очереди";
+    const submission = controller.submit();
+    controller.reset();
+    resolveBatch({
+      batchId: "batch-1",
+      status: "COMPLETED",
+      outcome: "SUCCEEDED",
+      itemCount: 1,
+      processedCount: 1,
+      succeededCount: 1,
+      failedCount: 0,
+      items: [{ clientItemId: "item-1", caseId: "case-1", status: "SUCCEEDED" }],
+    });
+
+    await submission;
+    expect(controller.result.value).toBeNull();
+    expect(changed).not.toHaveBeenCalled();
   });
 });

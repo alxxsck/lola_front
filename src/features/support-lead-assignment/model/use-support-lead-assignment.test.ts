@@ -152,10 +152,47 @@ describe("support Lead assignment controller", () => {
       "project-1",
       "case-1",
       "lead-command-1",
+      "ASSIGN_CASE_ASSIGNMENT",
       expect.any(AbortSignal),
     );
     expect(execute).toHaveBeenCalledTimes(1);
     expect(controller.unknownOutcome.value).toBe(false);
     expect(changed).toHaveBeenCalledWith("case-1");
+  });
+
+  it("purges an unknown command when a concealed 404 revokes authority", async () => {
+    const forbidden = vi.fn();
+    const source = {
+      readCase: vi.fn().mockResolvedValue(snapshot),
+      execute: vi.fn().mockRejectedValue(new Error("network")),
+      lookupOutcome: vi
+        .fn()
+        .mockRejectedValue(
+          new ApiError(404, "concealed", undefined, undefined, "NOT_FOUND_OR_FORBIDDEN"),
+        ),
+      executeBatch: vi.fn(),
+      lookupBatchOutcome: vi.fn(),
+      readAudit: vi.fn().mockResolvedValue([]),
+    };
+    const controller = createSupportLeadAssignmentController(source, {
+      projectId: () => "project-1",
+      canOverride: () => true,
+      canForce: () => true,
+      onForbidden: forbidden,
+      createIdempotencyKey: () => "lead-command-1",
+    });
+    await controller.open("case-1");
+    controller.setDraft({
+      kind: "ASSIGN",
+      teamId: "team-1",
+      operatorId: "operator-1",
+      reasonCode: "LEAD_INTERVENTION",
+    });
+
+    await controller.submit();
+
+    expect(forbidden).toHaveBeenCalledOnce();
+    expect(controller.unknownOutcome.value).toBe(false);
+    expect(controller.draft.value).toBeNull();
   });
 });

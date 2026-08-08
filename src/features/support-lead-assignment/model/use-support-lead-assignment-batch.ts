@@ -17,6 +17,7 @@ export interface SupportLeadAssignmentBatchRow {
 }
 
 interface PendingBatch {
+  generation: number;
   projectId: string;
   items: SupportCaseAssignmentBatchItemRequestDto[];
   idempotencyKey: string;
@@ -63,12 +64,19 @@ export function createSupportLeadAssignmentBatchController(
   const hasAuthority = computed(
     () => Boolean(context.projectId()) && context.canOverride(),
   );
+  const hasForceAuthority = computed(
+    () => hasAuthority.value && context.canForce(),
+  );
   const readyCount = computed(
     () => rows.value.filter((row) => row.snapshot && !row.error).length,
   );
 
   function scopeIsCurrent(projectId: string): boolean {
     return context.projectId() === projectId && context.canOverride();
+  }
+
+  function actionScopeIsCurrent(action: PendingBatch): boolean {
+    return generation === action.generation && scopeIsCurrent(action.projectId);
   }
 
   function selectInitialTarget(row: SupportLeadAssignmentBatchRow): void {
@@ -213,8 +221,17 @@ export function createSupportLeadAssignmentBatchController(
     return items as SupportCaseAssignmentBatchItemRequestDto[];
   }
 
-  async function applyResult(value: SupportCaseAssignmentBatchResponseDto) {
+  async function applyResult(
+    action: PendingBatch,
+    value: SupportCaseAssignmentBatchResponseDto,
+  ) {
+    if (!actionScopeIsCurrent(action)) return;
     result.value = value;
+    if (value.status === "PROCESSING" || value.outcome === "PENDING") {
+      pending.value = action;
+      unknownOutcome.value = true;
+      return;
+    }
     pending.value = null;
     unknownOutcome.value = false;
     await context.onChanged?.();
@@ -223,12 +240,13 @@ export function createSupportLeadAssignmentBatchController(
   async function reconcileUnknownOutcome(
     action = pending.value,
   ): Promise<void> {
-    if (!action || reconciling.value || !scopeIsCurrent(action.projectId)) return;
+    if (!action || reconciling.value || !actionScopeIsCurrent(action)) return;
     reconciling.value = true;
     error.value = "";
     const controller = new AbortController();
     try {
       await applyResult(
+        action,
         await source.lookupBatchOutcome(
           action.projectId,
           action.idempotencyKey,
@@ -237,9 +255,20 @@ export function createSupportLeadAssignmentBatchController(
         ),
       );
     } catch (cause) {
-      if (!scopeIsCurrent(action.projectId)) return;
-      if (cause instanceof ApiError && cause.status === 404) {
+      if (!actionScopeIsCurrent(action)) return;
+      if (
+        cause instanceof ApiError &&
+        cause.status === 404 &&
+        cause.code === "ASSIGNMENT_BATCH_OUTCOME_NOT_FOUND"
+      ) {
         error.value = "Результат пакета пока не найден. Проверьте ещё раз.";
+      } else if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
+        reset();
+        await context.onForbidden?.();
+        return;
       } else {
         error.value = "Не удалось проверить пакет. Исходная команда не повторена.";
       }
@@ -255,6 +284,7 @@ export function createSupportLeadAssignmentBatchController(
     const items = buildItems();
     if (!projectId || !items || !context.canOverride()) return;
     const action: PendingBatch = {
+      generation,
       projectId,
       items,
       idempotencyKey:
@@ -267,6 +297,7 @@ export function createSupportLeadAssignmentBatchController(
     error.value = "";
     try {
       await applyResult(
+        action,
         await source.executeBatch(
           projectId,
           items,
@@ -275,7 +306,7 @@ export function createSupportLeadAssignmentBatchController(
         ),
       );
     } catch (cause) {
-      if (!scopeIsCurrent(projectId)) return;
+      if (!actionScopeIsCurrent(action)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)
@@ -326,6 +357,7 @@ export function createSupportLeadAssignmentBatchController(
     result,
     unknownOutcome,
     hasAuthority,
+    hasForceAuthority,
     readyCount,
     prepare,
     setTarget,

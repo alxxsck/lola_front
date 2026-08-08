@@ -173,6 +173,16 @@ const leadAssignment = createSupportLeadAssignmentController(
   },
 );
 const selectedRiskCaseIds = ref<string[]>([]);
+const selectedRiskCaseLabels = computed(() =>
+  Object.fromEntries(
+    (risks.page.value?.items ?? [])
+      .filter((item) => selectedRiskCaseIds.value.includes(item.caseId))
+      .map((item, index) => [
+        item.caseId,
+        `${labelRiskType(item.riskType)} · Case ${index + 1}`,
+      ]),
+  ),
+);
 const leadAssignmentBatch = createSupportLeadAssignmentBatchController(
   supportLeadAssignmentSource,
   {
@@ -666,6 +676,7 @@ onBeforeUnmount(() => {
           <SupportLeadAssignmentBatchDesk
             :controller="leadAssignmentBatch"
             :case-ids="selectedRiskCaseIds"
+            :case-labels="selectedRiskCaseLabels"
           />
         </div>
         <Message v-if="risks.error.value" severity="error" :closable="false">
@@ -698,7 +709,7 @@ onBeforeUnmount(() => {
               <input
                 type="checkbox"
                 :checked="selectedRiskCaseIds.includes(risk.caseId)"
-                :aria-label="`Выбрать Case ${risk.caseId} для пакетного назначения`"
+                :aria-label="`Выбрать ${labelRiskType(risk.riskType)} для пакетного назначения`"
                 @change="toggleRiskSelection(risk.caseId, ($event.target as HTMLInputElement).checked)"
               />
               <span class="sr-only">Выбрать Case</span>
@@ -716,7 +727,7 @@ onBeforeUnmount(() => {
                 v-if="canOverrideAssignments"
                 :controller="leadAssignment"
                 :case-id="risk.caseId"
-                case-label="Case из очереди рисков"
+                :case-label="labelRiskType(risk.riskType)"
                 compact
               />
               <RouterLink

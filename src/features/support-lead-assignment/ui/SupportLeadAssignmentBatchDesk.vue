@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -11,10 +11,14 @@ import type {
   createSupportLeadAssignmentBatchController,
 } from "@/features/support-lead-assignment/model/use-support-lead-assignment-batch";
 
-const props = defineProps<{
-  controller: ReturnType<typeof createSupportLeadAssignmentBatchController>;
-  caseIds: string[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    controller: ReturnType<typeof createSupportLeadAssignmentBatchController>;
+    caseIds: string[];
+    caseLabels?: Record<string, string>;
+  }>(),
+  { caseLabels: () => ({}) },
+);
 
 const visible = ref(false);
 
@@ -23,7 +27,9 @@ function teams(row: SupportLeadAssignmentBatchRow) {
     row.snapshot?.teams.filter((team) =>
       team.operators.some(
         (operator) =>
-          operator.actions.assign || operator.actions.assignWithOverride,
+          operator.actions.assign ||
+          (props.controller.hasForceAuthority.value &&
+            operator.actions.assignWithOverride),
       ),
     ) ?? []
   );
@@ -35,7 +41,9 @@ function operators(row: SupportLeadAssignmentBatchRow) {
       .find((team) => team.id === row.teamId)
       ?.operators.filter(
         (operator) =>
-          operator.actions.assign || operator.actions.assignWithOverride,
+          operator.actions.assign ||
+          (props.controller.hasForceAuthority.value &&
+            operator.actions.assignWithOverride),
       )
       .map((operator) => ({
         ...operator,
@@ -51,8 +59,17 @@ function requiredOverrides(row: SupportLeadAssignmentBatchRow): string[] {
   );
 }
 
-function shortCaseId(value: string): string {
-  return value.length > 12 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
+function caseLabel(value: string): string {
+  return props.caseLabels[value] ?? "Выбранный Case";
+}
+
+function rowRequiresForce(row: SupportLeadAssignmentBatchRow): boolean {
+  const operator = row.snapshot?.teams
+    .find((team) => team.id === row.teamId)
+    ?.operators.find((candidate) => candidate.id === row.operatorId);
+  return Boolean(
+    operator && !operator.actions.assign && operator.actions.assignWithOverride,
+  );
 }
 
 function caseCountLabel(value: number): string {
@@ -81,6 +98,39 @@ function closeDesk(): void {
   visible.value = false;
   props.controller.reset();
 }
+
+watch(
+  () => props.controller.hasAuthority.value,
+  (allowed) => {
+    if (allowed || !visible.value) return;
+    visible.value = false;
+    props.controller.reset();
+  },
+);
+
+watch(
+  () => props.controller.hasForceAuthority.value,
+  (allowed) => {
+    if (
+      allowed ||
+      !visible.value ||
+      !props.controller.rows.value.some(rowRequiresForce)
+    )
+      return;
+    visible.value = false;
+    props.controller.reset();
+  },
+  { flush: "sync" },
+);
+
+watch(
+  () => props.caseIds.join("\u001f"),
+  (signature, previous) => {
+    if (!visible.value || signature === previous) return;
+    visible.value = false;
+    props.controller.reset();
+  },
+);
 </script>
 
 <template>
@@ -133,7 +183,7 @@ function closeDesk(): void {
         <header>
           <div>
             <span class="section-kicker">Case</span>
-            <strong :title="row.caseId">{{ shortCaseId(row.caseId) }}</strong>
+            <strong>{{ caseLabel(row.caseId) }}</strong>
           </div>
           <Tag
             v-if="requiredOverrides(row).length"
@@ -152,7 +202,7 @@ function closeDesk(): void {
               :options="teams(row)"
               option-label="name"
               option-value="id"
-              :aria-label="`Команда для ${row.caseId}`"
+              :aria-label="`Команда для ${caseLabel(row.caseId)}`"
               fluid
               @update:model-value="controller.setTarget(row.caseId, $event)"
             />
@@ -164,7 +214,7 @@ function closeDesk(): void {
               :options="operators(row)"
               option-label="optionLabel"
               option-value="id"
-              :aria-label="`Оператор для ${row.caseId}`"
+              :aria-label="`Оператор для ${caseLabel(row.caseId)}`"
               fluid
               @update:model-value="controller.setTarget(row.caseId, row.teamId, $event)"
             />
@@ -191,19 +241,18 @@ function closeDesk(): void {
         <div>
           <span class="section-kicker">Результат</span>
           <h3>
-            {{ controller.result.value.outcome === 'SUCCEEDED' ? 'Пакет выполнен' : controller.result.value.outcome === 'PARTIAL' ? 'Пакет выполнен частично' : 'Пакет не выполнен' }}
+            {{ controller.result.value.outcome === 'PENDING' ? 'Пакет обрабатывается' : controller.result.value.outcome === 'SUCCEEDED' ? 'Пакет выполнен' : controller.result.value.outcome === 'PARTIAL' ? 'Пакет выполнен частично' : 'Пакет не выполнен' }}
           </h3>
         </div>
         <Tag
           :value="`${controller.result.value.succeededCount} успешно · ${controller.result.value.failedCount} ошибок`"
-          :severity="controller.result.value.outcome === 'SUCCEEDED' ? 'success' : controller.result.value.outcome === 'PARTIAL' ? 'warn' : 'danger'"
+          :severity="controller.result.value.outcome === 'PENDING' ? 'info' : controller.result.value.outcome === 'SUCCEEDED' ? 'success' : controller.result.value.outcome === 'PARTIAL' ? 'warn' : 'danger'"
         />
       </header>
       <ol>
         <li v-for="item in controller.result.value.items" :key="item.clientItemId">
           <div>
-            <strong>{{ shortCaseId(item.caseId) }}</strong>
-            <small>{{ item.clientItemId }}</small>
+            <strong>{{ caseLabel(item.caseId) }}</strong>
           </div>
           <Tag
             :value="item.status === 'SUCCEEDED' ? 'Назначен' : item.status === 'FAILED' ? errorLabel(item.error?.code) : 'В обработке'"

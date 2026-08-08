@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { mount } from "@vue/test-utils";
 import PrimeVue from "primevue/config";
 import { describe, expect, it, vi } from "vitest";
@@ -6,6 +6,8 @@ import SupportLeadAssignmentDesk from "./SupportLeadAssignmentDesk.vue";
 
 function controller(requiredOverrides: string[] = []) {
   const draft = ref(null);
+  const hasAuthority = ref(true);
+  const hasForceAuthority = ref(true);
   return {
     caseId: ref(null),
     snapshot: ref({
@@ -64,7 +66,8 @@ function controller(requiredOverrides: string[] = []) {
     auditFacts: ref([]),
     auditLoading: ref(false),
     auditError: ref(""),
-    hasAuthority: computed(() => true),
+    hasAuthority,
+    hasForceAuthority,
     open: vi.fn(),
     load: vi.fn(),
     loadAudit: vi.fn(),
@@ -173,6 +176,65 @@ describe("SupportLeadAssignmentDesk", () => {
     expect(wrapper.text()).toContain("История ответственности");
     expect(wrapper.text()).toContain("Override: доступность да, capacity нет");
     expect(wrapper.text()).toContain("outcome APPLIED");
+    expect(wrapper.text()).toContain("Платежи · Анна Смирнова");
+    expect(wrapper.text()).not.toContain("team-1");
+    expect(wrapper.text()).not.toContain("operator-1");
     expect(wrapper.text()).not.toContain("Критический риск для пользователя");
+  });
+
+  it("closes and purges the dialog when Lead authority is revoked", async () => {
+    const assignment = controller();
+    const wrapper = mount(SupportLeadAssignmentDesk, {
+      props: {
+        controller: assignment as never,
+        caseId: "case-1",
+        caseLabel: "Критический Case",
+      },
+      global: { plugins: [PrimeVue], stubs },
+    });
+    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+
+    assignment.hasAuthority.value = false;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find("[role='dialog']").exists()).toBe(false);
+    expect(assignment.reset).toHaveBeenCalled();
+  });
+
+  it("does not expose a force-only target without force authority", async () => {
+    const assignment = controller(["AVAILABILITY"]);
+    assignment.hasForceAuthority.value = false;
+    const wrapper = mount(SupportLeadAssignmentDesk, {
+      props: {
+        controller: assignment as never,
+        caseId: "case-1",
+        caseLabel: "Критический Case",
+      },
+      global: { plugins: [PrimeVue], stubs },
+    });
+    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+
+    expect(wrapper.find("option[value='operator-1']").exists()).toBe(false);
+    expect(wrapper.find("[data-force-warning]").exists()).toBe(false);
+  });
+
+  it("closes a force dialog when only force authority is revoked", async () => {
+    const assignment = controller(["AVAILABILITY"]);
+    const wrapper = mount(SupportLeadAssignmentDesk, {
+      props: {
+        controller: assignment as never,
+        caseId: "case-1",
+        caseLabel: "Критический Case",
+      },
+      global: { plugins: [PrimeVue], stubs },
+    });
+    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    expect(wrapper.find("[role='dialog']").exists()).toBe(true);
+
+    assignment.hasForceAuthority.value = false;
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find("[role='dialog']").exists()).toBe(false);
+    expect(assignment.reset).toHaveBeenCalled();
   });
 });

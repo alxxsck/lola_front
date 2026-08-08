@@ -40,7 +40,7 @@ function targetCanBeUsed(operator: NonNullable<typeof snapshot.value>["teams"][n
   const forced = isTransfer.value
     ? operator.actions.transferWithOverride
     : operator.actions.assignWithOverride;
-  return ordinary || forced;
+  return ordinary || (forced && props.controller.hasForceAuthority.value);
 }
 
 const teams = computed(
@@ -61,6 +61,22 @@ const operators = computed(() => {
 const selectedOperator = computed(() =>
   operators.value.find((item) => item.id === operatorId.value),
 );
+const selectedCatalogOperator = computed(() =>
+  snapshot.value?.teams
+    .find((team) => team.id === teamId.value)
+    ?.operators.find((operator) => operator.id === operatorId.value),
+);
+const selectedIntentRequiresForce = computed(() => {
+  const operator = selectedCatalogOperator.value;
+  if (!operator) return false;
+  const ordinary = isTransfer.value
+    ? operator.actions.transfer
+    : operator.actions.assign;
+  const forced = isTransfer.value
+    ? operator.actions.transferWithOverride
+    : operator.actions.assignWithOverride;
+  return !ordinary && forced;
+});
 const requiredOverrides = computed(
   () => selectedOperator.value?.requiredOverrides ?? [],
 );
@@ -146,6 +162,24 @@ function auditActorLabel(fact: (typeof props.controller.auditFacts.value)[number
   return fact.actor.systemCode ?? "Система";
 }
 
+function auditTeamLabel(teamId: string | null): string {
+  if (!teamId) return "Команда не указана";
+  return (
+    snapshot.value?.teams.find((team) => team.id === teamId)?.name ??
+    "Команда недоступна"
+  );
+}
+
+function auditOperatorLabel(operatorId: string | null): string {
+  if (!operatorId) return "Оператор не указан";
+  return (
+    snapshot.value?.teams
+      .flatMap((team) => team.operators)
+      .find((operator) => operator.id === operatorId)?.displayName ??
+    "Оператор недоступен"
+  );
+}
+
 function initializeTarget(): void {
   teamId.value = teams.value[0]?.id ?? "";
   operatorId.value = operators.value[0]?.id ?? "";
@@ -178,6 +212,25 @@ watch(
     visible.value = false;
     props.controller.reset();
   },
+);
+
+watch(
+  () => props.controller.hasAuthority.value,
+  (allowed) => {
+    if (allowed || !visible.value) return;
+    visible.value = false;
+    props.controller.reset();
+  },
+);
+
+watch(
+  () => props.controller.hasForceAuthority.value,
+  (allowed) => {
+    if (allowed || !visible.value || !selectedIntentRequiresForce.value) return;
+    visible.value = false;
+    props.controller.reset();
+  },
+  { flush: "sync" },
 );
 
 async function openDesk(): Promise<void> {
@@ -410,13 +463,13 @@ async function submitRelease(): Promise<void> {
           {{ controller.auditError.value }}
         </Message>
         <ol v-else>
-          <li v-for="fact in controller.auditFacts.value.slice(-6).reverse()" :key="fact.activityId">
+          <li v-for="fact in controller.auditFacts.value.slice(0, 6)" :key="fact.activityId">
             <span class="audit-marker" aria-hidden="true" />
             <div>
               <strong>{{ auditEventLabel(fact.eventCode) }}</strong>
               <small>{{ auditActorLabel(fact) }} · {{ relativeTime(fact.occurredAt) }}</small>
               <small v-if="fact.targetTeamId || fact.operatorCmsUserId">
-                Команда {{ fact.targetTeamId ?? '—' }} · оператор {{ fact.operatorCmsUserId ?? '—' }}
+                {{ auditTeamLabel(fact.targetTeamId) }} · {{ auditOperatorLabel(fact.operatorCmsUserId) }}
               </small>
               <small v-if="fact.eligibilityOverride">
                 Override: доступность {{ fact.eligibilityOverride.bypassAvailability ? 'да' : 'нет' }},
@@ -434,7 +487,7 @@ async function submitRelease(): Promise<void> {
     <template #footer>
       <div class="lead-assignment-footer">
         <span v-if="snapshot" class="authority-caption">
-          Версия Case {{ snapshot.caseVersion }} · {{ snapshot.workforceRevision ? `workforce ${snapshot.workforceRevision.number}` : 'без workforce revision' }}
+          Данные назначения сверены с сервером
         </span>
         <div>
           <Button

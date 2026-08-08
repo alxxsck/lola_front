@@ -128,12 +128,29 @@ describe("support lead assignment command source", () => {
       "project-1",
       "case-1",
       "lead-command-3",
+      "ASSIGN_CASE_ASSIGNMENT",
     );
 
     expect(result.assignmentId).toBe("assignment-1");
     expect(generated.outcome).toHaveBeenCalledWith("project-1", "case-1", {
       headers: { "Idempotency-Key": "lead-command-3" },
     });
+  });
+
+  it("rejects an outcome receipt for a different command intent", async () => {
+    generated.outcome.mockResolvedValue({
+      ...receipt,
+      intent: "RELEASE_CASE_ASSIGNMENT",
+    });
+
+    await expect(
+      supportLeadAssignmentCommandSource.lookupOutcome(
+        "project-1",
+        "case-1",
+        "lead-command-3",
+        "ASSIGN_CASE_ASSIGNMENT",
+      ),
+    ).rejects.toBeInstanceOf(SupportLeadAssignmentIntegrityError);
   });
 
   it("rejects a successful receipt from another Case", async () => {

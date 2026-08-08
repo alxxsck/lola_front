@@ -103,6 +103,7 @@ export interface SupportLeadAssignmentSource {
     projectId: string,
     caseId: string,
     idempotencyKey: string,
+    expectedIntent: SupportLeadAssignmentReceipt["intent"],
     signal?: AbortSignal,
   ): Promise<SupportLeadAssignmentReceipt>;
   executeBatch(
@@ -131,7 +132,9 @@ export class SupportLeadAssignmentIntegrityError extends Error {
   }
 }
 
-function expectedIntent(intent: SupportLeadAssignmentIntent) {
+export function expectedSupportLeadAssignmentReceiptIntent(
+  intent: SupportLeadAssignmentIntent,
+) {
   return (
     {
       ASSIGN: "ASSIGN_CASE_ASSIGNMENT",
@@ -181,17 +184,51 @@ function validateBatchReceipt(
     expectedItems.map((item) => [item.clientItemId, item.caseId]),
   );
   const seen = new Set<string>();
+  const succeeded = value.items.filter((item) => item.status === "SUCCEEDED");
+  const failed = value.items.filter((item) => item.status === "FAILED");
+  const pending = value.items.filter((item) => item.status === "PENDING");
   const countsAreValid =
     value.itemCount === expectedItems.length &&
     value.items.length === expectedItems.length &&
+    value.succeededCount === succeeded.length &&
+    value.failedCount === failed.length &&
     value.processedCount === value.succeededCount + value.failedCount &&
     value.processedCount <= value.itemCount;
   const itemsAreValid = value.items.every((item) => {
     if (seen.has(item.clientItemId)) return false;
     seen.add(item.clientItemId);
-    return expected.get(item.clientItemId) === item.caseId;
+    const expectedItem = expectedItems.find(
+      (candidate) => candidate.clientItemId === item.clientItemId,
+    );
+    if (!expectedItem || expected.get(item.clientItemId) !== item.caseId)
+      return false;
+    if (item.status === "PENDING") return !item.receipt && !item.error;
+    if (item.status === "FAILED") return Boolean(item.error) && !item.receipt;
+    const receipt = item.receipt;
+    return Boolean(
+      receipt &&
+        !item.error &&
+        receipt.assignment.caseId === item.caseId &&
+        receipt.assignment.team.id === expectedItem.teamId &&
+        receipt.assignment.operator.id === expectedItem.operatorCmsUserId &&
+        receipt.intent ===
+          (expectedItem.force
+            ? "ASSIGN_CASE_ASSIGNMENT_WITH_OVERRIDE"
+            : "ASSIGN_CASE_ASSIGNMENT"),
+    );
   });
-  if (!countsAreValid || !itemsAreValid)
+  const lifecycleIsValid =
+    value.status === "PROCESSING"
+      ? value.outcome === "PENDING" && pending.length > 0
+      : pending.length === 0 &&
+        value.processedCount === value.itemCount &&
+        value.outcome ===
+          (failed.length === 0
+            ? "SUCCEEDED"
+            : succeeded.length === 0
+              ? "FAILED"
+              : "PARTIAL");
+  if (!countsAreValid || !itemsAreValid || !lifecycleIsValid)
     throw new SupportLeadAssignmentIntegrityError();
   return value;
 }
@@ -306,14 +343,18 @@ export const supportLeadAssignmentCommandSource: Omit<
                         config,
                       );
                 })();
-      return mapReceipt(snapshot.caseId, value, expectedIntent(intent));
+      return mapReceipt(
+        snapshot.caseId,
+        value,
+        expectedSupportLeadAssignmentReceiptIntent(intent),
+      );
     } catch (cause) {
       if (cause instanceof SupportLeadAssignmentIntegrityError) throw cause;
       throw normalizeApiError(cause);
     }
   },
 
-  async lookupOutcome(projectId, caseId, idempotencyKey, signal) {
+  async lookupOutcome(projectId, caseId, idempotencyKey, intent, signal) {
     try {
       return mapReceipt(
         caseId,
@@ -321,6 +362,7 @@ export const supportLeadAssignmentCommandSource: Omit<
           ...(signal ? { signal } : {}),
           headers: { "Idempotency-Key": idempotencyKey },
         }),
+        intent,
       );
     } catch (cause) {
       if (cause instanceof SupportLeadAssignmentIntegrityError) throw cause;
@@ -361,7 +403,7 @@ const mockSource: SupportLeadAssignmentSource = {
   readCase: supportAssignmentSource.readCase,
   async execute(_projectId, intent) {
     return {
-      intent: expectedIntent(intent),
+      intent: expectedSupportLeadAssignmentReceiptIntent(intent),
       caseId: intent.snapshot.caseId,
       assignmentId: intent.snapshot.currentAssignment?.id ?? "mock-lead-assignment",
       caseVersion: intent.snapshot.caseVersion + 1,

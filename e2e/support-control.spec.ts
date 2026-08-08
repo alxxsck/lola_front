@@ -57,7 +57,7 @@ test("keeps partial-safe bulk assignment actionable from Lead Control", async ({
   await page.goto("/support/control");
 
   await page
-    .getByRole("checkbox", { name: /Выбрать Case/ })
+    .getByRole("checkbox", { name: /для пакетного назначения/ })
     .first()
     .check();
   await page
