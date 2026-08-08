@@ -12,6 +12,9 @@ import type {
 import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
 import type { SupportSearchFailure } from "@/features/support-search/model/use-support-search";
 import SupportSearchToolbar from "@/features/support-search/ui/SupportSearchToolbar.vue";
+import type { SavedSupportViewResponseDto, SupportViewPresetResponseDto } from "@/shared/api/generated/models";
+import type { SupportViewSelection } from "@/features/support-views/api/support-views-source";
+import SupportViewsRail from "@/features/support-views/ui/SupportViewsRail.vue";
 import { relativeTime } from "@/shared/lib/format";
 
 defineProps<{
@@ -33,6 +36,14 @@ defineProps<{
   searchFailure: SupportSearchFailure;
   searchFreshness: SupportSearchFreshness | null;
   searchHasMore: boolean;
+  viewSystem: readonly SupportViewPresetResponseDto[];
+  viewSaved: readonly SavedSupportViewResponseDto[];
+  viewSelection: SupportViewSelection | null;
+  viewCanCreate: boolean;
+  viewCanManageAll: boolean;
+  viewMutating: boolean;
+  viewConflict: string;
+  viewActive: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -45,6 +56,13 @@ const emit = defineEmits<{
   closeSearch: [];
   selectSearch: [item: SupportSearchResult];
   loadMoreSearch: [];
+  selectView: [selection: SupportViewSelection];
+  createView: [value: { name: string; code: string; scope: "PERSONAL" | "TEAM" | "PROJECT"; teamId: string }];
+  replaceView: [value: { view: SavedSupportViewResponseDto; displayName: string }];
+  publishView: [view: SavedSupportViewResponseDto];
+  archiveView: [view: SavedSupportViewResponseDto];
+  defaultView: [selection: SupportViewSelection];
+  customSearch: [];
 }>();
 
 function searchKind(value: SupportSearchResult["kind"]): string {
@@ -149,17 +167,37 @@ function inboxTime(value: string): string {
       </button>
     </div>
 
+    <SupportViewsRail
+      v-if="canSearch"
+      :system="viewSystem"
+      :saved="viewSaved"
+      :selection="viewSelection"
+      :search-scope="searchState.scope"
+      :can-create="viewCanCreate"
+      :can-manage-all="viewCanManageAll"
+      :mutating="viewMutating"
+      :conflict="viewConflict"
+      @select="emit('selectView', $event)"
+      @create="emit('createView', $event)"
+      @replace="emit('replaceView', $event)"
+      @publish="emit('publishView', $event)"
+      @archive="emit('archiveView', $event)"
+      @set-default="emit('defaultView', $event)"
+      @custom-search="emit('customSearch')"
+    />
+
     <SupportSearchToolbar
       v-if="canSearch"
       :model-value="searchState"
       :active="searchActive"
       :loading="searchLoading"
+      :locked="viewActive"
       @update:model-value="emit('changeSearch', $event)"
       @submit="emit('submitSearch', $event)"
       @close="emit('closeSearch')"
     />
 
-    <div v-if="searchActive" class="search-results" aria-live="polite">
+    <div v-if="searchActive || viewActive" class="search-results" aria-live="polite">
       <div
         v-if="searchFreshness && searchFreshness.state !== 'READY'"
         :class="['freshness-notice', searchFreshness.state.toLowerCase()]"

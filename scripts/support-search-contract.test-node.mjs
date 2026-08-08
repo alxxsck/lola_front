@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { validateSupportSearchContract } from "./support-search-contract.mjs";
+import { validateSupportSearchContract, validateSupportViewsContract } from "./support-search-contract.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -41,5 +41,22 @@ test("Support Search rejects missing authority, result schemas and closed gramma
     const value = await contract();
     mutate(value);
     assert.throws(() => validateSupportSearchContract(value));
+  }
+});
+
+test("pinned Saved Views and System Views contract is complete", async () => {
+  const value = await contract();
+  assert.doesNotThrow(() => validateSupportViewsContract(value));
+});
+
+test("Saved Views reject missing OCC, authority and count grammar", async () => {
+  const mutations = [
+    (value) => delete operation(value, "SavedSupportView_query")["x-iam-permission"],
+    (value) => { operation(value, "SavedSupportView_publish").parameters = []; },
+    (value) => { value.components.schemas.SavedSupportViewCountResponseDto.properties.state.enum = ["EXACT"]; },
+  ];
+  for (const mutate of mutations) {
+    const value = await contract(); mutate(value);
+    assert.throws(() => validateSupportViewsContract(value));
   }
 });

@@ -105,7 +105,7 @@ export interface SupportSearchSource {
   ): Promise<SupportSearchPage>;
 }
 
-function mapFreshness(
+export function mapSupportSearchFreshness(
   value: SupportSearchFreshnessResponseDto,
 ): SupportSearchFreshness {
   return {
@@ -118,23 +118,41 @@ function mapFreshness(
   };
 }
 
-function actionableSelection(value: {
+export function mapSupportSearchResult(value: {
   caseId?: string | null;
   conversationId?: string | null;
   endUserId?: string | null;
   target: { kind: string; id: string };
-}): SupportSearchResult["selection"] | null {
-  if (value.caseId) return { kind: "CASE", id: value.caseId };
-  if (value.conversationId)
-    return { kind: "CONVERSATION", id: value.conversationId };
-  if (value.endUserId) return { kind: "END_USER", id: value.endUserId };
-  if (value.target.kind === "CASE")
-    return { kind: "CASE", id: value.target.id };
-  if (value.target.kind === "CONVERSATION")
-    return { kind: "CONVERSATION", id: value.target.id };
-  if (value.target.kind === "END_USER")
-    return { kind: "END_USER", id: value.target.id };
-  return null;
+  snippet: string;
+  activityAt: string;
+  matchProvenance?: "ORIGINAL" | "TRANSLATION" | "NONE";
+  matchLocale?: string | null;
+  language?: string | null;
+  role?: string;
+}): SupportSearchResult | null {
+  let selection: SupportSearchResult["selection"] | null = null;
+  if (value.caseId) selection = { kind: "CASE", id: value.caseId };
+  else if (value.conversationId)
+    selection = { kind: "CONVERSATION", id: value.conversationId };
+  else if (value.endUserId) selection = { kind: "END_USER", id: value.endUserId };
+  else if (value.target.kind === "CASE") selection = { kind: "CASE", id: value.target.id };
+  else if (value.target.kind === "CONVERSATION") selection = { kind: "CONVERSATION", id: value.target.id };
+  else if (value.target.kind === "END_USER") selection = { kind: "END_USER", id: value.target.id };
+  if (!selection) return null;
+  const kind = value.target.kind;
+  if (kind !== "CASE" && kind !== "CONVERSATION" && kind !== "MESSAGE" && kind !== "END_USER") return null;
+  return {
+    id: value.target.id,
+    kind,
+    selection,
+    snippet: value.snippet,
+    activityAt: value.activityAt,
+    ...(value.matchProvenance ? { matchProvenance: value.matchProvenance } : {}),
+    ...(value.matchLocale !== undefined || value.language !== undefined
+      ? { locale: value.matchLocale ?? value.language }
+      : {}),
+    ...(value.role ? { role: value.role } : {}),
+  };
 }
 
 function baseQuery(request: SupportSearchRequest) {
@@ -230,22 +248,9 @@ export const supportSearchSource: SupportSearchSource = {
         sort: caseSort(request),
       } satisfies SupportCaseSearchQueryDto);
       return {
-        items: response.items.flatMap((item) => {
-          const selection = actionableSelection(item);
-          return selection
-            ? [{
-                id: item.target.id,
-                kind: "CASE" as const,
-                selection,
-                snippet: item.snippet,
-                activityAt: item.activityAt,
-                matchProvenance: item.matchProvenance,
-                locale: item.matchLocale,
-              }]
-            : [];
-        }),
+        items: response.items.flatMap((item) => mapSupportSearchResult(item) ?? []),
         nextCursor: response.nextCursor ?? null,
-        freshness: mapFreshness(response.freshness),
+        freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
     if (request.scope === "CONVERSATIONS") {
@@ -258,22 +263,9 @@ export const supportSearchSource: SupportSearchSource = {
         sort: contentSort(request),
       } satisfies SupportConversationSearchQueryDto);
       return {
-        items: response.items.flatMap((item) => {
-          const selection = actionableSelection(item);
-          return selection
-            ? [{
-                id: item.target.id,
-                kind: "CONVERSATION" as const,
-                selection,
-                snippet: item.snippet,
-                activityAt: item.activityAt,
-                matchProvenance: item.matchProvenance,
-                locale: item.matchLocale,
-              }]
-            : [];
-        }),
+        items: response.items.flatMap((item) => mapSupportSearchResult(item) ?? []),
         nextCursor: response.nextCursor ?? null,
-        freshness: mapFreshness(response.freshness),
+        freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
     if (request.scope === "MESSAGES") {
@@ -293,23 +285,9 @@ export const supportSearchSource: SupportSearchSource = {
         sort: contentSort(request),
       } satisfies SupportMessageSearchQueryDto);
       return {
-        items: response.items.flatMap((item) => {
-          const selection = actionableSelection(item);
-          return selection
-            ? [{
-                id: item.target.id,
-                kind: "MESSAGE" as const,
-                selection,
-                snippet: item.snippet,
-                activityAt: item.activityAt,
-                matchProvenance: item.matchProvenance,
-                locale: item.matchLocale ?? item.language,
-                role: item.role,
-              }]
-            : [];
-        }),
+        items: response.items.flatMap((item) => mapSupportSearchResult(item) ?? []),
         nextCursor: response.nextCursor ?? null,
-        freshness: mapFreshness(response.freshness),
+        freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
     const response = await supportSearchUsers(
@@ -333,7 +311,7 @@ export const supportSearchSource: SupportSearchSource = {
         activityAt: item.lastSeenAt,
       })),
       nextCursor: response.nextCursor ?? null,
-      freshness: mapFreshness(response.freshness),
+      freshness: mapSupportSearchFreshness(response.freshness),
     };
   },
 };

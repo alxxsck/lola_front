@@ -12,7 +12,10 @@ describe("permission access", () => {
       expect.arrayContaining([
         "project.support.activity.read",
         "project.support.alerts.manage",
-        "project.support.search.read",
+      "project.support.search.read",
+      "project.support.saved_views.read",
+      "project.support.saved_views.self_manage",
+      "project.support.saved_views.manage",
         "project.support.macros.read",
         "project.support.macros.use",
         "project.support.macros.manage",

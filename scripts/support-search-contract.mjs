@@ -102,3 +102,38 @@ export function validateSupportSearchContract(contract) {
     ["kind", "id"],
   );
 }
+
+export function validateSupportViewsContract(contract) {
+  const operations = [
+    ["SavedSupportView_catalog", "SavedSupportViewCatalogResponseDto"],
+    ["SavedSupportView_create", "SavedSupportViewMutationResponseDto"],
+    ["SavedSupportView_replace", "SavedSupportViewMutationResponseDto"],
+    ["SavedSupportView_publish", "SavedSupportViewMutationResponseDto"],
+    ["SavedSupportView_archive", "SavedSupportViewMutationResponseDto"],
+    ["SavedSupportView_query", "SavedSupportViewQueryResponseDto"],
+    ["SavedSupportView_defaultView", "SupportDefaultViewResponseDto"],
+    ["SavedSupportView_replaceDefaultView", "SupportDefaultViewResponseDto"],
+    ["SupportViewPreset_catalog", "SupportViewPresetCatalogResponseDto"],
+    ["SupportViewPreset_queryAllCases", "SupportViewPresetCaseQueryResponseDto"],
+    ["SupportViewPreset_queryAllConversations", "SupportViewPresetConversationQueryResponseDto"],
+    ["SupportViewPreset_query", "SupportViewPresetCaseQueryResponseDto"],
+    ["SupportViewPreset_queryMyTeamUnassigned", "SupportViewPresetCaseQueryResponseDto"],
+  ];
+  for (const [operationId, responseName] of operations) {
+    const target = operation(contract, operationId);
+    if (!target["x-iam-permission"] && !target["x-iam-any-permission"])
+      throw new Error(`${operationId} must retain IAM authority`);
+    if (target.responses?.["200"]?.content?.["application/json"]?.schema?.$ref !== `#/components/schemas/${responseName}`)
+      throw new Error(`${operationId} must publish ${responseName}`);
+  }
+  for (const operationId of ["SavedSupportView_create", "SavedSupportView_replace", "SavedSupportView_publish", "SavedSupportView_archive", "SavedSupportView_replaceDefaultView"]) {
+    const names = operation(contract, operationId).parameters?.map((parameter) => parameter.name) ?? [];
+    if (!names.includes("Idempotency-Key")) throw new Error(`${operationId} requires Idempotency-Key`);
+    if (operationId !== "SavedSupportView_create" && !names.includes("If-Match"))
+      throw new Error(`${operationId} requires If-Match`);
+  }
+  requireEnum(requiredSchema(contract, "SupportViewPresetResponseDto").properties.code, "SupportViewPresetResponseDto.code", ["MY_ACTIVE", "MY_TEAM_UNASSIGNED", "ALL_CASES", "ALL_CONVERSATIONS"]);
+  requireEnum(requiredSchema(contract, "SavedSupportViewCountResponseDto").properties.state, "SavedSupportViewCountResponseDto.state", ["EXACT", "LOWER_BOUND", "UNAVAILABLE"]);
+  requireFields(requiredSchema(contract, "SavedSupportViewResponseDto"), "SavedSupportViewResponseDto", ["id", "scope", "etag", "permissions", "count", "freshness"]);
+  requireFields(requiredSchema(contract, "SupportDefaultViewResponseDto"), "SupportDefaultViewResponseDto", ["selection", "available", "etag", "version"]);
+}

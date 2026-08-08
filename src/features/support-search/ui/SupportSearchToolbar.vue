@@ -15,6 +15,7 @@ const props = defineProps<{
   modelValue: SupportSearchRouteState;
   active: boolean;
   loading: boolean;
+  locked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -211,7 +212,7 @@ function submit(): void {
       </button>
     </form>
 
-    <div v-if="active" class="search-controls">
+    <div v-if="active && !locked" class="search-controls">
       <label>
         <span class="sr-only">Область поиска</span>
         <select
@@ -332,7 +333,7 @@ function submit(): void {
       </button>
     </div>
 
-    <div v-if="active && chips.length" class="filter-chips" aria-label="Активные фильтры">
+    <div v-if="active && !locked && chips.length" class="filter-chips" aria-label="Активные фильтры">
       <span v-for="chip in chips" :key="chip">{{ chip }}</span>
     </div>
   </section>
