@@ -457,8 +457,8 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
 const mockCapabilities: SupportWorkspaceSelection["capabilities"] = {
   assignCase: false,
   claimAssignment: false,
-  escalateCase: false,
-  manageCase: false,
+  escalateCase: true,
+  manageCase: true,
   releaseAssignment: false,
   reply: true,
   replyWithoutTranslation: false,
@@ -659,7 +659,12 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       checkpoint: `mock:${projectId}:${target.caseId ?? conversationId}`,
       capabilitiesRevision: "mock-read-only",
       actionRevisions: {},
-      classificationOptions: [{ code: "GENERAL", label: "Общие вопросы" }],
+      classificationOptions: [
+        { code: "PAYMENTS", label: "Платежи" },
+        { code: "GAMES", label: "Игры" },
+        { code: "ACCOUNT", label: "Аккаунт" },
+        { code: "GENERAL", label: "Общие вопросы" },
+      ],
       capabilities: mockCapabilities,
       endUser: {
         id: endUserId,

@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { ref } from "vue";
 import { describe, expect, it } from "vitest";
 import type { ProfileProjectionResponseDto } from "@/shared/api/generated/models";
 import type {
@@ -138,12 +139,37 @@ describe("support conversation context", () => {
     expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
   });
 
-  it("exposes exactly user, Case, and actions tabs", () => {
+  it("keeps the bounded Case projection for a conversation-only operator", async () => {
+    const wrapper = mount(SupportConversationContext, {
+      props: {
+        conversation,
+        selection,
+        canReadCaseDesk: false,
+        caseDesk: { exactCase: ref(null) } as never,
+      },
+      global: {
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Message: { template: "<div><slot /></div>" },
+          SupportCaseDesk: { template: '<div data-testid="exact-case-desk" />' },
+        },
+      },
+    });
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
+    expect(wrapper.find('[data-testid="exact-case-desk"]').exists()).toBe(false);
+    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
+      "Проверить возврат бонусов",
+    );
+  });
+
+  it("exposes user, Case, causal history, and actions tabs", () => {
     const wrapper = render();
 
     expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
       "Пользователь",
       "Кейс",
+      "История",
       "Действия",
     ]);
   });
@@ -170,7 +196,7 @@ describe("support conversation context", () => {
       },
     });
 
-    await allowed.findAll('[role="tab"]')[2]!.trigger("click");
+    await allowed.findAll('[role="tab"]')[3]!.trigger("click");
     expect(denied.text()).not.toContain("Внутренние заметки");
     expect(allowed.text()).toContain("Внутренние заметки");
     await allowed.get(".internal-notes-link").trigger("click");
@@ -214,8 +240,8 @@ describe("support conversation context", () => {
       },
     });
 
-    await denied.findAll('[role="tab"]')[2]!.trigger("click");
-    await allowed.findAll('[role="tab"]')[2]!.trigger("click");
+    await denied.findAll('[role="tab"]')[3]!.trigger("click");
+    await allowed.findAll('[role="tab"]')[3]!.trigger("click");
     expect(denied.findComponent(SupportAssignmentRelease).exists()).toBe(false);
     expect(allowed.findComponent(SupportAssignmentRelease).exists()).toBe(true);
   });
@@ -265,6 +291,60 @@ describe("support conversation context", () => {
     });
     await critical.findAll('[role="tab"]')[1]!.trigger("click");
     expect(critical.get('[aria-label="Кейс"]').text()).toContain("Критический");
+  });
+
+  it("renders a causal activity diff without leaking raw enum payloads", async () => {
+    const caseDesk = {
+      detail: ref({
+        timeline: {
+          events: [
+            {
+              id: "event-1",
+              type: "CORRECTED",
+              caseVersion: 8,
+              actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+              reason: "Проверено по данным провайдера",
+              previous: { groupCode: "BILLING", priority: "HIGH" },
+              next: { groupCode: "GENERAL", priority: "HIGH" },
+              createdAt: "2026-08-06T10:15:00.000Z",
+            },
+          ],
+          revisions: [],
+        },
+      }),
+      exactCase: ref(null),
+      loading: ref(false),
+      mutating: ref(false),
+      error: ref(null),
+      conflict: ref(null),
+    };
+    const wrapper = mount(SupportConversationContext, {
+      props: {
+        conversation,
+        selection: {
+          ...selection,
+          classificationOptions: [
+            ...selection.classificationOptions,
+            { code: "GENERAL", label: "Общие вопросы" },
+          ],
+        },
+        caseDesk: caseDesk as never,
+      },
+      global: {
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Message: { template: "<div><slot /></div>" },
+          SupportCaseDesk: true,
+        },
+      },
+    });
+
+    await wrapper.findAll('[role="tab"]')[2]!.trigger("click");
+    const activity = wrapper.get('[aria-label="История кейса"]');
+    expect(activity.text()).toContain("Платежи и расчёты");
+    expect(activity.text()).toContain("Общие вопросы");
+    expect(activity.text()).not.toContain("groupCode");
+    expect(activity.text()).not.toContain("HIGH");
   });
 
   it("renders allowed and redacted profile fields but removes forbidden fields", async () => {

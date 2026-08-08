@@ -15,8 +15,8 @@ import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
-import { useEndUserCasesStore } from "@/features/end-user-cases/model/end-user-cases.store";
-import EndUserCaseDialogs from "@/features/end-user-cases/ui/EndUserCaseDialogs.vue";
+import { endUserCasesRepository } from "@/features/end-user-cases/api/end-user-cases-repository";
+import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
 import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
 import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
@@ -100,7 +100,6 @@ import type {
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 
 const auth = useAuthStore();
-const endUserCases = useEndUserCasesStore();
 const aiSuspension = useConversationAISuspensionStore();
 const route = useRoute();
 const router = useRouter();
@@ -237,7 +236,7 @@ const supportSearchRouteKeys = new Set([
 ]);
 let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
-const caseDialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
+const supportContext = ref<InstanceType<typeof SupportConversationContext> | null>(null);
 const workspaceFullscreen = ref(true);
 const workspacePresentedFullscreen = ref(true);
 const workspacePresentationTransitioning = ref(false);
@@ -715,6 +714,47 @@ const canManageSelectedCase = computed(
       "project.cases.manage",
     ),
 );
+const canReadSelectedCaseDesk = computed(
+  () =>
+    Boolean(conversation.selection.value?.case) &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.cases.read",
+    ),
+);
+const caseDesk = createSupportCaseDeskController(endUserCasesRepository, {
+  projectId: () => auth.project?.id ?? "",
+  caseId: () => conversation.selection.value?.case?.id ?? "",
+  canRead: () => canReadSelectedCaseDesk.value,
+  async onProjectionChanged() {
+    await Promise.all([inbox.load(), conversation.reconcile()]);
+  },
+  async onForbidden() {
+    try {
+      await auth.refreshContext();
+    } catch {
+      // The exact Case projection is already purged and stays fail-closed.
+    }
+    await Promise.allSettled([inbox.load(), conversation.reconcile()]);
+  },
+});
+const selectedCaseDeskAuthorityKey = computed(() => {
+  const selection = conversation.selection.value;
+  return [
+    auth.project?.id ?? "",
+    selection?.case?.id ?? "",
+    canReadSelectedCaseDesk.value ? "read" : "denied",
+  ].join("\u0000");
+});
+const selectedCaseDeskFreshnessKey = computed(() => {
+  const selection = conversation.selection.value;
+  return [
+    auth.project?.id ?? "",
+    selection?.case?.id ?? "",
+    selection?.case?.version ?? "",
+    selection?.capabilitiesRevision ?? "",
+  ].join("\u0000");
+});
 const internalNotesAccessDenied = ref(false);
 const canReadSelectedInternalNotes = computed(
   () =>
@@ -1058,9 +1098,13 @@ async function openSupportSearchResult(item: SupportSearchResult): Promise<void>
 async function classifySelectedCase(): Promise<void> {
   const caseId = conversation.selection.value?.case?.id;
   if (!caseId || !canManageSelectedCase.value) return;
-  await endUserCases.open(caseId);
+  if (isMobileWorkspace.value) {
+    await router.push({ query: { ...route.query, panel: "inspector" } });
+  } else if (isCompactWorkspace.value) {
+    contextDrawerVisible.value = true;
+  }
   await nextTick();
-  caseDialogs.value?.requestClassification();
+  supportContext.value?.requestClassification();
 }
 
 async function backToInbox(): Promise<void> {
@@ -1637,6 +1681,7 @@ watch(
     routingOffers.reset();
     profile.reset();
     internalNotes.reset();
+    caseDesk.reset();
     reply.reset();
     messageDelivery.reset();
     replyTranslationRequested.value = false;
@@ -1770,6 +1815,30 @@ watch(
 watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
   if (authorityKey !== previousAuthorityKey) assignmentRelease.reset();
 });
+
+watch(
+  selectedCaseDeskAuthorityKey,
+  async (authorityKey, previousAuthorityKey) => {
+    if (authorityKey === previousAuthorityKey) return;
+    caseDesk.reset();
+    if (canReadSelectedCaseDesk.value) await caseDesk.load().catch(() => undefined);
+  },
+  { immediate: true },
+);
+
+watch(
+  selectedCaseDeskFreshnessKey,
+  async (freshnessKey, previousFreshnessKey) => {
+    if (
+      freshnessKey === previousFreshnessKey ||
+      !canReadSelectedCaseDesk.value ||
+      caseDesk.mutating.value ||
+      caseDesk.exactCase.value?.id !== conversation.selection.value?.case?.id
+    )
+      return;
+    await caseDesk.load().catch(() => undefined);
+  },
+);
 
 watch(inboxMode, async () => {
   inbox.reset();
@@ -2349,8 +2418,11 @@ onBeforeUnmount(() => {
           @update:drawer-visible="contextDrawerVisible = $event"
         >
           <SupportConversationContext
+            ref="supportContext"
             :conversation="selectedConversation"
             :selection="conversation.selection.value"
+            :case-desk="caseDesk"
+            :can-read-case-desk="canReadSelectedCaseDesk"
             :can-manage-case="canManageSelectedCase"
             :can-release-assignment="canReleaseSelectedAssignment"
             :can-read-internal-notes="canReadSelectedInternalNotes"
@@ -2416,13 +2488,6 @@ onBeforeUnmount(() => {
           @retry-after-reconcile="availability.retryAfterReconcile"
         />
       </Dialog>
-      <EndUserCaseDialogs
-        v-if="canManageSelectedCase"
-        ref="caseDialogs"
-        :classification-options="
-          conversation.selection.value?.classificationOptions ?? []
-        "
-      />
       <SupportInternalNotesDialog
         v-if="
           canReadSelectedInternalNotes && conversation.selection.value?.case

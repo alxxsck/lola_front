@@ -3,6 +3,8 @@ import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
 import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
+import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
+import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
 import type { SupportAssignmentReleaseInput } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import type {
   ProfileProjectionResponseDto,
@@ -23,6 +25,7 @@ const props = withDefaults(
     conversation: SupportWorkspaceConversation | null;
     selection: SupportWorkspaceSelection;
     canManageCase?: boolean;
+    canReadCaseDesk?: boolean;
     canReleaseAssignment?: boolean;
     canReadInternalNotes?: boolean;
     canReadProfile?: boolean;
@@ -36,10 +39,12 @@ const props = withDefaults(
       completed: boolean;
       canRetry: boolean;
     };
+    caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
   }>(),
   {
     canReadProfile: false,
     canManageCase: false,
+    canReadCaseDesk: false,
     canReleaseAssignment: false,
     canReadInternalNotes: false,
     profile: null,
@@ -63,11 +68,13 @@ const emit = defineEmits<{
   classifyCase: [];
 }>();
 
-type InspectorTab = "USER" | "CASE" | "ACTIONS";
+type InspectorTab = "USER" | "CASE" | "ACTIVITY" | "ACTIONS";
 const activeTab = ref<InspectorTab>("USER");
+const caseDeskView = ref<InstanceType<typeof SupportCaseDesk> | null>(null);
 const inspectorTabs = [
   { id: "USER" as const, label: "Пользователь", icon: "pi pi-user" },
   { id: "CASE" as const, label: "Кейс", icon: "pi pi-briefcase" },
+  { id: "ACTIVITY" as const, label: "История", icon: "pi pi-history" },
   { id: "ACTIONS" as const, label: "Действия", icon: "pi pi-bolt" },
 ];
 
@@ -160,6 +167,92 @@ function profileClassificationLabel(
     }[value] ?? value
   );
 }
+
+function requestClassification(): void {
+  activeTab.value = "CASE";
+  if (props.caseDesk) {
+    caseDeskView.value?.requestClassification();
+    return;
+  }
+  emit("classifyCase");
+}
+
+function activityTypeLabel(value: string): string {
+  return (
+    {
+      CREATED: "Кейс создан",
+      UPDATED: "Кейс обновлён",
+      STATUS_CHANGED: "Статус изменён",
+      CORRECTED: "Классификация уточнена",
+      ASSIGNED: "Назначение изменено",
+      REOPENED: "Кейс переоткрыт",
+      ADMIN_ATTENTION_REQUESTED: "Запрошена эскалация",
+      ADMIN_ATTENTION_CLAIMED: "Эскалация принята",
+      ADMIN_ATTENTION_RELEASED: "Эскалация освобождена",
+      ADMIN_ATTENTION_TRANSFERRED: "Эскалация передана",
+      ADMIN_ATTENTION_CLOSED: "Эскалация закрыта",
+      ADMIN_ATTENTION_CANCELLED: "Эскалация отменена",
+    }[value] ?? "Кейс обновлён"
+  );
+}
+
+function activityActorLabel(actor: { type: string; cmsUserId?: string | null }): string {
+  if (actor.type === "CMS_USER") return actor.cmsUserId ? `Оператор ${actor.cmsUserId}` : "Оператор";
+  if (actor.type === "BREAK_GLASS") return "Break-glass операция";
+  if (actor.type === "SYSTEM_OR_BREAK_GLASS")
+    return "Система или break-glass";
+  return "Система";
+}
+
+const activityFieldLabels: Record<string, string> = {
+  status: "Статус",
+  groupCode: "Категория",
+  type: "Тип",
+  impact: "Влияние",
+  urgency: "Срочность",
+  priority: "Приоритет",
+};
+
+function activityValueLabel(key: string, value: unknown): string {
+  if (typeof value !== "string") return "—";
+  if (key === "status") return labelCaseStatus(value);
+  if (key === "priority") return labelCasePriority(value);
+  if (key === "groupCode")
+    return (
+      props.selection.classificationOptions.find((item) => item.code === value)
+        ?.label ?? value
+    );
+  return (
+    {
+      INFORMATION_REQUEST: "Информационный запрос",
+      PROBLEM_RESOLUTION: "Решение проблемы",
+      DECISION_SUPPORT: "Помощь с решением",
+      ACTION_REQUEST: "Запрос действия",
+      FEEDBACK: "Обратная связь",
+      OTHER: "Другое",
+      LOW: "Низкое",
+      MEDIUM: "Среднее",
+      HIGH: "Высокое",
+      CRITICAL: "Критическое",
+      IMMEDIATE: "Немедленная",
+    }[value] ?? value
+  );
+}
+
+function activityChanges(previous: unknown, next: unknown) {
+  const before = previous && typeof previous === "object" ? previous as Record<string, unknown> : {};
+  const after = next && typeof next === "object" ? next as Record<string, unknown> : {};
+  return Object.keys(activityFieldLabels)
+    .filter((key) => before[key] !== after[key] && (before[key] !== undefined || after[key] !== undefined))
+    .map((key) => ({
+      key,
+      label: activityFieldLabels[key]!,
+      previous: activityValueLabel(key, before[key]),
+      next: activityValueLabel(key, after[key]),
+    }));
+}
+
+defineExpose({ requestClassification });
 </script>
 
 <template>
@@ -284,7 +377,13 @@ function profileClassificationLabel(
       class="inspector-section case-section"
       aria-label="Кейс"
     >
-      <template v-if="selection.case">
+      <SupportCaseDesk
+        v-if="canReadCaseDesk && caseDesk && selection.case"
+        ref="caseDeskView"
+        :controller="caseDesk"
+        :classification-options="selection.classificationOptions"
+      />
+      <template v-else-if="selection.case">
         <header class="case-header">
           <span class="section-kicker"
             >Кейс #{{ selection.case.projectSequence }}</span
@@ -334,6 +433,42 @@ function profileClassificationLabel(
     </section>
 
     <section
+      v-if="activeTab === 'ACTIVITY'"
+      class="inspector-section activity-section"
+      aria-label="История кейса"
+    >
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">Журнал</span>
+          <h3>Кто, что и почему изменил</h3>
+        </div>
+      </div>
+      <ol v-if="caseDesk?.detail.value?.timeline.events.length" class="activity-list">
+        <li v-for="event in [...caseDesk.detail.value.timeline.events].reverse()" :key="event.id">
+          <span class="activity-marker" aria-hidden="true" />
+          <div>
+            <header>
+              <strong>{{ activityTypeLabel(event.type) }}</strong>
+              <time :datetime="event.createdAt">{{ relativeTime(event.createdAt) }}</time>
+            </header>
+            <p>{{ activityActorLabel(event.actor) }} · версия {{ event.caseVersion }}</p>
+            <p v-if="event.reason" class="activity-reason">{{ event.reason }}</p>
+            <dl v-if="activityChanges(event.previous, event.next).length" class="activity-change">
+              <div v-for="change in activityChanges(event.previous, event.next)" :key="change.key">
+                <dt>{{ change.label }}</dt>
+                <dd><span>{{ change.previous }}</span><i aria-hidden="true">→</i><strong>{{ change.next }}</strong></dd>
+              </div>
+            </dl>
+          </div>
+        </li>
+      </ol>
+      <div v-else class="empty-card">
+        <i class="pi pi-history" aria-hidden="true" />
+        <p>События кейса пока не зафиксированы.</p>
+      </div>
+    </section>
+
+    <section
       v-if="activeTab === 'ACTIONS'"
       class="inspector-section actions-section"
       aria-label="Действия"
@@ -352,7 +487,7 @@ function profileClassificationLabel(
           icon="pi pi-tags"
           severity="secondary"
           outlined
-          @click="emit('classifyCase')"
+          @click="requestClassification"
         />
         <Button
           v-if="canReadInternalNotes"
@@ -385,7 +520,7 @@ function profileClassificationLabel(
 <style scoped>
 .inspector-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2px;
   margin: -4px -8px 24px;
   padding: 4px;
@@ -544,6 +679,21 @@ function profileClassificationLabel(
   width: 100%;
   justify-content: flex-start;
 }
+.activity-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.activity-list li { position: relative; display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; padding-bottom: 18px; }
+.activity-list li:not(:last-child)::before { content: ""; position: absolute; top: 11px; bottom: 0; left: 5px; width: 1px; background: var(--line); }
+.activity-marker { position: relative; z-index: 1; width: 11px; height: 11px; margin-top: 4px; border: 3px solid var(--surface); border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 1px var(--line); }
+.activity-list header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.activity-list strong { font-size: .76rem; }
+.activity-list time, .activity-list p { margin: 4px 0 0; color: var(--text-muted); font-size: .67rem; line-height: 1.4; }
+.activity-list .activity-reason { color: var(--text-primary); }
+.activity-list .activity-change { display: grid; gap: 7px; margin: 8px 0 0; padding: 8px 9px; border-left: 2px solid var(--brand); background: var(--surface-muted); }
+.activity-change > div { display: grid; gap: 3px; }
+.activity-change dt { color: var(--text-muted); font-size: .62rem; }
+.activity-change dd { display: flex; align-items: center; gap: 6px; margin: 0; font-size: .68rem; overflow-wrap: anywhere; }
+.activity-change dd span { color: var(--text-muted); text-decoration: line-through; }
+.activity-change dd i { color: var(--brand); font-style: normal; }
+.activity-change dd strong { color: var(--text-primary); }
 .empty-card {
   display: grid;
   justify-items: center;

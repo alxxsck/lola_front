@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 09 — Объединить Cases и Conversations в одном inbox.
 
-**Status:** ready-for-frontend
+**Status:** completed
 
 **Backend gate (closed 2026-08-08):** backend `main` `2113c99` публикует полный
 server-owned workflow/classification contract: effective priority floor, confidence/evidence,
@@ -16,4 +16,4 @@ action-level authority, typed audit/errors и immutable policy pin.
 - [x] Разрешённые transitions включают open/wait/resolve/reopen/escalate без client-derived policy.
 - [x] Mutation использует allowed action, expected revision/etag и показывает changed state при `409`.
 - [x] Audit/activity отражает actor, reason, previous/next value и server timestamp.
-- [ ] Classification dialog старого Case UI больше не нужен в основном Support flow.
+- [x] Classification dialog старого Case UI больше не нужен в основном Support flow.

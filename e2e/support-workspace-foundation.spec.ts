@@ -265,12 +265,67 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
   if (usesMobileContextRoute || usesContextDrawer) {
     await page.getByRole("button", { name: "Контекст" }).click();
   }
-  await expect(context.getByRole("tab")).toHaveCount(3);
+  await expect(context.getByRole("tab")).toHaveCount(4);
   await expect(
     context.getByRole("tab", { name: "Пользователь" }),
   ).toBeVisible();
   await expect(context.getByRole("tab", { name: "Кейс" })).toBeVisible();
+  await expect(context.getByRole("tab", { name: "История" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Действия" })).toBeVisible();
+});
+
+test("changes Case classification through exact server authority and records the reason", async ({
+  page,
+}) => {
+  await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
+
+  const viewportWidth = page.viewportSize()?.width ?? 1440;
+  if (viewportWidth <= 1279)
+    await page.getByRole("button", { name: "Контекст" }).click();
+
+  const context =
+    viewportWidth <= 767
+      ? page.getByRole("region", { name: "Контекст диалога" })
+      : viewportWidth <= 1279
+        ? page.getByRole("dialog", { name: "Контекст диалога" })
+        : page.locator(".context-pane");
+  await context.getByRole("tab", { name: "Кейс" }).click();
+  await expect(context).toContainText("Кейс #48");
+  await expect(context).toContainText("AI-классификация");
+  await expect(context).toContainText("policy v7");
+
+  await context.getByRole("button", { name: "Изменить классификацию" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: "Классификация и приоритет",
+  });
+  await dialog.locator(".p-select").first().click();
+  await page.getByRole("option", { name: "Общие вопросы" }).click();
+  await dialog
+    .getByRole("textbox", { name: "Причина изменения" })
+    .fill("Проверено по данным провайдера");
+  await dialog.getByRole("button", { name: "Сохранить изменение" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(context).toContainText("Общие вопросы");
+
+  await context.getByRole("tab", { name: "История" }).click();
+  await expect(context).toContainText("Классификация уточнена");
+  await expect(context).toContainText("Проверено по данным провайдера");
+
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(
+    accessibility.violations.filter(
+      (violation) =>
+        violation.impact === "critical" || violation.impact === "serious",
+    ),
+  ).toEqual([]);
 });
 
 test("restores typed inbox routes with Back and Forward and keeps a Case without a fake chat", async ({

@@ -33,6 +33,7 @@ import type {
   EndUserCaseCommandResponseDto,
   EndUserCaseAssigneesResponseDto,
   EndUserCaseCostSummaryResponseDto,
+  EndUserCaseDetailResponseDto,
   EndUserCaseEscalationCommandResponseDto,
   EndUserCaseEscalationsResponseDto,
   EndUserCasePolicyPreviewResponseDto,
@@ -55,7 +56,6 @@ import type {
 } from "@/shared/api/generated/models";
 import {
   endUserCaseListParams,
-  type EndUserCase,
   type EndUserCaseFilters,
   type EndUserCaseMessages,
   type EndUserCaseSummary,
@@ -65,7 +65,7 @@ import { isMockMode } from "@/shared/config/data-mode";
 import { mockEndUserCasesRepository } from "./mock-end-user-cases-repository";
 
 export interface EndUserCaseDetailBundle {
-  case: EndUserCase;
+  case: EndUserCaseDetailResponseDto;
   messages: EndUserCaseMessages;
   timeline: EndUserCaseTimeline;
   escalations: EndUserCaseEscalationsResponseDto;

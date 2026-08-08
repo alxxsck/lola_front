@@ -1,5 +1,6 @@
 import type {
   EndUserCaseEscalationResponseDto,
+  EndUserCaseDetailResponseDto,
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyRevisionResponseDto,
   EndUserCasePolicyResponseDto,
@@ -49,6 +50,14 @@ const primaryCase: EndUserCase = {
     "Платёж найден. Провайдер обрабатывает его дольше обычного; ожидаем проверяемый результат.",
   status: "WAITING_SYSTEM",
   availableStatuses: ["IN_PROGRESS", "WAITING_ADMIN", "RESOLVED"],
+  allowedActions: [
+    "SET_STATUS_IN_PROGRESS",
+    "SET_STATUS_RESOLVED",
+    "CHANGE_CLASSIFICATION",
+    "RAISE_PRIORITY",
+    "LOWER_PRIORITY_TO_FLOOR",
+    "REQUEST_ESCALATION",
+  ],
   classification: {
     source: "AI",
     confidence: 0.91,
@@ -62,6 +71,14 @@ const primaryCase: EndUserCase = {
   impact: "HIGH",
   urgency: "HIGH",
   priority: "URGENT",
+  priorityPolicy: {
+    effectiveFloor: "NORMAL",
+    overrideActive: false,
+    policyRevisionId: "policy-demo-7",
+    policyVersion: 7,
+    reasons: ["Финансовые обращения не могут быть ниже обычного приоритета"],
+    source: "PLATFORM_RULE",
+  },
   prioritySource: "PLATFORM_RULE",
   priorityReasons: ["Пользователь не получил деньги"],
   requiresSpecialist: false,
@@ -134,6 +151,15 @@ const mockSeed: EndUserCase[] = [
       claimedAt: null,
     },
     availableStatuses: ["IN_PROGRESS", "WAITING_END_USER", "RESOLVED"],
+    allowedActions: [
+      "SET_STATUS_IN_PROGRESS",
+      "SET_STATUS_WAITING_END_USER",
+      "SET_STATUS_RESOLVED",
+      "CHANGE_CLASSIFICATION",
+      "RAISE_PRIORITY",
+      "LOWER_PRIORITY_TO_FLOOR",
+      "REQUEST_ESCALATION",
+    ],
     priority: "HIGH",
     urgency: "MEDIUM",
     currentTone: "FRUSTRATED",
@@ -156,6 +182,12 @@ const mockSeed: EndUserCase[] = [
       "Пользователь подтвердил, что вошёл с новым паролем. Решение проверено.",
     status: "RESOLVED",
     availableStatuses: ["OPEN"],
+    allowedActions: [
+      "SET_STATUS_OPEN",
+      "CHANGE_CLASSIFICATION",
+      "RAISE_PRIORITY",
+      "LOWER_PRIORITY_TO_FLOOR",
+    ],
     priority: "NORMAL",
     urgency: "LOW",
     resolution: {
@@ -180,7 +212,11 @@ const mockEscalations = [structuredClone(requestedEscalation)];
 type MockTimelineEvent = {
   id: string;
   caseId: string;
-  type: "ADMIN_ATTENTION_REQUESTED" | "ADMIN_ATTENTION_CLAIMED";
+  type:
+    | "ADMIN_ATTENTION_REQUESTED"
+    | "ADMIN_ATTENTION_CLAIMED"
+    | "STATUS_CHANGED"
+    | "CORRECTED";
   caseVersion: number;
   projectSequence: string;
   actor: { type: "CMS_USER" | "SYSTEM"; cmsUserId: string | null };
@@ -292,6 +328,13 @@ function caseById(id: string): EndUserCase {
   return value;
 }
 
+function exactCaseById(id: string): EndUserCaseDetailResponseDto {
+  const value = caseById(id);
+  if (!value.allowedActions || !value.priorityPolicy)
+    throw new Error("Mock Case detail is missing server action authority");
+  return value as EndUserCaseDetailResponseDto;
+}
+
 function updateCase(
   id: string,
   patch: Partial<EndUserCase>,
@@ -391,7 +434,7 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
   },
   async detail(_projectId, caseId) {
     return {
-      case: structuredClone(caseById(caseId)),
+      case: structuredClone(exactCaseById(caseId)),
       messages: structuredClone(messages),
       timeline: {
         events: structuredClone(
@@ -432,7 +475,8 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
     };
   },
   async workflow(_projectId, caseId, command) {
-    return updateCase(
+    const previous = structuredClone(caseById(caseId));
+    const value = updateCase(
       caseId,
       {
         status: command.status,
@@ -449,6 +493,19 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       },
       command.expectedVersion,
     );
+    mockTimelineEvents.push({
+      id: `event-${caseId}-status-${value.version}`,
+      caseId,
+      type: "STATUS_CHANGED",
+      caseVersion: value.version,
+      projectSequence: value.projectSequence,
+      actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+      reason: command.reason,
+      previous: { status: previous.status },
+      next: { status: value.status },
+      createdAt: value.updatedAt,
+    });
+    return value;
   },
   async assign(_projectId, caseId, command) {
     return updateCase(
@@ -468,7 +525,8 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
     );
   },
   async classify(_projectId, caseId, command) {
-    return updateCase(
+    const previous = structuredClone(caseById(caseId));
+    const value = updateCase(
       caseId,
       {
         ...(command.groupCode ? { groupCode: command.groupCode } : {}),
@@ -479,6 +537,31 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       },
       command.expectedVersion,
     );
+    mockTimelineEvents.push({
+      id: `event-${caseId}-classification-${value.version}`,
+      caseId,
+      type: "CORRECTED",
+      caseVersion: value.version,
+      projectSequence: value.projectSequence,
+      actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+      reason: command.reason,
+      previous: {
+        groupCode: previous.groupCode,
+        type: previous.type,
+        impact: previous.impact,
+        urgency: previous.urgency,
+        priority: previous.priority,
+      },
+      next: {
+        groupCode: value.groupCode,
+        type: value.type,
+        impact: value.impact,
+        urgency: value.urgency,
+        priority: value.priority,
+      },
+      createdAt: value.updatedAt,
+    });
+    return value;
   },
   async linkMessage(_projectId, caseId, command) {
     return updateCase(caseId, {}, command.expectedVersion);
