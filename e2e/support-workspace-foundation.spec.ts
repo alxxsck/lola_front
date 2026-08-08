@@ -72,7 +72,30 @@ test("shows collaboration as a compact warning without blocking the shared compo
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
   const conversation = page.locator(".conversation-surface");
-  await expect(conversation.getByText(/Смотрит: Анна/)).toBeVisible();
+  const presence = conversation.getByRole("button", {
+    name: /1 наблюдатель.*Показать, кто сейчас смотрит диалог/,
+  });
+  await expect(presence).toBeVisible();
+  await presence.click();
+  const viewers = page.getByRole("region", {
+    name: "Кто сейчас смотрит диалог",
+  });
+  await expect(viewers).toBeVisible();
+  await expect(viewers).toContainText("Анна");
+  await expect(viewers).toContainText(
+    "Просмотр не означает назначение обращения",
+  );
+  expect(
+    await viewers.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      const topmost = document.elementFromPoint(
+        bounds.left + bounds.width / 2,
+        bounds.top + 12,
+      );
+      return Boolean(topmost && element.contains(topmost));
+    }),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
   await expect(
     conversation.getByText(/Илья Соколов печатает ответ/),
   ).toBeVisible();
@@ -95,7 +118,11 @@ test("shows collaboration as a compact warning without blocking the shared compo
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
   const mobileConversation = page.locator(".conversation-surface");
-  await expect(mobileConversation.getByText(/Смотрит: Анна/)).toBeVisible();
+  await expect(
+    mobileConversation.getByRole("button", {
+      name: /1 наблюдатель.*Показать, кто сейчас смотрит диалог/,
+    }),
+  ).toBeVisible();
   const mobileGeometry = await mobileConversation.evaluate((element) => ({
     left: element.getBoundingClientRect().left,
     right: element.getBoundingClientRect().right,

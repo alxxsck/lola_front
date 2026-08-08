@@ -132,3 +132,14 @@
   закрытую ленту, подробную историю и возвращает безопасный public mode.
 - Анимация раскрытия ленты — 180 ms opacity/translate/max-height; при
   `prefers-reduced-motion` отключается. Touch targets на mobile — не меньше 40–44px.
+
+## Conversation presence
+
+- В плотном заголовке presence показывается как компактная кнопка `eye + count`,
+  а не как постоянно растущая строка имён.
+- По клику открывается PrimeVue Popover со всем актуальным списком viewers;
+  одна и та же модель работает для одного и нескольких операторов.
+- Popover всегда поясняет, что просмотр не означает назначение Case. Presence,
+  claimant и assignment визуально и семантически не смешиваются.
+- Кнопка имеет минимум 44px по ширине, tabular count, keyboard focus и доступное
+  имя; popover помещается в mobile viewport и поднимается выше full-tab shell.
