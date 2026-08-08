@@ -117,6 +117,7 @@ import type {
   CmsAgentRequestPageResponseDto,
   CmsAgentRequestResponseDto,
   CmsAuthenticatedResponseDto,
+  CmsConversationCollaborationResponseDto,
   CmsConversationDeliveryRealtimeContractResponseDto,
   CmsConversationReadPositionResponseDto,
   CmsEmailChangeCancelledResponseDto,
@@ -542,6 +543,7 @@ import type {
   SupportContentRetentionPolicyResponseDto,
   SupportContentRetentionPreviewDto,
   SupportContentRolloutResponseDto,
+  SupportConversationCollaborationReadParams,
   SupportConversationSearchQueryDto,
   SupportDefaultViewResponseDto,
   SupportEndUserSearchQueryDto,
@@ -6054,6 +6056,27 @@ export const adminProjectConversationsList = (
   return request<AdminProjectConversationsPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/conversations`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Reconcile viewers, typing leases and safe other-operator reply collision state
+ */
+export const supportConversationCollaborationRead = (
+  projectId: string,
+  conversationId: string,
+  params?: SupportConversationCollaborationReadParams,
+  options?: SecondParameter<
+    typeof request<CmsConversationCollaborationResponseDto>
+  >,
+) => {
+  return request<CmsConversationCollaborationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/conversations/${conversationId}/collaboration`,
       method: "GET",
       params,
     },
@@ -12084,6 +12107,9 @@ export type SupportContentGovernanceUpdateRolloutResult = NonNullable<
 >;
 export type AdminProjectConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminProjectConversationsList>>
+>;
+export type SupportConversationCollaborationReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportConversationCollaborationRead>>
 >;
 export type AdminConversationCollaborationGetResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationCollaborationGet>>

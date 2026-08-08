@@ -11,6 +11,8 @@ export type CmsConversationReadPositionErrorBodyDtoCode =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CmsConversationReadPositionErrorBodyDtoCode = {
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
   REQUEST_VALIDATION_FAILED: "REQUEST_VALIDATION_FAILED",
   IAM_AUTHORIZATION_REQUIRED: "IAM_AUTHORIZATION_REQUIRED",
   NOT_FOUND_OR_FORBIDDEN: "NOT_FOUND_OR_FORBIDDEN",

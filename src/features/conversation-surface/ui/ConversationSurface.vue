@@ -13,9 +13,11 @@ import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-su
 import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
 import { relativeTime } from "@/shared/lib/format";
 import ConversationComposer from "./ConversationComposer.vue";
+import ConversationCollaborationStatus from "./ConversationCollaborationStatus.vue";
 import {
   conversationSurfaceDraftKey,
   type ConversationSurfaceAISuspensionCapability,
+  type ConversationSurfaceCollaboration,
   type ConversationSurfaceComposer,
   type ConversationSurfaceComposerAction,
   type ConversationSurfaceHistory,
@@ -37,6 +39,7 @@ const props = defineProps<{
   translation: ConversationSurfaceTranslation;
   composer: ConversationSurfaceComposer;
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
+  collaboration?: ConversationSurfaceCollaboration;
 }>();
 
 const emit = defineEmits<{
@@ -530,6 +533,11 @@ onBeforeUnmount(() => {
         <h2>{{ title }}</h2>
       </div>
       <div class="conversation-surface__toolbar-actions">
+        <ConversationCollaborationStatus
+          v-if="collaboration"
+          variant="PRESENCE"
+          :collaboration="collaboration"
+        />
         <ConversationAISuspensionHeaderActions
           v-if="aiSuspension"
           :entry="aiSuspension.entry"
@@ -772,28 +780,35 @@ onBeforeUnmount(() => {
       <i class="pi pi-arrow-down" aria-hidden="true" />
     </button>
 
-    <ConversationComposer
-      v-if="composer.visibility !== 'HIDDEN'"
-      :composer="composer"
-      :draft="draft"
-      :working-locale-label="translation.workingLocaleLabel"
-      @update:draft="updateDraft"
-      @send-source="requestSend"
-      @request-reply-translation="emit('request-reply-translation')"
-      @reconcile-reply-translation="emit('reconcile-reply-translation')"
-      @retry-reply-translation="emit('retry-reply-translation')"
-      @save-reply-translation="emit('save-reply-translation', $event)"
-      @send-reply-translation="requestTranslatedSend"
-      @check-send-outcome="emit('check-send-outcome')"
-      @discard-send-attempt="emit('discard-send-attempt')"
-      @action="emit('composer-action', $event)"
-    />
-    <p
-      v-else-if="composer.sendCapability.kind === 'BLOCKED'"
-      class="conversation-surface__unavailable"
-    >
-      {{ composer.sendCapability.reason }}
-    </p>
+    <div class="conversation-surface__footer">
+      <ConversationCollaborationStatus
+        v-if="collaboration"
+        variant="COLLISION"
+        :collaboration="collaboration"
+      />
+      <ConversationComposer
+        v-if="composer.visibility !== 'HIDDEN'"
+        :composer="composer"
+        :draft="draft"
+        :working-locale-label="translation.workingLocaleLabel"
+        @update:draft="updateDraft"
+        @send-source="requestSend"
+        @request-reply-translation="emit('request-reply-translation')"
+        @reconcile-reply-translation="emit('reconcile-reply-translation')"
+        @retry-reply-translation="emit('retry-reply-translation')"
+        @save-reply-translation="emit('save-reply-translation', $event)"
+        @send-reply-translation="requestTranslatedSend"
+        @check-send-outcome="emit('check-send-outcome')"
+        @discard-send-attempt="emit('discard-send-attempt')"
+        @action="emit('composer-action', $event)"
+      />
+      <p
+        v-else-if="composer.sendCapability.kind === 'BLOCKED'"
+        class="conversation-surface__unavailable"
+      >
+        {{ composer.sendCapability.reason }}
+      </p>
+    </div>
   </section>
 </template>
 

@@ -10166,6 +10166,128 @@
         ],
         "type": "object"
       },
+      "CmsConversationCollaborationCollisionDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messageOrdinal": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "observedMessageOrdinal": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "NOT_ARMED",
+              "CLEAR",
+              "OTHER_OPERATOR_REPLIED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "CmsConversationCollaborationErrorAckDto": {
+        "properties": {
+          "error": {
+            "enum": [
+              "UNAUTHORIZED",
+              "RATE_LIMITED",
+              "CONVERSATION_ID_INVALID",
+              "CONVERSATION_NOT_FOUND",
+              "GENERATION_INVALID",
+              "WATCH_NOT_FOUND",
+              "WATCH_GENERATION_STALE",
+              "WATCH_LIMIT_EXCEEDED",
+              "SESSION_SOCKET_LIMIT_EXCEEDED",
+              "PROJECT_SOCKET_LIMIT_EXCEEDED",
+              "CONVERSATION_SOCKET_LIMIT_EXCEEDED",
+              "WATCH_IDENTITY_INVALID",
+              "TYPING_STATE_INVALID",
+              "TYPING_GENERATION_STALE",
+              "TYPING_RATE_LIMITED",
+              "COLLABORATION_UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "error"
+        ],
+        "type": "object"
+      },
+      "CmsConversationCollaborationResponseDto": {
+        "properties": {
+          "collision": {
+            "$ref": "#/components/schemas/CmsConversationCollaborationCollisionDto"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "currentMessageOrdinal": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 0..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^(?:0|[1-9][0-9]{0,18})$",
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "typers": {
+            "items": {
+              "$ref": "#/components/schemas/CmsConversationTyperDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "viewers": {
+            "items": {
+              "$ref": "#/components/schemas/CmsConversationViewerDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": [
+          "conversationId",
+          "generation",
+          "observedAt",
+          "viewers",
+          "typers",
+          "currentMessageOrdinal",
+          "collision"
+        ],
+        "type": "object"
+      },
       "CmsConversationDeliveryRealtimeContractResponseDto": {
         "properties": {
           "authority": {
@@ -10173,6 +10295,23 @@
               "REST_AUTHORITATIVE"
             ],
             "type": "string"
+          },
+          "collaborationReadOperationId": {
+            "enum": [
+              "SupportConversationCollaboration_read"
+            ],
+            "type": "string"
+          },
+          "collisionSources": {
+            "items": {
+              "enum": [
+                "OTHER_OPERATOR_TYPING",
+                "OTHER_OPERATOR_MESSAGE_UPSERT",
+                "AUTHORITATIVE_COLLABORATION_READ"
+              ],
+              "type": "string"
+            },
+            "type": "array"
           },
           "contractVersion": {
             "enum": [
@@ -10259,6 +10398,66 @@
             ],
             "type": "string"
           },
+          "typingAckSchemaRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "typingCommand": {
+            "enum": [
+              "conversation.typing.v1"
+            ],
+            "type": "string"
+          },
+          "typingGenerationPolicy": {
+            "enum": [
+              "EXACT_WATCH_GENERATION_AND_MONOTONIC_TRANSITION_REVISION"
+            ],
+            "type": "string"
+          },
+          "typingHintEvent": {
+            "enum": [
+              "conversation.typing.hint.v1"
+            ],
+            "type": "string"
+          },
+          "typingHintPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationTypingHintEventDto"
+            ],
+            "type": "string"
+          },
+          "typingRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationTypingRequestDto"
+            ],
+            "type": "string"
+          },
+          "typingTtlSeconds": {
+            "enum": [
+              5
+            ],
+            "type": "number"
+          },
+          "unwatchAckSchemaRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unwatchCommand": {
+            "enum": [
+              "conversation.unwatch.v1"
+            ],
+            "type": "string"
+          },
+          "unwatchRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationGenerationRequestDto"
+            ],
+            "type": "string"
+          },
           "upsertEvent": {
             "enum": [
               "conversation.message.delivery.upserted.v1"
@@ -10270,6 +10469,72 @@
               "#/components/schemas/CmsConversationDeliveryRealtimeUpsertEventDto"
             ],
             "type": "string"
+          },
+          "viewersSnapshotEvent": {
+            "enum": [
+              "conversation.viewers.snapshot.v1"
+            ],
+            "type": "string"
+          },
+          "viewersSnapshotPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationViewersSnapshotEventDto"
+            ],
+            "type": "string"
+          },
+          "watchAckSchemaRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "watchCommand": {
+            "enum": [
+              "conversation.watch.v1"
+            ],
+            "type": "string"
+          },
+          "watchRenewAckSchemaRefs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "watchRenewCommand": {
+            "enum": [
+              "conversation.watch.renew.v1"
+            ],
+            "type": "string"
+          },
+          "watchRenewRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationGenerationRequestDto"
+            ],
+            "type": "string"
+          },
+          "watchRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationWatchRequestDto"
+            ],
+            "type": "string"
+          },
+          "watchRevokedEvent": {
+            "enum": [
+              "conversation.watch.revoked.v1"
+            ],
+            "type": "string"
+          },
+          "watchRevokedPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationWatchRevokedEventDto"
+            ],
+            "type": "string"
+          },
+          "watchTtlSeconds": {
+            "enum": [
+              60
+            ],
+            "type": "number"
           }
         },
         "required": [
@@ -10289,7 +10554,30 @@
           "mergePolicy",
           "eventSequenceUsage",
           "requireProjectGenerationGuard",
-          "requireSelectionGenerationGuard"
+          "requireSelectionGenerationGuard",
+          "watchCommand",
+          "watchRenewCommand",
+          "unwatchCommand",
+          "typingCommand",
+          "viewersSnapshotEvent",
+          "typingHintEvent",
+          "watchRevokedEvent",
+          "collaborationReadOperationId",
+          "collisionSources",
+          "watchTtlSeconds",
+          "typingTtlSeconds",
+          "typingGenerationPolicy",
+          "watchRequestSchemaRef",
+          "watchAckSchemaRefs",
+          "watchRenewRequestSchemaRef",
+          "watchRenewAckSchemaRefs",
+          "unwatchRequestSchemaRef",
+          "unwatchAckSchemaRefs",
+          "typingRequestSchemaRef",
+          "typingAckSchemaRefs",
+          "viewersSnapshotPayloadSchemaRef",
+          "typingHintPayloadSchemaRef",
+          "watchRevokedPayloadSchemaRef"
         ],
         "type": "object"
       },
@@ -10485,6 +10773,26 @@
         ],
         "type": "object"
       },
+      "CmsConversationGenerationRequestDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "generation"
+        ],
+        "type": "object"
+      },
       "CmsConversationMessageAuthorRealtimeDto": {
         "properties": {
           "avatarAsset": {
@@ -10677,6 +10985,8 @@
         "properties": {
           "code": {
             "enum": [
+              "UNAUTHORIZED",
+              "FORBIDDEN",
               "REQUEST_VALIDATION_FAILED",
               "IAM_AUTHORIZATION_REQUIRED",
               "NOT_FOUND_OR_FORBIDDEN",
@@ -10872,6 +11182,414 @@
           "messageId",
           "occurredAt",
           "translation"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTyperDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revision": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "watchGeneration": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "displayName",
+          "watchGeneration",
+          "revision",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTypingHintEventDto": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/CmsConversationViewerDto"
+          },
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "isTyping": {
+            "type": "boolean"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "watchGeneration": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "conversationId",
+          "occurredAt",
+          "expiresAt",
+          "generation",
+          "watchGeneration",
+          "isTyping",
+          "actor"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTypingRequestDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "isTyping": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conversationId",
+          "generation",
+          "isTyping"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTypingSuccessAckDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          },
+          "typingRevision": {
+            "description": "Monotonic typing transition revision in the signed int64 range.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "conversationId",
+          "expiresAt",
+          "generation",
+          "typingRevision"
+        ],
+        "type": "object"
+      },
+      "CmsConversationUnwatchSuccessAckDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "conversationId",
+          "generation"
+        ],
+        "type": "object"
+      },
+      "CmsConversationViewerDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cmsUserId",
+          "displayName",
+          "generation",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "CmsConversationViewersSnapshotEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 0..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^(?:0|[1-9][0-9]{0,18})$",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "viewers": {
+            "items": {
+              "$ref": "#/components/schemas/CmsConversationViewerDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "conversationId",
+          "occurredAt",
+          "generation",
+          "viewers"
+        ],
+        "type": "object"
+      },
+      "CmsConversationWatchAckDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "error": {
+            "enum": [
+              "UNAUTHORIZED",
+              "RATE_LIMITED",
+              "CONVERSATION_ID_INVALID",
+              "CONVERSATION_NOT_FOUND",
+              "GENERATION_INVALID",
+              "WATCH_NOT_FOUND",
+              "WATCH_GENERATION_STALE",
+              "WATCH_LIMIT_EXCEEDED",
+              "SESSION_SOCKET_LIMIT_EXCEEDED",
+              "PROJECT_SOCKET_LIMIT_EXCEEDED",
+              "CONVERSATION_SOCKET_LIMIT_EXCEEDED",
+              "WATCH_IDENTITY_INVALID",
+              "TYPING_STATE_INVALID",
+              "TYPING_GENERATION_STALE",
+              "TYPING_RATE_LIMITED",
+              "COLLABORATION_UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "type": "object"
+      },
+      "CmsConversationWatchRequestDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId"
+        ],
+        "type": "object"
+      },
+      "CmsConversationWatchRevokedEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "AUTHORIZATION_REVOKED",
+              "SESSION_REVOKED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "conversationId",
+          "generation",
+          "occurredAt",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CmsConversationWatchSuccessAckDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "description": "Unsigned decimal string in the inclusive range 1..9223372036854775807.",
+            "format": "int64-string",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "conversationId",
+          "expiresAt",
+          "generation"
         ],
         "type": "object"
       },
@@ -81617,6 +82335,104 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/conversations/{conversationId}/collaboration": {
+      "get": {
+        "operationId": "SupportConversationCollaboration_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "observedMessageOrdinal",
+            "required": false,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationCollaborationResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reconcile viewers, typing leases and safe other-operator reply collision state",
+        "tags": [
+          "admin support conversation collaboration"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/conversations/{conversationId}/read-position": {
       "get": {
         "operationId": "AdminConversationCollaboration_get",
@@ -90704,7 +91520,37 @@
             },
             "description": ""
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
           "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {

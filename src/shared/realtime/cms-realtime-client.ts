@@ -9,6 +9,7 @@ import type {
 
 type RealtimeHandler = (value: unknown) => void | Promise<void>
 type Unsubscribe = () => void
+type TypingCommandOutcome = 'ACCEPTED' | 'RETRY' | 'REWATCH' | 'TERMINAL'
 
 function apiOrigin(): string {
   return (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(
@@ -40,7 +41,14 @@ export class CmsRealtimeClient {
   private reconciliation: Promise<void> | null = null
   private reconciliationRequested = false
   private watchedConversationId: string | null = null
+  private watchGeneration: string | null = null
   private watchRetryTimer: ReturnType<typeof setTimeout> | null = null
+  private watchRenewTimer: ReturnType<typeof setTimeout> | null = null
+  private typingRefreshTimer: ReturnType<typeof setTimeout> | null = null
+  private typingRequested = false
+  private typingActive = false
+  private typingCommandGeneration = 0
+  private typingCommandQueue: Promise<void> = Promise.resolve()
 
   subscribe(eventNames: string[], handler: RealtimeHandler): Unsubscribe {
     for (const eventName of new Set(eventNames)) {
@@ -74,6 +82,7 @@ export class CmsRealtimeClient {
     if (this.projectId === projectId && (this.socket || isMockMode)) return
     this.disconnectSocket()
     this.watchedConversationId = null
+    this.watchGeneration = null
     this.projectId = projectId
     if (isMockMode) {
       this.setState('CONNECTED')
@@ -106,6 +115,9 @@ export class CmsRealtimeClient {
         void this.synchronizeConversationWatch(socket)
       })
       socket.on('disconnect', (reason) => {
+        this.typingActive = false
+        this.typingCommandGeneration += 1
+        this.clearTypingRefresh()
         this.setState('DEGRADED')
         if (reason === 'io server disconnect') socket.connect()
       })
@@ -155,21 +167,123 @@ export class CmsRealtimeClient {
 
   async watchConversation(conversationId: string): Promise<boolean> {
     const previous = this.watchedConversationId
-    if (previous && previous !== conversationId && this.socket?.connected) {
-      this.socket.emit('conversation.unwatch.v1', { conversationId: previous })
+    const previousGeneration = this.watchGeneration
+    if (
+      previous &&
+      previous !== conversationId &&
+      previousGeneration &&
+      this.socket?.connected
+    ) {
+      void this.socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
+        conversationId: previous,
+        generation: previousGeneration,
+      })
     }
+    this.clearTypingRefresh()
+    this.typingRequested = false
+    this.typingActive = false
+    this.typingCommandGeneration += 1
+    this.clearWatchRenew()
+    this.watchGeneration = null
     this.watchedConversationId = conversationId
+    if (isMockMode) {
+      this.watchGeneration = '1'
+      return true
+    }
     return this.synchronizeConversationWatch(this.socket)
   }
 
   unwatchConversation(conversationId = this.watchedConversationId): void {
     if (!conversationId || this.watchedConversationId !== conversationId) return
-    if (this.socket?.connected) {
-      this.socket.emit('conversation.unwatch.v1', { conversationId })
+    const generation = this.watchGeneration
+    if (this.socket?.connected && generation) {
+      if (this.typingActive || this.typingRequested) {
+        void this.socket.timeout(5_000).emitWithAck('conversation.typing.v1', {
+          conversationId,
+          generation,
+          isTyping: false,
+        })
+      }
+      void this.socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
+        conversationId,
+        generation,
+      })
     }
     this.watchedConversationId = null
+    this.watchGeneration = null
+    this.typingRequested = false
+    this.typingActive = false
+    this.typingCommandGeneration += 1
+    this.clearTypingRefresh()
+    this.clearWatchRenew()
     this.clearWatchRetry()
     if (this.socket?.connected) this.setState('CONNECTED')
+  }
+
+  async setConversationTyping(isTyping: boolean): Promise<boolean> {
+    if (isMockMode) {
+      this.typingRequested = Boolean(this.watchedConversationId) && isTyping
+      this.typingActive = this.typingRequested
+      return Boolean(this.watchedConversationId)
+    }
+    const socket = this.socket
+    const conversationId = this.watchedConversationId
+    const generation = this.watchGeneration
+    const changed = this.typingRequested !== isTyping
+    this.typingRequested = isTyping
+    if (changed) this.clearTypingRefresh()
+    if (!socket?.connected || !conversationId || !generation) return false
+    return this.queueTypingConvergence(socket, conversationId, generation)
+  }
+
+  private queueTypingConvergence(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): Promise<boolean> {
+    const commandGeneration = this.typingCommandGeneration
+    const command = this.typingCommandQueue.then(async () => {
+      if (
+        commandGeneration !== this.typingCommandGeneration ||
+        socket !== this.socket ||
+        !socket.connected ||
+        conversationId !== this.watchedConversationId ||
+        generation !== this.watchGeneration
+      ) return false
+      const desired = this.typingRequested
+      if (this.typingActive === desired) {
+        if (desired) this.scheduleTypingRefresh(socket, conversationId, generation)
+        return true
+      }
+      const outcome = await this.emitTyping(
+        socket,
+        conversationId,
+        generation,
+        desired,
+      )
+      if (
+        commandGeneration !== this.typingCommandGeneration ||
+        socket !== this.socket ||
+        conversationId !== this.watchedConversationId ||
+        generation !== this.watchGeneration
+      ) return false
+      if (outcome !== 'ACCEPTED') {
+        this.handleTypingFailure(outcome, socket, conversationId, generation)
+        return false
+      }
+      this.typingActive = desired
+      if (this.typingRequested !== desired)
+        this.scheduleTypingRetry(socket, conversationId, generation, 0)
+      else if (desired)
+        this.scheduleTypingRefresh(socket, conversationId, generation)
+      else this.clearTypingRefresh()
+      return this.typingRequested === desired
+    })
+    this.typingCommandQueue = command.then(
+      () => undefined,
+      () => undefined,
+    )
+    return command
   }
 
   private bindSocketEvent(eventName: string): void {
@@ -186,6 +300,12 @@ export class CmsRealtimeClient {
 
   private disconnectSocket(): void {
     this.clearWatchRetry()
+    this.clearWatchRenew()
+    this.clearTypingRefresh()
+    this.watchGeneration = null
+    this.typingRequested = false
+    this.typingActive = false
+    this.typingCommandGeneration += 1
     this.socket?.disconnect()
     this.socket = null
     this.registeredSocketEvents.clear()
@@ -227,20 +347,47 @@ export class CmsRealtimeClient {
       const response: unknown = await socket
         .timeout(5_000)
         .emitWithAck('conversation.watch.v1', { conversationId })
-      if (
-        socket !== this.socket ||
-        conversationId !== this.watchedConversationId
-      )
-        return false
-      if (
+      const acceptedGeneration =
         !response ||
         typeof response !== 'object' ||
         !('ok' in response) ||
-        response.ok !== true
-      ) {
+        response.ok !== true ||
+        !('generation' in response) ||
+        typeof response.generation !== 'string' ||
+        !/^[1-9][0-9]{0,18}$/.test(response.generation)
+          ? null
+          : response.generation
+      if (!acceptedGeneration) {
+        const error =
+          response &&
+          typeof response === 'object' &&
+          'error' in response &&
+          typeof response.error === 'string'
+            ? response.error
+            : null
         this.setState('DEGRADED')
+        if (
+          (error === 'RATE_LIMITED' || error === 'COLLABORATION_UNAVAILABLE') &&
+          socket === this.socket &&
+          conversationId === this.watchedConversationId
+        ) this.scheduleWatchRetry(socket, conversationId)
         return false
       }
+      if (
+        socket !== this.socket ||
+        conversationId !== this.watchedConversationId
+      ) {
+        if (socket === this.socket && socket.connected) {
+          void socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
+            conversationId,
+            generation: acceptedGeneration,
+          })
+        }
+        return false
+      }
+      this.watchGeneration = acceptedGeneration
+      this.scheduleWatchRenew(socket, conversationId, acceptedGeneration)
+      await this.restoreRequestedTyping(socket, conversationId, acceptedGeneration)
       return true
     } catch {
       if (
@@ -254,7 +401,11 @@ export class CmsRealtimeClient {
     }
   }
 
-  private scheduleWatchRetry(socket: Socket, conversationId: string): void {
+  private scheduleWatchRetry(
+    socket: Socket,
+    conversationId: string,
+    delay = 2_000,
+  ): void {
     this.clearWatchRetry()
     this.watchRetryTimer = setTimeout(() => {
       this.watchRetryTimer = null
@@ -265,12 +416,213 @@ export class CmsRealtimeClient {
       ) {
         void this.synchronizeConversationWatch(socket)
       }
-    }, 2_000)
+    }, delay)
   }
 
   private clearWatchRetry(): void {
     if (this.watchRetryTimer) clearTimeout(this.watchRetryTimer)
     this.watchRetryTimer = null
+  }
+
+  private scheduleWatchRenew(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): void {
+    this.clearWatchRenew()
+    this.watchRenewTimer = setTimeout(() => {
+      this.watchRenewTimer = null
+      void this.renewConversationWatch(socket, conversationId, generation)
+    }, 40_000)
+  }
+
+  private async renewConversationWatch(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): Promise<void> {
+    if (
+      socket !== this.socket ||
+      !socket.connected ||
+      conversationId !== this.watchedConversationId ||
+      generation !== this.watchGeneration
+    ) return
+    try {
+      const response: unknown = await socket.timeout(5_000).emitWithAck(
+        'conversation.watch.renew.v1',
+        { conversationId, generation },
+      )
+      if (
+        !response ||
+        typeof response !== 'object' ||
+        !('ok' in response) ||
+        response.ok !== true ||
+        !('generation' in response) ||
+        response.generation !== generation
+      ) throw new Error('Watch renewal rejected')
+      this.scheduleWatchRenew(socket, conversationId, generation)
+    } catch {
+      if (
+        socket === this.socket &&
+        conversationId === this.watchedConversationId &&
+        generation === this.watchGeneration
+      ) {
+        this.watchGeneration = null
+        this.typingActive = false
+        this.typingCommandGeneration += 1
+        this.clearTypingRefresh()
+        this.setState('DEGRADED')
+        this.scheduleWatchRetry(socket, conversationId)
+      }
+    }
+  }
+
+  private clearWatchRenew(): void {
+    if (this.watchRenewTimer) clearTimeout(this.watchRenewTimer)
+    this.watchRenewTimer = null
+  }
+
+  private async emitTyping(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+    isTyping: boolean,
+  ): Promise<TypingCommandOutcome> {
+    try {
+      const response: unknown = await socket.timeout(5_000).emitWithAck(
+        'conversation.typing.v1',
+        { conversationId, generation, isTyping },
+      )
+      if (
+        response &&
+        typeof response === 'object' &&
+        'ok' in response &&
+        response.ok === true &&
+        'generation' in response &&
+        response.generation === generation
+      ) return 'ACCEPTED'
+      const error =
+        response &&
+        typeof response === 'object' &&
+        'error' in response &&
+        typeof response.error === 'string'
+          ? response.error
+          : null
+      if (
+        error === 'RATE_LIMITED' ||
+        error === 'TYPING_RATE_LIMITED' ||
+        error === 'COLLABORATION_UNAVAILABLE'
+      ) return 'RETRY'
+      if (
+        error === 'WATCH_NOT_FOUND' ||
+        error === 'WATCH_GENERATION_STALE' ||
+        error === 'TYPING_GENERATION_STALE' ||
+        (response &&
+          typeof response === 'object' &&
+          'ok' in response &&
+          response.ok === true)
+      ) return 'REWATCH'
+      return 'TERMINAL'
+    } catch {
+      return 'RETRY'
+    }
+  }
+
+  private handleTypingFailure(
+    outcome: Exclude<TypingCommandOutcome, 'ACCEPTED'>,
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): void {
+    if (outcome === 'RETRY') {
+      this.scheduleTypingRetry(socket, conversationId, generation)
+      return
+    }
+    if (outcome === 'REWATCH') {
+      this.watchGeneration = null
+      this.typingActive = false
+      this.typingCommandGeneration += 1
+      this.clearTypingRefresh()
+      this.clearWatchRenew()
+      this.setState('DEGRADED')
+      this.scheduleWatchRetry(socket, conversationId, 0)
+      return
+    }
+    this.revokeConversationWatch(conversationId, generation)
+    void this.runReconciliation()
+  }
+
+  private scheduleTypingRefresh(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): void {
+    this.clearTypingRefresh()
+    this.typingRefreshTimer = setTimeout(async () => {
+      this.typingRefreshTimer = null
+      if (
+        !this.typingActive ||
+        socket !== this.socket ||
+        conversationId !== this.watchedConversationId ||
+        generation !== this.watchGeneration
+      ) return
+      const outcome = await this.emitTyping(socket, conversationId, generation, true)
+      if (outcome === 'ACCEPTED')
+        this.scheduleTypingRefresh(socket, conversationId, generation)
+      else {
+        this.typingActive = false
+        this.handleTypingFailure(outcome, socket, conversationId, generation)
+      }
+    }, 3_000)
+  }
+
+  private scheduleTypingRetry(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+    delay = this.typingRequested ? 3_000 : 1_000,
+  ): void {
+    this.clearTypingRefresh()
+    this.typingRefreshTimer = setTimeout(() => {
+      this.typingRefreshTimer = null
+      if (
+        socket === this.socket &&
+        socket.connected &&
+        conversationId === this.watchedConversationId &&
+        generation === this.watchGeneration
+      ) void this.queueTypingConvergence(socket, conversationId, generation)
+    }, delay)
+  }
+
+  private clearTypingRefresh(): void {
+    if (this.typingRefreshTimer) clearTimeout(this.typingRefreshTimer)
+    this.typingRefreshTimer = null
+  }
+
+  private async restoreRequestedTyping(
+    socket: Socket,
+    conversationId: string,
+    generation: string,
+  ): Promise<void> {
+    if (!this.typingRequested) return
+    await this.queueTypingConvergence(socket, conversationId, generation)
+  }
+
+  revokeConversationWatch(conversationId: string, generation: string): boolean {
+    if (
+      conversationId !== this.watchedConversationId ||
+      generation !== this.watchGeneration
+    ) return false
+    this.watchedConversationId = null
+    this.watchGeneration = null
+    this.typingRequested = false
+    this.typingActive = false
+    this.typingCommandGeneration += 1
+    this.clearTypingRefresh()
+    this.clearWatchRenew()
+    this.clearWatchRetry()
+    this.setState('DEGRADED')
+    return true
   }
 
   private async runReconciliation(): Promise<void> {

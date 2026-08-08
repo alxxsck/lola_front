@@ -4,14 +4,15 @@
 
 **Blocked by:** 01 — Синхронизировать workspace и messaging-контракты; 06 — Перевести Support chat на Conversation Surface.
 
-**Status:** blocked-by-backend
+**Status:** done
 
-**Backend gate (audit 2026-08-07):** полный blocker — operator viewers/typing contract с
-TTL, generation, renew/unwatch и revoke не опубликован. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#21--viewers-typing-и-collision-warning).
+**Backend gate:** разблокирован в backend `df62f44`; frontend pin синхронизирован
+из этого committed checkout. PostgreSQL gate: 541 миграция, 100 операторов,
+100 чтений при concurrency 10, p95 94.3 мс.
 
-- [ ] Watch lifecycle ограничен project/Conversation/actor и закрывается при route switch/revoke.
-- [ ] Viewers и typing используют TTL/generation и исчезают после reconnect/expiry.
-- [ ] Старое typing-stop событие не сбрасывает новую generation.
-- [ ] Collision warning появляется, когда другой оператор печатает или уже отправил ответ.
-- [ ] Presence не меняет assignment, claimant, availability или delivery.
-- [ ] Draft/body никогда не отправляются в presence payload или telemetry.
+- [x] Watch lifecycle ограничен project/Conversation/actor и закрывается при route switch/revoke.
+- [x] Viewers и typing используют TTL/generation и исчезают после reconnect/expiry.
+- [x] Старое typing-stop событие не сбрасывает новую generation.
+- [x] Collision warning появляется, когда другой оператор печатает или уже отправил ответ.
+- [x] Presence не меняет assignment, claimant, availability или delivery.
+- [x] Draft/body никогда не отправляются в presence payload или telemetry.

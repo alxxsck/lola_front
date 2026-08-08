@@ -819,6 +819,13 @@ const requiredOperations = new Map([
       response: "AiCapabilityPreviewResponseDto",
     },
   ],
+  [
+    "SupportConversationCollaboration_read",
+    {
+      label: "Support Conversation collaboration reconciliation",
+      response: "CmsConversationCollaborationResponseDto",
+    },
+  ],
 ]);
 
 const operations = Object.values(document.paths ?? {}).flatMap((path) =>
@@ -1652,6 +1659,30 @@ requireSchemaProperties("ProfileProjectionResponseDto", [
   "lastRejectedSync",
 ]);
 forbidSchemaProperties("ProfileProjectionResponseDto", ["externalUserId"]);
+requireRequiredProperties("CmsConversationCollaborationResponseDto", [
+  "conversationId",
+  "generation",
+  "observedAt",
+  "viewers",
+  "typers",
+  "currentMessageOrdinal",
+  "collision",
+]);
+requireSchemaProperties("CmsConversationDeliveryRealtimeContractResponseDto", [
+  "watchCommand",
+  "watchRenewCommand",
+  "unwatchCommand",
+  "typingCommand",
+  "viewersSnapshotEvent",
+  "typingHintEvent",
+  "watchRevokedEvent",
+  "collaborationReadOperationId",
+  "watchTtlSeconds",
+  "typingTtlSeconds",
+  "typingGenerationPolicy",
+]);
+forbidSchemaProperties("CmsConversationViewerDto", ["body", "draft", "text"]);
+forbidSchemaProperties("CmsConversationTyperDto", ["body", "draft", "text"]);
 requireSchemaProperties("ProfileProjectionFieldResponseDto", [
   "definitionId",
   "definitionRevisionId",

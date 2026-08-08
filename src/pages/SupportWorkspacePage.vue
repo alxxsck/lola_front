@@ -28,6 +28,7 @@ import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
   ConversationSurfaceAISuspensionCapability,
+  ConversationSurfaceCollaboration,
   ConversationSurfaceHistory,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
@@ -40,6 +41,8 @@ import {
 import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
+import { supportConversationCollaborationSource } from "@/features/support-conversation-collaboration/api/support-conversation-collaboration-source";
+import { createSupportConversationCollaborationController } from "@/features/support-conversation-collaboration/model/use-support-conversation-collaboration";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import SupportInboxPane from "@/features/support-inbox/ui/SupportInboxPane.vue";
 import {
@@ -670,11 +673,27 @@ const supportConversationTranslation = computed<ConversationSurfaceTranslation>(
         : null,
   }),
 );
+const collaboration = createSupportConversationCollaborationController(
+  supportConversationCollaborationSource,
+  {
+    actorId: () => auth.user?.id,
+    onAccessRevoked: handleCollaborationAccessRevoked,
+  },
+);
+const currentMessageOrdinal = (): number =>
+  conversation.messages.value.reduce(
+    (highest, message) => Math.max(highest, message.ordinal ?? 0),
+    0,
+  );
 const workspaceLive = createSupportWorkspaceLiveController(
   {
     async reconcile() {
       await Promise.all([inbox.load(), conversation.reconcile()]);
     },
+    collaboration,
+    currentMessageOrdinal,
+    hasDraft: () => Boolean(reply.draft.value.trim()),
+    onAccessRevoked: handleCollaborationAccessRevoked,
   },
   cmsRealtimeClient,
 );
@@ -698,6 +717,14 @@ const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
 });
 const selectedCase = computed(() => conversation.selection.value?.case ?? null);
+const supportConversationCollaboration = computed<ConversationSurfaceCollaboration>(
+  () => ({
+    availability: collaboration.error.value ? "DEGRADED" : "READY",
+    viewers: collaboration.viewers.value,
+    typers: collaboration.typers.value,
+    collision: collaboration.collision.value,
+  }),
+);
 const reservationReconcileProgress = ref<{
   key: string;
   attempts: number;
@@ -1705,6 +1732,7 @@ async function changeSupportTranslationMode(
 
 function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
   reply.draft.value = request.text;
+  void workspaceLive.recordTypingActivity(Boolean(request.text.trim()));
 }
 
 async function sendSupportReply(
@@ -1712,6 +1740,7 @@ async function sendSupportReply(
 ): Promise<void> {
   reply.draft.value = request.text;
   await sendReply();
+  if (!reply.draft.value.trim()) void workspaceLive.setDraftActive(false);
 }
 
 async function sendSupportTranslatedReply(
@@ -1843,6 +1872,13 @@ async function handleConversationForbidden(): Promise<void> {
       name: "support-inbox",
       query: inboxMode.value === "CASES" ? { mode: "cases" } : {},
     });
+}
+
+async function handleCollaborationAccessRevoked(): Promise<void> {
+  await workspaceLive.setSelection(undefined, undefined);
+  conversation.reset();
+  collaboration.reset();
+  await handleConversationForbidden();
 }
 
 function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
@@ -2304,7 +2340,10 @@ watch(
 watch(
   () => reply.draft.value,
   (draft) => {
-    if (!draft.trim()) {
+    const active = Boolean(draft.trim());
+    void workspaceLive.setDraftActive(active);
+    if (!active) {
+      void workspaceLive.recordTypingActivity(false);
       replyTranslationRequested.value = false;
       setSendWithoutTranslationVisible(false);
     }
@@ -2591,6 +2630,7 @@ onBeforeUnmount(() => {
               :translation="supportConversationTranslation"
               :composer="supportConversationComposer"
               :ai-suspension="supportConversationAiSuspension"
+              :collaboration="supportConversationCollaboration"
               :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"

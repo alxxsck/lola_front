@@ -72,6 +72,27 @@ export interface ConversationSurfaceAISuspensionCapability {
   hideActiveStatus?: boolean;
 }
 
+export interface ConversationSurfaceCollaborator {
+  cmsUserId: string;
+  displayName: string;
+}
+
+export interface ConversationSurfaceCollaboration {
+  availability?: "READY" | "DEGRADED";
+  viewers: ConversationSurfaceCollaborator[];
+  typers: ConversationSurfaceCollaborator[];
+  collision:
+    | { state: "NOT_ARMED" | "CLEAR" }
+    | {
+        state: "OTHER_OPERATOR_REPLIED";
+        observedMessageOrdinal: number;
+        messageId: string;
+        messageOrdinal: number;
+        cmsUserId: string;
+        createdAt: string;
+      };
+}
+
 export interface ConversationSurfaceReplyPreview {
   draft: ReplyTranslationPreviewModel | null;
   targetLocale: string | null;

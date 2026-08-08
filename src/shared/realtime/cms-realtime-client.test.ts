@@ -19,7 +19,15 @@ import { CmsRealtimeClient } from "./cms-realtime-client";
 
 function fakeSocket() {
   const listeners = new Map<string, (...args: never[]) => void>();
-  const emitWithAck = vi.fn().mockResolvedValue({ ok: true });
+  const emitWithAck = vi.fn().mockImplementation(
+    async (_event: string, request: { conversationId?: string } = {}) => ({
+      ok: true,
+      conversationId: request.conversationId,
+      generation: "1",
+      expiresAt: "2026-08-08T10:01:00.000Z",
+      typingRevision: "1",
+    }),
+  );
   return {
     connected: true,
     on: vi.fn((event: string, callback: (...args: never[]) => void) => {
@@ -178,30 +186,64 @@ describe("CmsRealtimeClient", () => {
     socket.trigger("connect");
     await vi.waitFor(() => expect(reconciled).toHaveBeenCalled());
 
-    expect(socket.emitWithAck.mock.calls).toEqual([
+    expect(
+      socket.emitWithAck.mock.calls.filter(([event]) => event === "conversation.watch.v1"),
+    ).toEqual([
       ["conversation.watch.v1", { conversationId: "conversation-1" }],
       ["conversation.watch.v1", { conversationId: "conversation-2" }],
       ["conversation.watch.v1", { conversationId: "conversation-2" }],
     ]);
     client.unwatchConversation("conversation-2");
-    expect(socket.emit).toHaveBeenLastCalledWith("conversation.unwatch.v1", {
+    expect(socket.emitWithAck).toHaveBeenLastCalledWith("conversation.unwatch.v1", {
       conversationId: "conversation-2",
+      generation: "1",
     });
   });
 
   it("marks realtime degraded when the server rejects a conversation watch", async () => {
+    vi.useFakeTimers();
     const socket = fakeSocket();
-    socket.emitWithAck.mockResolvedValue({ ok: false });
+    socket.emitWithAck
+      .mockResolvedValueOnce({ ok: false, error: "COLLABORATION_UNAVAILABLE" })
+      .mockResolvedValueOnce({
+        ok: true,
+        conversationId: "conversation-1",
+        generation: "1",
+        expiresAt: "2099-08-08T10:01:00.000Z",
+      });
     mocks.io.mockReturnValue(socket);
     const states: string[] = [];
     const client = new CmsRealtimeClient();
     client.onState((state) => states.push(state));
     await client.activateProject("project-1");
 
-    client.watchConversation("conversation-1");
+    await client.watchConversation("conversation-1");
 
-    await vi.waitFor(() => expect(states.at(-1)).toBe("DEGRADED"));
+    expect(states.at(-1)).toBe("DEGRADED");
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(socket.emitWithAck).toHaveBeenCalledTimes(2);
     client.unwatchConversation("conversation-1");
+    vi.useRealTimers();
+  });
+
+  it("does not retry a terminal conversation watch rejection", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    socket.emitWithAck.mockResolvedValue({ ok: false, error: "UNAUTHORIZED" });
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+
+    await client.watchConversation("conversation-1");
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "conversation.watch.v1",
+      ),
+    ).toHaveLength(1);
+    client.deactivateProject();
+    vi.useRealTimers();
   });
 
   it("joins the conversation room before REST reconciliation and connected state", async () => {
@@ -209,7 +251,12 @@ describe("CmsRealtimeClient", () => {
     const order: string[] = [];
     socket.emitWithAck.mockImplementation(async () => {
       order.push("watch-ack");
-      return { ok: true };
+      return {
+        ok: true,
+        conversationId: "conversation-1",
+        generation: "1",
+        expiresAt: "2026-08-08T10:01:00.000Z",
+      };
     });
     mocks.io.mockReturnValue(socket);
     const client = new CmsRealtimeClient();
@@ -246,7 +293,13 @@ describe("CmsRealtimeClient", () => {
 
     selected = "conversation-2";
     const second = client.watchConversation("conversation-2");
-    await vi.waitFor(() => expect(socket.emitWithAck).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() =>
+      expect(
+        socket.emitWithAck.mock.calls.filter(
+          ([event]) => event === "conversation.watch.v1",
+        ),
+      ).toHaveLength(2),
+    );
     releaseFirst();
     await Promise.all([first, second]);
 
@@ -258,7 +311,12 @@ describe("CmsRealtimeClient", () => {
     const socket = fakeSocket();
     socket.emitWithAck
       .mockRejectedValueOnce(new Error("timeout"))
-      .mockResolvedValueOnce({ ok: true });
+      .mockResolvedValueOnce({
+        ok: true,
+        conversationId: "conversation-1",
+        generation: "1",
+        expiresAt: "2026-08-08T10:01:00.000Z",
+      });
     mocks.io.mockReturnValue(socket);
     const client = new CmsRealtimeClient();
     await client.activateProject("project-1");
@@ -268,6 +326,268 @@ describe("CmsRealtimeClient", () => {
 
     expect(socket.emitWithAck).toHaveBeenCalledTimes(2);
     client.unwatchConversation("conversation-1");
+    vi.useRealTimers();
+  });
+
+  it("renews the exact watch generation and sends only a typing boolean", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { conversationId: string }) => {
+        if (event === "conversation.watch.v1")
+          return {
+            ok: true,
+            conversationId: request.conversationId,
+            generation: "17",
+            expiresAt: "2026-08-08T10:01:00.000Z",
+          };
+        if (event === "conversation.watch.renew.v1")
+          return {
+            ok: true,
+            conversationId: request.conversationId,
+            generation: "17",
+            expiresAt: "2026-08-08T10:02:00.000Z",
+          };
+        return {
+          ok: true,
+          conversationId: request.conversationId,
+          generation: "17",
+          typingRevision: "3",
+          expiresAt: "2026-08-08T10:00:05.000Z",
+        };
+      },
+    );
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+
+    await client.setConversationTyping(true);
+    await vi.advanceTimersByTimeAsync(40_000);
+
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "conversation.typing.v1",
+      { conversationId: "conversation-1", generation: "17", isTyping: true },
+    );
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "conversation.watch.renew.v1",
+      { conversationId: "conversation-1", generation: "17" },
+    );
+    expect(JSON.stringify(socket.emitWithAck.mock.calls)).not.toContain("draft");
+    client.deactivateProject();
+  });
+
+  it("closes a stale lease when its watch ack arrives after a route switch", async () => {
+    const socket = fakeSocket();
+    let releaseFirst!: (value: unknown) => void;
+    socket.emitWithAck
+      .mockReturnValueOnce(new Promise((resolve) => (releaseFirst = resolve)))
+      .mockResolvedValueOnce({
+        ok: true,
+        conversationId: "conversation-2",
+        generation: "2",
+        expiresAt: "2099-08-08T10:01:00.000Z",
+      });
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    const first = client.watchConversation("conversation-1");
+    const second = client.watchConversation("conversation-2");
+    await second;
+    releaseFirst({
+      ok: true,
+      conversationId: "conversation-1",
+      generation: "1",
+      expiresAt: "2099-08-08T10:01:00.000Z",
+    });
+    await first;
+    await vi.waitFor(() =>
+      expect(socket.emitWithAck).toHaveBeenCalledWith(
+        "conversation.unwatch.v1",
+        { conversationId: "conversation-1", generation: "1" },
+      ),
+    );
+    client.deactivateProject();
+  });
+
+  it("reissues requested typing after reconnect under the new watch generation", async () => {
+    const socket = fakeSocket();
+    let watchGeneration = 0;
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { conversationId: string; generation?: string }) => {
+        if (event === "conversation.watch.v1") {
+          watchGeneration += 1;
+          return {
+            ok: true,
+            conversationId: request.conversationId,
+            generation: String(watchGeneration),
+            expiresAt: "2099-08-08T10:01:00.000Z",
+          };
+        }
+        return {
+          ok: true,
+          conversationId: request.conversationId,
+          generation: request.generation,
+          typingRevision: String(watchGeneration),
+          expiresAt: "2099-08-08T10:00:05.000Z",
+        };
+      },
+    );
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+    await client.setConversationTyping(true);
+
+    socket.trigger("disconnect", "transport close");
+    socket.trigger("connect");
+    await vi.waitFor(() =>
+      expect(
+        socket.emitWithAck.mock.calls.filter(
+          ([event]) => event === "conversation.typing.v1",
+        ),
+      ).toHaveLength(2),
+    );
+    expect(socket.emitWithAck).toHaveBeenLastCalledWith(
+      "conversation.typing.v1",
+      { conversationId: "conversation-1", generation: "2", isTyping: true },
+    );
+    client.deactivateProject();
+  });
+
+  it("converges to stop when typing start acknowledgement is delayed", async () => {
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+    let releaseStart!: (value: unknown) => void;
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { isTyping?: boolean }) => {
+        if (event === "conversation.typing.v1" && request.isTyping)
+          return new Promise((resolve) => (releaseStart = resolve));
+        return {
+          ok: true,
+          conversationId: "conversation-1",
+          generation: "1",
+          typingRevision: "2",
+          expiresAt: "2099-08-08T10:00:05.000Z",
+        };
+      },
+    );
+
+    const starting = client.setConversationTyping(true);
+    await vi.waitFor(() => expect(releaseStart).toBeTypeOf("function"));
+    const stopping = client.setConversationTyping(false);
+    releaseStart({
+      ok: true,
+      conversationId: "conversation-1",
+      generation: "1",
+      typingRevision: "1",
+      expiresAt: "2099-08-08T10:00:05.000Z",
+    });
+    await Promise.all([starting, stopping]);
+
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "conversation.typing.v1",
+      { conversationId: "conversation-1", generation: "1", isTyping: false },
+    );
+    client.deactivateProject();
+  });
+
+  it("retries a transient typing start while the draft stays active", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+    socket.emitWithAck
+      .mockResolvedValueOnce({ ok: false, error: "COLLABORATION_UNAVAILABLE" })
+      .mockResolvedValueOnce({
+        ok: true,
+        conversationId: "conversation-1",
+        generation: "1",
+        typingRevision: "2",
+        expiresAt: "2099-08-08T10:00:05.000Z",
+      });
+
+    expect(await client.setConversationTyping(true)).toBe(false);
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "conversation.typing.v1",
+      ),
+    ).toHaveLength(2);
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("does not poll typing after a terminal authorization rejection", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+    socket.emitWithAck.mockResolvedValue({ ok: false, error: "UNAUTHORIZED" });
+
+    expect(await client.setConversationTyping(true)).toBe(false);
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "conversation.typing.v1",
+      ),
+    ).toHaveLength(1);
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("rewatches immediately when the typing lease generation is stale", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchConversation("conversation-1");
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { generation?: string }) => {
+        if (event === "conversation.typing.v1" && request.generation === "1")
+          return { ok: false, error: "WATCH_GENERATION_STALE" };
+        if (event === "conversation.watch.v1")
+          return {
+            ok: true,
+            conversationId: "conversation-1",
+            generation: "2",
+            expiresAt: "2099-08-08T10:01:00.000Z",
+          };
+        return {
+          ok: true,
+          conversationId: "conversation-1",
+          generation: "2",
+          typingRevision: "2",
+          expiresAt: "2099-08-08T10:00:05.000Z",
+        };
+      },
+    );
+
+    expect(await client.setConversationTyping(true)).toBe(false);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.waitFor(() =>
+      expect(
+        socket.emitWithAck.mock.calls.filter(
+          ([event]) => event === "conversation.watch.v1",
+        ),
+      ).toHaveLength(2),
+    );
+
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "conversation.typing.v1",
+      { conversationId: "conversation-1", generation: "2", isTyping: true },
+    );
+    client.deactivateProject();
     vi.useRealTimers();
   });
 });

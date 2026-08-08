@@ -5,6 +5,7 @@ import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
   ConversationSurfaceAISuspensionCapability,
+  ConversationSurfaceCollaboration,
   ConversationSurfaceHistory,
   ConversationSurfaceReconcileIssue,
   ConversationSurfaceSendRequest,
@@ -24,6 +25,7 @@ const props = defineProps<{
   translation: ConversationSurfaceTranslation;
   composer: ConversationSurfaceComposer;
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
+  collaboration?: ConversationSurfaceCollaboration;
   deliveryActions?: ReadonlyMap<string, SupportMessageDeliveryAction>;
 }>();
 
@@ -67,6 +69,7 @@ const surfaceMessages = computed(() =>
     :translation="translation"
     :composer="composer"
     :ai-suspension="aiSuspension"
+    :collaboration="collaboration"
     @load-older="emit('load-older')"
     @load-newer="emit('load-newer')"
     @visible-high-water="emit('visible-high-water', $event)"

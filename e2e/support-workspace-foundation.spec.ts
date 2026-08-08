@@ -66,6 +66,48 @@ test("opens a project conversation as a deep link without horizontal overflow", 
   );
 });
 
+test("shows collaboration as a compact warning without blocking the shared composer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
+  const conversation = page.locator(".conversation-surface");
+  await expect(conversation.getByText(/Смотрит: Анна/)).toBeVisible();
+  await expect(conversation.getByText(/Илья Соколов печатает ответ/)).toBeVisible();
+  const draft = conversation.getByRole("textbox", { name: "Ответ пользователю" });
+  await draft.fill("Проверяю обращение перед ответом");
+  await expect(conversation.getByRole("button", { name: "Отправить" })).toBeEnabled();
+
+  const desktopGeometry = await conversation.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(desktopGeometry.scrollWidth).toBeLessThanOrEqual(
+    desktopGeometry.clientWidth + 1,
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
+  const mobileConversation = page.locator(".conversation-surface");
+  await expect(mobileConversation.getByText(/Смотрит: Анна/)).toBeVisible();
+  const mobileGeometry = await mobileConversation.evaluate((element) => ({
+    left: element.getBoundingClientRect().left,
+    right: element.getBoundingClientRect().right,
+    viewportWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(mobileGeometry.left).toBeGreaterThanOrEqual(-0.5);
+  expect(mobileGeometry.right).toBeLessThanOrEqual(
+    mobileGeometry.viewportWidth + 0.5,
+  );
+  expect(mobileGeometry.scrollWidth).toBe(mobileGeometry.viewportWidth);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".conversation-surface")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
+
 test("lets a lead assign a Case through the shared responsive assignment desk", async ({
   page,
 }) => {
