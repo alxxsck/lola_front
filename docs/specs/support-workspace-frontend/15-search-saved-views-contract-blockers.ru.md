@@ -125,3 +125,25 @@ PostgreSQL assignment и LIVE-routing races, production `/health` 200. Worst-cas
 20k Cases, 500 operators/2000 Team bindings, 100 concurrent full reads при pool 20 — p95 1218,9 мс,
 payload 336351 bytes, max pool wait 80; concurrent Case update 132,8 мс при `lock_timeout=100ms`.
 Повторные spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 18 — назначение и override для лида
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `9a93282` публикует отдельные force assign/transfer actions с явными
+availability/capacity bypass, двойным IAM (`override` + `force_assign`), strong OCC и raw reason
+note только в protected IAM audit. Mandatory Team binding, active identity и Project scope остаются
+fail-closed. Candidate matrix возвращает server-owned ordinary/force actions и required overrides.
+
+Опубликованы durable bulk `1..50` с per-item `SUCCEEDED|FAILED`, общим
+`SUCCEEDED|PARTIAL|FAILED`, actor-scoped outcome lookup и fenced stale recovery; отдельный
+single-command outcome lookup; bounded Lead target catalog для `ALERT_OWNER` и
+`OPERATOR_DRILL_DOWN`; Lead timeline содержит actor, target Team/operator, exact eligibility
+override и command outcome без raw note.
+
+Проверено: 3895 tests / 0 failures, architecture 53/53, lint/build/Prisma, 535 clean migrations,
+production bootstrap и `/health` 200. PostgreSQL full-path gate: 5000 Cases, 100 operators, 100
+initial batches по 50, concurrency 5, p95 10215,4 мс, typed conflicts восстановлены bounded retry,
+outcome lookup 48,2 мс. Candidate gate: 20k Cases, 500 operators/2000 Team bindings, 100 concurrent
+reads, p95 1060,5 мс, payload 724275 bytes. Финальные независимые
+spec/standards/architecture/security/scalability review — CLEAN.

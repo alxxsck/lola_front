@@ -47,15 +47,19 @@ Frontend не вычисляет priority floor и разрешения лока
 
 ## 3. Assignment и routing offers
 
-| Capability           | Operation                            | Permission / allowed action                                         | OCC / idempotency                                          | Status                                                 |
-| -------------------- | ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
-| Claim                | `SupportCaseAssignment_claim`        | `project.support.assignments.self_manage` + server candidate action | Case version/read token + обязательный `Idempotency-Key`   | `RELEASE_GATED`; Case target authority `READY`         |
-| Lead assign          | `SupportCaseAssignment_assign`       | `project.support.assignments.override` + server candidate action    | Case version/read token, reason code, idempotency          | command `RELEASE_GATED`; picker targets `READY`        |
-| Release              | `SupportCaseAssignment_release`      | self-manage/override + selection `releaseAssignment`                | assignment version, `sa1` ETag, reason, idempotency        | `RELEASE_GATED`                                        |
-| Transfer             | `SupportCaseAssignment_transfer`     | override + server candidate action                                  | assignment version, `sa1` ETag, reason, idempotency        | command `RELEASE_GATED`; eligible targets `READY`      |
-| Own offers           | `SupportRoutingOffer_list`           | `project.support.assignments.self_manage`                           | offer expiry, fencing/version, opaque token, `so1` ETag    | `RELEASE_GATED`                                        |
-| Accept/decline offer | `SupportRoutingOffer_accept/decline` | self-manage                                                         | `If-Match`, `Idempotency-Key`, expected assignment version | canonical typed success/expiry/conflict errors `READY` |
-| Bulk assignment      | операции нет                         | не опубликовано                                                     | нет per-item receipt                                       | `NOT_PUBLISHED`                                        |
+| Capability           | Operation                                    | Permission / allowed action                                         | OCC / idempotency                                               | Status                                                 |
+| -------------------- | -------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------ |
+| Claim                | `SupportCaseAssignment_claim`                | `project.support.assignments.self_manage` + server candidate action | Case version/read token + обязательный `Idempotency-Key`        | `RELEASE_GATED`; Case target authority `READY`         |
+| Lead assign          | `SupportCaseAssignment_assign`               | `project.support.assignments.override` + server candidate action    | Case version/read token, reason code, idempotency               | command `RELEASE_GATED`; picker targets `READY`        |
+| Release              | `SupportCaseAssignment_release`              | self-manage/override + selection `releaseAssignment`                | assignment version, `sa1` ETag, reason, idempotency             | `RELEASE_GATED`                                        |
+| Transfer             | `SupportCaseAssignment_transfer`             | override + server candidate action                                  | assignment version, `sa1` ETag, reason, idempotency             | command `RELEASE_GATED`; eligible targets `READY`      |
+| Lead force assign    | `SupportCaseAssignment_assignWithOverride`   | override + force-assign + server force action                       | Case version/read token, explicit bypasses, reason, idempotency | `READY` (`9a93282`)                                    |
+| Lead force transfer  | `SupportCaseAssignment_transferWithOverride` | override + force-assign + server force action                       | assignment version, `sa1` ETag, explicit bypasses, reason       | `READY` (`9a93282`)                                    |
+| Own offers           | `SupportRoutingOffer_list`                   | `project.support.assignments.self_manage`                           | offer expiry, fencing/version, opaque token, `so1` ETag         | `RELEASE_GATED`                                        |
+| Accept/decline offer | `SupportRoutingOffer_accept/decline`         | self-manage                                                         | `If-Match`, `Idempotency-Key`, expected assignment version      | canonical typed success/expiry/conflict errors `READY` |
+| Bulk assignment      | `SupportCaseAssignmentBatch_execute/outcome` | override; CMS actor only                                            | 1..50, durable per-item receipt, actor-scoped recovery          | `READY` (`9a93282`)                                    |
+| Single outcome       | `SupportCaseAssignment_commandOutcome`       | self-manage/override                                                | исходный `Idempotency-Key`, Project+actor+Case scope            | `READY` (`9a93282`)                                    |
+| Lead target catalog  | `SupportLeadTarget_list`                     | assignment override                                                 | purpose, bounded 500, opaque IDs/actions                        | `READY` (`9a93282`)                                    |
 
 Assignment mutations публикуют typed `400/403/404/409` с current version/ETag,
 capacity и drift evidence. Reason enums закреплены contract gate. Case-specific
@@ -99,17 +103,15 @@ SLA rollout публикует только `DISABLED` и `SHADOW`, поэтом
 Исполняемый corpus:
 `src/shared/api/repository/fixtures/support-inbox-case-workforce-contract-fixtures.ts`.
 Published fixtures валидируются напрямую schemas pinned OpenAPI через Ajv.
-Unpublished forbidden/stale/expired-offer/bulk/unknown-outcome сценарии имеют
-явный marker `NOT_PUBLISHED`. Additive unknown enum хранится отдельно и в
+Unpublished forbidden/stale/expired-offer сценарии имеют явный marker `NOT_PUBLISHED`. Bulk,
+force и unknown-outcome fixtures могут переходить на published contracts `9a93282`. Additive unknown enum хранится отдельно и в
 будущем обязан обрабатываться adapter-ом fail-closed.
 
 | Gap                                                         | Следующий owner                     |
 | ----------------------------------------------------------- | ----------------------------------- |
 | typed search/Saved View responses и закрытая filter grammar | backend search + Task 11            |
-| explicit Lead bypass, bulk receipt и outcome lookup         | backend assignment + Task 18        |
 | live capacity, current routing reason/reservation           | backend workforce/routing + Task 19 |
 | selected-Case SLA clock projection/action ETag              | backend SLA/workspace + Task 19     |
-| bulk partial receipt и unknown-outcome lookup               | backend assignment + Task 18        |
 
 Task 02 не реализует inbox UI, Case actions или settings. Он фиксирует границу,
 после которой Tasks 09–11 и 16–19 могут работать без client-derived truth.
