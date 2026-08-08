@@ -17,4 +17,5 @@ export const ChatAttachmentStatusResponseDtoState = {
   REJECTED: "REJECTED",
   FAILED: "FAILED",
   EXPIRED: "EXPIRED",
+  REVOKED: "REVOKED",
 } as const;

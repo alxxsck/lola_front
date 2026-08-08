@@ -189,6 +189,15 @@ export interface SupportWorkspaceSelection {
     replyWithoutTranslation: boolean;
     suspendAi: boolean;
     transferAssignment: boolean;
+    attachments?: {
+      state: "AVAILABLE" | "UNAVAILABLE";
+      upload: boolean;
+      download: boolean;
+      maxFilesPerMessage: number;
+      maxBytesPerFile: number;
+      maxBytesPerMessage: number;
+      contentTypes: string[];
+    };
     internalNotes?: {
       state: "AVAILABLE" | "UNAVAILABLE";
       read: boolean;
@@ -197,6 +206,8 @@ export interface SupportWorkspaceSelection {
       correct: boolean;
       tombstone: boolean;
       realtimeWatch: boolean;
+      attachmentUpload?: boolean;
+      attachmentDownload?: boolean;
     };
   };
   endUser: {
@@ -686,6 +697,15 @@ function mockCapabilities(
     replyWithoutTranslation: false,
     suspendAi: false,
     transferAssignment: actionable && Boolean(assignment),
+    attachments: {
+      state: "AVAILABLE",
+      upload: true,
+      download: true,
+      maxFilesPerMessage: 10,
+      maxBytesPerFile: 20 * 1024 * 1024,
+      maxBytesPerMessage: 50 * 1024 * 1024,
+      contentTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf", "text/plain", "text/csv"],
+    },
     internalNotes: selectedCase
       ? {
           state: "AVAILABLE",
@@ -695,6 +715,8 @@ function mockCapabilities(
           correct: true,
           tombstone: true,
           realtimeWatch: false,
+          attachmentUpload: true,
+          attachmentDownload: true,
         }
       : {
           state: "UNAVAILABLE",
@@ -704,6 +726,8 @@ function mockCapabilities(
           correct: false,
           tombstone: false,
           realtimeWatch: false,
+          attachmentUpload: false,
+          attachmentDownload: false,
         },
   };
 }

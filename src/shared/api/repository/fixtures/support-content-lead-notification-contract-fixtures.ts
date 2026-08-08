@@ -25,6 +25,7 @@ const tombstonedNote = {
   updatedAt: "2026-08-07T10:00:00.000Z",
   tombstonedAt: "2026-08-07T10:00:00.000Z",
   actionEtag: '"sin1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
+  attachments: [],
 } satisfies SupportInternalNoteResponseDto;
 
 const purgedNote = {

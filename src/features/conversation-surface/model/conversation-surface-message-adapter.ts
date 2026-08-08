@@ -94,6 +94,7 @@ export function adaptConversationSurfaceMessages(
         requestedTranslation: translations.get(message.id),
         status: messageStatus(message),
         delivery: deliveryStatus(message),
+        attachments: message.attachments,
       },
     ];
   });

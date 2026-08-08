@@ -13,6 +13,15 @@ const capabilities = {
   replyWithoutTranslation: false,
   suspendAi: false,
   transferAssignment: false,
+  attachments: {
+    state: "AVAILABLE" as const,
+    upload: true,
+    download: true,
+    maxFilesPerMessage: 10,
+    maxBytesPerFile: 20 * 1024 * 1024,
+    maxBytesPerMessage: 50 * 1024 * 1024,
+    contentTypes: ["image/png", "application/pdf"],
+  },
   internalNotes: {
     state: "UNAVAILABLE" as const,
     read: false,
@@ -21,6 +30,8 @@ const capabilities = {
     correct: false,
     tombstone: false,
     realtimeWatch: false,
+    attachmentUpload: false,
+    attachmentDownload: false,
   },
 };
 
@@ -102,6 +113,8 @@ const fullSelectionSuccess = {
       correct: true,
       tombstone: true,
       realtimeWatch: true,
+      attachmentUpload: true,
+      attachmentDownload: true,
     },
   },
   classificationOptions: [{ code: "BILLING", label: "Оплата" }],

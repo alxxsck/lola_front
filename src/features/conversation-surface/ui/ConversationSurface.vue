@@ -17,6 +17,7 @@ import ConversationCollaborationStatus from "./ConversationCollaborationStatus.v
 import {
   conversationSurfaceDraftKey,
   type ConversationSurfaceAISuspensionCapability,
+  type ConversationSurfaceAttachmentDownloadRequest,
   type ConversationSurfaceCollaboration,
   type ConversationSurfaceComposer,
   type ConversationSurfaceComposerAction,
@@ -42,6 +43,7 @@ const props = defineProps<{
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
   collaboration?: ConversationSurfaceCollaboration;
   internalNotes?: ConversationSurfaceInternalNotes;
+  canDownloadPublicAttachments?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -67,6 +69,10 @@ const emit = defineEmits<{
   "retry-ai-suspension": [];
   "retry-delivery": [messageId: string];
   "open-internal-notes": [];
+  "add-attachments": [files: File[]];
+  "remove-attachment": [localId: string];
+  "retry-attachment": [localId: string];
+  "download-attachment": [request: ConversationSurfaceAttachmentDownloadRequest];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -93,7 +99,13 @@ const canSend = computed(
   () =>
     !composerDisabled.value &&
     props.composer.sendCapability.kind === "SOURCE" &&
-    Boolean(draft.value.trim()),
+    (Boolean(draft.value.trim()) ||
+      Boolean(
+        props.composer.attachments?.items.some(
+          (item) => item.state === "READY" && item.canAttach,
+        ),
+      )) &&
+    !props.composer.attachments?.busy,
 );
 const translationSendDisabled = computed(() => {
   const preview = props.composer.replyPreview;
@@ -104,6 +116,7 @@ const translationSendDisabled = computed(() => {
     preview.busy ||
     preview.stale ||
     preview.disabled ||
+    props.composer.attachments?.busy ||
     preview.draft?.status !== "READY"
   );
 });
@@ -204,7 +217,20 @@ function setViewMode(mode: "ORIGINAL" | "TRANSLATED"): void {
 }
 
 function draftRequest(text = draft.value): ConversationSurfaceSendRequest {
-  return { scopeKey: draftKey.value, mode: props.composer.mode, text };
+  const ready = props.composer.attachments?.items.filter(
+    (item) => item.state === "READY" && item.canAttach,
+  );
+  return {
+    scopeKey: draftKey.value,
+    mode: props.composer.mode,
+    text,
+    ...(ready?.length
+      ? {
+          attachmentIds: ready.map((item) => item.id),
+          attachmentDraftKey: props.composer.attachments?.draftKey,
+        }
+      : {}),
+  };
 }
 
 function updateDraft(value: string): void {
@@ -215,7 +241,7 @@ function updateDraft(value: string): void {
 
 function requestSend(): void {
   const text = draft.value.trim();
-  if (!canSend.value || !text) return;
+  if (!canSend.value || (!text && !props.composer.attachments?.items.some((item) => item.state === "READY" && item.canAttach))) return;
   emit("send", draftRequest(text));
 }
 
@@ -741,6 +767,30 @@ onBeforeUnmount(() => {
             :requested="message.requestedTranslation"
             :view-mode="translation.mode"
           />
+          <ul
+            v-if="message.attachments?.length"
+            class="conversation-surface__message-attachments"
+            aria-label="Вложения сообщения"
+          >
+            <li v-for="attachment in message.attachments" :key="attachment.id">
+              <button
+                type="button"
+                :disabled="!canDownloadPublicAttachments"
+                :title="canDownloadPublicAttachments ? 'Скачать файл' : 'Скачивание недоступно'"
+                @click="emit('download-attachment', {
+                  attachmentId: attachment.id,
+                  visibility: 'PUBLIC_REPLY',
+                })"
+              >
+                <i :class="attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+                <span>
+                  <strong>{{ attachment.filename }}</strong>
+                  <small>{{ Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU') }} КБ</small>
+                </span>
+                <i class="pi pi-download" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
           <span
             v-if="message.status"
             class="conversation-surface__message-status"
@@ -907,6 +957,13 @@ onBeforeUnmount(() => {
         @discard-send-attempt="emit('discard-send-attempt')"
         @change-mode="emit('change-composer-mode', $event)"
         @action="emit('composer-action', $event)"
+        @add-attachments="emit('add-attachments', $event)"
+        @remove-attachment="emit('remove-attachment', $event)"
+        @retry-attachment="emit('retry-attachment', $event)"
+        @download-attachment="emit('download-attachment', {
+          attachmentId: $event,
+          visibility: composer.mode,
+        })"
       />
       <p
         v-else-if="composer.sendCapability.kind === 'BLOCKED'"
@@ -951,6 +1008,43 @@ onBeforeUnmount(() => {
   min-width: 0;
   background: var(--surface-card);
 }
+.conversation-surface__message-attachments {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.conversation-surface__message-attachments button {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 20px;
+  width: min(100%, 320px);
+  min-height: 48px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: inherit;
+  background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  text-align: left;
+  cursor: pointer;
+}
+.conversation-surface__message-attachments button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.conversation-surface__message-attachments button:disabled { cursor: not-allowed; opacity: 0.62; }
+.conversation-surface__message-attachments span { min-width: 0; }
+.conversation-surface__message-attachments strong,
+.conversation-surface__message-attachments small { display: block; }
+.conversation-surface__message-attachments strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.conversation-surface__message-attachments small { color: var(--text-muted); font-size: 10px; }
 .conversation-surface__internal-notes {
   display: grid;
   gap: 4px;

@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { RequestedMessageTranslation } from "@/features/conversation-translation/model/translation-presentation";
 import type {
+  ConversationSurfaceAttachmentDownloadRequest,
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
   ConversationSurfaceAISuspensionCapability,
@@ -29,6 +30,7 @@ const props = defineProps<{
   collaboration?: ConversationSurfaceCollaboration;
   deliveryActions?: ReadonlyMap<string, SupportMessageDeliveryAction>;
   internalNotes?: ConversationSurfaceInternalNotes;
+  canDownloadPublicAttachments?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -54,6 +56,10 @@ const emit = defineEmits<{
   "retry-ai-suspension": [];
   "retry-delivery": [messageId: string];
   "open-internal-notes": [];
+  "add-attachments": [files: File[]];
+  "remove-attachment": [localId: string];
+  "retry-attachment": [localId: string];
+  "download-attachment": [request: ConversationSurfaceAttachmentDownloadRequest];
 }>();
 
 const surfaceMessages = computed(() =>
@@ -75,6 +81,7 @@ const surfaceMessages = computed(() =>
     :ai-suspension="aiSuspension"
     :collaboration="collaboration"
     :internal-notes="internalNotes"
+    :can-download-public-attachments="canDownloadPublicAttachments"
     @load-older="emit('load-older')"
     @load-newer="emit('load-newer')"
     @visible-high-water="emit('visible-high-water', $event)"
@@ -97,5 +104,9 @@ const surfaceMessages = computed(() =>
     @retry-ai-suspension="emit('retry-ai-suspension')"
     @retry-delivery="emit('retry-delivery', $event)"
     @open-internal-notes="emit('open-internal-notes')"
+    @add-attachments="emit('add-attachments', $event)"
+    @remove-attachment="emit('remove-attachment', $event)"
+    @retry-attachment="emit('retry-attachment', $event)"
+    @download-attachment="emit('download-attachment', $event)"
   />
 </template>

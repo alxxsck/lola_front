@@ -9,6 +9,10 @@ import type { ChatAttachmentUploadResponseDtoRequiredHeaders } from "./chatAttac
 import type { ChatAttachmentUploadResponseDtoState } from "./chatAttachmentUploadResponseDtoState";
 
 export interface ChatAttachmentUploadResponseDto {
+  /** @nullable */
+  conversationId: string | null;
+  /** @nullable */
+  draftKey: string | null;
   expiresAt: string;
   id: string;
   replayed: boolean;

@@ -8,6 +8,8 @@
 import type { SupportWorkspaceInternalNoteCapabilitiesResponseDtoState } from "./supportWorkspaceInternalNoteCapabilitiesResponseDtoState";
 
 export interface SupportWorkspaceInternalNoteCapabilitiesResponseDto {
+  attachmentDownload: boolean;
+  attachmentUpload: boolean;
   correct: boolean;
   create: boolean;
   historyRead: boolean;

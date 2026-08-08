@@ -1065,7 +1065,17 @@
               "DELIVERY_RETRY_OUTCOME_AMBIGUOUS",
               "DELIVERY_RETRY_STALE",
               "DELIVERY_RETRY_NOT_FAILED",
-              "DELIVERY_RETRY_NOT_ALLOWED"
+              "DELIVERY_RETRY_NOT_ALLOWED",
+              "CHAT_ATTACHMENT_IDS_INVALID",
+              "CHAT_ATTACHMENT_DRAFT_SCOPE_REQUIRED",
+              "CHAT_ATTACHMENT_TOTAL_SIZE_EXCEEDED",
+              "CHAT_ATTACHMENT_NOT_FOUND",
+              "CHAT_ATTACHMENT_NOT_READY",
+              "CHAT_ATTACHMENT_ALREADY_ATTACHED",
+              "CHAT_ATTACHMENT_ATTACH_CONFLICT",
+              "CHAT_ATTACHMENT_UPLOAD_EXPIRED",
+              "CHAT_ATTACHMENTS_DISABLED",
+              "CHAT_ATTACHMENT_RETENTION_NOT_READY"
             ],
             "type": "string"
           },
@@ -9211,6 +9221,21 @@
         ],
         "type": "object"
       },
+      "ChatAttachmentDraftResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChatAttachmentStatusResponseDto"
+            },
+            "maxItems": 10,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "ChatAttachmentMessageSnapshotResponseDto": {
         "properties": {
           "contentType": {
@@ -9237,7 +9262,7 @@
             "type": "string"
           },
           "sizeBytes": {
-            "maximum": 26214400,
+            "maximum": 20971520,
             "minimum": 1,
             "type": "number"
           }
@@ -9247,6 +9272,26 @@
           "displayFilename",
           "contentType",
           "sizeBytes"
+        ],
+        "type": "object"
+      },
+      "ChatAttachmentScannerAckDto": {
+        "properties": {
+          "attachmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "APPLIED",
+              "DELETION_QUEUED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "attachmentId",
+          "disposition"
         ],
         "type": "object"
       },
@@ -9290,7 +9335,7 @@
           "attachedMessageId": {
             "format": "uuid",
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "canAttach": {
             "type": "boolean"
@@ -9301,9 +9346,14 @@
           "displayFilename": {
             "type": "string"
           },
+          "draftKey": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "failureCode": {
             "nullable": true,
-            "type": "object"
+            "type": "string"
           },
           "id": {
             "format": "uuid",
@@ -9330,7 +9380,8 @@
               "READY",
               "REJECTED",
               "FAILED",
-              "EXPIRED"
+              "EXPIRED",
+              "REVOKED"
             ],
             "type": "string"
           },
@@ -9347,6 +9398,7 @@
           "contentType",
           "sizeBytes",
           "attachedMessageId",
+          "draftKey",
           "canAttach",
           "failureCode",
           "updatedAt"
@@ -9355,6 +9407,16 @@
       },
       "ChatAttachmentUploadResponseDto": {
         "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "draftKey": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "expiresAt": {
             "format": "date-time",
             "type": "string"
@@ -9383,6 +9445,8 @@
         "required": [
           "id",
           "state",
+          "draftKey",
+          "conversationId",
           "uploadUrl",
           "expiresAt",
           "requiredHeaders",
@@ -14352,6 +14416,55 @@
         ],
         "type": "object"
       },
+      "CreateAdminChatAttachmentUploadDto": {
+        "properties": {
+          "checksumSha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "contentType": {
+            "enum": [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "text/csv",
+              "text/plain"
+            ],
+            "type": "string"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "displayFilename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "draftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "maximum": 20971520,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "draftKey",
+          "conversationId",
+          "displayFilename",
+          "contentType",
+          "sizeBytes",
+          "checksumSha256"
+        ],
+        "type": "object"
+      },
       "CreateAmplitudeConnectionDto": {
         "properties": {
           "displayName": {
@@ -14530,13 +14643,22 @@
             ],
             "type": "string"
           },
+          "conversationId": {
+            "description": "Legacy end-user clients may omit it; the server pins the current Session Conversation.",
+            "format": "uuid",
+            "type": "string"
+          },
           "displayFilename": {
             "maxLength": 255,
             "minLength": 1,
             "type": "string"
           },
+          "draftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
           "sizeBytes": {
-            "maximum": 26214400,
+            "maximum": 20971520,
             "minimum": 1,
             "type": "number"
           }
@@ -15563,8 +15685,64 @@
         ],
         "type": "object"
       },
+      "CreateSupportInternalNoteAttachmentUploadDto": {
+        "properties": {
+          "checksumSha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "contentType": {
+            "enum": [
+              "application/pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "text/csv",
+              "text/plain"
+            ],
+            "type": "string"
+          },
+          "displayFilename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "draftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "maximum": 20971520,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "draftKey",
+          "displayFilename",
+          "contentType",
+          "sizeBytes",
+          "checksumSha256"
+        ],
+        "type": "object"
+      },
       "CreateSupportInternalNoteDto": {
         "properties": {
+          "attachmentDraftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "attachmentIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
           "body": {
             "maxLength": 20480,
             "minLength": 1,
@@ -15587,9 +15765,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "body"
-        ],
         "type": "object"
       },
       "CreateSupportKnowledgeTextDocumentDto": {
@@ -37073,6 +37248,11 @@
           "aiSuspension": {
             "$ref": "#/components/schemas/AdminMessageAISuspensionDto"
           },
+          "attachmentDraftKey": {
+            "description": "Exact server-owned attachment draft consumed with attachmentIds.",
+            "format": "uuid",
+            "type": "string"
+          },
           "attachmentIds": {
             "description": "CLEAN attachment IDs uploaded by this operator.",
             "items": {
@@ -40199,6 +40379,178 @@
         ],
         "type": "object"
       },
+      "SupportInternalNoteAttachmentDownloadGrantResponseDto": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteAttachmentDraftResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportInternalNoteAttachmentStatusResponseDto"
+            },
+            "maxItems": 10,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteAttachmentSnapshotResponseDto": {
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "displayFilename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "displayFilename",
+          "contentType",
+          "sizeBytes"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteAttachmentStatusResponseDto": {
+        "properties": {
+          "attachedNoteId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "canAttach": {
+            "type": "boolean"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "displayFilename": {
+            "type": "string"
+          },
+          "draftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "failureCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "scanState": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "RETRY",
+              "CLEAN",
+              "MALICIOUS",
+              "ERROR"
+            ],
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "UPLOADING",
+              "SCANNING",
+              "READY",
+              "REJECTED",
+              "FAILED",
+              "EXPIRED",
+              "REVOKED"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "draftKey",
+          "state",
+          "scanState",
+          "displayFilename",
+          "contentType",
+          "sizeBytes",
+          "attachedNoteId",
+          "canAttach",
+          "failureCode",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteAttachmentUploadResponseDto": {
+        "properties": {
+          "draftKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "requiredHeaders": {
+            "type": "object"
+          },
+          "state": {
+            "enum": [
+              "UPLOADING"
+            ],
+            "type": "string"
+          },
+          "uploadUrl": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "draftKey",
+          "state",
+          "uploadUrl",
+          "expiresAt",
+          "requiredHeaders",
+          "replayed"
+        ],
+        "type": "object"
+      },
       "SupportInternalNotePageResponseDto": {
         "properties": {
           "items": {
@@ -40513,6 +40865,12 @@
             "pattern": "^\"sin1\\.[A-Za-z0-9_-]{43}\"$",
             "type": "string"
           },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/SupportInternalNoteAttachmentSnapshotResponseDto"
+            },
+            "type": "array"
+          },
           "body": {
             "nullable": true,
             "type": "string"
@@ -40595,7 +40953,8 @@
           "createdAt",
           "updatedAt",
           "tombstonedAt",
-          "actionEtag"
+          "actionEtag",
+          "attachments"
         ],
         "type": "object"
       },
@@ -48692,10 +49051,58 @@
         },
         "type": "object"
       },
+      "SupportWorkspaceAttachmentCapabilitiesResponseDto": {
+        "properties": {
+          "contentTypes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "download": {
+            "type": "boolean"
+          },
+          "maxBytesPerFile": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxBytesPerMessage": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxFilesPerMessage": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "upload": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "upload",
+          "download",
+          "maxFilesPerMessage",
+          "maxBytesPerFile",
+          "maxBytesPerMessage",
+          "contentTypes"
+        ],
+        "type": "object"
+      },
       "SupportWorkspaceCapabilitiesResponseDto": {
         "properties": {
           "assignCase": {
             "type": "boolean"
+          },
+          "attachments": {
+            "$ref": "#/components/schemas/SupportWorkspaceAttachmentCapabilitiesResponseDto"
           },
           "claimAssignment": {
             "type": "boolean"
@@ -48728,6 +49135,7 @@
         "required": [
           "reply",
           "replyWithoutTranslation",
+          "attachments",
           "suspendAi",
           "manageCase",
           "assignCase",
@@ -49084,6 +49492,12 @@
       },
       "SupportWorkspaceInternalNoteCapabilitiesResponseDto": {
         "properties": {
+          "attachmentDownload": {
+            "type": "boolean"
+          },
+          "attachmentUpload": {
+            "type": "boolean"
+          },
           "correct": {
             "type": "boolean"
           },
@@ -49117,7 +49531,9 @@
           "historyRead",
           "correct",
           "tombstone",
-          "realtimeWatch"
+          "realtimeWatch",
+          "attachmentUpload",
+          "attachmentDownload"
         ],
         "type": "object"
       },
@@ -61589,7 +62005,9 @@
                           "enum": [
                             "REQUEST_VALIDATION_FAILED",
                             "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID",
-                            "SUPPORT_INTERNAL_NOTE_BODY_INVALID"
+                            "SUPPORT_INTERNAL_NOTE_BODY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_TOTAL_SIZE_EXCEEDED"
                           ],
                           "type": "string"
                         }
@@ -61671,7 +62089,8 @@
                         "code": {
                           "enum": [
                             "NOT_FOUND_OR_FORBIDDEN",
-                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
                           ],
                           "type": "string"
                         }
@@ -61698,7 +62117,11 @@
                       "properties": {
                         "code": {
                           "enum": [
-                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_REUSED"
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED"
                           ],
                           "type": "string"
                         }
@@ -61727,7 +62150,8 @@
                           "enum": [
                             "SUPPORT_CONTENT_RETENTION_NOT_READY",
                             "SUPPORT_CONTENT_CAPABILITY_DISABLED",
-                            "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY"
+                            "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY",
+                            "CHAT_ATTACHMENTS_DISABLED"
                           ],
                           "type": "string"
                         }
@@ -62482,6 +62906,1592 @@
         ],
         "x-iam-permission": {
           "code": "project.support.internal_notes.redact",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachment-drafts/{draftKey}": {
+      "get": {
+        "operationId": "SupportInternalNoteAttachment_listDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachments/{attachmentId}": {
+      "get": {
+        "operationId": "SupportInternalNoteAttachment_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentStatusResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachments/{attachmentId}/complete": {
+      "post": {
+        "operationId": "SupportInternalNoteAttachment_completeUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentStatusResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachments/{attachmentId}/grant": {
+      "get": {
+        "operationId": "SupportInternalNoteAttachment_grantDownload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentDownloadGrantResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachments/{attachmentId}/revoke": {
+      "post": {
+        "operationId": "SupportInternalNoteAttachment_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentStatusResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.write",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/attachments/uploads": {
+      "post": {
+        "operationId": "SupportInternalNoteAttachment_startUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportInternalNoteAttachmentUploadDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteAttachmentUploadResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_OBJECT_MISMATCH",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_REVOKED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.write",
           "scope": "PROJECT"
         }
       }
@@ -104689,7 +106699,7 @@
     },
     "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/{attachmentId}": {
       "get": {
-        "operationId": "AdminChatAttachments_status",
+        "operationId": "AdminChatAttachment_status",
         "parameters": [
           {
             "in": "path",
@@ -104712,6 +106722,15 @@
             "name": "attachmentId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -104726,6 +106745,143 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -104733,6 +106889,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin chat attachments"
         ],
@@ -104744,7 +106901,7 @@
     },
     "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/{attachmentId}/complete": {
       "post": {
-        "operationId": "AdminChatAttachments_complete",
+        "operationId": "AdminChatAttachment_completeUpload",
         "parameters": [
           {
             "in": "path",
@@ -104767,6 +106924,15 @@
             "name": "attachmentId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           },
@@ -104789,6 +106955,175 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_REQUIRED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_INVALID",
+                            "CHAT_ATTACHMENT_OBJECT_MISMATCH"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_EXPIRED",
+                            "CHAT_ATTACHMENT_COMPLETE_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -104796,6 +107131,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin chat attachments"
         ],
@@ -104807,7 +107143,7 @@
     },
     "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/{attachmentId}/grant": {
       "get": {
-        "operationId": "AdminChatAttachments_grant",
+        "operationId": "AdminChatAttachment_grantDownload",
         "parameters": [
           {
             "in": "path",
@@ -104832,6 +107168,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -104844,6 +107189,144 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -104851,6 +107334,448 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "admin chat attachments"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/{attachmentId}/revoke": {
+      "post": {
+        "operationId": "AdminChatAttachment_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatAttachmentStatusResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_REQUIRED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_ALREADY_ATTACHED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin chat attachments"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.reply",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/drafts/{draftKey}": {
+      "get": {
+        "operationId": "AdminChatAttachment_listDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatAttachmentDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "admin chat attachments"
         ],
@@ -104862,7 +107787,7 @@
     },
     "/api/v1/admin/projects/{projectId}/users/{userId}/attachments/uploads": {
       "post": {
-        "operationId": "AdminChatAttachments_start",
+        "operationId": "AdminChatAttachment_startUpload",
         "parameters": [
           {
             "in": "path",
@@ -104893,7 +107818,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateChatAttachmentUploadDto"
+                "$ref": "#/components/schemas/CreateAdminChatAttachmentUploadDto"
               }
             }
           },
@@ -104909,6 +107834,207 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_REQUIRED",
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_INVALID",
+                            "CHAT_ATTACHMENT_FILENAME_INVALID",
+                            "CHAT_ATTACHMENT_CONTENT_TYPE_INVALID",
+                            "CHAT_ATTACHMENT_SIZE_INVALID",
+                            "CHAT_ATTACHMENT_CHECKSUM_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "CHAT_ATTACHMENT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_IDEMPOTENCY_KEY_REUSED",
+                            "CHAT_ATTACHMENT_UPLOAD_ALREADY_COMPLETED",
+                            "CHAT_ATTACHMENT_UPLOAD_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENT_UPLOAD_CAPACITY_EXCEEDED",
+                            "CHAT_ATTACHMENT_UPLOAD_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "CHAT_ATTACHMENT_RETENTION_NOT_READY",
+                            "CHAT_ATTACHMENT_STORAGE_UNAVAILABLE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -104916,6 +108042,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin chat attachments"
         ],
@@ -106523,6 +109650,16 @@
               }
             },
             "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -106641,6 +109778,16 @@
             "description": ""
           },
           "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
             "content": {
               "application/json": {
                 "schema": {
@@ -109487,6 +112634,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Legacy end-user clients may omit it; the server resolves the current Session Conversation.",
+            "in": "query",
+            "name": "conversationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -109520,6 +112677,16 @@
             "name": "attachmentId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Legacy end-user clients may omit it; the server resolves the current Session Conversation.",
+            "in": "query",
+            "name": "conversationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           },
@@ -109563,6 +112730,16 @@
             "name": "attachmentId",
             "required": true,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Legacy end-user clients may omit it; the server resolves the current Session Conversation.",
+            "in": "query",
+            "name": "conversationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -111445,7 +114622,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatAttachmentStatusResponseDto"
+                  "$ref": "#/components/schemas/ChatAttachmentScannerAckDto"
                 }
               }
             },

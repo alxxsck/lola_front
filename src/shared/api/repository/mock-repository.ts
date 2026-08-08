@@ -1387,7 +1387,13 @@ export const mockRepository: ReteniveRepository = {
       id: messageId,
       conversationId: conversation.id,
       author: "ADMIN",
-      text: message.text,
+      text: message.text ?? "",
+      attachments: message.attachmentIds?.map((id) => ({
+        id,
+        filename: "Вложение",
+        contentType: "application/octet-stream",
+        sizeBytes: 1,
+      })),
       status: "COMPLETED",
       createdAt: new Date().toISOString(),
     });

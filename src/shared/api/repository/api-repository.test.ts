@@ -686,6 +686,35 @@ describe("api repository adapter", () => {
     });
   });
 
+  it("omits text for an attachment-only admin message", async () => {
+    vi.mocked(adminMessagingSend).mockResolvedValue({
+      duplicate: false,
+      commandIds: [],
+      message: { id: "message-attachment", threadId: "conversation-7", status: "COMPLETED" },
+      delivery: { status: "PENDING" },
+    } as never);
+
+    await apiRepository.sendAdminMessage("project-1", "user-1", {
+      conversationId: "conversation-7",
+      attachmentIds: ["attachment-1"],
+      attachmentDraftKey: "draft-1",
+      idempotencyKey: "2d77b597-1bc0-4b0f-a783-77597bb71483",
+    });
+
+    expect(adminMessagingSend).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      {
+        attachmentIds: ["attachment-1"],
+        attachmentDraftKey: "draft-1",
+        conversationId: "conversation-7",
+      },
+      {
+        headers: { "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483" },
+      },
+    );
+  });
+
   it("looks up an ambiguous admin-message outcome with the original idempotency key", async () => {
     vi.mocked(adminMessagingLookupOutcome).mockResolvedValue({
       duplicate: true,

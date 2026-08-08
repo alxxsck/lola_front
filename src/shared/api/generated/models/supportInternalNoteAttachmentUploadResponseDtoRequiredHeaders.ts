@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type ChatAttachmentStatusResponseDtoFailureCode = {
+export type SupportInternalNoteAttachmentUploadResponseDtoRequiredHeaders = {
   [key: string]: unknown;
-} | null;
+};

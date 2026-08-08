@@ -5,12 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportInternalNoteAttachmentSnapshotResponseDto } from "./supportInternalNoteAttachmentSnapshotResponseDto";
 import type { SupportInternalNoteResponseDtoCreator } from "./supportInternalNoteResponseDtoCreator";
 import type { SupportInternalNoteResponseDtoLifecycle } from "./supportInternalNoteResponseDtoLifecycle";
 
 export interface SupportInternalNoteResponseDto {
   /** @pattern ^"sin1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
+  attachments: SupportInternalNoteAttachmentSnapshotResponseDto[];
   /** @nullable */
   body: string | null;
   /** @nullable */

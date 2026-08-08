@@ -357,20 +357,32 @@ export function createSupportInternalNotesController(
   async function create(
     body: string,
     conversationId?: string,
+    attachments?: { ids: string[]; draftKey: string },
   ): Promise<boolean> {
     const scope = currentScope();
     const normalizedBody = body.trim();
-    if (!scope || !canWrite() || !validBody(normalizedBody) || creating.value)
+    if (
+      !scope ||
+      !canWrite() ||
+      (!validBody(normalizedBody) && !attachments?.ids.length) ||
+      creating.value
+    )
       return false;
     const generation = notesGeneration;
     const mutationToken = Symbol("create-internal-note");
-    const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCREATE\u001f${normalizedBody}\u001f${conversationId ?? ""}`;
+    const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCREATE\u001f${normalizedBody}\u001f${conversationId ?? ""}\u001f${attachments?.draftKey ?? ""}\u001f${attachments?.ids.join(",") ?? ""}`;
     creating.value = true;
     createMutationToken = mutationToken;
     mutationError.value = "";
     try {
       const note = await source.create(scope.projectId, scope.caseId, {
-        body: normalizedBody,
+        ...(normalizedBody ? { body: normalizedBody } : {}),
+        ...(attachments?.ids.length
+          ? {
+              attachmentIds: attachments.ids,
+              attachmentDraftKey: attachments.draftKey,
+            }
+          : {}),
         ...(conversationId ? { conversationId } : {}),
         idempotencyKey: commandKey(identity),
       });

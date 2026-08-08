@@ -14,6 +14,8 @@ export interface SendAdminMessageDto {
   /** @maxItems 5 */
   actions?: DirectAdminActionDto[];
   aiSuspension?: AdminMessageAISuspensionDto;
+  /** Exact server-owned attachment draft consumed with attachmentIds. */
+  attachmentDraftKey?: string;
   /**
    * CLEAN attachment IDs uploaded by this operator.
    * @maxItems 10

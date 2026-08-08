@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type ChatAttachmentStatusResponseDtoAttachedMessageId = {
-  [key: string]: unknown;
-} | null;
+export interface SupportInternalNoteAttachmentDownloadGrantResponseDto {
+  expiresAt: string;
+  url: string;
+}

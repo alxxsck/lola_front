@@ -25,6 +25,7 @@ import { createConversationTranslationController } from "@/features/conversation
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
 import type {
+  ConversationSurfaceAttachmentDownloadRequest,
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
   ConversationSurfaceAISuspensionCapability,
@@ -72,6 +73,8 @@ import {
 } from "@/features/support-views/model/support-view-route";
 import { createSupportViewsController } from "@/features/support-views/model/use-support-views";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
+import { supportAttachmentsSource } from "@/features/support-attachments/api/support-attachments-source";
+import { createSupportAttachmentsController } from "@/features/support-attachments/model/use-support-attachments";
 import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
 import { createSupportMessageDeliveryController } from "@/features/conversation-delivery/model/use-support-message-delivery";
 import { supportAssignmentSource } from "@/features/support-case-assignment/api/support-assignment-source";
@@ -370,6 +373,125 @@ const conversation = createSupportConversationController(
   },
   supportWorkspaceSource,
 );
+const publicAttachmentsAccessDenied = ref(false);
+const noteAttachmentsAccessDenied = ref(false);
+function publicAttachmentCapabilities() {
+  const value = conversation.selection.value?.capabilities.attachments;
+  return {
+    state: publicAttachmentsAccessDenied.value
+      ? ("UNAVAILABLE" as const)
+      : value?.state ?? ("UNAVAILABLE" as const),
+    upload: Boolean(!publicAttachmentsAccessDenied.value && value?.upload),
+    download: Boolean(!publicAttachmentsAccessDenied.value && value?.download),
+    maxFiles: value?.maxFilesPerMessage ?? 10,
+    maxFileBytes: value?.maxBytesPerFile ?? 20 * 1024 * 1024,
+    maxTotalBytes: value?.maxBytesPerMessage ?? 50 * 1024 * 1024,
+    contentTypes: value?.contentTypes ?? [],
+  };
+}
+function noteAttachmentCapabilities() {
+  const selection = conversation.selection.value;
+  const common = selection?.capabilities.attachments;
+  const note = selection?.capabilities.internalNotes;
+  return {
+    state:
+      !noteAttachmentsAccessDenied.value &&
+      common?.state === "AVAILABLE" && note?.state === "AVAILABLE"
+        ? ("AVAILABLE" as const)
+        : ("UNAVAILABLE" as const),
+    upload: Boolean(!noteAttachmentsAccessDenied.value && common?.upload && note?.attachmentUpload),
+    download: Boolean(!noteAttachmentsAccessDenied.value && common?.download && note?.attachmentDownload),
+    maxFiles: common?.maxFilesPerMessage ?? 10,
+    maxFileBytes: common?.maxBytesPerFile ?? 20 * 1024 * 1024,
+    maxTotalBytes: common?.maxBytesPerMessage ?? 50 * 1024 * 1024,
+    contentTypes: common?.contentTypes ?? [],
+  };
+}
+const publicAttachments = createSupportAttachmentsController(
+  supportAttachmentsSource,
+  {
+    scope: () => {
+      const selection = conversation.selection.value;
+      const projectId = auth.project?.id;
+      const actorId = auth.user?.id;
+      if (!projectId || !actorId || !selection?.conversation) return null;
+      return {
+        visibility: "PUBLIC_REPLY",
+        projectId,
+        actorId,
+        endUserId: selection.endUser.id,
+        conversationId: selection.conversation.id,
+      };
+    },
+    capabilities: publicAttachmentCapabilities,
+    onForbidden: handlePublicAttachmentForbidden,
+  },
+);
+const noteAttachments = createSupportAttachmentsController(
+  supportAttachmentsSource,
+  {
+    scope: () => {
+      const caseId = conversation.selection.value?.case?.id;
+      const projectId = auth.project?.id;
+      const actorId = auth.user?.id;
+      if (!projectId || !actorId || !caseId) return null;
+      return { visibility: "INTERNAL_NOTE", projectId, actorId, caseId };
+    },
+    capabilities: noteAttachmentCapabilities,
+    onForbidden: handleNoteAttachmentForbidden,
+  },
+);
+
+async function handlePublicAttachmentForbidden(): Promise<void> {
+  publicAttachmentsAccessDenied.value = true;
+  publicAttachments.dispose();
+  conversation.messages.value = conversation.messages.value.map((message) => ({
+    ...message,
+    attachments: [],
+  }));
+  try {
+    await auth.refreshContext();
+  } catch {
+    // Attachment metadata is already concealed while authority is refreshed.
+  }
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
+}
+
+async function handleNoteAttachmentForbidden(): Promise<void> {
+  noteAttachmentsAccessDenied.value = true;
+  noteAttachments.dispose();
+  internalNotes.reset();
+  try {
+    await auth.refreshContext();
+  } catch {
+    // Private attachment metadata is already concealed while authority is refreshed.
+  }
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
+}
+const publicAttachmentAuthorityKey = computed(() => {
+  const selection = conversation.selection.value;
+  const capability = publicAttachmentCapabilities();
+  return [
+    auth.project?.id ?? "",
+    auth.user?.id ?? "",
+    selection?.endUser.id ?? "",
+    selection?.conversation?.id ?? "",
+    capability.state,
+    capability.upload ? "upload" : "no-upload",
+    capability.download ? "download" : "no-download",
+  ].join("\u0000");
+});
+const noteAttachmentAuthorityKey = computed(() => {
+  const capability = noteAttachmentCapabilities();
+  return [
+    auth.project?.id ?? "",
+    auth.user?.id ?? "",
+    conversation.selection.value?.case?.id ?? "",
+    capability.state,
+    capability.upload ? "upload" : "no-upload",
+    capability.download ? "download" : "no-download",
+  ].join("\u0000");
+});
 const reply = createSupportReplyController(
   {
     projectId: () => auth.project?.id,
@@ -377,6 +499,9 @@ const reply = createSupportReplyController(
     selection: () => conversation.selection.value,
     async reconcile() {
       await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+    onAccepted(attempt) {
+      if (attempt.attachmentIds?.length) publicAttachments.consumeDraft();
     },
   },
   repository,
@@ -434,6 +559,7 @@ const replyTranslationBusy = computed(
     translation.editingReply.value ||
     translation.savingPreference.value,
 );
+const replyHasText = computed(() => Boolean(reply.draft.value.trim()));
 const translationPolicyRequiresReviewedReply = computed(() => {
   const preference = translation.state.value?.preference;
   const targetLocale = translation.targetLocale.value;
@@ -447,10 +573,12 @@ const replyPolicyChecking = computed(
   () => canManageTranslation.value && !translation.state.value,
 );
 const canSubmitPublicReply = computed(() => {
-  if (!reply.canReply.value || replyPolicyChecking.value) return false;
+  if (!reply.canReply.value || (replyHasText.value && replyPolicyChecking.value))
+    return false;
   if (
-    replyTranslationRequested.value ||
-    translationPolicyRequiresReviewedReply.value
+    replyHasText.value &&
+    (replyTranslationRequested.value ||
+      translationPolicyRequiresReviewedReply.value)
   )
     return Boolean(
       translation.readyDraft.value &&
@@ -461,11 +589,12 @@ const canSubmitPublicReply = computed(() => {
 });
 const publicReplyBlockedReason = computed(() => {
   if (!reply.canReply.value) return "";
-  if (replyPolicyChecking.value)
+  if (replyHasText.value && replyPolicyChecking.value)
     return translation.error.value || "Проверяем правила перевода…";
   if (
-    replyTranslationRequested.value ||
-    translationPolicyRequiresReviewedReply.value
+    replyHasText.value &&
+    (replyTranslationRequested.value ||
+      translationPolicyRequiresReviewedReply.value)
   )
     return translation.targetLocale.value
       ? "Сначала подготовьте и проверьте перевод."
@@ -521,11 +650,23 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         draftRevision: `${selection?.capabilitiesRevision ?? "unselected"}:internal-note`,
         sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
         sending: internalNotes.creating.value,
+        attachments: {
+          draftKey: noteAttachments.draftKey.value,
+          accept: noteAttachmentCapabilities().contentTypes.join(","),
+          loading: noteAttachments.loading.value,
+          busy: noteAttachments.busy.value,
+          error: noteAttachments.error.value,
+          canDownload: noteAttachmentCapabilities().download,
+          maxFiles: noteAttachmentCapabilities().maxFiles,
+          items: noteAttachments.items.value,
+        },
         recipientStatus: null,
         actions: {
           attachment: {
-            visibility: "DISABLED",
-            reason: "Вложения во внутренних заметках появятся в пункте №23.",
+            visibility: noteAttachmentCapabilities().upload ? "ENABLED" : "DISABLED",
+            reason: noteAttachmentCapabilities().upload
+              ? undefined
+              : "Загрузка файлов во внутреннюю заметку недоступна.",
           },
           createTicket: { visibility: "HIDDEN" },
           classifyCase: { visibility: "HIDDEN" },
@@ -547,9 +688,11 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         translationAssist: null,
       };
     }
+    const hasReplyText = replyHasText.value;
     const translatedMode =
-      replyTranslationRequested.value ||
-      translationPolicyRequiresReviewedReply.value;
+      hasReplyText &&
+      (replyTranslationRequested.value ||
+        translationPolicyRequiresReviewedReply.value);
     const busy = replyTranslationBusy.value;
     const replyPreview =
       canManageTranslation.value && translatedMode && translation.state.value
@@ -567,7 +710,7 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
             showProviderDetails: canReadTranslationDetails.value,
           }
         : null;
-    const sendCapability = replyPolicyChecking.value
+    const sendCapability = hasReplyText && replyPolicyChecking.value
       ? {
           kind: "BLOCKED" as const,
           reason: publicReplyBlockedReason.value,
@@ -600,6 +743,16 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         selection?.conversation?.updatedAt ??
         "unselected",
       sending: reply.sending.value,
+      attachments: {
+        draftKey: publicAttachments.draftKey.value,
+        accept: publicAttachmentCapabilities().contentTypes.join(","),
+        loading: publicAttachments.loading.value,
+        busy: publicAttachments.busy.value,
+        error: publicAttachments.error.value,
+        canDownload: publicAttachmentCapabilities().download,
+        maxFiles: publicAttachmentCapabilities().maxFiles,
+        items: publicAttachments.items.value,
+      },
       outcome:
         reply.outcomeState.value === "IDLE" ||
         reply.outcomeState.value === "SENDING"
@@ -636,8 +789,12 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         : null,
       actions: {
         attachment: {
-          visibility: "DISABLED",
-          reason: "Backend-контракт вложений для ответа ещё не опубликован.",
+          visibility: publicAttachmentCapabilities().upload
+            ? "ENABLED"
+            : "DISABLED",
+          reason: publicAttachmentCapabilities().upload
+            ? undefined
+            : "Загрузка файлов в ответ недоступна.",
         },
         createTicket: {
           visibility: "HIDDEN",
@@ -1768,7 +1925,13 @@ async function reconcileCaseOperations(expiresAt: string): Promise<void> {
   }
 }
 
-async function sendReply(): Promise<void> {
+async function sendReply(
+  attachments?: { attachmentIds: string[]; attachmentDraftKey: string },
+): Promise<void> {
+  if (!replyHasText.value) {
+    await reply.send(attachments);
+    return;
+  }
   const policyLoaded = canManageTranslation.value
     ? await ensureReplyTranslationLoaded()
     : true;
@@ -1782,13 +1945,13 @@ async function sendReply(): Promise<void> {
   ) {
     replyTranslationRequested.value = true;
     if (translation.readyDraft.value) {
-      await sendTranslatedReply();
+      await sendTranslatedReply(undefined, attachments);
       return;
     }
     await prepareReplyTranslation();
     return;
   }
-  await reply.send();
+  await reply.send(attachments);
 }
 
 function setSendWithoutTranslationVisible(visible: boolean): void {
@@ -1799,7 +1962,15 @@ function setSendWithoutTranslationVisible(visible: boolean): void {
 async function sendReplyWithoutTranslation(): Promise<void> {
   const reason = sendWithoutTranslationReason.value.trim();
   if (!reason || !reply.canSendWithoutTranslation.value) return;
-  await reply.sendWithoutTranslation(reason);
+  await reply.sendWithoutTranslation(
+    reason,
+    publicAttachments.readyIds.value.length && publicAttachments.draftKey.value
+      ? {
+          attachmentIds: publicAttachments.readyIds.value,
+          attachmentDraftKey: publicAttachments.draftKey.value,
+        }
+      : undefined,
+  );
   if (!reply.draft.value.trim()) {
     setSendWithoutTranslationVisible(false);
     translation.clearReplyDraft();
@@ -1880,14 +2051,22 @@ async function sendSupportComposer(
     if (!canWriteSelectedInternalNotes.value) return;
     internalNoteDraft.value = request.text;
     const conversationId = conversation.selection.value?.conversation?.id;
-    if (await internalNotes.create(request.text, conversationId)) {
+    const attachmentDraft = request.attachmentIds?.length && request.attachmentDraftKey
+      ? { ids: request.attachmentIds, draftKey: request.attachmentDraftKey }
+      : undefined;
+    if (await internalNotes.create(request.text, conversationId, attachmentDraft)) {
       internalNoteDraft.value = "";
+      if (attachmentDraft) noteAttachments.consumeDraft();
       await internalNotes.reconcile();
     }
     return;
   }
   reply.draft.value = request.text;
-  await sendReply();
+  await sendReply(
+    request.attachmentIds?.length && request.attachmentDraftKey
+      ? { attachmentIds: request.attachmentIds, attachmentDraftKey: request.attachmentDraftKey }
+      : undefined,
+  );
   if (!reply.draft.value.trim()) void workspaceLive.setDraftActive(false);
 }
 
@@ -1908,7 +2087,15 @@ function changeSupportComposerMode(
 async function sendSupportTranslatedReply(
   request: ConversationSurfaceSendRequest,
 ): Promise<void> {
-  await sendTranslatedReply(request.text);
+  await sendTranslatedReply(
+    request.text,
+    request.attachmentIds?.length && request.attachmentDraftKey
+      ? {
+          attachmentIds: request.attachmentIds,
+          attachmentDraftKey: request.attachmentDraftKey,
+        }
+      : undefined,
+  );
 }
 
 function reconcileSupportSurface(): void {
@@ -1940,6 +2127,42 @@ function handleSupportComposerAction(
   }
 }
 
+async function addSupportAttachments(files: File[]): Promise<void> {
+  await (supportComposerMode.value === "INTERNAL_NOTE"
+    ? noteAttachments.addFiles(files)
+    : publicAttachments.addFiles(files));
+  if (supportComposerMode.value === "PUBLIC_REPLY" && publicAttachments.items.value.length)
+    void workspaceLive.setDraftActive(true);
+}
+
+function removeSupportAttachment(localId: string): void {
+  const operation = supportComposerMode.value === "INTERNAL_NOTE"
+    ? noteAttachments.remove(localId)
+    : publicAttachments.remove(localId);
+  void operation.then(() => {
+    if (
+      supportComposerMode.value === "PUBLIC_REPLY" &&
+      !reply.draft.value.trim() &&
+      !publicAttachments.items.value.length
+    )
+      void workspaceLive.setDraftActive(false);
+  });
+}
+
+function retrySupportAttachment(localId: string): void {
+  void (supportComposerMode.value === "INTERNAL_NOTE"
+    ? noteAttachments.retry(localId)
+    : publicAttachments.retry(localId));
+}
+
+function downloadSupportAttachment(
+  request: ConversationSurfaceAttachmentDownloadRequest,
+): void {
+  void (request.visibility === "INTERNAL_NOTE"
+    ? noteAttachments.download(request.attachmentId)
+    : publicAttachments.download(request.attachmentId));
+}
+
 function applySupportReplyTemplate(template: ConversationReplyTemplate): void {
   reply.draft.value = template.text;
   replyTemplateGalleryVisible.value = false;
@@ -1957,7 +2180,10 @@ async function prepareReplyTranslation(): Promise<void> {
   await translation.createReplyPreview();
 }
 
-async function sendTranslatedReply(editedText?: string): Promise<void> {
+async function sendTranslatedReply(
+  editedText?: string,
+  attachments?: { attachmentIds: string[]; attachmentDraftKey: string },
+): Promise<void> {
   if (
     translation.savingPreference.value ||
     translation.previewStale.value ||
@@ -1977,7 +2203,7 @@ async function sendTranslatedReply(editedText?: string): Promise<void> {
   }
   const ready = translation.readyDraft.value;
   if (!ready) return;
-  await reply.sendTranslatedReply(ready.id);
+  await reply.sendTranslatedReply(ready.id, attachments);
   if (!reply.draft.value.trim()) {
     translation.clearReplyDraft();
     replyTranslationRequested.value = false;
@@ -2153,6 +2379,8 @@ watch(
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
+    publicAttachmentsAccessDenied.value = false;
+    noteAttachmentsAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
@@ -2293,6 +2521,34 @@ watch(
 );
 
 watch(
+  [publicAttachmentAuthorityKey, conversation.loading],
+  ([, loading]) => {
+    if (loading) return;
+    const capability = publicAttachmentCapabilities();
+    if (capability.state !== "AVAILABLE" || !capability.upload) {
+      publicAttachments.purge();
+      return;
+    }
+    void publicAttachments.select();
+  },
+  { immediate: true },
+);
+
+watch(
+  [noteAttachmentAuthorityKey, conversation.loading],
+  ([, loading]) => {
+    if (loading) return;
+    const capability = noteAttachmentCapabilities();
+    if (capability.state !== "AVAILABLE" || !capability.upload) {
+      noteAttachments.purge();
+      return;
+    }
+    void noteAttachments.select();
+  },
+  { immediate: true },
+);
+
+watch(
   [canWriteSelectedInternalNotes, conversation.loading],
   ([allowed, loading]) => {
     if (allowed || loading || supportComposerMode.value !== "INTERNAL_NOTE")
@@ -2339,6 +2595,8 @@ watch(
   (authorityKey, previousAuthorityKey) => {
     if (authorityKey === previousAuthorityKey) return;
     internalNotesAccessDenied.value = false;
+    publicAttachmentsAccessDenied.value = false;
+    noteAttachmentsAccessDenied.value = false;
     purgeInternalNoteDraft();
     internalNotes.reset();
   },
@@ -2580,6 +2838,8 @@ onBeforeUnmount(() => {
   cmsRealtimeClient.unwatchSupportInternalNotes();
   inspector.reset();
   internalNotes.reset();
+  publicAttachments.dispose();
+  noteAttachments.dispose();
   reply.reset();
   replyTemplateGalleryVisible.value = false;
   translation.reset();
@@ -2832,6 +3092,7 @@ onBeforeUnmount(() => {
               :ai-suspension="supportConversationAiSuspension"
               :collaboration="supportConversationCollaboration"
               :internal-notes="supportConversationInternalNotes"
+              :can-download-public-attachments="publicAttachmentCapabilities().download"
               :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"
@@ -2855,6 +3116,10 @@ onBeforeUnmount(() => {
               @retry-ai-suspension="reloadSelectedAiSuspension"
               @retry-delivery="messageDelivery.retry"
               @open-internal-notes="openInternalNotes"
+              @add-attachments="addSupportAttachments"
+              @remove-attachment="removeSupportAttachment"
+              @retry-attachment="retrySupportAttachment"
+              @download-attachment="downloadSupportAttachment"
             />
             <p v-else class="empty-pane support-conversation-unavailable">
               Выбранный диалог недоступен.
@@ -3076,6 +3341,7 @@ onBeforeUnmount(() => {
         :can-read-history="canReadSelectedInternalNoteHistory"
         :can-correct="canCorrectSelectedInternalNotes"
         :can-redact="canRedactSelectedInternalNotes"
+        :can-download-attachments="noteAttachmentCapabilities().download"
         :correcting-note-id="internalNotes.correctingNoteId.value"
         :tombstoning-note-id="internalNotes.tombstoningNoteId.value"
         :mutation-error="internalNotes.mutationError.value"
@@ -3098,6 +3364,7 @@ onBeforeUnmount(() => {
         "
         @correct="correctInternalNote"
         @tombstone="tombstoneInternalNote"
+        @download-attachment="noteAttachments.download"
       />
       <ConversationAISuspensionDialog
         v-if="

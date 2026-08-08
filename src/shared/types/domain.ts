@@ -375,6 +375,12 @@ export interface ConversationMessage {
     avatarUrl: string | null;
   };
   text: string;
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+  }>;
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   /** Current server-confirmed delivery state for a public outbound message. */
   delivery?: {
@@ -633,7 +639,9 @@ export interface DirectAdminAction {
   config: Record<string, unknown>;
 }
 export interface AdminMessageRequest {
-  text: string;
+  text?: string;
+  attachmentIds?: string[];
+  attachmentDraftKey?: string;
   conversationId?: string;
   endUserCaseId?: string;
   conversationPolicy?: ConversationPolicy;

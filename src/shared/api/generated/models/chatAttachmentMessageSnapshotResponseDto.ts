@@ -17,7 +17,7 @@ export interface ChatAttachmentMessageSnapshotResponseDto {
   id: string;
   /**
    * @minimum 1
-   * @maximum 26214400
+   * @maximum 20971520
    */
   sizeBytes: number;
 }

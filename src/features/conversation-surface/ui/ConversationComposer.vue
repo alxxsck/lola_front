@@ -26,9 +26,17 @@ const emit = defineEmits<{
   "discard-send-attempt": [];
   "change-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
   action: [action: ConversationSurfaceComposerAction];
+  "add-attachments": [files: File[]];
+  "remove-attachment": [localId: string];
+  "retry-attachment": [localId: string];
+  "download-attachment": [attachmentId: string];
 }>();
 
 const actionMenuVisible = ref(false);
+const attachmentInput = ref<HTMLInputElement | null>(null);
+const readyAttachmentCount = computed(
+  () => props.composer.attachments?.items.filter((item) => item.state === "READY" && item.canAttach).length ?? 0,
+);
 const blocked = computed(
   () =>
     props.composer.visibility !== "ENABLED" ||
@@ -41,7 +49,8 @@ const sourceSendEnabled = computed(
   () =>
     !blocked.value &&
     props.composer.sendCapability.kind === "SOURCE" &&
-    Boolean(props.draft.trim()) &&
+    (Boolean(props.draft.trim()) || readyAttachmentCount.value > 0) &&
+    !props.composer.attachments?.busy &&
     (props.composer.mode !== "INTERNAL_NOTE" ||
       new TextEncoder().encode(props.draft.trim()).byteLength <= 20_480),
 );
@@ -60,6 +69,7 @@ const translatedSendDisabled = computed(() => {
     preview.busy ||
     preview.stale ||
     preview.disabled ||
+    props.composer.attachments?.busy ||
     preview.draft?.status !== "READY"
   );
 });
@@ -112,7 +122,38 @@ function handleKeydown(event: KeyboardEvent): void {
 
 function runAction(action: ConversationSurfaceComposerAction): void {
   actionMenuVisible.value = false;
+  if (blocked.value) return;
+  if (action === "ATTACHMENT") {
+    attachmentInput.value?.click();
+    return;
+  }
   emit("action", action);
+}
+
+function selectAttachments(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const files = [...(input.files ?? [])];
+  input.value = "";
+  if (files.length) emit("add-attachments", files);
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} Б`;
+  if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} КБ`;
+  return `${(value / (1024 * 1024)).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ`;
+}
+
+function attachmentStateLabel(state: NonNullable<ConversationSurfaceComposer["attachments"]>["items"][number]["state"]): string {
+  return {
+    QUEUED: "Готовим",
+    UPLOADING: "Загружаем",
+    SCANNING: "Проверяем",
+    READY: "Готово",
+    REJECTED: "Отклонено",
+    FAILED: "Ошибка",
+    EXPIRED: "Срок истёк",
+    REVOKED: "Удалено",
+  }[state];
 }
 
 function runOutcomeAction(): void {
@@ -212,6 +253,72 @@ function runOutcomeAction(): void {
         @update:model-value="emit('update:draft', $event)"
         @keydown="handleKeydown"
       />
+      <input
+        v-if="composer.attachments"
+        ref="attachmentInput"
+        hidden
+        type="file"
+        multiple
+        :accept="composer.attachments.accept"
+        tabindex="-1"
+        @change="selectAttachments"
+      />
+      <section
+        v-if="composer.attachments?.items.length || composer.attachments?.loading"
+        class="conversation-composer__attachments"
+        aria-label="Вложения к сообщению"
+        aria-live="polite"
+      >
+        <header>
+          <span><i class="pi pi-paperclip" aria-hidden="true" /> Вложения</span>
+          <small>{{ composer.attachments.items.filter((item) => ['QUEUED', 'UPLOADING', 'SCANNING', 'READY'].includes(item.state)).length }} из {{ composer.attachments.maxFiles }}</small>
+        </header>
+        <ul>
+          <li v-for="item in composer.attachments.items" :key="item.localId" :class="`is-${item.state.toLowerCase()}`">
+            <i :class="item.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+            <span>
+              <strong :title="item.filename">{{ item.filename }}</strong>
+              <small>
+                {{ formatBytes(item.sizeBytes) }} ·
+                {{ item.state === 'FAILED' && !item.canRetry ? 'Выберите файл заново' : attachmentStateLabel(item.state) }}
+              </small>
+            </span>
+            <span class="conversation-composer__attachment-state" aria-hidden="true">
+              <i v-if="['QUEUED', 'UPLOADING', 'SCANNING'].includes(item.state)" class="pi pi-spin pi-spinner" />
+              <i v-else-if="item.state === 'READY'" class="pi pi-check-circle" />
+              <i v-else class="pi pi-exclamation-circle" />
+            </span>
+            <span class="conversation-composer__attachment-actions">
+              <button
+                v-if="item.state === 'FAILED' && item.canRetry"
+                type="button"
+                :aria-label="`Повторить загрузку ${item.filename}`"
+                title="Повторить загрузку"
+                :disabled="blocked"
+                @click="emit('retry-attachment', item.localId)"
+              ><i class="pi pi-refresh" aria-hidden="true" /></button>
+              <button
+                v-if="item.id && item.state === 'READY' && composer.attachments.canDownload"
+                type="button"
+                :aria-label="`Скачать ${item.filename}`"
+                title="Скачать"
+                :disabled="blocked"
+                @click="emit('download-attachment', item.id)"
+              ><i class="pi pi-download" aria-hidden="true" /></button>
+              <button
+                type="button"
+                :aria-label="`Убрать ${item.filename}`"
+                title="Убрать вложение"
+                :disabled="blocked"
+                @click="emit('remove-attachment', item.localId)"
+              ><i class="pi pi-times" aria-hidden="true" /></button>
+            </span>
+          </li>
+        </ul>
+      </section>
+      <p v-if="composer.attachments?.error" class="conversation-composer__attachment-error" role="alert">
+        {{ composer.attachments.error }}
+      </p>
       <p
         v-if="composer.mode === 'INTERNAL_NOTE'"
         class="conversation-composer__private-hint"
@@ -354,7 +461,7 @@ function runOutcomeAction(): void {
               v-if="composer.actions.attachment.visibility !== 'HIDDEN'"
               type="button"
               role="menuitem"
-              :disabled="composer.actions.attachment.visibility === 'DISABLED'"
+              :disabled="blocked || composer.actions.attachment.visibility === 'DISABLED'"
               :title="composer.actions.attachment.reason"
               @click="runAction('ATTACHMENT')"
             >
@@ -597,6 +704,75 @@ function runOutcomeAction(): void {
   color: var(--status-danger-text);
   font-weight: 700;
 }
+.conversation-composer__attachments {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-ground) 58%, transparent);
+  animation: attachment-tray-in 160ms ease-out;
+}
+.conversation-composer__attachments > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 750;
+}
+.conversation-composer__attachments > header span { display: inline-flex; align-items: center; gap: 5px; }
+.conversation-composer__attachments ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.conversation-composer__attachments li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 20px auto;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-card);
+}
+.conversation-composer__attachments li > span { min-width: 0; }
+.conversation-composer__attachments li strong,
+.conversation-composer__attachments li small { display: block; }
+.conversation-composer__attachments li strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-composer__attachments li small { color: var(--text-muted); font-size: 9px; }
+.conversation-composer__attachment-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.conversation-composer__attachment-actions > button {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.conversation-composer__attachment-actions > button:hover { background: var(--surface-hover); color: var(--text-primary); }
+.conversation-composer__attachment-actions > button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.conversation-composer__attachments .is-ready > .pi-check-circle { color: var(--status-success); }
+.conversation-composer__attachments .is-rejected,
+.conversation-composer__attachments .is-failed,
+.conversation-composer__attachments .is-expired { border-color: var(--status-danger-border); background: var(--status-danger-soft); }
+.conversation-composer__attachment-error { margin: 0; color: var(--status-danger-text); font-size: 10px; }
+@keyframes attachment-tray-in { from { opacity: 0; transform: translateY(4px); } }
 .is-translated .conversation-composer__source {
   padding-right: 14px;
   padding-bottom: 46px;

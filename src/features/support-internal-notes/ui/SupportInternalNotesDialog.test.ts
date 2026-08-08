@@ -61,6 +61,7 @@ describe("support internal notes dialog", () => {
     expect(wrapper.text()).not.toContain("Исправить заметку");
     expect(wrapper.text()).not.toContain("Удалить заметку");
     expect(wrapper.text()).not.toContain("История заметки");
+    expect(wrapper.text()).not.toContain("Текст заметки недоступен");
   });
 
   it("shows a tombstone without retaining a removed note body", () => {
@@ -72,6 +73,27 @@ describe("support internal notes dialog", () => {
       false,
     );
     expect(wrapper.text()).toContain("Текст заметки удалён.");
+  });
+
+  it("renders an attachment-only active note without a false unavailable warning", () => {
+    const wrapper = render({
+      canDownloadAttachments: true,
+      notes: [note({
+        body: null,
+        attachments: [{
+          id: "attachment-1",
+          filename: "receipt.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 2048,
+        }],
+      })],
+    });
+
+    expect(wrapper.text()).toContain("receipt.pdf");
+    expect(wrapper.text()).not.toContain("Текст заметки недоступен");
+    expect(
+      wrapper.get('button[title="Скачать файл"]').attributes("disabled"),
+    ).toBeUndefined();
   });
 
   it("keeps note creation in the shared conversation composer", () => {

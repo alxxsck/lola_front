@@ -38,6 +38,41 @@ export interface ConversationSurfaceMessage {
   requestedTranslation?: RequestedMessageTranslation;
   status?: ConversationSurfaceStatus;
   delivery?: ConversationSurfaceDeliveryStatus;
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+  }>;
+}
+
+export interface ConversationSurfaceAttachments {
+  draftKey: string;
+  accept: string;
+  loading: boolean;
+  busy: boolean;
+  error: string;
+  canDownload: boolean;
+  maxFiles: number;
+  items: Array<{
+    localId: string;
+    id: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    state:
+      | "QUEUED"
+      | "UPLOADING"
+      | "SCANNING"
+      | "READY"
+      | "REJECTED"
+      | "FAILED"
+      | "EXPIRED"
+      | "REVOKED";
+    canAttach: boolean;
+    failureCode: string | null;
+    canRetry: boolean;
+  }>;
 }
 
 export interface ConversationSurfaceHistory {
@@ -173,6 +208,7 @@ interface ConversationSurfaceComposerBase {
     tone: "ONLINE" | "OFFLINE" | "NEUTRAL";
   } | null;
   actions: ConversationSurfaceComposerActions;
+  attachments?: ConversationSurfaceAttachments;
   modeSwitch?: {
     publicReply: ConversationSurfaceActionCapability;
     internalNote: ConversationSurfaceActionCapability;
@@ -218,6 +254,13 @@ export interface ConversationSurfaceSendRequest {
   scopeKey: string;
   mode: ConversationSurfaceComposer["mode"];
   text: string;
+  attachmentIds?: string[];
+  attachmentDraftKey?: string;
+}
+
+export interface ConversationSurfaceAttachmentDownloadRequest {
+  attachmentId: string;
+  visibility: "PUBLIC_REPLY" | "INTERNAL_NOTE";
 }
 
 export function conversationSurfaceDraftKey(

@@ -7,11 +7,14 @@
  */
 
 export interface CreateSupportInternalNoteDto {
+  attachmentDraftKey?: string;
+  /** @maxItems 10 */
+  attachmentIds?: string[];
   /**
    * @minLength 1
    * @maxLength 20480
    */
-  body: string;
+  body?: string;
   conversationId?: string;
   knowledgeDocumentId?: string;
   macroRevisionId?: string;

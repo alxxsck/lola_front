@@ -14,6 +14,11 @@ import type {
   ActionTypeResponseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
+  AdminChatAttachmentCompleteUploadParams,
+  AdminChatAttachmentGrantDownloadParams,
+  AdminChatAttachmentListDraftParams,
+  AdminChatAttachmentRevokeParams,
+  AdminChatAttachmentStatusParams,
   AdminConversationMessagesPageResponseDto,
   AdminConversationResponseDto,
   AdminConversationsListMessagesParams,
@@ -100,9 +105,14 @@ import type {
   ChangeIntegrationDirectionPauseDto,
   ChangeSupportOperationalAlertOwnerDto,
   ChatAttachmentDownloadGrantResponseDto,
+  ChatAttachmentDraftResponseDto,
+  ChatAttachmentScannerAckDto,
   ChatAttachmentScannerVerdictDto,
   ChatAttachmentStatusResponseDto,
   ChatAttachmentUploadResponseDto,
+  ChatAttachmentsCompleteParams,
+  ChatAttachmentsGrantParams,
+  ChatAttachmentsStatusParams,
   ChatListConversationMessagesParams,
   ChatListConversationsParams,
   ChatSend200,
@@ -172,6 +182,7 @@ import type {
   CorrectConversationMessageContentDto,
   CorrectSupportInternalNoteDto,
   CorrectSupportSlaClockDto,
+  CreateAdminChatAttachmentUploadDto,
   CreateAmplitudeConnectionDto,
   CreateAmplitudeInboundConnectionDto,
   CreateAmplitudeInboundRouteDto,
@@ -203,6 +214,7 @@ import type {
   CreateSlackNotificationDestinationDto,
   CreateSupportContentLegalHoldDto,
   CreateSupportExternalMappingDto,
+  CreateSupportInternalNoteAttachmentUploadDto,
   CreateSupportInternalNoteDto,
   CreateSupportKnowledgeTextDocumentDto,
   CreateSupportMacroDto,
@@ -565,6 +577,10 @@ import type {
   SupportInternalKnowledgeManagePageParams,
   SupportInternalKnowledgeOpenParams,
   SupportInternalKnowledgeSearchParams,
+  SupportInternalNoteAttachmentDownloadGrantResponseDto,
+  SupportInternalNoteAttachmentDraftResponseDto,
+  SupportInternalNoteAttachmentStatusResponseDto,
+  SupportInternalNoteAttachmentUploadResponseDto,
   SupportInternalNoteListParams,
   SupportInternalNotePageResponseDto,
   SupportInternalNoteRealtimeContractResponseDto,
@@ -2117,6 +2133,110 @@ export const supportInternalNoteTombstone = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: tombstoneSupportInternalNoteDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentListDraft = (
+  projectId: string,
+  caseId: string,
+  draftKey: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentDraftResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachment-drafts/${draftKey}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentStatus = (
+  projectId: string,
+  caseId: string,
+  attachmentId: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentStatusResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentStatusResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/${attachmentId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentCompleteUpload = (
+  projectId: string,
+  caseId: string,
+  attachmentId: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentStatusResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentStatusResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/${attachmentId}/complete`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentGrantDownload = (
+  projectId: string,
+  caseId: string,
+  attachmentId: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentDownloadGrantResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentDownloadGrantResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/${attachmentId}/grant`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentRevoke = (
+  projectId: string,
+  caseId: string,
+  attachmentId: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentStatusResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentStatusResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/${attachmentId}/revoke`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteAttachmentStartUpload = (
+  projectId: string,
+  caseId: string,
+  createSupportInternalNoteAttachmentUploadDto: BodyType<CreateSupportInternalNoteAttachmentUploadDto>,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteAttachmentUploadResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteAttachmentUploadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/uploads`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportInternalNoteAttachmentUploadDto,
     },
     options,
   );
@@ -9364,40 +9484,45 @@ export const userMemoryDeleteFact = (
   );
 };
 
-export const adminChatAttachmentsStatus = (
+export const adminChatAttachmentStatus = (
   projectId: string,
   userId: string,
   attachmentId: string,
+  params: AdminChatAttachmentStatusParams,
   options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
 ) => {
   return request<ChatAttachmentStatusResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/${attachmentId}`,
       method: "GET",
+      params,
     },
     options,
   );
 };
 
-export const adminChatAttachmentsComplete = (
+export const adminChatAttachmentCompleteUpload = (
   projectId: string,
   userId: string,
   attachmentId: string,
+  params: AdminChatAttachmentCompleteUploadParams,
   options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
 ) => {
   return request<ChatAttachmentStatusResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/${attachmentId}/complete`,
       method: "POST",
+      params,
     },
     options,
   );
 };
 
-export const adminChatAttachmentsGrant = (
+export const adminChatAttachmentGrantDownload = (
   projectId: string,
   userId: string,
   attachmentId: string,
+  params: AdminChatAttachmentGrantDownloadParams,
   options?: SecondParameter<
     typeof request<ChatAttachmentDownloadGrantResponseDto>
   >,
@@ -9406,15 +9531,50 @@ export const adminChatAttachmentsGrant = (
     {
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/${attachmentId}/grant`,
       method: "GET",
+      params,
     },
     options,
   );
 };
 
-export const adminChatAttachmentsStart = (
+export const adminChatAttachmentRevoke = (
   projectId: string,
   userId: string,
-  createChatAttachmentUploadDto: BodyType<CreateChatAttachmentUploadDto>,
+  attachmentId: string,
+  params: AdminChatAttachmentRevokeParams,
+  options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
+) => {
+  return request<ChatAttachmentStatusResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/${attachmentId}/revoke`,
+      method: "POST",
+      params,
+    },
+    options,
+  );
+};
+
+export const adminChatAttachmentListDraft = (
+  projectId: string,
+  userId: string,
+  draftKey: string,
+  params: AdminChatAttachmentListDraftParams,
+  options?: SecondParameter<typeof request<ChatAttachmentDraftResponseDto>>,
+) => {
+  return request<ChatAttachmentDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/drafts/${draftKey}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const adminChatAttachmentStartUpload = (
+  projectId: string,
+  userId: string,
+  createAdminChatAttachmentUploadDto: BodyType<CreateAdminChatAttachmentUploadDto>,
   options?: SecondParameter<typeof request<ChatAttachmentUploadResponseDto>>,
 ) => {
   return request<ChatAttachmentUploadResponseDto>(
@@ -9422,7 +9582,7 @@ export const adminChatAttachmentsStart = (
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/uploads`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: createChatAttachmentUploadDto,
+      data: createAdminChatAttachmentUploadDto,
     },
     options,
   );
@@ -10393,22 +10553,25 @@ export const initialAccessRefresh = (
 
 export const chatAttachmentsStatus = (
   attachmentId: string,
+  params?: ChatAttachmentsStatusParams,
   options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
 ) => {
   return request<ChatAttachmentStatusResponseDto>(
-    { url: `/api/v1/chat/attachments/${attachmentId}`, method: "GET" },
+    { url: `/api/v1/chat/attachments/${attachmentId}`, method: "GET", params },
     options,
   );
 };
 
 export const chatAttachmentsComplete = (
   attachmentId: string,
+  params?: ChatAttachmentsCompleteParams,
   options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
 ) => {
   return request<ChatAttachmentStatusResponseDto>(
     {
       url: `/api/v1/chat/attachments/${attachmentId}/complete`,
       method: "POST",
+      params,
     },
     options,
   );
@@ -10416,12 +10579,17 @@ export const chatAttachmentsComplete = (
 
 export const chatAttachmentsGrant = (
   attachmentId: string,
+  params?: ChatAttachmentsGrantParams,
   options?: SecondParameter<
     typeof request<ChatAttachmentDownloadGrantResponseDto>
   >,
 ) => {
   return request<ChatAttachmentDownloadGrantResponseDto>(
-    { url: `/api/v1/chat/attachments/${attachmentId}/grant`, method: "GET" },
+    {
+      url: `/api/v1/chat/attachments/${attachmentId}/grant`,
+      method: "GET",
+      params,
+    },
     options,
   );
 };
@@ -10859,9 +11027,9 @@ export const interactionSessionsIdentifyGuest = (
 export const chatAttachmentScannerVerdict = (
   attachmentId: string,
   chatAttachmentScannerVerdictDto: BodyType<ChatAttachmentScannerVerdictDto>,
-  options?: SecondParameter<typeof request<ChatAttachmentStatusResponseDto>>,
+  options?: SecondParameter<typeof request<ChatAttachmentScannerAckDto>>,
 ) => {
-  return request<ChatAttachmentStatusResponseDto>(
+  return request<ChatAttachmentScannerAckDto>(
     {
       url: `/api/v1/internal/chat-attachments/${attachmentId}/scanner-verdict`,
       method: "POST",
@@ -11412,6 +11580,24 @@ export type SupportInternalNoteRevisionsResult = NonNullable<
 >;
 export type SupportInternalNoteTombstoneResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteTombstone>>
+>;
+export type SupportInternalNoteAttachmentListDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentListDraft>>
+>;
+export type SupportInternalNoteAttachmentStatusResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentStatus>>
+>;
+export type SupportInternalNoteAttachmentCompleteUploadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentCompleteUpload>>
+>;
+export type SupportInternalNoteAttachmentGrantDownloadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentGrantDownload>>
+>;
+export type SupportInternalNoteAttachmentRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentRevoke>>
+>;
+export type SupportInternalNoteAttachmentStartUploadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentStartUpload>>
 >;
 export type ConversationMessageContentCurrentResult = NonNullable<
   Awaited<ReturnType<typeof conversationMessageContentCurrent>>
@@ -12727,17 +12913,23 @@ export type UserMemoryFactsResult = NonNullable<
 export type UserMemoryDeleteFactResult = NonNullable<
   Awaited<ReturnType<typeof userMemoryDeleteFact>>
 >;
-export type AdminChatAttachmentsStatusResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentsStatus>>
+export type AdminChatAttachmentStatusResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentStatus>>
 >;
-export type AdminChatAttachmentsCompleteResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentsComplete>>
+export type AdminChatAttachmentCompleteUploadResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentCompleteUpload>>
 >;
-export type AdminChatAttachmentsGrantResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentsGrant>>
+export type AdminChatAttachmentGrantDownloadResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentGrantDownload>>
 >;
-export type AdminChatAttachmentsStartResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentsStart>>
+export type AdminChatAttachmentRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentRevoke>>
+>;
+export type AdminChatAttachmentListDraftResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentListDraft>>
+>;
+export type AdminChatAttachmentStartUploadResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentStartUpload>>
 >;
 export type AdminConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsList>>

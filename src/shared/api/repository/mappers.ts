@@ -310,6 +310,12 @@ export function mapConversationMessage(
         }
       : {}),
     text: dto.text,
+    attachments: dto.attachments.map((attachment) => ({
+      id: attachment.id,
+      filename: attachment.displayFilename,
+      contentType: attachment.contentType,
+      sizeBytes: attachment.sizeBytes,
+    })),
     status,
     ...(dto.delivery
       ? {

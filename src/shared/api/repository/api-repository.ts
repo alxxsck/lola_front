@@ -495,7 +495,13 @@ export const apiRepository: ReteniveRepository = {
       projectId,
       userId,
       {
-        text: message.text,
+        ...(message.text ? { text: message.text } : {}),
+        ...(message.attachmentIds?.length
+          ? {
+              attachmentIds: message.attachmentIds,
+              attachmentDraftKey: message.attachmentDraftKey,
+            }
+          : {}),
         ...(message.conversationId
           ? { conversationId: message.conversationId }
           : { conversationPolicy: message.conversationPolicy }),

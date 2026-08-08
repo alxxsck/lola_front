@@ -32,6 +32,7 @@ function note(
 ): SupportInternalNoteResponseDto {
   return {
     actionEtag: '"sin1.opaque"',
+    attachments: [],
     body: "Проверить историю платежа",
     conversationId: null,
     createdAt: "2026-08-06T10:00:00.000Z",
@@ -101,6 +102,7 @@ describe("support internal notes source", () => {
           updatedAt: "2026-08-06T10:10:00.000Z",
           tombstonedAt: null,
           hasUnavailableReferences: false,
+          attachments: [],
         },
       ],
       nextCursor: "notes-2",

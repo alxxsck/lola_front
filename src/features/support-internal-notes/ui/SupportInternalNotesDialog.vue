@@ -20,6 +20,7 @@ const props = withDefaults(
     canReadHistory?: boolean;
     canCorrect?: boolean;
     canRedact?: boolean;
+    canDownloadAttachments?: boolean;
     correctingNoteId?: string | null;
     tombstoningNoteId?: string | null;
     mutationError?: string;
@@ -37,6 +38,7 @@ const props = withDefaults(
     canReadHistory: false,
     canCorrect: false,
     canRedact: false,
+    canDownloadAttachments: false,
     correctingNoteId: null,
     tombstoningNoteId: null,
     mutationError: "",
@@ -60,6 +62,7 @@ const emit = defineEmits<{
     onSucceeded: () => void,
   ];
   tombstone: [noteId: string, reasonCode: string, onSucceeded: () => void];
+  downloadAttachment: [attachmentId: string];
 }>();
 
 const correctionNoteId = ref<string | null>(null);
@@ -235,7 +238,30 @@ function submitTombstone(noteId: string): void {
           >
             {{ note.body }}
           </p>
-          <p v-else class="internal-note__unavailable">
+          <ul v-if="note.attachments?.length" class="internal-note__attachments" aria-label="Вложения заметки">
+            <li v-for="attachment in note.attachments" :key="attachment.id">
+              <button
+                type="button"
+                :disabled="!canDownloadAttachments"
+                :title="canDownloadAttachments ? 'Скачать файл' : 'Скачивание недоступно'"
+                @click="emit('downloadAttachment', attachment.id)"
+              >
+                <i :class="attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+                <span>
+                  <strong>{{ attachment.filename }}</strong>
+                  <small>{{ Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU') }} КБ</small>
+                </span>
+                <i class="pi pi-download" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
+          <p
+            v-if="
+              !note.body &&
+              (note.lifecycle !== 'ACTIVE' || !note.attachments?.length)
+            "
+            class="internal-note__unavailable"
+          >
             {{
               note.lifecycle === "TOMBSTONED"
                 ? "Текст заметки удалён."
@@ -463,6 +489,35 @@ function submitTombstone(noteId: string): void {
 .internal-note {
   padding: 14px;
 }
+.internal-note__attachments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.internal-note__attachments button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 20px;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  text-align: left;
+  cursor: pointer;
+}
+.internal-note__attachments span { min-width: 0; }
+.internal-note__attachments strong,
+.internal-note__attachments small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.internal-note__attachments small { color: var(--text-muted); font-size: 10px; }
+.internal-note__attachments button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.internal-note__attachments button:disabled { cursor: not-allowed; opacity: 0.62; }
 .internal-note-correction,
 .internal-note-tombstone {
   display: grid;

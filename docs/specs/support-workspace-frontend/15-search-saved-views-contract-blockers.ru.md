@@ -237,3 +237,29 @@ HTTP/DB smoke. Actual gateway PostgreSQL gate: one-socket и cross-Project one-S
 12 `CASE_SOCKET_LIMIT_EXCEEDED` и 1 `BUSY`, concurrent ordinary read 1,0 мс. Realtime read p95
 29,9 мс; 20k Notes/100 reads/concurrency 10 — p95 98,2 мс. Финальные независимые
 spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 23 — composer attachments
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `eea7cf1` публикует server-owned attachment lifecycle для `PUBLIC_REPLY` и
+`INTERNAL_NOTE`: exact Conversation/Case и `draftKey`, attachment-only send/create, bounded
+draft reconcile, safe status metadata, typed upload/complete/revoke/download operations и
+короткие grants после повторной IAM/owner проверки. Project `ATTACHMENTS` rollout и hard-off
+проверяются на каждом lifecycle transition; unbound draft видит только создавший его actor.
+
+Private object retention работает по exact opaque `VersionId` без `ListBucket*`: scanner callback,
+durable intent, bounded retry/DLQ и отдельная least-privilege DB/S3 identity. Legal hold и deletion
+сериализованы Project fence. Owner erasure ждёт expiry PUT capability; delayed callback после
+hard-delete восстанавливается через PII-free tombstone и не теряет exact deletion intent.
+
+Проверено: 547 clean migrations, build/Prisma/scoped lint, 160/160 targeted tests и live HTTP/DB
+smoke. PostgreSQL gates: 100 concurrent upload admissions p95 766,6 мс; active retention corpus
+1000 rows — 9,4 мс; 100 draft reads по 1000 attachments — p95 11,4 мс; 20k Notes — p95 141,2 мс.
+Scanner-vs-delete и legal-hold races доказаны real-PG regressions. Финальные независимые
+spec/standards/architecture/security/scalability review — CLEAN.
+
+Frontend Ticket 23 реализован поверх этого контракта: общий Conversation Surface получил
+компактный multi-file tray и доступные карточки истории; `PUBLIC_REPLY` и `INTERNAL_NOTE`
+используют разные Conversation/Case-scoped draft keys и grants. Поддержаны attachment-only,
+restore/retry без повторной отправки, server scan states и синхронный purge при revoke.

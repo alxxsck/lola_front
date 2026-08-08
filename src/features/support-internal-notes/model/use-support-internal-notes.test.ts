@@ -119,6 +119,33 @@ describe("support internal notes controller", () => {
     expect(controller.notes.value.map((item) => item.id)).toEqual(["note-2"]);
   });
 
+  it("allows an attachment-only internal note with the exact Case draft", async () => {
+    const create = vi.fn().mockResolvedValue(note("note-attachment"));
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+      },
+      source({ create }),
+    );
+
+    expect(
+      await controller.create("", "conversation-1", {
+        ids: ["attachment-1"],
+        draftKey: "case-draft-1",
+      }),
+    ).toBe(true);
+    expect(create).toHaveBeenCalledWith("project-1", "case-1", {
+      attachmentIds: ["attachment-1"],
+      attachmentDraftKey: "case-draft-1",
+      conversationId: "conversation-1",
+      idempotencyKey: expect.any(String),
+    });
+  });
+
   it("rejects oversized UTF-8 bodies and reason values outside the closed catalogs", async () => {
     const create = vi.fn();
     const correct = vi.fn();

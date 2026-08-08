@@ -29,6 +29,12 @@ export interface SupportInternalNote {
   updatedAt: string;
   tombstonedAt: string | null;
   hasUnavailableReferences: boolean;
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+  }>;
 }
 
 export interface SupportInternalNoteRevision {
@@ -80,7 +86,9 @@ export interface SupportInternalNotesSource {
     projectId: string,
     caseId: string,
     input: {
-      body: string;
+      body?: string;
+      attachmentIds?: string[];
+      attachmentDraftKey?: string;
       conversationId?: string;
       messageId?: string;
       macroRevisionId?: string;
@@ -169,6 +177,12 @@ function mapNote(
       ? date(value.tombstonedAt, "tombstonedAt")
       : null,
     hasUnavailableReferences: value.hasUnavailableReferences,
+    attachments: value.attachments.map((attachment) => ({
+      id: attachment.id,
+      filename: attachment.displayFilename,
+      contentType: attachment.contentType,
+      sizeBytes: attachment.sizeBytes,
+    })),
   };
 }
 
@@ -239,7 +253,13 @@ const apiSource: SupportInternalNotesSource = {
         projectId,
         caseId,
         {
-          body: input.body,
+          ...(input.body ? { body: input.body } : {}),
+          ...(input.attachmentIds?.length
+            ? {
+                attachmentIds: input.attachmentIds,
+                attachmentDraftKey: input.attachmentDraftKey,
+              }
+            : {}),
           ...(input.conversationId ? { conversationId: input.conversationId } : {}),
           ...(input.messageId ? { messageId: input.messageId } : {}),
           ...(input.macroRevisionId ? { macroRevisionId: input.macroRevisionId } : {}),
@@ -317,6 +337,7 @@ function mockCaseNotes(caseId: string): SupportInternalNote[] {
       updatedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
       tombstonedAt: null,
       hasUnavailableReferences: false,
+      attachments: [],
     },
   ];
   mockNotes.set(caseId, seeded);
@@ -354,7 +375,7 @@ const mockSource: SupportInternalNotesSource = {
       id: globalThis.crypto.randomUUID(),
       caseId,
       actionEtag: '"sin1.mock-created"',
-      body: input.body,
+      body: input.body ?? null,
       lifecycle: "ACTIVE",
       currentRevisionNumber: 1,
       creatorName: "Вы",
@@ -362,6 +383,7 @@ const mockSource: SupportInternalNotesSource = {
       updatedAt: now,
       tombstonedAt: null,
       hasUnavailableReferences: false,
+      attachments: [],
     };
     mockNotes.set(caseId, [note, ...mockCaseNotes(caseId)]);
     return note;

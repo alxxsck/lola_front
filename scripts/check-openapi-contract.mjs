@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { validateSupportContentLeadNotificationContract } from "./support-content-lead-notification-contract.mjs";
 import { validateSupportInboxCaseWorkforceContract } from "./support-inbox-case-workforce-contract.mjs";
 import { validateSupportWorkspaceMessagingContract } from "./support-workspace-contract.mjs";
+import { validateSupportAttachmentsContract } from "./support-attachments-contract.mjs";
 
 const snapshotUrl = new URL(
   "../openapi/retenive-backend.json",
@@ -11,6 +12,7 @@ const document = JSON.parse(await readFile(snapshotUrl, "utf8"));
 validateSupportContentLeadNotificationContract(document);
 validateSupportInboxCaseWorkforceContract(document);
 validateSupportWorkspaceMessagingContract(document);
+validateSupportAttachmentsContract(document);
 
 const unversionedPaths = Object.keys(document.paths ?? {}).filter(
   (path) => path !== "/health" && !path.startsWith("/api/v1/"),

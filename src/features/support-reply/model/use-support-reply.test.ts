@@ -110,6 +110,36 @@ describe("support reply controller", () => {
     expect(reconcile).toHaveBeenCalledTimes(1);
   });
 
+  it("sends an attachment-only reply and consumes the exact durable draft", async () => {
+    const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
+    const onAccepted = vi.fn();
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+        onAccepted,
+      },
+      replySource(sendAdminMessage),
+    );
+
+    await controller.send({
+      attachmentIds: ["attachment-1", "attachment-2"],
+      attachmentDraftKey: "draft-1",
+    });
+
+    expect(sendAdminMessage).toHaveBeenCalledWith("project-1", "user-1", {
+      conversationId: "conversation-1",
+      idempotencyKey: expect.any(String),
+      attachmentIds: ["attachment-1", "attachment-2"],
+      attachmentDraftKey: "draft-1",
+    });
+    expect(onAccepted).toHaveBeenCalledWith(
+      expect.objectContaining({ attachmentDraftKey: "draft-1" }),
+    );
+  });
+
   it("binds a reviewed translation draft to the same authoritative reply", async () => {
     const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
     const currentSelection = selection();

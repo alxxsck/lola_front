@@ -190,6 +190,124 @@ runConversationSurfaceBehaviorSuite({
 });
 
 describe("ConversationSurface", () => {
+  it("allows an attachment-only send and keeps file actions keyboard reachable", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        attachments: {
+          draftKey: "draft-1",
+          accept: "image/png,application/pdf",
+          loading: false,
+          busy: false,
+          error: "",
+          canDownload: true,
+          maxFiles: 10,
+          items: [
+            {
+              localId: "local-1",
+              id: "attachment-1",
+              filename: "payment-proof.png",
+              contentType: "image/png",
+              sizeBytes: 2048,
+              state: "READY",
+              canAttach: true,
+              failureCode: null,
+              canRetry: false,
+            },
+          ],
+        },
+      },
+    });
+
+    const download = wrapper.get('button[aria-label="Скачать payment-proof.png"]');
+    expect(download.attributes("tabindex")).not.toBe("-1");
+    await download.trigger("click");
+    await wrapper.get("form").trigger("submit");
+
+    expect(wrapper.emitted("download-attachment")).toEqual([[
+      { attachmentId: "attachment-1", visibility: "PUBLIC_REPLY" },
+    ]]);
+    expect(wrapper.emitted("send")).toEqual([
+      [
+        expect.objectContaining({
+          text: "",
+          attachmentIds: ["attachment-1"],
+          attachmentDraftKey: "draft-1",
+        }),
+      ],
+    ]);
+  });
+
+  it("keeps a published attachment in public scope while the note composer is active", async () => {
+    const wrapper = mountSurface({
+      composer: noteComposer(),
+      canDownloadPublicAttachments: true,
+      messages: messages.map((message) =>
+        message.id === "message-1"
+          ? {
+              ...message,
+              attachments: [{
+                id: "published-file",
+                filename: "receipt.pdf",
+                contentType: "application/pdf",
+                sizeBytes: 4096,
+              }],
+            }
+          : message,
+      ),
+    });
+
+    await wrapper
+      .get('[data-message-id="message-1"] .conversation-surface__message-attachments button')
+      .trigger("click");
+
+    expect(wrapper.emitted("download-attachment")).toEqual([[
+      { attachmentId: "published-file", visibility: "PUBLIC_REPLY" },
+    ]]);
+  });
+
+  it("freezes attachment actions while a durable send outcome is unresolved", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        outcome: {
+          state: "CHECKING_OUTCOME",
+          label: "Проверяем результат",
+        },
+        attachments: {
+          draftKey: "draft-1",
+          accept: "image/png",
+          loading: false,
+          busy: false,
+          error: "",
+          canDownload: true,
+          maxFiles: 10,
+          items: [{
+            localId: "local-1",
+            id: "attachment-1",
+            filename: "proof.png",
+            contentType: "image/png",
+            sizeBytes: 100,
+            state: "READY",
+            canAttach: true,
+            failureCode: null,
+            canRetry: false,
+          }],
+        },
+      },
+    });
+
+    const remove = wrapper.get('button[aria-label="Убрать proof.png"]');
+    const download = wrapper.get('button[aria-label="Скачать proof.png"]');
+    expect(remove.attributes("disabled")).toBeDefined();
+    expect(download.attributes("disabled")).toBeDefined();
+    await remove.trigger("click");
+    await download.trigger("click");
+
+    expect(wrapper.emitted("remove-attachment")).toBeUndefined();
+    expect(wrapper.emitted("download-attachment")).toBeUndefined();
+  });
+
   it("keeps a server-authorized delivery retry beside the failed outbound message", async () => {
     const failedMessages: ConversationSurfaceMessage[] = messages.map(
       (message) =>

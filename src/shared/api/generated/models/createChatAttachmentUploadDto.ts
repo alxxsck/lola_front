@@ -11,14 +11,17 @@ export interface CreateChatAttachmentUploadDto {
   /** @pattern ^[a-f0-9]{64}$ */
   checksumSha256: string;
   contentType: CreateChatAttachmentUploadDtoContentType;
+  /** Legacy end-user clients may omit it; the server pins the current Session Conversation. */
+  conversationId?: string;
   /**
    * @minLength 1
    * @maxLength 255
    */
   displayFilename: string;
+  draftKey?: string;
   /**
    * @minimum 1
-   * @maximum 26214400
+   * @maximum 20971520
    */
   sizeBytes: number;
 }

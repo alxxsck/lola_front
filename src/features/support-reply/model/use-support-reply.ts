@@ -14,11 +14,14 @@ export interface SupportReplyContext {
   actorId(): string | undefined;
   selection(): SupportWorkspaceSelection | null;
   reconcile(): Promise<void>;
+  onAccepted?(attempt: { attachmentDraftKey?: string; attachmentIds?: string[] }): void;
 }
 
 interface SupportReplyDelivery {
   replyTranslationDraftId?: string;
   sendWithoutTranslationReason?: string;
+  attachmentDraftKey?: string;
+  attachmentIds?: string[];
 }
 
 export type SupportReplyOutcomeState =
@@ -61,7 +64,7 @@ function attemptIdentity(
   delivery: SupportReplyDelivery,
   endUserCaseId?: string,
 ): string {
-  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}`;
+  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}\u001f${delivery.attachmentDraftKey ?? ""}\u001f${delivery.attachmentIds?.join(",") ?? ""}`;
 }
 
 function storageKey(scope: string): string {
@@ -106,8 +109,23 @@ function restoreAttempt(scope: string): PendingReplyAttempt | undefined {
         typeof value.endUserCaseId !== "string") ||
       !("text" in value) ||
       typeof value.text !== "string" ||
-      !value.text.trim() ||
+      (!value.text.trim() &&
+        (!("attachmentIds" in value) ||
+          !Array.isArray(value.attachmentIds) ||
+          value.attachmentIds.length === 0)) ||
       value.text.length > 10_000 ||
+      ("attachmentIds" in value &&
+        value.attachmentIds !== undefined &&
+        (!Array.isArray(value.attachmentIds) ||
+          value.attachmentIds.length > 10 ||
+          value.attachmentIds.some(
+            (id) => typeof id !== "string" || !id.trim() || id.length > 200,
+          ))) ||
+      ("attachmentDraftKey" in value &&
+        value.attachmentDraftKey !== undefined &&
+        (typeof value.attachmentDraftKey !== "string" ||
+          !value.attachmentDraftKey.trim() ||
+          value.attachmentDraftKey.length > 200)) ||
       !("key" in value) ||
       typeof value.key !== "string" ||
       value.key.length < 8 ||
@@ -265,6 +283,7 @@ export function createSupportReplyController(
     deliveryStatus.value = result.deliveryStatus;
     translationRequired.value = false;
     error.value = "";
+    context.onAccepted?.(attempt);
     try {
       await context.reconcile();
     } catch {
@@ -343,7 +362,7 @@ export function createSupportReplyController(
     error.value = "";
   }
 
-  async function send(delivery: SupportReplyDelivery = {}): Promise<void> {
+  async function send(delivery: SupportReplyDelivery = {}): Promise<boolean> {
     syncSelection();
     const projectId = context.projectId();
     const actorId = context.actorId();
@@ -354,31 +373,42 @@ export function createSupportReplyController(
     deliveryStatus.value = undefined;
     if (!selection?.capabilities.reply || !conversation) {
       error.value = "У вас нет права отвечать в этом диалоге";
-      return;
+      return false;
     }
     const scope = draftKey(projectId, actorId, conversation.id);
-    if (!projectId || !actorId || !scope || !text || sending.value) return;
+    const attachmentIds = delivery.attachmentIds?.filter(Boolean) ?? [];
+    const attachmentDraftKey = delivery.attachmentDraftKey?.trim();
+    if (
+      !projectId ||
+      !actorId ||
+      !scope ||
+      (!text && !attachmentIds.length) ||
+      (attachmentIds.length > 0 && !attachmentDraftKey) ||
+      sending.value
+    )
+      return false;
     if (outcomeState.value === "CHECKING_OUTCOME") {
       await checkOutcome();
-      return;
+      return !pendingAttempts.has(scope);
     }
-    if (outcomeState.value === "BLOCKED") return;
+    if (outcomeState.value === "BLOCKED") return false;
 
     const replyTranslationDraftId = delivery.replyTranslationDraftId?.trim();
     const sendWithoutTranslationReason =
       delivery.sendWithoutTranslationReason?.trim();
     if (replyTranslationDraftId && sendWithoutTranslationReason) {
       error.value = "Нельзя одновременно отправить перевод и исходный текст.";
-      return;
+      return false;
     }
     if (sendWithoutTranslationReason && !canSendWithoutTranslation.value) {
       error.value = "У вас нет права отправить сообщение без перевода.";
-      return;
+      return false;
     }
 
     const normalizedDelivery: SupportReplyDelivery = {
       ...(replyTranslationDraftId ? { replyTranslationDraftId } : {}),
       ...(sendWithoutTranslationReason ? { sendWithoutTranslationReason } : {}),
+      ...(attachmentIds.length ? { attachmentIds, attachmentDraftKey } : {}),
     };
     const existing = pendingAttempts.get(scope);
     const existingIdentity = existing
@@ -431,7 +461,7 @@ export function createSupportReplyController(
       const result = await source.sendAdminMessage(projectId, selection.endUser.id, {
         conversationId: attempt.conversationId,
         idempotencyKey: attempt.key,
-        text: attempt.text,
+        ...(attempt.text ? { text: attempt.text } : {}),
         ...(attempt.endUserCaseId
           ? { endUserCaseId: attempt.endUserCaseId }
           : {}),
@@ -445,10 +475,17 @@ export function createSupportReplyController(
               },
             }
           : {}),
+        ...(attempt.attachmentIds?.length
+          ? {
+              attachmentIds: attempt.attachmentIds,
+              attachmentDraftKey: attempt.attachmentDraftKey,
+            }
+          : {}),
       });
       await acceptOutcome(scope, attempt, result);
+      return true;
     } catch (caught) {
-      if (!currentScopeMatches(attempt)) return;
+      if (!currentScopeMatches(attempt)) return false;
       if (isAmbiguousOutcome(caught)) {
         await checkAttemptOutcome(scope, attempt);
       } else if (
@@ -497,16 +534,23 @@ export function createSupportReplyController(
       sending.value = false;
       if (outcomeState.value === "SENDING") outcomeState.value = "IDLE";
     }
+    return false;
   }
 
-  async function sendTranslatedReply(replyTranslationDraftId: string): Promise<void> {
-    if (!replyTranslationDraftId.trim()) return;
-    await send({ replyTranslationDraftId });
+  async function sendTranslatedReply(
+    replyTranslationDraftId: string,
+    attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
+  ): Promise<boolean> {
+    if (!replyTranslationDraftId.trim()) return false;
+    return send({ replyTranslationDraftId, ...attachments });
   }
 
-  async function sendWithoutTranslation(reason: string): Promise<void> {
+  async function sendWithoutTranslation(
+    reason: string,
+    attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
+  ): Promise<void> {
     if (!reason.trim()) return;
-    await send({ sendWithoutTranslationReason: reason });
+    await send({ sendWithoutTranslationReason: reason, ...attachments });
   }
 
   return {
