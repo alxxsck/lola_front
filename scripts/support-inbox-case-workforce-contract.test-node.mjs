@@ -27,6 +27,16 @@ function operation(contract, operationId) {
   throw new Error(`Fixture is missing ${operationId}`);
 }
 
+function inlineError(contract, operationId, status) {
+  const response = operation(contract, operationId).responses[status].content[
+    "application/json"
+  ].schema;
+  return (
+    response.properties?.error ??
+    response.allOf?.find((entry) => entry.properties?.error)?.properties.error
+  );
+}
+
 test("inbox and Case commands retain bounded server-owned query and mutation semantics", async () => {
   const { validateSupportInboxCaseWorkforceContract } =
     await import("./support-inbox-case-workforce-contract.mjs");
@@ -114,10 +124,13 @@ test("inbox and Case commands retain bounded server-owned query and mutation sem
     },
   ];
 
-  for (const mutate of mutations) {
+  for (const [index, mutate] of mutations.entries()) {
     const contract = await pinnedContract();
     mutate(contract);
-    assert.throws(() => validateSupportInboxCaseWorkforceContract(contract));
+    assert.throws(
+      () => validateSupportInboxCaseWorkforceContract(contract),
+      `inbox mutation ${index} must be rejected`,
+    );
   }
 });
 
@@ -168,16 +181,21 @@ test("assignment and offer commands retain authority, OCC and audited reasons", 
       );
     },
     (contract) => {
-      const conflict = operation(contract, "SupportCaseAssignment_assign")
-        .responses["409"].content["application/json"].schema;
+      const conflict = inlineError(
+        contract,
+        "SupportCaseAssignment_assign",
+        "409",
+      );
       conflict.properties.code.enum = conflict.properties.code.enum.filter(
         (value) => value !== "CASE_VERSION_CONFLICT",
       );
     },
     (contract) => {
-      delete operation(contract, "SupportCaseAssignment_release").responses[
-        "409"
-      ].content["application/json"].schema.properties.currentActionEtag;
+      delete inlineError(
+        contract,
+        "SupportCaseAssignment_release",
+        "409",
+      ).properties.details.properties.currentActionEtag;
     },
     (contract) => {
       delete operation(contract, "SupportCaseAssignment_transfer").responses[
@@ -185,18 +203,47 @@ test("assignment and offer commands retain authority, OCC and audited reasons", 
       ];
     },
     (contract) => {
-      const conflict = operation(contract, "SupportCaseAssignment_claim")
-        .responses["409"].content["application/json"].schema;
+      const conflict = inlineError(
+        contract,
+        "SupportCaseAssignment_claim",
+        "409",
+      );
       conflict.properties.code.enum = conflict.properties.code.enum.filter(
         (value) => value !== "ASSIGNMENT_CAPACITY_EXCEEDED",
       );
     },
+    (contract) => {
+      operation(
+        contract,
+        "SupportCaseAssignment_assignWithOverride",
+      )["x-iam-all-permissions"] = operation(
+        contract,
+        "SupportCaseAssignment_assignWithOverride",
+      )["x-iam-all-permissions"].filter(
+        (entry) => entry.code !== "project.support.assignments.force_assign",
+      );
+    },
+    (contract) => {
+      const target = contract.components.schemas.ForceAssignSupportCaseAssignmentDto;
+      target.required = target.required.filter((field) => field !== "reasonNote");
+    },
+    (contract) => {
+      const target = contract.components.schemas.SupportCaseAssignmentBatchResponseDto;
+      target.required = target.required.filter((field) => field !== "items");
+    },
+    (contract) => {
+      delete contract.components.schemas.SupportCaseAssignmentCandidateOperatorResponseDto
+        .properties.requiredOverrides;
+    },
   ];
 
-  for (const mutate of mutations) {
+  for (const [index, mutate] of mutations.entries()) {
     const contract = await pinnedContract();
     mutate(contract);
-    assert.throws(() => validateSupportInboxCaseWorkforceContract(contract));
+    assert.throws(
+      () => validateSupportInboxCaseWorkforceContract(contract),
+      `assignment mutation ${index} must be rejected`,
+    );
   }
 });
 

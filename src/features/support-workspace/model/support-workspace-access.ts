@@ -12,6 +12,8 @@ const supportAssignmentSelfManagePermission =
   "project.support.assignments.self_manage" as const;
 const supportAssignmentOverridePermission =
   "project.support.assignments.override" as const;
+const supportAssignmentForcePermission =
+  "project.support.assignments.force_assign" as const;
 const supportRoutingReceivePermission =
   "project.support.routing.receive" as const;
 const supportConversationAiSuspendPermission =
@@ -80,6 +82,27 @@ export function canManageOwnSupportAssignments(
   return hasProjectPermission(
     effectivePermissionCodes,
     supportAssignmentSelfManagePermission,
+  );
+}
+
+export function canOverrideSupportAssignments(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportAssignmentOverridePermission,
+  );
+}
+
+export function canForceSupportAssignments(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return (
+    canOverrideSupportAssignments(effectivePermissionCodes) &&
+    hasProjectPermission(
+      effectivePermissionCodes,
+      supportAssignmentForcePermission,
+    )
   );
 }
 

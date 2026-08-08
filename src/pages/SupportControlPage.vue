@@ -10,7 +10,9 @@ import { hasProjectPermission } from "@/features/auth/permission-access";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import {
+  canForceSupportAssignments,
   canManageOwnSupportAvailability,
+  canOverrideSupportAssignments,
   canReadSupportAvailability,
   canReadSupportControl,
 } from "@/features/support-workspace/model/support-workspace-access";
@@ -22,6 +24,11 @@ import {
 import { createSupportLeadRisksController } from "@/features/support-control/model/use-support-lead-risks";
 import { createSupportLeadSummaryController } from "@/features/support-control/model/use-support-lead-summary";
 import { createSupportOperationalAlertsController } from "@/features/support-control/model/use-support-operational-alerts";
+import { supportLeadAssignmentSource } from "@/features/support-lead-assignment/api/support-lead-assignment-source";
+import { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
+import { createSupportLeadAssignmentBatchController } from "@/features/support-lead-assignment/model/use-support-lead-assignment-batch";
+import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
+import SupportLeadAssignmentBatchDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentBatchDesk.vue";
 import { supportWorkspaceShellEnabled } from "@/shared/config/features";
 import { relativeTime } from "@/shared/lib/format";
 import { useRouter } from "vue-router";
@@ -87,6 +94,18 @@ const canOpenCase = computed(() =>
     "project.cases.read",
   ),
 );
+const assignmentAccessDenied = ref(false);
+const canOverrideAssignments = computed(
+  () =>
+    canRead.value &&
+    !assignmentAccessDenied.value &&
+    canOverrideSupportAssignments(auth.project?.effectivePermissionCodes ?? []),
+);
+const canForceAssignments = computed(
+  () =>
+    canOverrideAssignments.value &&
+    canForceSupportAssignments(auth.project?.effectivePermissionCodes ?? []),
+);
 const overview = createSupportLeadSummaryController(
   {
     projectId: () => auth.project?.id,
@@ -133,6 +152,47 @@ const alerts = createSupportOperationalAlertsController(
   },
   supportLeadSource,
 );
+const leadAssignment = createSupportLeadAssignmentController(
+  supportLeadAssignmentSource,
+  {
+    projectId: () => auth.project?.id,
+    canOverride: () => canOverrideAssignments.value,
+    canForce: () => canForceAssignments.value,
+    canReadAudit: () => canRead.value,
+    async onForbidden() {
+      assignmentAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Lead assignment authority has already been purged.
+      }
+    },
+    async onChanged() {
+      await Promise.all([overview.load(), risks.load()]);
+    },
+  },
+);
+const selectedRiskCaseIds = ref<string[]>([]);
+const leadAssignmentBatch = createSupportLeadAssignmentBatchController(
+  supportLeadAssignmentSource,
+  {
+    projectId: () => auth.project?.id,
+    canOverride: () => canOverrideAssignments.value,
+    canForce: () => canForceAssignments.value,
+    async onForbidden() {
+      assignmentAccessDenied.value = true;
+      selectedRiskCaseIds.value = [];
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Batch targets and protected receipts have already been purged.
+      }
+    },
+    async onChanged() {
+      await Promise.all([overview.load(), risks.load()]);
+    },
+  },
+);
 const alertDialogVisible = ref(false);
 const alertAcknowledgeReason = ref<
   "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED"
@@ -166,6 +226,12 @@ function reload(): void {
   void overview.load();
   void risks.load();
   if (canReadAlerts.value) void alerts.load();
+}
+
+function toggleRiskSelection(caseId: string, selected: boolean): void {
+  selectedRiskCaseIds.value = selected
+    ? [...new Set([...selectedRiskCaseIds.value, caseId])].slice(0, 50)
+    : selectedRiskCaseIds.value.filter((item) => item !== caseId);
 }
 
 function startAvailabilityHeartbeat(): void {
@@ -296,10 +362,14 @@ watch(
     accessDenied.value = false;
     alertsAccessDenied.value = false;
     availabilityAccessDenied.value = false;
+    assignmentAccessDenied.value = false;
     overview.reset();
     risks.reset();
     alerts.reset();
     availability.reset();
+    leadAssignment.reset();
+    leadAssignmentBatch.reset();
+    selectedRiskCaseIds.value = [];
     reload();
     startAvailabilityHeartbeat();
   },
@@ -328,11 +398,25 @@ watch(canReadAlerts, (allowed) => {
   closeAlertDetail();
 });
 
+watch(canOverrideAssignments, (allowed) => {
+  if (allowed) return;
+  leadAssignment.reset();
+  leadAssignmentBatch.reset();
+  selectedRiskCaseIds.value = [];
+});
+
+watch(risks.riskType, () => {
+  selectedRiskCaseIds.value = [];
+  leadAssignmentBatch.reset();
+});
+
 onBeforeUnmount(() => {
   overview.reset();
   risks.reset();
   alerts.reset();
   availability.reset();
+  leadAssignment.reset();
+  leadAssignmentBatch.reset();
 });
 </script>
 
@@ -572,6 +656,18 @@ onBeforeUnmount(() => {
             · SLA в shadow-режиме
           </template>
         </p>
+        <div
+          v-if="canOverrideAssignments && risks.page.value?.items.length"
+          class="risk-batch-toolbar"
+        >
+          <span>
+            Выбрано {{ selectedRiskCaseIds.length }} из {{ risks.page.value.items.length }}
+          </span>
+          <SupportLeadAssignmentBatchDesk
+            :controller="leadAssignmentBatch"
+            :case-ids="selectedRiskCaseIds"
+          />
+        </div>
         <Message v-if="risks.error.value" severity="error" :closable="false">
           {{ risks.error.value }}
         </Message>
@@ -598,6 +694,15 @@ onBeforeUnmount(() => {
         </Message>
         <div v-else-if="risks.page.value" class="risk-list">
           <article v-for="risk in risks.page.value.items" :key="risk.caseId" class="risk-row">
+            <label v-if="canOverrideAssignments" class="risk-row__select">
+              <input
+                type="checkbox"
+                :checked="selectedRiskCaseIds.includes(risk.caseId)"
+                :aria-label="`Выбрать Case ${risk.caseId} для пакетного назначения`"
+                @change="toggleRiskSelection(risk.caseId, ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="sr-only">Выбрать Case</span>
+            </label>
             <div>
               <span class="eyebrow">{{ labelRiskType(risk.riskType) }}</span>
               <h3>Case требует внимания</h3>
@@ -606,14 +711,23 @@ onBeforeUnmount(() => {
                 <template v-if="risk.dueAt"> · срок {{ relativeTime(risk.dueAt) }}</template>
               </p>
             </div>
-            <RouterLink
-              v-if="canOpenCase"
-              class="row-link"
-              :to="{ name: 'end-user-case-detail', params: { caseId: risk.caseId } }"
-            >
-              Открыть Case
-            </RouterLink>
-            <span v-else class="row-unavailable">Нет доступа к Case</span>
+            <div class="risk-row__actions">
+              <SupportLeadAssignmentDesk
+                v-if="canOverrideAssignments"
+                :controller="leadAssignment"
+                :case-id="risk.caseId"
+                case-label="Case из очереди рисков"
+                compact
+              />
+              <RouterLink
+                v-if="canOpenCase"
+                class="row-link"
+                :to="{ name: 'end-user-case-detail', params: { caseId: risk.caseId } }"
+              >
+                Открыть Case
+              </RouterLink>
+              <span v-else class="row-unavailable">Нет доступа к Case</span>
+            </div>
           </article>
         </div>
         <Button
@@ -866,12 +980,43 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 10px;
 }
+.risk-batch-toolbar {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 .risk-row,
 .alert-row {
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface-card);
+}
+.risk-row > div:not(.risk-row__actions) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.risk-row__select {
+  display: grid;
+  flex: 0 0 28px;
+  place-items: center;
+  align-self: stretch;
+}
+.risk-row__select input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand-primary);
+  cursor: pointer;
 }
 .risk-row h3,
 .alert-row h3 {
@@ -889,6 +1034,12 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   font-size: 0.82rem;
   font-weight: 700;
+}
+.risk-row__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
 }
 .row-link {
   color: var(--text-link);
@@ -1047,6 +1198,24 @@ onBeforeUnmount(() => {
   }
   .risk-tabs :deep(.p-button) {
     min-height: 40px;
+  }
+  .risk-row__actions,
+  .risk-row__actions :deep(.p-button) {
+    width: 100%;
+  }
+  .risk-row__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .risk-row__select {
+    align-self: flex-start;
+  }
+  .risk-batch-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .risk-batch-toolbar :deep(.p-button) {
+    width: 100%;
   }
   .alert-detail-metadata {
     grid-template-columns: 1fr;

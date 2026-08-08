@@ -49,3 +49,35 @@ test("shows an authoritative support lead snapshot without deriving chat metrics
   }));
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
 });
+
+test("keeps partial-safe bulk assignment actionable from Lead Control", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/support/control");
+
+  await page
+    .getByRole("checkbox", { name: /Выбрать Case/ })
+    .first()
+    .check();
+  await page
+    .getByRole("button", { name: "Пакетное назначение выбранных Cases" })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Пакетное назначение" });
+  await expect(dialog.getByText("1 Case в пакете")).toBeVisible();
+  await dialog
+    .getByRole("textbox", { name: "Обоснование пакетного назначения" })
+    .fill("Распределение очереди дежурной смене");
+  await dialog.getByRole("button", { name: "Назначить пакет" }).click();
+
+  await expect(dialog.getByRole("heading", { name: "Пакет выполнен" })).toBeVisible();
+  await expect(dialog.getByText("1 успешно · 0 ошибок")).toBeVisible();
+  await expect(dialog.getByText("Назначен", { exact: true })).toBeVisible();
+
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+});

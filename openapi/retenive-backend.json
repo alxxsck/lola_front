@@ -21682,6 +21682,108 @@
         ],
         "type": "object"
       },
+      "ForceAssignSupportCaseAssignmentDto": {
+        "properties": {
+          "bypassAvailability": {
+            "type": "boolean"
+          },
+          "bypassCapacity": {
+            "type": "boolean"
+          },
+          "caseReadToken": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "operatorCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "INCIDENT_RESPONSE",
+              "EMERGENCY_COVERAGE",
+              "CUSTOMER_HARM_PREVENTION",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "reasonNote": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId",
+          "operatorCmsUserId",
+          "expectedCaseVersion",
+          "bypassAvailability",
+          "bypassCapacity",
+          "reasonCode",
+          "reasonNote"
+        ],
+        "type": "object"
+      },
+      "ForceTransferSupportCaseAssignmentDto": {
+        "properties": {
+          "assignmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "bypassAvailability": {
+            "type": "boolean"
+          },
+          "bypassCapacity": {
+            "type": "boolean"
+          },
+          "expectedAssignmentVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "operatorCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "INCIDENT_RESPONSE",
+              "EMERGENCY_COVERAGE",
+              "CUSTOMER_HARM_PREVENTION",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "reasonNote": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "expectedAssignmentVersion",
+          "teamId",
+          "operatorCmsUserId",
+          "bypassAvailability",
+          "bypassCapacity",
+          "reasonCode",
+          "reasonNote"
+        ],
+        "type": "object"
+      },
       "IamEmailCapabilityConsumeDto": {
         "properties": {
           "token": {
@@ -37199,9 +37301,206 @@
         ],
         "type": "object"
       },
+      "SupportCaseAssignmentBatchErrorDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "SupportCaseAssignmentBatchItemRequestDto": {
+        "properties": {
+          "bypassAvailability": {
+            "type": "boolean"
+          },
+          "bypassCapacity": {
+            "type": "boolean"
+          },
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "caseReadToken": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "clientItemId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "expectedCaseVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "force": {
+            "type": "boolean"
+          },
+          "operatorCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "SKILL_MATCH",
+              "LOAD_BALANCE",
+              "LEAD_INTERVENTION",
+              "INCIDENT_RESPONSE",
+              "EMERGENCY_COVERAGE",
+              "CUSTOMER_HARM_PREVENTION",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "reasonNote": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientItemId",
+          "caseId",
+          "teamId",
+          "operatorCmsUserId",
+          "expectedCaseVersion",
+          "force",
+          "bypassAvailability",
+          "bypassCapacity",
+          "reasonCode",
+          "reasonNote"
+        ],
+        "type": "object"
+      },
+      "SupportCaseAssignmentBatchItemResponseDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "clientItemId": {
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/SupportCaseAssignmentBatchErrorDto"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/SupportCaseAssignmentMutationResponseDto"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientItemId",
+          "caseId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "SupportCaseAssignmentBatchRequestDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportCaseAssignmentBatchItemRequestDto"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "SupportCaseAssignmentBatchResponseDto": {
+        "properties": {
+          "batchId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "failedCount": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          },
+          "itemCount": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": "number"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportCaseAssignmentBatchItemResponseDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "outcome": {
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "PARTIAL",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "processedCount": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PROCESSING",
+              "COMPLETED"
+            ],
+            "type": "string"
+          },
+          "succeededCount": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "batchId",
+          "status",
+          "outcome",
+          "itemCount",
+          "processedCount",
+          "succeededCount",
+          "failedCount",
+          "items"
+        ],
+        "type": "object"
+      },
       "SupportCaseAssignmentCandidateActionsResponseDto": {
         "properties": {
           "assign": {
+            "type": "boolean"
+          },
+          "assignWithOverride": {
             "type": "boolean"
           },
           "claim": {
@@ -37212,13 +37511,18 @@
           },
           "transfer": {
             "type": "boolean"
+          },
+          "transferWithOverride": {
+            "type": "boolean"
           }
         },
         "required": [
           "claim",
           "assign",
           "release",
-          "transfer"
+          "transfer",
+          "assignWithOverride",
+          "transferWithOverride"
         ],
         "type": "object"
       },
@@ -37234,15 +37538,39 @@
           "displayName": {
             "type": "string"
           },
+          "effectiveAvailability": {
+            "enum": [
+              "AVAILABLE",
+              "BUSY",
+              "AWAY",
+              "DRAINING",
+              "OFFLINE"
+            ],
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "requiredOverrides": {
+            "items": {
+              "enum": [
+                "AVAILABILITY",
+                "CAPACITY",
+                "RESERVATION"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "type": "array"
           }
         },
         "required": [
           "id",
           "displayName",
           "availableCapacityUnits",
+          "effectiveAvailability",
+          "requiredOverrides",
           "actions"
         ],
         "type": "object"
@@ -37326,17 +37654,25 @@
           "assign": {
             "type": "boolean"
           },
+          "assignWithOverride": {
+            "type": "boolean"
+          },
           "claim": {
             "type": "boolean"
           },
           "transfer": {
+            "type": "boolean"
+          },
+          "transferWithOverride": {
             "type": "boolean"
           }
         },
         "required": [
           "claim",
           "assign",
-          "transfer"
+          "transfer",
+          "assignWithOverride",
+          "transferWithOverride"
         ],
         "type": "object"
       },
@@ -37392,8 +37728,10 @@
             "enum": [
               "CLAIM_CASE_ASSIGNMENT",
               "ASSIGN_CASE_ASSIGNMENT",
+              "ASSIGN_CASE_ASSIGNMENT_WITH_OVERRIDE",
               "RELEASE_CASE_ASSIGNMENT",
-              "TRANSFER_CASE_ASSIGNMENT"
+              "TRANSFER_CASE_ASSIGNMENT",
+              "TRANSFER_CASE_ASSIGNMENT_WITH_OVERRIDE"
             ],
             "type": "string"
           }
@@ -40246,6 +40584,13 @@
             "nullable": true,
             "type": "string"
           },
+          "commandOutcome": {
+            "enum": [
+              "APPLIED"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
           "conversationId": {
             "format": "uuid",
             "nullable": true,
@@ -40267,6 +40612,19 @@
             ],
             "nullable": true,
             "type": "string"
+          },
+          "eligibilityOverride": {
+            "additionalProperties": false,
+            "nullable": true,
+            "properties": {
+              "bypassAvailability": {
+                "type": "boolean"
+              },
+              "bypassCapacity": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
           },
           "eventCode": {
             "enum": [
@@ -40353,6 +40711,9 @@
               "RESERVATION_EXPIRED",
               "CASE_WORKFLOW_CANCELLED",
               "ROUTING_FALLBACK",
+              "INCIDENT_RESPONSE",
+              "EMERGENCY_COVERAGE",
+              "CUSTOMER_HARM_PREVENTION",
               "SHIFT_START",
               "RETURNED",
               "FOCUS",
@@ -40383,6 +40744,11 @@
           "schemaVersion": {
             "minimum": 1,
             "type": "integer"
+          },
+          "targetTeamId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
@@ -40398,6 +40764,9 @@
           "assignmentId",
           "messageId",
           "operatorCmsUserId",
+          "targetTeamId",
+          "eligibilityOverride",
+          "commandOutcome",
           "deliveryId",
           "deliveryState",
           "reasonCode",
@@ -40559,6 +40928,75 @@
           "kind",
           "view",
           "data"
+        ],
+        "type": "object"
+      },
+      "SupportLeadTargetActionsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "assignAlertOwner": {
+            "type": "boolean"
+          },
+          "openOperatorDrillDown": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assignAlertOwner",
+          "openOperatorDrillDown"
+        ],
+        "type": "object"
+      },
+      "SupportLeadTargetCatalogResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportLeadTargetDto"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "purpose": {
+            "enum": [
+              "ALERT_OWNER",
+              "OPERATOR_DRILL_DOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose",
+          "items"
+        ],
+        "type": "object"
+      },
+      "SupportLeadTargetDto": {
+        "additionalProperties": false,
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/SupportLeadTargetActionsDto"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "teamIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "teamIds",
+          "actions"
         ],
         "type": "object"
       },
@@ -75114,6 +75552,317 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/assignment-batches": {
+      "post": {
+        "operationId": "SupportCaseAssignmentBatch_execute",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SupportCaseAssignmentBatchRequestDto"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportCaseAssignmentBatchResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_BATCH_SIZE_INVALID",
+                                "ASSIGNMENT_BATCH_ITEM_ID_INVALID",
+                                "ASSIGNMENT_BATCH_ITEM_INVALID"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED",
+                                "ASSIGNMENT_BATCH_OUTCOME_NOT_FOUND"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IDEMPOTENCY_KEY_REUSED",
+                                "ASSIGNMENT_BATCH_LEASE_LOST",
+                                "ASSIGNMENT_BATCH_INFLIGHT_LIMIT"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support assignments"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.assignments.override",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/assignment-batches/outcome": {
+      "get": {
+        "operationId": "SupportCaseAssignmentBatch_outcome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportCaseAssignmentBatchResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_BATCH_SIZE_INVALID",
+                                "ASSIGNMENT_BATCH_ITEM_ID_INVALID",
+                                "ASSIGNMENT_BATCH_ITEM_INVALID"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED",
+                                "ASSIGNMENT_BATCH_OUTCOME_NOT_FOUND"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IDEMPOTENCY_KEY_REUSED",
+                                "ASSIGNMENT_BATCH_LEASE_LOST",
+                                "ASSIGNMENT_BATCH_INFLIGHT_LIMIT"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support assignments"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.assignments.override",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/assign": {
       "post": {
         "operationId": "SupportCaseAssignment_assign",
@@ -75195,6 +75944,7 @@
                             "code": {
                               "enum": [
                                 "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
                                 "IDEMPOTENCY_KEY_REQUIRED",
                                 "ASSIGNMENT_IF_MATCH_INVALID",
                                 "ASSIGNMENT_PROJECT_ID_INVALID",
@@ -75205,7 +75955,10 @@
                                 "CASE_VERSION_INVALID",
                                 "ASSIGNMENT_VERSION_INVALID",
                                 "ASSIGNMENT_REASON_NOTE_INVALID",
-                                "ASSIGNMENT_REASON_CODE_INVALID"
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
                               ],
                               "type": "string"
                             },
@@ -75288,7 +76041,8 @@
                             "code": {
                               "enum": [
                                 "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
                               ],
                               "type": "string"
                             },
@@ -75551,6 +76305,454 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/assign-with-override": {
+      "post": {
+        "operationId": "SupportCaseAssignment_assignWithOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ForceAssignSupportCaseAssignmentDto"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportCaseAssignmentMutationResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "ETag": {
+                "description": "Strong Assignment ETag required by the next versioned mutation",
+                "schema": {
+                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support assignments"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.assignments.override",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.assignments.force_assign",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/candidates": {
       "get": {
         "operationId": "SupportCaseAssignment_candidatesForCase",
@@ -75598,6 +76800,7 @@
                             "code": {
                               "enum": [
                                 "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
                                 "ASSIGNMENT_CASE_CANDIDATE_ID_INVALID"
                               ],
                               "type": "string"
@@ -76015,6 +77218,7 @@
                             "code": {
                               "enum": [
                                 "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
                                 "IDEMPOTENCY_KEY_REQUIRED",
                                 "ASSIGNMENT_IF_MATCH_INVALID",
                                 "ASSIGNMENT_PROJECT_ID_INVALID",
@@ -76025,7 +77229,10 @@
                                 "CASE_VERSION_INVALID",
                                 "ASSIGNMENT_VERSION_INVALID",
                                 "ASSIGNMENT_REASON_NOTE_INVALID",
-                                "ASSIGNMENT_REASON_CODE_INVALID"
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
                               ],
                               "type": "string"
                             },
@@ -76108,7 +77315,8 @@
                             "code": {
                               "enum": [
                                 "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
                               ],
                               "type": "string"
                             },
@@ -76371,6 +77579,246 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/commands/outcome": {
+      "get": {
+        "operationId": "SupportCaseAssignment_commandOutcome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportCaseAssignmentMutationResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "ETag": {
+                "description": "Strong Assignment ETag from the committed command receipt",
+                "schema": {
+                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
+                                "IDEMPOTENCY_KEY_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED",
+                                "ASSIGNMENT_COMMAND_OUTCOME_NOT_FOUND"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support assignments"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.support.assignments.self_manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.assignments.override",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/release": {
       "post": {
         "operationId": "SupportCaseAssignment_release",
@@ -76461,6 +77909,7 @@
                             "code": {
                               "enum": [
                                 "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
                                 "IDEMPOTENCY_KEY_REQUIRED",
                                 "ASSIGNMENT_IF_MATCH_INVALID",
                                 "ASSIGNMENT_PROJECT_ID_INVALID",
@@ -76471,7 +77920,10 @@
                                 "CASE_VERSION_INVALID",
                                 "ASSIGNMENT_VERSION_INVALID",
                                 "ASSIGNMENT_REASON_NOTE_INVALID",
-                                "ASSIGNMENT_REASON_CODE_INVALID"
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
                               ],
                               "type": "string"
                             },
@@ -76554,7 +78006,8 @@
                             "code": {
                               "enum": [
                                 "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
                               ],
                               "type": "string"
                             },
@@ -76913,6 +78366,7 @@
                             "code": {
                               "enum": [
                                 "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
                                 "IDEMPOTENCY_KEY_REQUIRED",
                                 "ASSIGNMENT_IF_MATCH_INVALID",
                                 "ASSIGNMENT_PROJECT_ID_INVALID",
@@ -76923,7 +78377,10 @@
                                 "CASE_VERSION_INVALID",
                                 "ASSIGNMENT_VERSION_INVALID",
                                 "ASSIGNMENT_REASON_NOTE_INVALID",
-                                "ASSIGNMENT_REASON_CODE_INVALID"
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
                               ],
                               "type": "string"
                             },
@@ -77006,7 +78463,8 @@
                             "code": {
                               "enum": [
                                 "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
                               ],
                               "type": "string"
                             },
@@ -77267,6 +78725,463 @@
           "code": "project.support.assignments.override",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/assignment/transfer-with-override": {
+      "post": {
+        "operationId": "SupportCaseAssignment_transferWithOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ForceTransferSupportCaseAssignmentDto"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportCaseAssignmentMutationResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "ETag": {
+                "description": "Strong Assignment ETag required by the next versioned mutation",
+                "schema": {
+                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_REASON_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REASON_CODE_INVALID",
+                                "ASSIGNMENT_OVERRIDE_SCOPE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_FORCE_ASSIGN_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support assignments"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.assignments.override",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.assignments.force_assign",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/content": {
@@ -82183,6 +84098,154 @@
           "code": "project.support.lead_control.read",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/lead/targets": {
+      "get": {
+        "operationId": "SupportLeadTarget_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purpose",
+            "required": true,
+            "schema": {
+              "enum": [
+                "ALERT_OWNER",
+                "OPERATOR_DRILL_DOWN"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportLeadTargetCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "REQUEST_VALIDATION_FAILED"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_LEAD_TARGET_SET_TOO_LARGE"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin support lead control"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.support.lead_control.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.alerts.manage",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/macros": {

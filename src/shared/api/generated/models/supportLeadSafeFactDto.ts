@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportLeadSafeActorDto } from "./supportLeadSafeActorDto";
+import type { SupportLeadSafeFactDtoCommandOutcome } from "./supportLeadSafeFactDtoCommandOutcome";
 import type { SupportLeadSafeFactDtoDeliveryState } from "./supportLeadSafeFactDtoDeliveryState";
+import type { SupportLeadSafeFactDtoEligibilityOverride } from "./supportLeadSafeFactDtoEligibilityOverride";
 import type { SupportLeadSafeFactDtoEventCode } from "./supportLeadSafeFactDtoEventCode";
 import type { SupportLeadSafeFactDtoFactKind } from "./supportLeadSafeFactDtoFactKind";
 import type { SupportLeadSafeFactDtoReasonCode } from "./supportLeadSafeFactDtoReasonCode";
@@ -21,11 +23,15 @@ export interface SupportLeadSafeFactDto {
   /** @nullable */
   caseId: string | null;
   /** @nullable */
+  commandOutcome: SupportLeadSafeFactDtoCommandOutcome;
+  /** @nullable */
   conversationId: string | null;
   /** @nullable */
   deliveryId: string | null;
   /** @nullable */
   deliveryState: SupportLeadSafeFactDtoDeliveryState;
+  /** @nullable */
+  eligibilityOverride: SupportLeadSafeFactDtoEligibilityOverride;
   eventCode: SupportLeadSafeFactDtoEventCode;
   factKind: SupportLeadSafeFactDtoFactKind;
   /** @nullable */
@@ -42,4 +48,6 @@ export interface SupportLeadSafeFactDto {
   reasonCode: SupportLeadSafeFactDtoReasonCode;
   /** @minimum 1 */
   schemaVersion: number;
+  /** @nullable */
+  targetTeamId: string | null;
 }

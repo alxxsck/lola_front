@@ -364,17 +364,54 @@ const mockSource: SupportAssignmentSource = {
       workforceRevision: { id: "mock-workforce", number: 1 },
       actions: {
         claim: !assignment,
-        assign: false,
+        assign: !assignment,
+        assignWithOverride: !assignment,
         release: Boolean(assignment),
         transfer: Boolean(assignment),
+        transferWithOverride: Boolean(assignment),
       },
       teams: [
         {
           id: "mock-team-games",
           code: "GAMES",
           name: "Игры",
-          actions: { claim: !assignment, assign: false, transfer: false },
-          operators: [],
+          actions: {
+            claim: !assignment,
+            assign: !assignment,
+            assignWithOverride: !assignment,
+            transfer: Boolean(assignment),
+            transferWithOverride: Boolean(assignment),
+          },
+          operators: [
+            {
+              id: "mock-operator-anna",
+              displayName: "Анна Смирнова",
+              availableCapacityUnits: 240,
+              effectiveAvailability: "AVAILABLE",
+              requiredOverrides: [],
+              actions: {
+                claim: false,
+                assign: !assignment,
+                assignWithOverride: !assignment,
+                transfer: Boolean(assignment),
+                transferWithOverride: Boolean(assignment),
+              },
+            },
+            {
+              id: "mock-operator-maxim",
+              displayName: "Максим Орлов",
+              availableCapacityUnits: 0,
+              effectiveAvailability: "OFFLINE",
+              requiredOverrides: ["AVAILABILITY", "CAPACITY"],
+              actions: {
+                claim: false,
+                assign: false,
+                assignWithOverride: !assignment,
+                transfer: false,
+                transferWithOverride: Boolean(assignment),
+              },
+            },
+          ],
         },
       ],
     };

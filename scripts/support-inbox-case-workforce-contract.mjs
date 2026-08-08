@@ -19,6 +19,17 @@ function requireAnyPermissions(operationValue, codes) {
   }
 }
 
+function requireAllPermissions(operationValue, codes) {
+  const actual = new Set(
+    operationValue["x-iam-all-permissions"]?.map((value) => value.code) ?? [],
+  );
+  for (const code of codes) {
+    if (!actual.has(code)) {
+      throw new Error(`${operationValue.operationId} must require ${code}`);
+    }
+  }
+}
+
 function requireHeader(operationValue, name) {
   const value = parameter(operationValue, name);
   if (value.in !== "header" || value.required !== true) {
@@ -342,6 +353,172 @@ export function validateSupportInboxCaseWorkforceContract(document) {
       "TRANSFER_CASE_ASSIGNMENT",
     ],
   );
+
+  const assignmentCandidates = operation(
+    document,
+    "SupportCaseAssignment_candidatesForCase",
+  );
+  const forceAssign = operation(
+    document,
+    "SupportCaseAssignment_assignWithOverride",
+  );
+  const forceTransfer = operation(
+    document,
+    "SupportCaseAssignment_transferWithOverride",
+  );
+  const commandOutcome = operation(
+    document,
+    "SupportCaseAssignment_commandOutcome",
+  );
+  const batchExecute = operation(
+    document,
+    "SupportCaseAssignmentBatch_execute",
+  );
+  const batchOutcome = operation(
+    document,
+    "SupportCaseAssignmentBatch_outcome",
+  );
+  requireResponseSchema(
+    assignmentCandidates,
+    "200",
+    "SupportCaseAssignmentCandidatesResponseDto",
+  );
+  for (const operationValue of [forceAssign, forceTransfer]) {
+    requireAllPermissions(operationValue, [
+      "project.support.assignments.override",
+      "project.support.assignments.force_assign",
+    ]);
+    requireHeader(operationValue, "Idempotency-Key");
+  }
+  requireHeader(forceTransfer, "If-Match");
+  requireAnyPermissions(commandOutcome, [
+    "project.support.assignments.self_manage",
+    "project.support.assignments.override",
+  ]);
+  requireHeader(commandOutcome, "Idempotency-Key");
+  for (const operationValue of [batchExecute, batchOutcome]) {
+    requirePermission(operationValue, "project.support.assignments.override");
+    requireHeader(operationValue, "Idempotency-Key");
+  }
+  requireProperties(document, "SupportCaseAssignmentCandidateActionsResponseDto", [
+    "assign",
+    "assignWithOverride",
+    "claim",
+    "release",
+    "transfer",
+    "transferWithOverride",
+  ]);
+  requireProperties(document, "SupportCaseAssignmentCandidateOperatorResponseDto", [
+    "actions",
+    "availableCapacityUnits",
+    "displayName",
+    "effectiveAvailability",
+    "id",
+    "requiredOverrides",
+  ]);
+  requireSchemaFields(document, "SupportCaseAssignmentCandidateOperatorResponseDto", [
+    "actions",
+    "availableCapacityUnits",
+    "displayName",
+    "effectiveAvailability",
+    "id",
+    "requiredOverrides",
+  ]);
+  requireProperties(document, "ForceAssignSupportCaseAssignmentDto", [
+    "teamId",
+    "operatorCmsUserId",
+    "expectedCaseVersion",
+    "bypassAvailability",
+    "bypassCapacity",
+    "reasonCode",
+    "reasonNote",
+  ]);
+  requireSchemaFields(document, "ForceAssignSupportCaseAssignmentDto", [
+    "teamId",
+    "operatorCmsUserId",
+    "expectedCaseVersion",
+    "bypassAvailability",
+    "bypassCapacity",
+    "reasonCode",
+    "reasonNote",
+  ]);
+  requireProperties(document, "ForceTransferSupportCaseAssignmentDto", [
+    "assignmentId",
+    "expectedAssignmentVersion",
+    "teamId",
+    "operatorCmsUserId",
+    "bypassAvailability",
+    "bypassCapacity",
+    "reasonCode",
+    "reasonNote",
+  ]);
+  requireProperties(document, "SupportCaseAssignmentBatchRequestDto", ["items"]);
+  requireProperties(document, "SupportCaseAssignmentBatchItemRequestDto", [
+    "clientItemId",
+    "caseId",
+    "teamId",
+    "operatorCmsUserId",
+    "expectedCaseVersion",
+    "force",
+    "bypassAvailability",
+    "bypassCapacity",
+    "reasonCode",
+    "reasonNote",
+  ]);
+  requireProperties(document, "SupportCaseAssignmentBatchResponseDto", [
+    "batchId",
+    "status",
+    "outcome",
+    "itemCount",
+    "processedCount",
+    "succeededCount",
+    "failedCount",
+    "items",
+  ]);
+  requireSchemaFields(document, "SupportCaseAssignmentBatchResponseDto", [
+    "batchId",
+    "status",
+    "outcome",
+    "itemCount",
+    "processedCount",
+    "succeededCount",
+    "failedCount",
+    "items",
+  ]);
+  requirePropertyEnum(document, "SupportCaseAssignmentBatchResponseDto", "outcome", [
+    "PENDING",
+    "SUCCEEDED",
+    "PARTIAL",
+    "FAILED",
+  ]);
+  requireResponseSchema(commandOutcome, "200", "SupportCaseAssignmentMutationResponseDto");
+  requireResponseSchema(batchOutcome, "200", "SupportCaseAssignmentBatchResponseDto");
+  requireInlineErrorEnum(commandOutcome, "404", [
+    "ASSIGNMENT_COMMAND_OUTCOME_NOT_FOUND",
+  ]);
+
+  const leadTargets = operation(document, "SupportLeadTarget_list");
+  const investigation = operation(document, "SupportLead_investigation");
+  requireAnyPermissions(leadTargets, [
+    "project.support.lead_control.read",
+    "project.support.alerts.manage",
+  ]);
+  requireParameterEnum(leadTargets, "purpose", [
+    "ALERT_OWNER",
+    "OPERATOR_DRILL_DOWN",
+  ]);
+  requirePermission(investigation, "project.support.lead_control.read");
+  requireProperties(document, "SupportLeadSafeFactDto", [
+    "actor",
+    "eventCode",
+    "factKind",
+    "occurredAt",
+    "operatorCmsUserId",
+    "targetTeamId",
+    "eligibilityOverride",
+    "commandOutcome",
+    "reasonCode",
+  ]);
   requirePropertyEnum(
     document,
     "AssignSupportCaseAssignmentDto",

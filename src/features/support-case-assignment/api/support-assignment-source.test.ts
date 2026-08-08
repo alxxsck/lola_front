@@ -35,13 +35,13 @@ const candidates: SupportCaseAssignmentCandidatesResponseDto = {
   assignmentState: "UNASSIGNED",
   currentAssignment: null,
   workforceRevision: { id: "workforce-1", number: 4 },
-  actions: { claim: true, assign: false, release: false, transfer: false },
+  actions: { claim: true, assign: false, assignWithOverride: false, release: false, transfer: false, transferWithOverride: false },
   teams: [
     {
       id: "team-1",
       code: "PAYMENTS",
       name: "Платежи",
-      actions: { claim: true, assign: false, transfer: false },
+      actions: { claim: true, assign: false, assignWithOverride: false, transfer: false, transferWithOverride: false },
       operators: [],
     },
   ],
@@ -112,7 +112,7 @@ describe("support assignment source", () => {
         version: 3,
         actionEtag: '"sa1.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"',
       },
-      actions: { claim: false, assign: false, release: true, transfer: false },
+      actions: { claim: false, assign: false, assignWithOverride: false, release: true, transfer: false, transferWithOverride: false },
     };
     generated.candidates.mockResolvedValue(assigned);
     generated.release.mockResolvedValue({
@@ -177,19 +177,21 @@ describe("support assignment source", () => {
         version: 3,
         actionEtag: '"sa1.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"',
       },
-      actions: { claim: false, assign: false, release: true, transfer: true },
+      actions: { claim: false, assign: false, assignWithOverride: false, release: true, transfer: true, transferWithOverride: false },
       teams: [
         {
           id: "team-2",
           code: "VIP",
           name: "VIP",
-          actions: { claim: false, assign: false, transfer: true },
+          actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
           operators: [
             {
               id: "operator-2",
               displayName: "Максим",
               availableCapacityUnits: 300,
-              actions: { claim: false, assign: false, transfer: true },
+              effectiveAvailability: "AVAILABLE",
+              requiredOverrides: [],
+              actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
             },
           ],
         },

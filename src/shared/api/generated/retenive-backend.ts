@@ -292,6 +292,8 @@ import type {
   ExtendConversationAISuspensionDto,
   FirstPlatformOperatorDto,
   FirstPlatformOperatorProvision201,
+  ForceAssignSupportCaseAssignmentDto,
+  ForceTransferSupportCaseAssignmentDto,
   IamEmailCapabilityConsumeDto,
   IamEmailFeedbackDto,
   IamEmailFeedbackResponseDto,
@@ -526,6 +528,8 @@ import type {
   StartVoiceSessionDto,
   SubmitCmsAgentRequestDto,
   SupportActivityResponseDto,
+  SupportCaseAssignmentBatchRequestDto,
+  SupportCaseAssignmentBatchResponseDto,
   SupportCaseAssignmentCandidatesResponseDto,
   SupportCaseAssignmentMutationResponseDto,
   SupportCaseSearchQueryDto,
@@ -578,6 +582,8 @@ import type {
   SupportLeadInvestigationParams,
   SupportLeadInvestigationResponseDto,
   SupportLeadSummaryResponseDto,
+  SupportLeadTargetCatalogResponseDto,
+  SupportLeadTargetListParams,
   SupportMacroCatalogParams,
   SupportMacroCatalogResponseDto,
   SupportMacroReplyDraftResponseDto,
@@ -5682,6 +5688,39 @@ export const supportOperationalAlertCommandResolve = (
   );
 };
 
+export const supportCaseAssignmentBatchExecute = (
+  projectId: string,
+  supportCaseAssignmentBatchRequestDto: BodyType<SupportCaseAssignmentBatchRequestDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentBatchResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentBatchResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/assignment-batches`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportCaseAssignmentBatchRequestDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentBatchOutcome = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentBatchResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentBatchResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/assignment-batches/outcome`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportCaseAssignmentAssign = (
   projectId: string,
   caseId: string,
@@ -5696,6 +5735,25 @@ export const supportCaseAssignmentAssign = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: assignSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentAssignWithOverride = (
+  projectId: string,
+  caseId: string,
+  forceAssignSupportCaseAssignmentDto: BodyType<ForceAssignSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/assign-with-override`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: forceAssignSupportCaseAssignmentDto,
     },
     options,
   );
@@ -5736,6 +5794,22 @@ export const supportCaseAssignmentClaim = (
   );
 };
 
+export const supportCaseAssignmentCommandOutcome = (
+  projectId: string,
+  caseId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/commands/outcome`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportCaseAssignmentRelease = (
   projectId: string,
   caseId: string,
@@ -5769,6 +5843,25 @@ export const supportCaseAssignmentTransfer = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: transferSupportCaseAssignmentDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseAssignmentTransferWithOverride = (
+  projectId: string,
+  caseId: string,
+  forceTransferSupportCaseAssignmentDto: BodyType<ForceTransferSupportCaseAssignmentDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseAssignmentMutationResponseDto>
+  >,
+) => {
+  return request<SupportCaseAssignmentMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/assignment/transfer-with-override`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: forceTransferSupportCaseAssignmentDto,
     },
     options,
   );
@@ -6751,6 +6844,23 @@ export const supportLeadSummary = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/lead/summary`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportLeadTargetList = (
+  projectId: string,
+  params: SupportLeadTargetListParams,
+  options?: SecondParameter<
+    typeof request<SupportLeadTargetCatalogResponseDto>
+  >,
+) => {
+  return request<SupportLeadTargetCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/targets`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -11889,8 +11999,17 @@ export type SupportOperationalAlertCommandChangeOwnerResult = NonNullable<
 export type SupportOperationalAlertCommandResolveResult = NonNullable<
   Awaited<ReturnType<typeof supportOperationalAlertCommandResolve>>
 >;
+export type SupportCaseAssignmentBatchExecuteResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentBatchExecute>>
+>;
+export type SupportCaseAssignmentBatchOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentBatchOutcome>>
+>;
 export type SupportCaseAssignmentAssignResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentAssign>>
+>;
+export type SupportCaseAssignmentAssignWithOverrideResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentAssignWithOverride>>
 >;
 export type SupportCaseAssignmentCandidatesForCaseResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentCandidatesForCase>>
@@ -11898,11 +12017,17 @@ export type SupportCaseAssignmentCandidatesForCaseResult = NonNullable<
 export type SupportCaseAssignmentClaimResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentClaim>>
 >;
+export type SupportCaseAssignmentCommandOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentCommandOutcome>>
+>;
 export type SupportCaseAssignmentReleaseResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentRelease>>
 >;
 export type SupportCaseAssignmentTransferResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentTransfer>>
+>;
+export type SupportCaseAssignmentTransferWithOverrideResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseAssignmentTransferWithOverride>>
 >;
 export type SupportContentPanelReadResult = NonNullable<
   Awaited<ReturnType<typeof supportContentPanelRead>>
@@ -12085,6 +12210,9 @@ export type SupportLeadCaseRisksResult = NonNullable<
 >;
 export type SupportLeadSummaryResult = NonNullable<
   Awaited<ReturnType<typeof supportLeadSummary>>
+>;
+export type SupportLeadTargetListResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadTargetList>>
 >;
 export type SupportMacroCatalogResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroCatalog>>

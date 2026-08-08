@@ -95,6 +95,7 @@ interface RenderOptions {
   riskPage?: Omit<SupportLeadCaseRiskPage, "riskType">;
   alertsPage?: SupportOperationalAlertPage;
   allowAvailability?: boolean;
+  allowAssignment?: boolean;
 }
 
 async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
@@ -102,6 +103,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     allowAlerts = false,
     allowLeadControl = true,
     allowAvailability = false,
+    allowAssignment = false,
     riskPage,
     alertsPage,
   } = options;
@@ -124,6 +126,13 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
           ? [
               "project.support.availability.read",
               "project.support.availability.self_manage",
+            ]
+          : []),
+        ...(allowAssignment
+          ? [
+              "project.cases.read",
+              "project.support.assignments.override",
+              "project.support.assignments.force_assign",
             ]
           : []),
       ],
@@ -164,6 +173,11 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     routes: [
       { path: "/support/control", component: SupportControlPage },
       { path: "/overview", name: "overview", component: { template: "<div />" } },
+      {
+        path: "/cases/:caseId",
+        name: "end-user-case-detail",
+        component: { template: "<div />" },
+      },
     ],
   });
   await router.push("/support/control");
@@ -183,6 +197,35 @@ describe("SupportControlPage", () => {
 
     expect(wrapper.text()).toContain("SLA в shadow-режиме");
     expect(wrapper.text()).toContain("Под риском");
+  });
+
+  it("exposes the shared Lead assignment action from a Control risk drill-down", async () => {
+    const { wrapper } = await render(summary, {
+      allowAssignment: true,
+      riskPage: {
+        computedAt: "2026-08-06T10:00:00.000Z",
+        freshnessState: "READY",
+        slaRolloutState: "SHADOW",
+        nextCursor: null,
+        items: [
+          {
+            caseId: "case-1",
+            caseVersion: 3,
+            assignmentVersion: null,
+            deliveryVersion: null,
+            detectedAt: "2026-08-06T09:55:00.000Z",
+            dueAt: null,
+            riskSortAt: "2026-08-06T09:55:00.000Z",
+            riskType: "UNASSIGNED_AGED",
+            slaClockVersion: null,
+          },
+        ],
+      },
+    });
+
+    expect(
+      wrapper.get("button[aria-label='Управлять назначением лида']").text(),
+    ).toContain("Назначить");
   });
 
   it("does not present disabled SLA as zero risk", async () => {

@@ -6,11 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportCaseAssignmentCandidateTargetActionsResponseDto } from "./supportCaseAssignmentCandidateTargetActionsResponseDto";
+import type { SupportCaseAssignmentCandidateOperatorResponseDtoEffectiveAvailability } from "./supportCaseAssignmentCandidateOperatorResponseDtoEffectiveAvailability";
+import type { SupportCaseAssignmentCandidateOperatorResponseDtoRequiredOverridesItem } from "./supportCaseAssignmentCandidateOperatorResponseDtoRequiredOverridesItem";
 
 export interface SupportCaseAssignmentCandidateOperatorResponseDto {
   actions: SupportCaseAssignmentCandidateTargetActionsResponseDto;
   /** @minimum 0 */
   availableCapacityUnits: number;
   displayName: string;
+  effectiveAvailability: SupportCaseAssignmentCandidateOperatorResponseDtoEffectiveAvailability;
   id: string;
+  /** @maxItems 3 */
+  requiredOverrides: SupportCaseAssignmentCandidateOperatorResponseDtoRequiredOverridesItem[];
 }

@@ -12,5 +12,6 @@ export type SupportCaseAssignmentCandidatesForCase400AllOfErrorCode =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportCaseAssignmentCandidatesForCase400AllOfErrorCode = {
   IAM_AUTHORIZATION_REQUIRED: "IAM_AUTHORIZATION_REQUIRED",
+  REQUEST_VALIDATION_FAILED: "REQUEST_VALIDATION_FAILED",
   ASSIGNMENT_CASE_CANDIDATE_ID_INVALID: "ASSIGNMENT_CASE_CANDIDATE_ID_INVALID",
 } as const;

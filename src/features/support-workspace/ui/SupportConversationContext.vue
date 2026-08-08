@@ -4,6 +4,8 @@ import Button from "primevue/button";
 import Message from "primevue/message";
 import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
 import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
+import type { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
+import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
 import type {
@@ -27,6 +29,7 @@ const props = withDefaults(
     canManageCase?: boolean;
     canReadCaseDesk?: boolean;
     assignmentController?: ReturnType<typeof createSupportAssignmentController>;
+    leadAssignmentController?: ReturnType<typeof createSupportLeadAssignmentController>;
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     canReadProfile?: boolean;
@@ -40,6 +43,7 @@ const props = withDefaults(
     canManageCase: false,
     canReadCaseDesk: false,
     assignmentController: undefined,
+    leadAssignmentController: undefined,
     availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
     profile: null,
@@ -79,6 +83,7 @@ const hasAvailableActions = computed(
   () =>
     props.canManageCase ||
     props.canReadInternalNotes ||
+    Boolean(props.leadAssignmentController) ||
     Boolean(props.assignmentController),
 );
 
@@ -488,6 +493,12 @@ defineExpose({ requestClassification });
           :claimant-label="claimantLabel"
           viewers-label="Presence ещё не подключён"
           :availability-label="availabilityLabel"
+        />
+        <SupportLeadAssignmentDesk
+          v-if="leadAssignmentController && selection.case"
+          :controller="leadAssignmentController"
+          :case-id="selection.case.id"
+          :case-label="selection.case.title"
         />
         <Button
           v-if="canManageCase"

@@ -4,14 +4,21 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 16 — Завершить Case workflow и классификацию; 17 — Завершить действия оператора с назначением.
 
-**Status:** partially-blocked-by-backend
+**Status:** frontend-complete-except-team-only-backend-gap
 
-**Backend gate (audit 2026-08-07):** single-Case commands существуют; eligible targets,
-explicit override action и bulk per-item receipt отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#18--назначение-и-override-для-лида).
+**Backend gate (проверено 2026-08-08):** backend `9a93282` публикует Case-scoped eligible
+operator-in-Team targets, ordinary/force commands, single outcome lookup, durable bulk с
+per-item receipt и safe Lead audit facts. Frontend pin обновлён на exact revision
+`9a93282723b5ce9c6e57dae87a9bd9ee63c07387`.
 
-- [ ] Lead может assign/reassign/unassign Case оператору или команде по отдельным permissions.
-- [ ] Override availability/capacity требует отдельного allowed action и обязательной причины.
-- [ ] Command использует revision/OCC и показывает conflict без потери текущего контекста.
-- [ ] Bulk assignment возвращает per-item success/failure и не скрывает partial outcome.
-- [ ] Действие доступно из Lead Control drill-down и Case inspector через один use case.
-- [ ] Audit timeline фиксирует actor, reason, target, override и command outcome.
+- [x] Lead может assign/reassign/unassign Case конкретному оператору внутри Team по отдельным permissions.
+- [x] Override availability/capacity требует server-owned force action и обязательного обоснования.
+- [x] Command использует revision/OCC, сохраняет draft при conflict и восстанавливает неизвестный outcome без повторной команды.
+- [x] Bulk assignment возвращает и показывает per-item `SUCCEEDED|FAILED`, включая общий `PARTIAL`.
+- [x] Один Lead assignment use case доступен из Lead Control drill-down и Case inspector.
+- [x] Safe audit timeline показывает actor kind, reason, target Team/operator, exact override и command outcome; raw protected note не выводится.
+- [ ] Team-only assignment: backend request требует одновременно `teamId` и `operatorCmsUserId`, поэтому назначить Case только на Team невозможно.
+
+**Frontend evidence:** `src/features/support-lead-assignment`, интеграции в
+`SupportWorkspacePage.vue` и `SupportControlPage.vue`; contract assertions —
+`scripts/support-inbox-case-workforce-contract.mjs`.

@@ -8,6 +8,8 @@
 
 export interface SupportCaseAssignmentCandidateTargetActionsResponseDto {
   assign: boolean;
+  assignWithOverride: boolean;
   claim: boolean;
   transfer: boolean;
+  transferWithOverride: boolean;
 }

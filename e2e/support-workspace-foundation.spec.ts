@@ -49,6 +49,46 @@ test("opens a project conversation as a deep link without horizontal overflow", 
   );
 });
 
+test("lets a lead assign a Case through the shared responsive assignment desk", async ({
+  page,
+}) => {
+  await page.goto("/support/inbox/cases/case-demo-deposit");
+  if ((page.viewportSize()?.width ?? 1_280) <= 760) {
+    const context = page.getByRole("button", { name: "Контекст" });
+    await expect(context).toBeVisible();
+    await context.click();
+  } else {
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Не поступил депозит" }),
+    ).toBeVisible();
+  }
+  await page.getByRole("tab", { name: "Действия" }).click();
+  await page
+    .getByRole("button", { name: "Управлять назначением лида" })
+    .click();
+
+  const dialog = page.getByRole("dialog", { name: "Управление назначением" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("combobox", { name: "Оператор назначения" }).click();
+  await page.getByRole("option", { name: /Максим Орлов/ }).click();
+  await expect(dialog.getByText(/Override обойдёт/)).toBeVisible();
+  const submit = dialog.getByRole("button", {
+    name: "Подтвердить назначение лидом",
+  });
+  await expect(submit).toBeDisabled();
+  await dialog
+    .getByRole("textbox", { name: "Обоснование override" })
+    .fill("Экстренное покрытие критичного обращения");
+  await submit.click();
+  await expect(dialog).toBeHidden();
+
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+});
+
 test("sends a public reply only through the selected conversation", async ({
   page,
 }) => {

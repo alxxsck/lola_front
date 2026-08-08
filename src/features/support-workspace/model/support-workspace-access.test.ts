@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
+  canForceSupportAssignments,
+  canOverrideSupportAssignments,
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
   canReadSupportConversationAiSuspension,
@@ -72,6 +74,25 @@ describe("support workspace access", () => {
     expect(
       canManageOwnSupportAssignments(["project.support.assignments.override"]),
     ).toBe(false);
+  });
+
+  it("keeps Lead override and force assignment as independent explicit grants", () => {
+    expect(
+      canOverrideSupportAssignments([
+        "project.support.assignments.override",
+      ]),
+    ).toBe(true);
+    expect(
+      canForceSupportAssignments([
+        "project.support.assignments.override",
+      ]),
+    ).toBe(false);
+    expect(
+      canForceSupportAssignments([
+        "project.support.assignments.override",
+        "project.support.assignments.force_assign",
+      ]),
+    ).toBe(true);
   });
 
   it("requires both self-assignment authority and routing-receive permission for offers", () => {

@@ -52,19 +52,21 @@ const assignmentCandidates = {
     id: "30000000-0000-4000-8000-000000000004",
     number: 5,
   },
-  actions: { claim: false, assign: false, release: true, transfer: true },
+  actions: { claim: false, assign: false, assignWithOverride: false, release: true, transfer: true, transferWithOverride: false },
   teams: [
     {
       id: "30000000-0000-4000-8000-000000000002",
       code: "PAYMENTS",
       name: "Payments",
-      actions: { claim: false, assign: false, transfer: true },
+      actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
       operators: [
         {
           id: "30000000-0000-4000-8000-000000000003",
           displayName: "Operator Anna",
           availableCapacityUnits: 300,
-          actions: { claim: false, assign: false, transfer: true },
+          effectiveAvailability: "AVAILABLE",
+          requiredOverrides: [],
+          actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
         },
       ],
     },

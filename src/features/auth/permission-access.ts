@@ -95,6 +95,7 @@ export const PROJECT_PERMISSION_CODES = [
   "project.conversations.reply_without_translation",
   "project.support.assignments.self_manage",
   "project.support.assignments.override",
+  "project.support.assignments.force_assign",
   "project.support.routing.receive",
   "project.support.availability.read",
   "project.support.availability.self_manage",

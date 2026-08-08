@@ -61,6 +61,8 @@ import { createSupportMessageDeliveryController } from "@/features/conversation-
 import { supportAssignmentSource } from "@/features/support-case-assignment/api/support-assignment-source";
 import { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
 import SupportAssignmentOfferTray from "@/features/support-case-assignment/ui/SupportAssignmentOfferTray.vue";
+import { supportLeadAssignmentSource } from "@/features/support-lead-assignment/api/support-lead-assignment-source";
+import { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
@@ -75,6 +77,8 @@ import {
 import {
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
+  canForceSupportAssignments,
+  canOverrideSupportAssignments,
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
   canReadSupportWorkspace,
@@ -847,10 +851,14 @@ const canManageOwnAssignments = computed(
 const canOverrideAssignments = computed(
   () =>
     !assignmentAccessDenied.value &&
-    hasProjectPermission(
+    canOverrideSupportAssignments(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.assignments.override",
     ),
+);
+const canForceAssignments = computed(
+  () =>
+    !assignmentAccessDenied.value &&
+    canForceSupportAssignments(auth.project?.effectivePermissionCodes ?? []),
 );
 const canManageRoutingOffers = computed(
   () =>
@@ -887,6 +895,37 @@ const assignment = createSupportAssignmentController(
     },
   },
 );
+const leadAssignment = createSupportLeadAssignmentController(
+  supportLeadAssignmentSource,
+  {
+    projectId: () => auth.project?.id,
+    canOverride: () => canOverrideAssignments.value,
+    canForce: () => canForceAssignments.value,
+    canReadAudit: () =>
+      hasProjectPermission(
+        auth.project?.effectivePermissionCodes ?? [],
+        "project.support.lead_control.read",
+      ),
+    async onForbidden() {
+      assignmentAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Lead assignment state has already been purged by the controller.
+      }
+      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+        () => undefined,
+      );
+    },
+    async onChanged() {
+      await Promise.all([
+        inbox.load(),
+        conversation.reconcile(),
+        canReadAvailability.value ? availability.load() : Promise.resolve(),
+      ]);
+    },
+  },
+);
 const assignmentAvailabilityLabel = computed(() => {
   const snapshot = availability.availability.value;
   if (!canReadAvailability.value) return "Нет права на просмотр";
@@ -905,6 +944,9 @@ const assignmentSurfaceController = computed(() =>
   canManageOwnAssignments.value || canOverrideAssignments.value
     ? assignment
     : undefined,
+);
+const leadAssignmentSurfaceController = computed(() =>
+  canOverrideAssignments.value ? leadAssignment : undefined,
 );
 const profileAccessDenied = ref(false);
 const canReadProfile = computed(
@@ -1700,6 +1742,7 @@ watch(
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
     assignment.reset();
+    leadAssignment.reset();
     availability.reset();
     profile.reset();
     internalNotes.reset();
@@ -1777,8 +1820,10 @@ watch(canManageRoutingOffers, (allowed) => {
 watch([canManageOwnAssignments, canOverrideAssignments], ([canOwn, canOverride]) => {
   if (!canOwn && !canOverride) {
     assignment.resetCase();
+    leadAssignment.reset();
     return;
   }
+  if (!canOverride) leadAssignment.reset();
   void assignment.loadCase();
 });
 
@@ -1842,6 +1887,7 @@ watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
   const previousCaseId = previousAuthorityKey?.split("\u0000", 1)[0];
   if (caseId !== previousCaseId || !assignment.mutating.value)
     assignment.resetCase();
+  if (caseId !== previousCaseId) leadAssignment.reset();
   if (canManageOwnAssignments.value || canOverrideAssignments.value)
     void assignment.loadCase();
 });
@@ -2048,6 +2094,7 @@ onBeforeUnmount(() => {
   workspaceLive.dispose();
   availability.reset();
   assignment.reset();
+  leadAssignment.reset();
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
   inbox.reset();
@@ -2461,6 +2508,7 @@ onBeforeUnmount(() => {
             :can-read-case-desk="canReadSelectedCaseDesk"
             :can-manage-case="canManageSelectedCase"
             :assignment-controller="assignmentSurfaceController"
+            :lead-assignment-controller="leadAssignmentSurfaceController"
             :availability-label="assignmentAvailabilityLabel"
             :can-read-internal-notes="canReadSelectedInternalNotes"
             :can-read-profile="canReadProfile"
