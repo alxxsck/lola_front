@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportInternalNoteRevisionResponseDtoAuthor } from "./supportInternalNoteRevisionResponseDtoAuthor";
+import type { SupportInternalNoteRevisionResponseDtoReasonCode } from "./supportInternalNoteRevisionResponseDtoReasonCode";
 
 export interface SupportInternalNoteRevisionResponseDto {
   author: SupportInternalNoteRevisionResponseDtoAuthor;
@@ -13,6 +14,6 @@ export interface SupportInternalNoteRevisionResponseDto {
   createdAt: string;
   id: string;
   noteId: string;
-  reasonCode: string;
+  reasonCode: SupportInternalNoteRevisionResponseDtoReasonCode;
   revisionNumber: number;
 }

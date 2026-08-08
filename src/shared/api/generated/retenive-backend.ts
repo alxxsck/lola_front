@@ -567,6 +567,7 @@ import type {
   SupportInternalKnowledgeSearchParams,
   SupportInternalNoteListParams,
   SupportInternalNotePageResponseDto,
+  SupportInternalNoteRealtimeContractResponseDto,
   SupportInternalNoteResponseDto,
   SupportInternalNoteRevisionPageResponseDto,
   SupportInternalNoteRevisionsParams,
@@ -2066,7 +2067,7 @@ export const supportInternalNoteCreate = (
   );
 };
 
-export const supportInternalNoteCorrection = (
+export const supportInternalNoteCorrect = (
   projectId: string,
   caseId: string,
   noteId: string,
@@ -6563,6 +6564,21 @@ export const supportExternalWorkOperationsHealth = (
   return request<void>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/operations/health`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteRealtimeContract = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteRealtimeContractResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteRealtimeContractResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/internal-notes/realtime-contract`,
       method: "GET",
     },
     options,
@@ -11388,8 +11404,8 @@ export type SupportInternalNoteListResult = NonNullable<
 export type SupportInternalNoteCreateResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteCreate>>
 >;
-export type SupportInternalNoteCorrectionResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalNoteCorrection>>
+export type SupportInternalNoteCorrectResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteCorrect>>
 >;
 export type SupportInternalNoteRevisionsResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteRevisions>>
@@ -12205,6 +12221,9 @@ export type SupportExternalConnectionTenantsResult = NonNullable<
 >;
 export type SupportExternalWorkOperationsHealthResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalWorkOperationsHealth>>
+>;
+export type SupportInternalNoteRealtimeContractResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteRealtimeContract>>
 >;
 export type SupportInternalKnowledgeRollbackAdmissionResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeRollbackAdmission>>

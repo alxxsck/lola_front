@@ -73,10 +73,16 @@ test("shows collaboration as a compact warning without blocking the shared compo
   await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
   const conversation = page.locator(".conversation-surface");
   await expect(conversation.getByText(/Смотрит: Анна/)).toBeVisible();
-  await expect(conversation.getByText(/Илья Соколов печатает ответ/)).toBeVisible();
-  const draft = conversation.getByRole("textbox", { name: "Ответ пользователю" });
+  await expect(
+    conversation.getByText(/Илья Соколов печатает ответ/),
+  ).toBeVisible();
+  const draft = conversation.getByRole("textbox", {
+    name: "Ответ пользователю",
+  });
   await draft.fill("Проверяю обращение перед ответом");
-  await expect(conversation.getByRole("button", { name: "Отправить" })).toBeEnabled();
+  await expect(
+    conversation.getByRole("button", { name: "Отправить" }),
+  ).toBeEnabled();
 
   const desktopGeometry = await conversation.evaluate((element) => ({
     clientWidth: element.clientWidth,
@@ -106,6 +112,81 @@ test("shows collaboration as a compact warning without blocking the shared compo
     .include(".conversation-surface")
     .analyze();
   expect(accessibility.violations).toEqual([]);
+});
+
+test("keeps public replies and internal notes isolated in the shared composer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
+  const conversation = page.locator(".conversation-surface");
+  const publicDraft = conversation.getByRole("textbox", {
+    name: "Ответ пользователю",
+  });
+  await publicDraft.fill("Публичный ответ остаётся отдельным");
+
+  await conversation
+    .getByRole("button", { name: "Внутренняя заметка" })
+    .click();
+  const noteDraft = conversation.getByRole("textbox", {
+    name: "Внутренняя заметка",
+  });
+  await expect(noteDraft).toHaveValue("");
+  await expect(conversation.getByText("Видно только команде")).toBeVisible();
+  const privateNote = "Внутренняя проверка 2201 — не показывать пользователю";
+  await noteDraft.fill(privateNote);
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
+  await expect(noteDraft).toHaveValue(privateNote);
+  await conversation.getByRole("button", { name: "Добавить заметку" }).click();
+  await expect(noteDraft).toHaveValue("");
+  await expect(
+    conversation.getByRole("region", {
+      name: "Последние внутренние заметки",
+    }),
+  ).toContainText(privateNote);
+
+  await conversation
+    .getByRole("button", { name: "Ответ пользователю" })
+    .click();
+  await expect(
+    conversation.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveValue("Публичный ответ остаётся отдельным");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await conversation
+    .getByRole("button", { name: "Внутренняя заметка" })
+    .click();
+  const mobileGeometry = await conversation.evaluate((element) => ({
+    left: element.getBoundingClientRect().left,
+    right: element.getBoundingClientRect().right,
+    viewportWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(mobileGeometry.left).toBeGreaterThanOrEqual(-0.5);
+  expect(mobileGeometry.right).toBeLessThanOrEqual(
+    mobileGeometry.viewportWidth + 0.5,
+  );
+  expect(mobileGeometry.scrollWidth).toBe(mobileGeometry.viewportWidth);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".conversation-surface")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+
+  await page.goto("/users");
+  await page
+    .getByRole("button", { name: "Открыть профиль Анна Смирнова" })
+    .click();
+  await page.getByRole("button", { name: "Открыть чат" }).click();
+  const endUserWorkspace = page.getByRole("dialog", {
+    name: /Рабочее пространство пользователя/,
+  });
+  await expect(endUserWorkspace).toBeVisible();
+  await expect(endUserWorkspace.getByText(privateNote)).toHaveCount(0);
+  await expect(
+    endUserWorkspace.getByRole("button", { name: "Внутренняя заметка" }),
+  ).toHaveCount(0);
 });
 
 test("lets a lead assign a Case through the shared responsive assignment desk", async ({
@@ -434,20 +515,22 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
     await queue.evaluate((element, value) => {
       (element as HTMLElement).style.width = `${value}px`;
     }, width);
-    const inboxRowsLayout = await queue.locator(".case-row").evaluateAll((rows) =>
-      rows.map((row, index) => {
-        const rect = row.getBoundingClientRect();
-        const nextRect = rows[index + 1]?.getBoundingClientRect();
-        const hasSla = row.classList.contains("case-row--with-sla");
-        return {
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-          hasSla,
-          contentOverflow: row.scrollWidth - row.clientWidth,
-          overlap: nextRect ? rect.bottom - nextRect.top : 0,
-        };
-      }),
-    );
+    const inboxRowsLayout = await queue
+      .locator(".case-row")
+      .evaluateAll((rows) =>
+        rows.map((row, index) => {
+          const rect = row.getBoundingClientRect();
+          const nextRect = rows[index + 1]?.getBoundingClientRect();
+          const hasSla = row.classList.contains("case-row--with-sla");
+          return {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            hasSla,
+            contentOverflow: row.scrollWidth - row.clientWidth,
+            overlap: nextRect ? rect.bottom - nextRect.top : 0,
+          };
+        }),
+      );
     for (const row of inboxRowsLayout) {
       expect(row.width).toBeGreaterThanOrEqual(width - 1);
       expect(row.width).toBeLessThanOrEqual(width);
@@ -522,9 +605,7 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
       );
       return {
         horizontalOverflow: row.scrollWidth - row.clientWidth,
-        titleLineClamp: title
-          ? getComputedStyle(title).webkitLineClamp
-          : "",
+        titleLineClamp: title ? getComputedStyle(title).webkitLineClamp : "",
       };
     }),
   );
@@ -1162,6 +1243,9 @@ test("keeps the exact tablet and mobile route matrix usable without overflow", a
       const surface = document.querySelector<HTMLElement>(
         ".conversation-surface",
       );
+      const log = document.querySelector<HTMLElement>(
+        ".conversation-surface__log",
+      );
       const toolbar = document.querySelector<HTMLElement>(
         ".conversation-surface__toolbar",
       );
@@ -1169,20 +1253,54 @@ test("keeps the exact tablet and mobile route matrix usable without overflow", a
         ...document.querySelectorAll<HTMLElement>("[data-message-id]"),
       ];
       const surfaceRect = surface?.getBoundingClientRect();
+      const overflowMessages = messages.flatMap((message) => {
+        const rect = message.getBoundingClientRect();
+        return rect.left < (surfaceRect?.left ?? 0) - 0.5 ||
+          rect.right > (surfaceRect?.right ?? 0) + 0.5
+          ? [
+              {
+                id: message.dataset.messageId,
+                left: rect.left,
+                right: rect.right,
+              },
+            ]
+          : [];
+      });
       return {
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        surface: surfaceRect
+          ? {
+              left: surfaceRect.left,
+              right: surfaceRect.right,
+              width: getComputedStyle(surface!).width,
+              containsLog: Boolean(log && surface!.contains(log)),
+              surfaceCount: document.querySelectorAll(".conversation-surface")
+                .length,
+              logCount: document.querySelectorAll(".conversation-surface__log")
+                .length,
+            }
+          : null,
+        log: log
+          ? {
+              clientWidth: log.clientWidth,
+              scrollWidth: log.scrollWidth,
+              left: log.getBoundingClientRect().left,
+              right: log.getBoundingClientRect().right,
+              width: getComputedStyle(log).width,
+              minWidth: getComputedStyle(log).minWidth,
+              boxSizing: getComputedStyle(log).boxSizing,
+            }
+          : null,
         toolbarOverflow:
           (toolbar?.scrollWidth ?? 0) - (toolbar?.clientWidth ?? 0),
-        messageOverflow: messages.some((message) => {
-          const rect = message.getBoundingClientRect();
-          return (
-            rect.left < (surfaceRect?.left ?? 0) - 0.5 ||
-            rect.right > (surfaceRect?.right ?? 0) + 0.5
-          );
-        }),
+        overflowMessages,
       };
     });
     expect(conversationGeometry.toolbarOverflow).toBeLessThanOrEqual(0);
-    expect(conversationGeometry.messageOverflow).toBe(false);
+    expect(
+      conversationGeometry.overflowMessages,
+      JSON.stringify(conversationGeometry),
+    ).toEqual([]);
     await page.getByRole("button", { name: "Контекст" }).click();
     const drawer = page.getByRole("dialog", { name: "Контекст диалога" });
     await expect(drawer).toBeVisible();

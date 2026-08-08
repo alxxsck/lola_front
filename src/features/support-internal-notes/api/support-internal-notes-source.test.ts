@@ -15,7 +15,7 @@ const generated = vi.hoisted(() => ({
 vi.mock("@/shared/api/generated/retenive-backend", () => ({
   supportInternalNoteList: generated.list,
   supportInternalNoteCreate: generated.create,
-  supportInternalNoteCorrection: generated.correct,
+  supportInternalNoteCorrect: generated.correct,
   supportInternalNoteRevisions: generated.revisions,
   supportInternalNoteTombstone: generated.tombstone,
 }));
@@ -70,7 +70,10 @@ describe("support internal notes source", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("uses the generated Case-scoped read endpoints and retains only mutation-safe note metadata", async () => {
-    generated.list.mockResolvedValue({ items: [note()], nextCursor: "notes-2" });
+    generated.list.mockResolvedValue({
+      items: [note()],
+      nextCursor: "notes-2",
+    });
     generated.revisions.mockResolvedValue({
       items: [revision()],
       nextCursor: null,
@@ -111,6 +114,7 @@ describe("support internal notes source", () => {
           noteId: "note-1",
           revisionNumber: 1,
           body: "Уточнить номер заказа",
+          reasonCode: "CLARIFICATION",
           authorName: "Борис",
           createdAt: "2026-08-06T10:05:00.000Z",
         },
@@ -147,15 +151,20 @@ describe("support internal notes source", () => {
     });
     await supportInternalNotesSource.correct("project-1", "case-1", "note-1", {
       body: "Проверить оплату повторно",
-      reasonCode: "OPERATOR_CORRECTION",
+      reasonCode: "FACTUAL_CORRECTION",
       actionEtag: '"sin1.opaque"',
       idempotencyKey: "correct-note-1",
     });
-    await supportInternalNotesSource.tombstone("project-1", "case-1", "note-1", {
-      reasonCode: "CONTENT_REMOVAL",
-      actionEtag: '"sin1.opaque"',
-      idempotencyKey: "tombstone-note-1",
-    });
+    await supportInternalNotesSource.tombstone(
+      "project-1",
+      "case-1",
+      "note-1",
+      {
+        reasonCode: "PRIVACY_REQUEST",
+        actionEtag: '"sin1.opaque"',
+        idempotencyKey: "tombstone-note-1",
+      },
+    );
 
     expect(generated.create).toHaveBeenCalledWith(
       "project-1",
@@ -167,7 +176,7 @@ describe("support internal notes source", () => {
       "project-1",
       "case-1",
       "note-1",
-      { body: "Проверить оплату повторно", reasonCode: "OPERATOR_CORRECTION" },
+      { body: "Проверить оплату повторно", reasonCode: "FACTUAL_CORRECTION" },
       {
         headers: {
           "Idempotency-Key": "correct-note-1",
@@ -179,7 +188,7 @@ describe("support internal notes source", () => {
       "project-1",
       "case-1",
       "note-1",
-      { reasonCode: "CONTENT_REMOVAL" },
+      { reasonCode: "PRIVACY_REQUEST" },
       {
         headers: {
           "Idempotency-Key": "tombstone-note-1",

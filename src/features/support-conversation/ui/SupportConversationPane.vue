@@ -7,6 +7,7 @@ import type {
   ConversationSurfaceAISuspensionCapability,
   ConversationSurfaceCollaboration,
   ConversationSurfaceHistory,
+  ConversationSurfaceInternalNotes,
   ConversationSurfaceReconcileIssue,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
@@ -27,6 +28,7 @@ const props = defineProps<{
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
   collaboration?: ConversationSurfaceCollaboration;
   deliveryActions?: ReadonlyMap<string, SupportMessageDeliveryAction>;
+  internalNotes?: ConversationSurfaceInternalNotes;
 }>();
 
 const emit = defineEmits<{
@@ -45,11 +47,13 @@ const emit = defineEmits<{
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
   "check-send-outcome": [];
   "discard-send-attempt": [];
+  "change-composer-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
   "composer-action": [action: ConversationSurfaceComposerAction];
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
   "retry-ai-suspension": [];
   "retry-delivery": [messageId: string];
+  "open-internal-notes": [];
 }>();
 
 const surfaceMessages = computed(() =>
@@ -70,6 +74,7 @@ const surfaceMessages = computed(() =>
     :composer="composer"
     :ai-suspension="aiSuspension"
     :collaboration="collaboration"
+    :internal-notes="internalNotes"
     @load-older="emit('load-older')"
     @load-newer="emit('load-newer')"
     @visible-high-water="emit('visible-high-water', $event)"
@@ -85,10 +90,12 @@ const surfaceMessages = computed(() =>
     @send-reply-translation="emit('send-reply-translation', $event)"
     @check-send-outcome="emit('check-send-outcome')"
     @discard-send-attempt="emit('discard-send-attempt')"
+    @change-composer-mode="emit('change-composer-mode', $event)"
     @composer-action="emit('composer-action', $event)"
     @start-ai-suspension="emit('start-ai-suspension')"
     @show-ai-suspension-history="emit('show-ai-suspension-history')"
     @retry-ai-suspension="emit('retry-ai-suspension')"
     @retry-delivery="emit('retry-delivery', $event)"
+    @open-internal-notes="emit('open-internal-notes')"
   />
 </template>

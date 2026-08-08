@@ -13,6 +13,15 @@ const capabilities = {
   replyWithoutTranslation: false,
   suspendAi: false,
   transferAssignment: false,
+  internalNotes: {
+    state: "UNAVAILABLE" as const,
+    read: false,
+    create: false,
+    historyRead: false,
+    correct: false,
+    tombstone: false,
+    realtimeWatch: false,
+  },
 };
 
 const endUser = {
@@ -81,7 +90,20 @@ const fullSelectionSuccess = {
     caseVersion: 8,
     conversationUpdatedAt: "2026-08-07T10:00:00.000Z",
   },
-  capabilities: { ...capabilities, manageCase: true, reply: true },
+  capabilities: {
+    ...capabilities,
+    manageCase: true,
+    reply: true,
+    internalNotes: {
+      state: "AVAILABLE",
+      read: true,
+      create: true,
+      historyRead: true,
+      correct: true,
+      tombstone: true,
+      realtimeWatch: true,
+    },
+  },
   classificationOptions: [{ code: "BILLING", label: "Оплата" }],
   case: {
     id: "20000000-0000-4000-8000-000000000001",

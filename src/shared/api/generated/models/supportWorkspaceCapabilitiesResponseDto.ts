@@ -5,11 +5,13 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportWorkspaceInternalNoteCapabilitiesResponseDto } from "./supportWorkspaceInternalNoteCapabilitiesResponseDto";
 
 export interface SupportWorkspaceCapabilitiesResponseDto {
   assignCase: boolean;
   claimAssignment: boolean;
   escalateCase: boolean;
+  internalNotes: SupportWorkspaceInternalNoteCapabilitiesResponseDto;
   manageCase: boolean;
   releaseAssignment: boolean;
   reply: boolean;

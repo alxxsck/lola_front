@@ -30,6 +30,7 @@ import type {
   ConversationSurfaceAISuspensionCapability,
   ConversationSurfaceCollaboration,
   ConversationSurfaceHistory,
+  ConversationSurfaceInternalNotes,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
@@ -83,6 +84,7 @@ import { createSupportAvailabilityController } from "@/features/support-availabi
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
 import { supportInternalNotesSource } from "@/features/support-internal-notes/api/support-internal-notes-source";
 import { createSupportInternalNotesController } from "@/features/support-internal-notes/model/use-support-internal-notes";
+import { parseSupportInternalNoteChanged } from "@/features/support-internal-notes/model/support-internal-note-live";
 import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue";
 import {
   supportWorkspaceSource,
@@ -98,8 +100,6 @@ import {
   canReceiveSupportRoutingOffers,
   canReadSupportWorkspace,
   canReadSupportConversationAiSuspension,
-  canReadSupportInternalNoteHistory,
-  canReadSupportInternalNotes,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportInspectorSource } from "@/features/support-inspector/api/support-inspector-source";
 import { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
@@ -476,151 +476,222 @@ const supportComposerWorkingLocale = computed(
   () =>
     translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
 );
-const supportConversationComposer = computed<
-  Extract<ConversationSurfaceComposer, { mode: "PUBLIC_REPLY" }>
->(() => {
-  const selection = conversation.selection.value;
-  const translatedMode =
-    replyTranslationRequested.value ||
-    translationPolicyRequiresReviewedReply.value;
-  const busy = replyTranslationBusy.value;
-  const replyPreview =
-    canManageTranslation.value && translatedMode && translation.state.value
+const supportComposerMode = ref<"PUBLIC_REPLY" | "INTERNAL_NOTE">(
+  "PUBLIC_REPLY",
+);
+const internalNoteDraft = ref("");
+const internalNoteDraftPurgeRevision = ref(0);
+const supportConversationComposer = computed<ConversationSurfaceComposer>(
+  () => {
+    const selection = conversation.selection.value;
+    const noteCapabilities = selection?.capabilities.internalNotes;
+    const noteAvailable = noteCapabilities?.state === "AVAILABLE";
+    const modeSwitch = {
+      publicReply: {
+        visibility: reply.canReply.value
+          ? ("ENABLED" as const)
+          : ("DISABLED" as const),
+        reason: reply.canReply.value
+          ? undefined
+          : "Ответ пользователю в этом диалоге недоступен.",
+      },
+      internalNote: {
+        visibility:
+          noteAvailable && noteCapabilities.create
+            ? ("ENABLED" as const)
+            : ("DISABLED" as const),
+        reason: noteAvailable
+          ? "Для этого обращения доступен только просмотр заметок."
+          : "Внутренние заметки недоступны для текущего обращения.",
+      },
+    };
+    if (supportComposerMode.value === "INTERNAL_NOTE") {
+      const enabled = Boolean(noteAvailable && noteCapabilities?.create);
+      return {
+        visibility: enabled ? "ENABLED" : "DISABLED",
+        mode: "INTERNAL_NOTE",
+        scope: {
+          projectId: auth.project?.id ?? "unselected-project",
+          actorId: auth.user?.id ?? "current-operator",
+          conversationId:
+            selection?.conversation?.id ?? "unselected-conversation",
+        },
+        draftTargetId: selection?.case?.id ?? "unselected-case",
+        initialDraft: internalNoteDraft.value,
+        draftRevision: `${selection?.capabilitiesRevision ?? "unselected"}:internal-note`,
+        sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
+        sending: internalNotes.creating.value,
+        recipientStatus: null,
+        actions: {
+          attachment: {
+            visibility: "DISABLED",
+            reason: "Вложения во внутренних заметках появятся в пункте №23.",
+          },
+          createTicket: { visibility: "HIDDEN" },
+          classifyCase: { visibility: "HIDDEN" },
+          internalNotes: {
+            visibility: noteCapabilities?.read ? "ENABLED" : "HIDDEN",
+          },
+          templates: { visibility: "HIDDEN" },
+          improveWithAI: { visibility: "HIDDEN" },
+          sendWithoutTranslation: { visibility: "HIDDEN" },
+        },
+        modeSwitch,
+        sendCapability: enabled
+          ? { kind: "SOURCE" }
+          : {
+              kind: "BLOCKED",
+              reason: "Добавление заметки больше недоступно. Черновик очищен.",
+            },
+        replyPreview: null,
+        translationAssist: null,
+      };
+    }
+    const translatedMode =
+      replyTranslationRequested.value ||
+      translationPolicyRequiresReviewedReply.value;
+    const busy = replyTranslationBusy.value;
+    const replyPreview =
+      canManageTranslation.value && translatedMode && translation.state.value
+        ? {
+            draft: translation.draft.value,
+            targetLocale: translation.targetLocale.value,
+            busy,
+            stale: translation.previewStale.value,
+            disabled:
+              !reply.canReply.value ||
+              !reply.draft.value.trim() ||
+              translation.savingPreference.value ||
+              !translation.state.value.availability.available ||
+              translation.state.value.budget.hardExhausted,
+            showProviderDetails: canReadTranslationDetails.value,
+          }
+        : null;
+    const sendCapability = replyPolicyChecking.value
       ? {
-          draft: translation.draft.value,
-          targetLocale: translation.targetLocale.value,
-          busy,
-          stale: translation.previewStale.value,
-          disabled:
-            !reply.canReply.value ||
-            !reply.draft.value.trim() ||
-            translation.savingPreference.value ||
-            !translation.state.value.availability.available ||
-            translation.state.value.budget.hardExhausted,
-          showProviderDetails: canReadTranslationDetails.value,
+          kind: "BLOCKED" as const,
+          reason: publicReplyBlockedReason.value,
         }
-      : null;
-  const sendCapability = replyPolicyChecking.value
-    ? {
-        kind: "BLOCKED" as const,
-        reason: publicReplyBlockedReason.value,
-      }
-    : translatedMode
-      ? { kind: "TRANSLATED_PREVIEW" as const }
-      : canSubmitPublicReply.value
-        ? { kind: "SOURCE" as const }
-        : {
-            kind: "BLOCKED" as const,
-            reason:
-              publicReplyBlockedReason.value ||
-              "Ответ в этом диалоге сейчас недоступен.",
-          };
+      : translatedMode
+        ? { kind: "TRANSLATED_PREVIEW" as const }
+        : canSubmitPublicReply.value
+          ? { kind: "SOURCE" as const }
+          : {
+              kind: "BLOCKED" as const,
+              reason:
+                publicReplyBlockedReason.value ||
+                "Ответ в этом диалоге сейчас недоступен.",
+            };
 
-  return {
-    visibility: reply.canReply.value ? "ENABLED" : "HIDDEN",
-    mode: "PUBLIC_REPLY",
-    scope: {
-      projectId: auth.project?.id ?? "unselected-project",
-      actorId: auth.user?.id ?? "current-operator",
-      conversationId: selection?.conversation?.id ?? "unselected-conversation",
-    },
-    initialDraft: reply.draft.value,
-    draftRevision:
-      translation.draft.value?.id ??
-      selection?.actionRevisions.conversationUpdatedAt ??
-      selection?.conversation?.updatedAt ??
-      "unselected",
-    sending: reply.sending.value,
-    outcome:
-      reply.outcomeState.value === "IDLE" ||
-      reply.outcomeState.value === "SENDING"
-        ? undefined
-        : {
-            state: reply.outcomeState.value,
-            label:
-              reply.outcomeState.value === "CHECKING_OUTCOME"
-                ? "Результат пока неизвестен. Сообщение не отправляется заново."
-                : reply.outcomeState.value === "RETRYABLE"
-                  ? "Отправка не найдена. Черновик сохранён."
-                  : "Отправка заблокирована. Черновик сохранён.",
-            ...(reply.outcomeState.value === "CHECKING_OUTCOME" &&
-            !reply.sending.value
-              ? {
-                  action: {
-                    kind: "CHECK" as const,
-                    label: "Проверить результат",
-                  },
-                }
-              : reply.outcomeState.value === "BLOCKED"
+    return {
+      visibility: reply.canReply.value ? "ENABLED" : "HIDDEN",
+      mode: "PUBLIC_REPLY",
+      scope: {
+        projectId: auth.project?.id ?? "unselected-project",
+        actorId: auth.user?.id ?? "current-operator",
+        conversationId:
+          selection?.conversation?.id ?? "unselected-conversation",
+      },
+      initialDraft: reply.draft.value,
+      sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
+      draftRevision:
+        translation.draft.value?.id ??
+        selection?.actionRevisions.conversationUpdatedAt ??
+        selection?.conversation?.updatedAt ??
+        "unselected",
+      sending: reply.sending.value,
+      outcome:
+        reply.outcomeState.value === "IDLE" ||
+        reply.outcomeState.value === "SENDING"
+          ? undefined
+          : {
+              state: reply.outcomeState.value,
+              label:
+                reply.outcomeState.value === "CHECKING_OUTCOME"
+                  ? "Результат пока неизвестен. Сообщение не отправляется заново."
+                  : reply.outcomeState.value === "RETRYABLE"
+                    ? "Отправка не найдена. Черновик сохранён."
+                    : "Отправка заблокирована. Черновик сохранён.",
+              ...(reply.outcomeState.value === "CHECKING_OUTCOME" &&
+              !reply.sending.value
                 ? {
                     action: {
-                      kind: "DISCARD" as const,
-                      label: "Начать новую попытку",
+                      kind: "CHECK" as const,
+                      label: "Проверить результат",
                     },
                   }
-                : {}),
-          },
-    recipientStatus: selection?.conversation
-      ? selection.conversation.currentInteractionSessionCount > 0
-        ? { label: "Пользователь онлайн", tone: "ONLINE" as const }
-        : { label: "Пользователь офлайн", tone: "OFFLINE" as const }
-      : null,
-    actions: {
-      attachment: {
-        visibility: "DISABLED",
-        reason: "Backend-контракт вложений для ответа ещё не опубликован.",
-      },
-      createTicket: {
-        visibility: "HIDDEN",
-      },
-      classifyCase: {
-        visibility: selection?.case
-          ? canManageSelectedCase.value
-            ? "ENABLED"
-            : "HIDDEN"
-          : "DISABLED",
-        reason: selection?.case
-          ? undefined
-          : "Диалог пока не привязан к обращению.",
-      },
-      internalNotes: {
-        visibility: selection?.case
-          ? canReadSelectedInternalNotes.value
-            ? "ENABLED"
-            : "HIDDEN"
-          : "DISABLED",
-        reason: selection?.case
-          ? undefined
-          : "Внутренние заметки доступны после привязки обращения.",
-      },
-      templates: {
-        visibility: busy ? "DISABLED" : "ENABLED",
-        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
-      },
-      improveWithAI: {
-        visibility: "DISABLED",
-        reason: "Backend-команда улучшения ответа с AI ещё не опубликована.",
-      },
-      sendWithoutTranslation: {
-        visibility:
-          reply.canSendWithoutTranslation.value && translatedMode
-            ? reply.draft.value.trim() && !busy
+                : reply.outcomeState.value === "BLOCKED"
+                  ? {
+                      action: {
+                        kind: "DISCARD" as const,
+                        label: "Начать новую попытку",
+                      },
+                    }
+                  : {}),
+            },
+      recipientStatus: selection?.conversation
+        ? selection.conversation.currentInteractionSessionCount > 0
+          ? { label: "Пользователь онлайн", tone: "ONLINE" as const }
+          : { label: "Пользователь офлайн", tone: "OFFLINE" as const }
+        : null,
+      actions: {
+        attachment: {
+          visibility: "DISABLED",
+          reason: "Backend-контракт вложений для ответа ещё не опубликован.",
+        },
+        createTicket: {
+          visibility: "HIDDEN",
+        },
+        classifyCase: {
+          visibility: selection?.case
+            ? canManageSelectedCase.value
               ? "ENABLED"
-              : "DISABLED"
-            : "HIDDEN",
+              : "HIDDEN"
+            : "DISABLED",
+          reason: selection?.case
+            ? undefined
+            : "Диалог пока не привязан к обращению.",
+        },
+        internalNotes: {
+          visibility: selection?.case
+            ? canReadSelectedInternalNotes.value
+              ? "ENABLED"
+              : "HIDDEN"
+            : "DISABLED",
+          reason: selection?.case
+            ? undefined
+            : "Внутренние заметки доступны после привязки обращения.",
+        },
+        templates: {
+          visibility: busy ? "DISABLED" : "ENABLED",
+          reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+        },
+        improveWithAI: {
+          visibility: "DISABLED",
+          reason: "Backend-команда улучшения ответа с AI ещё не опубликована.",
+        },
+        sendWithoutTranslation: {
+          visibility:
+            reply.canSendWithoutTranslation.value && translatedMode
+              ? reply.draft.value.trim() && !busy
+                ? "ENABLED"
+                : "DISABLED"
+              : "HIDDEN",
+        },
       },
-    },
-    sendCapability,
-    replyPreview,
-    translationAssist: canManageTranslation.value
-      ? {
-          targetLocale: translation.targetLocale.value,
-          busy,
-          disabled: !reply.canReply.value || busy,
-        }
-      : null,
-  };
-});
+      modeSwitch,
+      sendCapability,
+      replyPreview,
+      translationAssist: canManageTranslation.value
+        ? {
+            targetLocale: translation.targetLocale.value,
+            busy,
+            disabled: !reply.canReply.value || busy,
+          }
+        : null,
+    };
+  },
+);
 const visibleTranslationMessageIds = computed(() =>
   conversation.messages.value
     .filter(
@@ -717,14 +788,13 @@ const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
 });
 const selectedCase = computed(() => conversation.selection.value?.case ?? null);
-const supportConversationCollaboration = computed<ConversationSurfaceCollaboration>(
-  () => ({
+const supportConversationCollaboration =
+  computed<ConversationSurfaceCollaboration>(() => ({
     availability: collaboration.error.value ? "DEGRADED" : "READY",
     viewers: collaboration.viewers.value,
     typers: collaboration.typers.value,
     collision: collaboration.collision.value,
-  }),
-);
+  }));
 const reservationReconcileProgress = ref<{
   key: string;
   attempts: number;
@@ -891,30 +961,36 @@ const internalNotesAccessDenied = ref(false);
 const canReadSelectedInternalNotes = computed(
   () =>
     !internalNotesAccessDenied.value &&
-    Boolean(conversation.selection.value?.case) &&
-    canReadSupportInternalNotes(auth.project?.effectivePermissionCodes ?? []),
+    conversation.selection.value?.capabilities.internalNotes?.state ===
+      "AVAILABLE" &&
+    Boolean(conversation.selection.value.capabilities.internalNotes.read),
 );
 const canReadSelectedInternalNoteHistory = computed(
   () =>
     canReadSelectedInternalNotes.value &&
-    canReadSupportInternalNoteHistory(
-      auth.project?.effectivePermissionCodes ?? [],
+    Boolean(
+      conversation.selection.value?.capabilities.internalNotes?.historyRead,
     ),
 );
-/**
- * The published workspace selection has no Case-scoped note action
- * projection. Project permissions alone must not infer mutation authority.
- */
-const canWriteSelectedInternalNotes = computed(() => false);
-const canRedactSelectedInternalNotes = computed(() => false);
+const canWriteSelectedInternalNotes = computed(
+  () =>
+    canReadSelectedInternalNotes.value &&
+    Boolean(conversation.selection.value?.capabilities.internalNotes?.create),
+);
+const canCorrectSelectedInternalNotes = computed(
+  () =>
+    canReadSelectedInternalNotes.value &&
+    Boolean(conversation.selection.value?.capabilities.internalNotes?.correct),
+);
+const canRedactSelectedInternalNotes = computed(
+  () =>
+    canReadSelectedInternalNotes.value &&
+    Boolean(
+      conversation.selection.value?.capabilities.internalNotes?.tombstone,
+    ),
+);
 const selectedInternalNotesAuthorityKey = computed(() => {
-  const selection = conversation.selection.value;
-  return [
-    auth.project?.id ?? "",
-    selection?.case?.id ?? "",
-    selection?.capabilitiesRevision ?? "",
-    selection?.checkpoint ?? "",
-  ].join("\u0000");
+  return [auth.project?.id ?? "", requestedSelectionKey.value].join("\u0000");
 });
 const internalNotesVisible = ref(false);
 const internalNotes = createSupportInternalNotesController(
@@ -924,10 +1000,14 @@ const internalNotes = createSupportInternalNotesController(
     canRead: () => canReadSelectedInternalNotes.value,
     canReadHistory: () => canReadSelectedInternalNoteHistory.value,
     canWrite: () => canWriteSelectedInternalNotes.value,
+    canCorrect: () => canCorrectSelectedInternalNotes.value,
     canRedact: () => canRedactSelectedInternalNotes.value,
+    async onReconcileRequired() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
     async onForbidden() {
       internalNotesAccessDenied.value = true;
-      internalNotesVisible.value = false;
+      purgeInternalNoteDraft();
       try {
         await auth.refreshContext();
       } catch {
@@ -940,6 +1020,67 @@ const internalNotes = createSupportInternalNotesController(
   },
   supportInternalNotesSource,
 );
+
+function purgeInternalNoteDraft(): void {
+  internalNotesVisible.value = false;
+  internalNoteDraft.value = "";
+  internalNoteDraftPurgeRevision.value += 1;
+  supportComposerMode.value = "PUBLIC_REPLY";
+}
+const supportConversationInternalNotes =
+  computed<ConversationSurfaceInternalNotes>(() => ({
+    loading: internalNotes.loading.value,
+    error: internalNotes.error.value,
+    totalVisible: internalNotes.notes.value.length,
+    hasMore: Boolean(internalNotes.nextCursor.value),
+    items: internalNotes.notes.value.slice(0, 1).map((note) => ({
+      id: note.id,
+      body: note.body,
+      lifecycle: note.lifecycle,
+      creatorName: note.creatorName,
+      updatedAt: note.updatedAt,
+    })),
+  }));
+const stopInternalNoteRealtime = cmsRealtimeClient.subscribe(
+  ["support.internal_note.changed.v1"],
+  (value) => {
+    const hint = parseSupportInternalNoteChanged(value);
+    const selection = conversation.selection.value;
+    if (
+      !hint ||
+      hint.projectId !== auth.project?.id ||
+      hint.caseId !== selection?.case?.id ||
+      !selection.capabilities.internalNotes?.realtimeWatch ||
+      !canReadSelectedInternalNotes.value
+    )
+      return;
+    void internalNotes.reconcile();
+  },
+);
+const stopInternalNoteWatchTermination =
+  cmsRealtimeClient.onSupportInternalNoteWatchTerminated(async (caseId) => {
+    if (caseId !== conversation.selection.value?.case?.id) return;
+    internalNotesAccessDenied.value = true;
+    purgeInternalNoteDraft();
+    internalNotes.reset();
+    try {
+      await auth.refreshContext();
+    } catch {
+      // The private projection is already purged; remain fail-closed offline.
+    }
+    await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+      () => undefined,
+    );
+  });
+const selectedInternalNoteWatchKey = computed(() => {
+  const selection = conversation.selection.value;
+  return [
+    auth.project?.id ?? "",
+    selection?.case?.id ?? "",
+    selection?.capabilities.internalNotes?.realtimeWatch ? "watch" : "off",
+    canReadSelectedInternalNotes.value ? "read" : "denied",
+  ].join("\u0000");
+});
 const availabilityAccessDenied = ref(false);
 const canReadAvailability = computed(
   () =>
@@ -1446,14 +1587,6 @@ function openInternalNotes(): void {
   void internalNotes.load();
 }
 
-async function createInternalNote(
-  body: string,
-  onSucceeded: () => void,
-): Promise<void> {
-  const conversationId = conversation.selection.value?.conversation?.id;
-  if (await internalNotes.create(body, conversationId)) onSucceeded();
-}
-
 async function correctInternalNote(
   noteId: string,
   body: string,
@@ -1483,7 +1616,8 @@ function syncInternalNotesReconciliation(): void {
   stopInternalNotesReconciliation();
   if (
     typeof window === "undefined" ||
-    !internalNotesVisible.value ||
+    (!internalNotesVisible.value &&
+      supportComposerMode.value !== "INTERNAL_NOTE") ||
     !canReadSelectedInternalNotes.value
   )
     return;
@@ -1731,16 +1865,44 @@ async function changeSupportTranslationMode(
 }
 
 function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
+  if (request.mode === "INTERNAL_NOTE") {
+    internalNoteDraft.value = request.text;
+    return;
+  }
   reply.draft.value = request.text;
   void workspaceLive.recordTypingActivity(Boolean(request.text.trim()));
 }
 
-async function sendSupportReply(
+async function sendSupportComposer(
   request: ConversationSurfaceSendRequest,
 ): Promise<void> {
+  if (request.mode === "INTERNAL_NOTE") {
+    if (!canWriteSelectedInternalNotes.value) return;
+    internalNoteDraft.value = request.text;
+    const conversationId = conversation.selection.value?.conversation?.id;
+    if (await internalNotes.create(request.text, conversationId)) {
+      internalNoteDraft.value = "";
+      await internalNotes.reconcile();
+    }
+    return;
+  }
   reply.draft.value = request.text;
   await sendReply();
   if (!reply.draft.value.trim()) void workspaceLive.setDraftActive(false);
+}
+
+function changeSupportComposerMode(
+  mode: "PUBLIC_REPLY" | "INTERNAL_NOTE",
+): void {
+  if (mode === supportComposerMode.value) return;
+  if (mode === "INTERNAL_NOTE") {
+    if (!canWriteSelectedInternalNotes.value) return;
+    supportComposerMode.value = mode;
+    void internalNotes.load(undefined, { retainNotesUntilResponse: true });
+    return;
+  }
+  if (!reply.canReply.value) return;
+  supportComposerMode.value = mode;
 }
 
 async function sendSupportTranslatedReply(
@@ -1764,7 +1926,9 @@ function handleSupportComposerAction(
       void classifySelectedCase();
       break;
     case "INTERNAL_NOTES":
-      openInternalNotes();
+      if (canWriteSelectedInternalNotes.value)
+        changeSupportComposerMode("INTERNAL_NOTE");
+      else openInternalNotes();
       break;
     case "SEND_WITHOUT_TRANSLATION":
       setSendWithoutTranslationVisible(true);
@@ -2119,19 +2283,35 @@ watch(canReadSelectedAiSuspension, (allowed) => {
   aiSuspensionHistoryVisible.value = false;
 });
 
-watch(canReadSelectedInternalNotes, (allowed) => {
-  if (allowed) return;
-  internalNotesVisible.value = false;
-  internalNotes.reset();
-});
+watch(
+  [canReadSelectedInternalNotes, conversation.loading],
+  ([allowed, loading]) => {
+    if (allowed || loading) return;
+    purgeInternalNoteDraft();
+    internalNotes.reset();
+  },
+);
 
-watch(canReadSelectedInternalNoteHistory, (allowed) => {
-  if (!allowed) internalNotes.closeHistory();
-});
+watch(
+  [canWriteSelectedInternalNotes, conversation.loading],
+  ([allowed, loading]) => {
+    if (allowed || loading || supportComposerMode.value !== "INTERNAL_NOTE")
+      return;
+    purgeInternalNoteDraft();
+  },
+);
+
+watch(
+  [canReadSelectedInternalNoteHistory, conversation.loading],
+  ([allowed, loading]) => {
+    if (!allowed && !loading) internalNotes.closeHistory();
+  },
+);
 
 watch(
   [
     internalNotesVisible,
+    supportComposerMode,
     canReadSelectedInternalNotes,
     selectedInternalNotesAuthorityKey,
   ],
@@ -2159,9 +2339,24 @@ watch(
   (authorityKey, previousAuthorityKey) => {
     if (authorityKey === previousAuthorityKey) return;
     internalNotesAccessDenied.value = false;
-    internalNotesVisible.value = false;
+    purgeInternalNoteDraft();
     internalNotes.reset();
   },
+);
+
+watch(
+  selectedInternalNoteWatchKey,
+  async (key, previousKey) => {
+    const [, previousCaseId] = previousKey?.split("\u0000") ?? [];
+    if (previousCaseId)
+      cmsRealtimeClient.unwatchSupportInternalNotes(previousCaseId);
+    const [, caseId, watch, read] = key.split("\u0000");
+    if (!caseId || watch !== "watch" || read !== "read") return;
+    const joined = await cmsRealtimeClient.watchSupportInternalNotes(caseId);
+    if (joined && canReadSelectedInternalNotes.value)
+      await internalNotes.reconcile();
+  },
+  { immediate: true },
 );
 
 watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
@@ -2272,6 +2467,8 @@ watch(
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
+    internalNoteDraft.value = "";
+    supportComposerMode.value = "PUBLIC_REPLY";
     assignment.resetCase();
     inspector.reset();
     internalNotes.reset();
@@ -2378,6 +2575,9 @@ onBeforeUnmount(() => {
   mobileWorkspaceMedia = null;
   compactWorkspaceMedia = null;
   stopInternalNotesReconciliation();
+  stopInternalNoteRealtime();
+  stopInternalNoteWatchTermination();
+  cmsRealtimeClient.unwatchSupportInternalNotes();
   inspector.reset();
   internalNotes.reset();
   reply.reset();
@@ -2631,6 +2831,7 @@ onBeforeUnmount(() => {
               :composer="supportConversationComposer"
               :ai-suspension="supportConversationAiSuspension"
               :collaboration="supportConversationCollaboration"
+              :internal-notes="supportConversationInternalNotes"
               :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"
@@ -2639,7 +2840,8 @@ onBeforeUnmount(() => {
               @change-translation-mode="changeSupportTranslationMode"
               @reconcile-required="reconcileSupportSurface"
               @draft-change="changeSupportDraft"
-              @send="sendSupportReply"
+              @send="sendSupportComposer"
+              @change-composer-mode="changeSupportComposerMode"
               @request-reply-translation="prepareReplyTranslation"
               @reconcile-reply-translation="translation.reconcileReplyPreview"
               @retry-reply-translation="translation.retryReplyPreview"
@@ -2652,6 +2854,7 @@ onBeforeUnmount(() => {
               @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
               @retry-ai-suspension="reloadSelectedAiSuspension"
               @retry-delivery="messageDelivery.retry"
+              @open-internal-notes="openInternalNotes"
             />
             <p v-else class="empty-pane support-conversation-unavailable">
               Выбранный диалог недоступен.
@@ -2871,9 +3074,8 @@ onBeforeUnmount(() => {
         :loading-more="internalNotes.loadingMore.value"
         :error="internalNotes.error.value"
         :can-read-history="canReadSelectedInternalNoteHistory"
-        :can-write="canWriteSelectedInternalNotes"
+        :can-correct="canCorrectSelectedInternalNotes"
         :can-redact="canRedactSelectedInternalNotes"
-        :creating="internalNotes.creating.value"
         :correcting-note-id="internalNotes.correctingNoteId.value"
         :tombstoning-note-id="internalNotes.tombstoningNoteId.value"
         :mutation-error="internalNotes.mutationError.value"
@@ -2894,7 +3096,6 @@ onBeforeUnmount(() => {
             internalNotes.historyNextCursor.value ?? undefined,
           )
         "
-        @create="createInternalNote"
         @correct="correctInternalNote"
         @tombstone="tombstoneInternalNote"
       />

@@ -112,3 +112,23 @@
 - Эталонные компоненты:
   `src/features/support-case-assignment/ui/SupportAssignmentDesk.vue` и
   `src/features/support-case-assignment/ui/SupportAssignmentOfferTray.vue`.
+
+## Shared composer: public reply / internal note
+
+- Это одна Conversation Surface и один composer. Не создавать отдельный note-editor
+  рядом с публичным ответом и не переносить заметку в модальный workflow.
+- Переключатель режима расположен первым элементом composer. Оба состояния имеют
+  текст, иконку и `aria-pressed`; цвет не является единственным различием.
+- Public reply остаётся нейтральным. Internal note получает спокойный warning-tint,
+  lock/shield и постоянную подпись «Видно только команде».
+- Draft key включает `Project + actor + Conversation + mode`. Текст, перевод,
+  вложения и send-attempt никогда не переходят между режимами.
+- В note-режиме над composer появляется компактная «Закрытая лента»: максимум две
+  записи на desktop и одна на mobile. Полная история, correction и tombstone
+  открываются отдельной кнопкой, не раздувая основную переписку.
+- CTA называется «Добавить заметку»; public CTA — «Отправить». Note mode не показывает
+  recipient presence, translation, templates или AI improve.
+- Revoke или переход capability `create/read` в false немедленно очищает note draft,
+  закрытую ленту, подробную историю и возвращает безопасный public mode.
+- Анимация раскрытия ленты — 180 ms opacity/translate/max-height; при
+  `prefers-reduced-motion` отключается. Touch targets на mobile — не меньше 40–44px.

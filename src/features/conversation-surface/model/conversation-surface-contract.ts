@@ -93,6 +93,20 @@ export interface ConversationSurfaceCollaboration {
       };
 }
 
+export interface ConversationSurfaceInternalNotes {
+  loading: boolean;
+  error: string;
+  totalVisible: number;
+  hasMore: boolean;
+  items: Array<{
+    id: string;
+    body: string | null;
+    lifecycle: "ACTIVE" | "TOMBSTONED" | "PURGED";
+    creatorName: string;
+    updatedAt: string;
+  }>;
+}
+
 export interface ConversationSurfaceReplyPreview {
   draft: ReplyTranslationPreviewModel | null;
   targetLocale: string | null;
@@ -150,6 +164,8 @@ interface ConversationSurfaceComposerBase {
   };
   initialDraft: string;
   draftRevision: string | number;
+  /** Invalidates cached sensitive drafts after revoke or target disposal. */
+  sensitiveDraftPurgeRevision?: string | number;
   sending: boolean;
   outcome?: ConversationSurfaceComposerOutcome;
   recipientStatus: {
@@ -157,6 +173,10 @@ interface ConversationSurfaceComposerBase {
     tone: "ONLINE" | "OFFLINE" | "NEUTRAL";
   } | null;
   actions: ConversationSurfaceComposerActions;
+  modeSwitch?: {
+    publicReply: ConversationSurfaceActionCapability;
+    internalNote: ConversationSurfaceActionCapability;
+  };
 }
 
 type SourceSendCapability =
@@ -171,6 +191,8 @@ export type ConversationSurfaceComposer =
     })
   | (ConversationSurfaceComposerBase & {
       mode: "INTERNAL_NOTE";
+      /** Exact Case-scoped target; never reuse the Conversation identity. */
+      draftTargetId: string;
       sendCapability: SourceSendCapability;
       replyPreview: null;
       translationAssist: null;
@@ -199,8 +221,10 @@ export interface ConversationSurfaceSendRequest {
 }
 
 export function conversationSurfaceDraftKey(
-  composer: Pick<ConversationSurfaceComposer, "scope" | "mode">,
+  composer: ConversationSurfaceComposer,
 ): string {
   const { projectId, actorId, conversationId } = composer.scope;
-  return `${projectId}:${actorId}:${conversationId}:${composer.mode}`;
+  const targetId =
+    composer.mode === "INTERNAL_NOTE" ? composer.draftTargetId : conversationId;
+  return `${projectId}:${actorId}:${targetId}:${composer.mode}`;
 }

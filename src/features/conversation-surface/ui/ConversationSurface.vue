@@ -21,6 +21,7 @@ import {
   type ConversationSurfaceComposer,
   type ConversationSurfaceComposerAction,
   type ConversationSurfaceHistory,
+  type ConversationSurfaceInternalNotes,
   type ConversationSurfaceMessage,
   type ConversationSurfaceReconcileIssue,
   type ConversationSurfaceSendRequest,
@@ -40,6 +41,7 @@ const props = defineProps<{
   composer: ConversationSurfaceComposer;
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
   collaboration?: ConversationSurfaceCollaboration;
+  internalNotes?: ConversationSurfaceInternalNotes;
 }>();
 
 const emit = defineEmits<{
@@ -58,11 +60,13 @@ const emit = defineEmits<{
   "send-reply-translation": [request: ConversationSurfaceSendRequest];
   "check-send-outcome": [];
   "discard-send-attempt": [];
+  "change-composer-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
   "composer-action": [action: ConversationSurfaceComposerAction];
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
   "retry-ai-suspension": [];
   "retry-delivery": [messageId: string];
+  "open-internal-notes": [];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -161,6 +165,20 @@ const newMessageLabel = computed(() => {
           : "новых сообщений";
   return `${count} ${noun}`;
 });
+
+function internalNoteCountLabel(count: number): string {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  const noun =
+    mod100 >= 11 && mod100 <= 14
+      ? "заметок"
+      : mod10 === 1
+        ? "заметка"
+        : mod10 >= 2 && mod10 <= 4
+          ? "заметки"
+          : "заметок";
+  return `${count} ${noun}`;
+}
 
 function initials(value: string): string {
   return (
@@ -412,6 +430,29 @@ watch(scrollSessionKey, async (nextKey, previousKey) => {
   await restoreScrollAnchor(nextKey);
 });
 
+let skipPurgedSensitiveDraftCache = false;
+
+function purgeSensitiveDrafts(): void {
+  const { projectId, actorId } = props.composer.scope;
+  const prefix = `${projectId}:${actorId}:`;
+  for (const key of drafts.keys()) {
+    if (key.startsWith(prefix) && key.endsWith(":INTERNAL_NOTE"))
+      drafts.delete(key);
+  }
+  skipPurgedSensitiveDraftCache = true;
+  if (props.composer.mode === "INTERNAL_NOTE")
+    draft.value = props.composer.initialDraft;
+}
+
+watch(
+  () => props.composer.sensitiveDraftPurgeRevision,
+  (revision, previousRevision) => {
+    if (revision === previousRevision) return;
+    purgeSensitiveDrafts();
+  },
+  { flush: "sync" },
+);
+
 watch(
   () => JSON.stringify(messageProjection.value.issues),
   () => {
@@ -422,7 +463,12 @@ watch(
 );
 
 watch(draftKey, (next, previous) => {
-  if (previous) drafts.set(previous, draft.value);
+  if (
+    previous &&
+    !(skipPurgedSensitiveDraftCache && previous.endsWith(":INTERNAL_NOTE"))
+  )
+    drafts.set(previous, draft.value);
+  skipPurgedSensitiveDraftCache = false;
   draft.value = drafts.get(next) ?? props.composer.initialDraft;
 });
 
@@ -676,69 +722,80 @@ onBeforeUnmount(() => {
           :data-message-id="message.id"
           :data-message-ordinal="message.ordinal"
         >
-        <div class="conversation-surface__message-meta">
-          <span>
-            <Avatar
-              :image="message.author.avatarUrl ?? undefined"
-              :label="initials(message.author.displayName)"
-              shape="circle"
-              :aria-label="`Автор: ${message.author.displayName}`"
-            />
-            <strong>{{ message.author.displayName }}</strong>
-          </span>
-          <time :datetime="message.createdAt">{{
-            relativeTime(message.createdAt)
-          }}</time>
-        </div>
-        <TranslatedMessageBody
-          :message="message.content"
-          :requested="message.requestedTranslation"
-          :view-mode="translation.mode"
-        />
-        <span
-          v-if="message.status"
-          class="conversation-surface__message-status"
-          :class="`is-${message.status.tone.toLowerCase()}`"
-          >{{ message.status.label }}</span
-        >
-        <div
-          v-if="message.delivery"
-          class="conversation-surface__delivery"
-          :class="`is-${message.delivery.tone.toLowerCase()}`"
-        >
-          <span class="conversation-surface__message-status" role="status">
-            <i
-              :class="
-                message.delivery.tone === 'SUCCESS'
-                  ? 'pi pi-check-circle'
-                  : message.delivery.tone === 'DANGER'
-                    ? 'pi pi-exclamation-circle'
-                    : 'pi pi-clock'
-              "
-              aria-hidden="true"
-            />
-            {{ message.delivery.label }}
-          </span>
+          <div class="conversation-surface__message-meta">
+            <span>
+              <Avatar
+                :image="message.author.avatarUrl ?? undefined"
+                :label="initials(message.author.displayName)"
+                shape="circle"
+                :aria-label="`Автор: ${message.author.displayName}`"
+              />
+              <strong>{{ message.author.displayName }}</strong>
+            </span>
+            <time :datetime="message.createdAt">{{
+              relativeTime(message.createdAt)
+            }}</time>
+          </div>
+          <TranslatedMessageBody
+            :message="message.content"
+            :requested="message.requestedTranslation"
+            :view-mode="translation.mode"
+          />
           <span
-            v-if="message.delivery.detail"
-            class="conversation-surface__delivery-detail"
-          >{{ message.delivery.detail }}</span>
-          <button
-            v-if="message.delivery.action"
-            type="button"
-            class="conversation-surface__delivery-action"
-            data-action="retry-delivery"
-            :disabled="message.delivery.action.disabled || message.delivery.action.busy"
-            :aria-busy="message.delivery.action.busy"
-            @click="emit('retry-delivery', message.id)"
+            v-if="message.status"
+            class="conversation-surface__message-status"
+            :class="`is-${message.status.tone.toLowerCase()}`"
+            >{{ message.status.label }}</span
           >
-            <i
-              :class="message.delivery.action.busy ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"
-              aria-hidden="true"
-            />
-            {{ message.delivery.action.busy ? 'Повторяем…' : message.delivery.action.label }}
-          </button>
-        </div>
+          <div
+            v-if="message.delivery"
+            class="conversation-surface__delivery"
+            :class="`is-${message.delivery.tone.toLowerCase()}`"
+          >
+            <span class="conversation-surface__message-status" role="status">
+              <i
+                :class="
+                  message.delivery.tone === 'SUCCESS'
+                    ? 'pi pi-check-circle'
+                    : message.delivery.tone === 'DANGER'
+                      ? 'pi pi-exclamation-circle'
+                      : 'pi pi-clock'
+                "
+                aria-hidden="true"
+              />
+              {{ message.delivery.label }}
+            </span>
+            <span
+              v-if="message.delivery.detail"
+              class="conversation-surface__delivery-detail"
+              >{{ message.delivery.detail }}</span
+            >
+            <button
+              v-if="message.delivery.action"
+              type="button"
+              class="conversation-surface__delivery-action"
+              data-action="retry-delivery"
+              :disabled="
+                message.delivery.action.disabled || message.delivery.action.busy
+              "
+              :aria-busy="message.delivery.action.busy"
+              @click="emit('retry-delivery', message.id)"
+            >
+              <i
+                :class="
+                  message.delivery.action.busy
+                    ? 'pi pi-spin pi-spinner'
+                    : 'pi pi-refresh'
+                "
+                aria-hidden="true"
+              />
+              {{
+                message.delivery.action.busy
+                  ? "Повторяем…"
+                  : message.delivery.action.label
+              }}
+            </button>
+          </div>
         </article>
       </template>
 
@@ -764,9 +821,7 @@ onBeforeUnmount(() => {
       >
         <i class="pi pi-cloud-upload" aria-hidden="true" />
         <span>{{ history.readError }}</span>
-        <button type="button" @click="queueVisibleHighWater">
-          Повторить
-        </button>
+        <button type="button" @click="queueVisibleHighWater">Повторить</button>
       </p>
     </div>
 
@@ -786,6 +841,56 @@ onBeforeUnmount(() => {
         variant="COLLISION"
         :collaboration="collaboration"
       />
+      <Transition name="internal-note-rail">
+        <section
+          v-if="composer.mode === 'INTERNAL_NOTE' && internalNotes"
+          class="conversation-surface__internal-notes"
+          aria-label="Последние внутренние заметки"
+        >
+          <header>
+            <span>
+              <i class="pi pi-lock" aria-hidden="true" />
+              <strong>Закрытая лента</strong>
+              <small>{{
+                internalNoteCountLabel(internalNotes.totalVisible)
+              }}</small>
+            </span>
+            <Button
+              type="button"
+              label="Все заметки"
+              icon="pi pi-arrow-up-right"
+              severity="secondary"
+              text
+              size="small"
+              @click="emit('open-internal-notes')"
+            />
+          </header>
+          <p v-if="internalNotes.loading">Обновляем заметки команды…</p>
+          <p v-else-if="internalNotes.error" role="status">
+            {{ internalNotes.error }}
+          </p>
+          <p v-else-if="!internalNotes.items.length">
+            Здесь появится контекст, который пользователь не увидит.
+          </p>
+          <ol v-else>
+            <li v-for="note in internalNotes.items" :key="note.id">
+              <span>{{ note.creatorName }}</span>
+              <p>
+                {{
+                  note.body ??
+                  (note.lifecycle === "TOMBSTONED"
+                    ? "Текст заметки удалён"
+                    : "Текст заметки недоступен")
+                }}
+              </p>
+              <time :datetime="note.updatedAt">{{
+                relativeTime(note.updatedAt)
+              }}</time>
+            </li>
+          </ol>
+        </section>
+      </Transition>
+
       <ConversationComposer
         v-if="composer.visibility !== 'HIDDEN'"
         :composer="composer"
@@ -800,6 +905,7 @@ onBeforeUnmount(() => {
         @send-reply-translation="requestTranslatedSend"
         @check-send-outcome="emit('check-send-outcome')"
         @discard-send-attempt="emit('discard-send-attempt')"
+        @change-mode="emit('change-composer-mode', $event)"
         @action="emit('composer-action', $event)"
       />
       <p
@@ -818,6 +924,7 @@ onBeforeUnmount(() => {
   display: grid;
   container-name: conversation-surface;
   container-type: inline-size;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
@@ -839,6 +946,96 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   background: var(--surface-card);
   font-size: 0.75rem;
+}
+.conversation-surface__footer {
+  min-width: 0;
+  background: var(--surface-card);
+}
+.conversation-surface__internal-notes {
+  display: grid;
+  gap: 4px;
+  margin: 0 20px 8px;
+  padding: 6px 9px;
+  overflow: hidden;
+  border: 1px solid var(--status-warning-border, var(--border-default));
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--status-warning-soft) 22%,
+    var(--surface-card)
+  );
+}
+.conversation-surface__internal-notes > header {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.conversation-surface__internal-notes > header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--status-warning-text);
+  font-size: 11px;
+}
+.conversation-surface__internal-notes > header small {
+  color: var(--text-secondary);
+}
+.conversation-surface__internal-notes > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.conversation-surface__internal-notes ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.conversation-surface__internal-notes li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-card) 72%, transparent);
+}
+.conversation-surface__internal-notes li > span,
+.conversation-surface__internal-notes li > time {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+.conversation-surface__internal-notes li > p {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.internal-note-rail-enter-active,
+.internal-note-rail-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    max-height 180ms ease;
+}
+.internal-note-rail-enter-from,
+.internal-note-rail-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(6px);
+}
+.internal-note-rail-enter-to,
+.internal-note-rail-leave-from {
+  max-height: 180px;
 }
 .conversation-surface__toolbar {
   display: flex;
@@ -905,7 +1102,10 @@ onBeforeUnmount(() => {
   opacity: 0.55;
 }
 .conversation-surface__log {
+  min-width: 0;
   min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
   padding: 18px clamp(16px, 3vw, 36px) 26px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -965,10 +1165,15 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid color-mix(in srgb, var(--status-warning-text) 24%, var(--line));
+  border: 1px solid
+    color-mix(in srgb, var(--status-warning-text) 24%, var(--line));
   border-radius: 10px;
   color: var(--status-warning-text);
-  background: color-mix(in srgb, var(--status-warning-soft) 88%, var(--surface-card));
+  background: color-mix(
+    in srgb,
+    var(--status-warning-soft) 88%,
+    var(--surface-card)
+  );
   font-size: 0.72rem;
 }
 .conversation-surface__read-error button {
@@ -1033,7 +1238,8 @@ onBeforeUnmount(() => {
 .conversation-surface__message {
   min-width: 0;
   width: fit-content;
-  max-width: min(72%, 64ch);
+  max-width: min(72cqi, 64ch);
+  box-sizing: border-box;
   margin: 0 0 14px;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -1055,7 +1261,7 @@ onBeforeUnmount(() => {
 .conversation-surface__message.is-neutral,
 .conversation-surface__message.is-system,
 .conversation-surface__message.is-automation {
-  max-width: min(86%, 72ch);
+  max-width: min(86cqi, 72ch);
   margin-right: auto;
   margin-left: auto;
   border-style: dashed;
@@ -1066,6 +1272,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.conversation-surface__message-meta > span,
+.conversation-surface__delivery,
+.conversation-surface__delivery-detail {
+  min-width: 0;
 }
 .conversation-surface__message-meta {
   justify-content: space-between;
@@ -1124,6 +1335,7 @@ onBeforeUnmount(() => {
 }
 .conversation-surface__delivery-detail {
   color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }
 .conversation-surface__delivery-action {
   display: inline-flex;
@@ -1239,6 +1451,17 @@ onBeforeUnmount(() => {
   }
 }
 @media (max-width: 767px) {
+  .conversation-surface__internal-notes {
+    margin: 0 0 6px;
+    border-width: 1px 0;
+    border-radius: 0;
+  }
+  .conversation-surface__internal-notes ol {
+    grid-template-columns: 1fr;
+  }
+  .conversation-surface__internal-notes li:nth-child(n + 2) {
+    display: none;
+  }
   .conversation-surface__log {
     padding: 14px 12px 22px;
   }
@@ -1249,7 +1472,7 @@ onBeforeUnmount(() => {
     min-height: 44px;
   }
   .conversation-surface__message {
-    max-width: 88%;
+    max-width: min(88cqi, 64ch);
   }
   .conversation-surface__delivery-action {
     min-height: 44px;
@@ -1260,6 +1483,10 @@ onBeforeUnmount(() => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .internal-note-rail-enter-active,
+  .internal-note-rail-leave-active {
+    transition: none;
+  }
   .conversation-surface__delivery-action {
     transition: none;
   }

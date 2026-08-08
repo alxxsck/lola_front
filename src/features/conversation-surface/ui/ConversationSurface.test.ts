@@ -124,10 +124,14 @@ function composer(conversationId = "conversation-1"): PublicComposer {
   };
 }
 
-function noteComposer(conversationId = "conversation-1"): NoteComposer {
+function noteComposer(
+  conversationId = "conversation-1",
+  caseId = "case-1",
+): NoteComposer {
   return {
     ...composer(conversationId),
     mode: "INTERNAL_NOTE",
+    draftTargetId: caseId,
     sendCapability: { kind: "SOURCE" },
     replyPreview: null,
     translationAssist: null,
@@ -684,6 +688,94 @@ describe("ConversationSurface", () => {
     expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
       "Черновик ответа",
     );
+  });
+
+  it("isolates private drafts by Case even when the Conversation is shared", async () => {
+    const wrapper = mountSurface({
+      composer: noteComposer("conversation-1", "case-1"),
+    });
+    await wrapper.get("textarea").setValue("Контекст только Case 1");
+
+    await wrapper.setProps({
+      composer: noteComposer("conversation-1", "case-2"),
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+
+    await wrapper.setProps({
+      composer: noteComposer("conversation-1", "case-1"),
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "Контекст только Case 1",
+    );
+  });
+
+  it("purges every cached private draft when sensitive authority is revoked", async () => {
+    const wrapper = mountSurface({ composer: noteComposer() });
+    await wrapper.get("textarea").setValue("Нельзя пережить revoke");
+
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        sensitiveDraftPurgeRevision: 1,
+      },
+    });
+    await wrapper.setProps({
+      composer: {
+        ...noteComposer(),
+        sensitiveDraftPurgeRevision: 1,
+      },
+    });
+
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+  });
+
+  it("makes public and private composer states explicit without duplicating the Surface", async () => {
+    const publicComposer = {
+      ...composer(),
+      modeSwitch: {
+        publicReply: { visibility: "ENABLED" as const },
+        internalNote: { visibility: "ENABLED" as const },
+      },
+    };
+    const wrapper = mountSurface({ composer: publicComposer });
+
+    await wrapper
+      .get('[aria-label="Вид сообщения"] button:nth-child(2)')
+      .trigger("click");
+    expect(wrapper.emitted("change-composer-mode")?.at(-1)).toEqual([
+      "INTERNAL_NOTE",
+    ]);
+
+    await wrapper.setProps({
+      composer: { ...noteComposer(), modeSwitch: publicComposer.modeSwitch },
+      internalNotes: {
+        loading: false,
+        error: "",
+        totalVisible: 1,
+        hasMore: false,
+        items: [
+          {
+            id: "note-1",
+            body: "Проверить платёж до ответа",
+            lifecycle: "ACTIVE",
+            creatorName: "Алина",
+            updatedAt: "2026-08-07T10:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    expect(wrapper.text()).toContain("Видно только команде");
+    expect(wrapper.text()).toContain("Закрытая лента");
+    expect(wrapper.text()).toContain("Проверить платёж до ответа");
+    expect(
+      wrapper.find('textarea[aria-label="Внутренняя заметка"]').exists(),
+    ).toBe(true);
+    expect(wrapper.text()).toContain("Добавить заметку");
   });
 
   it("synchronizes an externally applied template without changing the draft scope", async () => {

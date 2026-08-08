@@ -24,6 +24,7 @@ const emit = defineEmits<{
   "send-reply-translation": [text?: string];
   "check-send-outcome": [];
   "discard-send-attempt": [];
+  "change-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
   action: [action: ConversationSurfaceComposerAction];
 }>();
 
@@ -40,7 +41,14 @@ const sourceSendEnabled = computed(
   () =>
     !blocked.value &&
     props.composer.sendCapability.kind === "SOURCE" &&
-    Boolean(props.draft.trim()),
+    Boolean(props.draft.trim()) &&
+    (props.composer.mode !== "INTERNAL_NOTE" ||
+      new TextEncoder().encode(props.draft.trim()).byteLength <= 20_480),
+);
+const noteByteLength = computed(() =>
+  props.composer.mode === "INTERNAL_NOTE"
+    ? new TextEncoder().encode(props.draft).byteLength
+    : 0,
 );
 const translatedSendDisabled = computed(() => {
   const preview = props.composer.replyPreview;
@@ -131,6 +139,39 @@ function runOutcomeAction(): void {
     "
     @submit.prevent="requestSourceSend"
   >
+    <div
+      v-if="composer.modeSwitch"
+      class="conversation-composer__mode-switch"
+      role="group"
+      aria-label="Вид сообщения"
+    >
+      <button
+        type="button"
+        :class="{ active: composer.mode === 'PUBLIC_REPLY' }"
+        :aria-pressed="composer.mode === 'PUBLIC_REPLY'"
+        :disabled="composer.modeSwitch.publicReply.visibility !== 'ENABLED'"
+        :title="composer.modeSwitch.publicReply.reason"
+        @click="emit('change-mode', 'PUBLIC_REPLY')"
+      >
+        <i class="pi pi-send" aria-hidden="true" />
+        Ответ пользователю
+      </button>
+      <button
+        type="button"
+        :class="{ active: composer.mode === 'INTERNAL_NOTE' }"
+        :aria-pressed="composer.mode === 'INTERNAL_NOTE'"
+        :disabled="composer.modeSwitch.internalNote.visibility !== 'ENABLED'"
+        :title="composer.modeSwitch.internalNote.reason"
+        @click="emit('change-mode', 'INTERNAL_NOTE')"
+      >
+        <i class="pi pi-lock" aria-hidden="true" />
+        Внутренняя заметка
+      </button>
+      <span v-if="composer.mode === 'INTERNAL_NOTE'">
+        <i class="pi pi-shield" aria-hidden="true" />
+        Видно только команде
+      </span>
+    </div>
     <div class="conversation-composer__source">
       <div class="conversation-composer__label">
         <span>
@@ -156,7 +197,7 @@ function runOutcomeAction(): void {
       <Textarea
         :model-value="draft"
         rows="2"
-        maxlength="10000"
+        :maxlength="composer.mode === 'INTERNAL_NOTE' ? 20480 : 10000"
         :placeholder="
           composer.mode === 'INTERNAL_NOTE'
             ? 'Добавьте заметку для команды'
@@ -171,6 +212,14 @@ function runOutcomeAction(): void {
         @update:model-value="emit('update:draft', $event)"
         @keydown="handleKeydown"
       />
+      <p
+        v-if="composer.mode === 'INTERNAL_NOTE'"
+        class="conversation-composer__private-hint"
+        :class="{ 'is-invalid': noteByteLength > 20480 }"
+      >
+        <span>Не попадёт пользователю, в AI или в публичную историю.</span>
+        <span>{{ noteByteLength.toLocaleString("ru-RU") }} / 20 480 байт</span>
+      </p>
     </div>
 
     <ReplyTranslationPreview
@@ -449,6 +498,62 @@ function runOutcomeAction(): void {
   border-radius: 14px;
   background: var(--surface-subtle);
 }
+.conversation-composer__mode-switch {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+.conversation-composer__mode-switch button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+.conversation-composer__mode-switch button:hover:not(:disabled) {
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+.conversation-composer__mode-switch button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.conversation-composer__mode-switch button.active {
+  border-color: var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+.is-note .conversation-composer__mode-switch button.active {
+  border-color: var(--status-warning-border, var(--border-default));
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.conversation-composer__mode-switch button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.conversation-composer__mode-switch > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--status-warning-text);
+  font-size: 11px;
+  font-weight: 750;
+}
 .conversation-composer.is-translated {
   position: relative;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -456,9 +561,20 @@ function runOutcomeAction(): void {
 .conversation-composer.is-note {
   background: color-mix(
     in srgb,
-    var(--status-warning-soft) 40%,
+    var(--status-warning-soft) 20%,
     var(--surface-card)
   );
+}
+.conversation-composer.is-note :deep(textarea) {
+  min-height: 42px;
+  max-height: 76px;
+}
+.conversation-composer.is-note .conversation-composer__label {
+  display: none;
+}
+.conversation-composer.is-note .conversation-composer__footer {
+  min-height: 34px;
+  padding-top: 6px;
 }
 .conversation-composer.is-blocked {
   opacity: 0.72;
@@ -467,6 +583,19 @@ function runOutcomeAction(): void {
   display: grid;
   min-width: 0;
   gap: 7px;
+}
+.conversation-composer__private-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -2px 0 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.conversation-composer__private-hint.is-invalid {
+  color: var(--status-danger-text);
+  font-weight: 700;
 }
 .is-translated .conversation-composer__source {
   padding-right: 14px;
@@ -734,6 +863,11 @@ function runOutcomeAction(): void {
   .conversation-composer__footer :deep(.p-button) {
     min-height: 44px;
   }
+  .conversation-composer.is-note
+    .conversation-composer__footer
+    :deep(.p-button) {
+    min-height: 40px;
+  }
 }
 @media (max-width: 767px) {
   .conversation-composer {
@@ -749,6 +883,42 @@ function runOutcomeAction(): void {
     bottom: 12px;
     left: 12px;
     width: auto;
+  }
+  .conversation-composer__mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .conversation-composer__mode-switch button {
+    justify-content: center;
+    min-height: 40px;
+    padding-inline: 7px;
+  }
+  .conversation-composer__mode-switch > span {
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+  }
+}
+@media (max-width: 767px) and (max-height: 600px) {
+  .conversation-composer {
+    gap: 5px;
+    padding-top: 8px;
+  }
+  .conversation-composer__label {
+    display: none;
+  }
+  .conversation-composer :deep(textarea) {
+    min-height: 38px;
+    max-height: 64px;
+    padding-block: 3px;
+  }
+  .conversation-composer__footer {
+    min-height: 36px;
+    padding-top: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conversation-composer__mode-switch button {
+    transition: none;
   }
 }
 </style>

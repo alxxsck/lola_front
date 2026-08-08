@@ -58,7 +58,7 @@ test("Support content contracts retain separate authority, revisions and safe li
       ).required = false;
     },
     (contract) => {
-      operation(contract, "SupportInternalNote_correction").parameters.find(
+      operation(contract, "SupportInternalNote_correct").parameters.find(
         (parameter) => parameter.name === "If-Match",
       ).required = false;
     },

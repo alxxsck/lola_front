@@ -1,15 +1,17 @@
 import {
-  supportInternalNoteCorrection,
+  supportInternalNoteCorrect,
   supportInternalNoteCreate,
   supportInternalNoteList,
   supportInternalNoteRevisions,
   supportInternalNoteTombstone,
 } from "@/shared/api/generated/retenive-backend";
 import type {
+  CorrectSupportInternalNoteDtoReasonCode,
   SupportInternalNoteResponseDto,
   SupportInternalNotePageResponseDto,
   SupportInternalNoteRevisionResponseDto,
   SupportInternalNoteRevisionPageResponseDto,
+  TombstoneSupportInternalNoteDtoReasonCode,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { isMockMode } from "@/shared/config/data-mode";
@@ -34,9 +36,26 @@ export interface SupportInternalNoteRevision {
   noteId: string;
   revisionNumber: number;
   body: string;
+  reasonCode:
+    | "INITIAL"
+    | "FACTUAL_CORRECTION"
+    | "CLARIFICATION"
+    | "REMOVE_SENSITIVE_DATA"
+    | "LEGACY_OTHER";
   authorName: string;
   createdAt: string;
 }
+
+export type SupportInternalNoteCorrectionReason =
+  | "FACTUAL_CORRECTION"
+  | "CLARIFICATION"
+  | "REMOVE_SENSITIVE_DATA";
+
+export type SupportInternalNoteTombstoneReason =
+  | "CREATED_IN_ERROR"
+  | "DUPLICATE"
+  | "POLICY_VIOLATION"
+  | "PRIVACY_REQUEST";
 
 export interface SupportInternalNotesPage<T> {
   items: T[];
@@ -75,7 +94,7 @@ export interface SupportInternalNotesSource {
     noteId: string,
     input: {
       body: string;
-      reasonCode: string;
+      reasonCode: SupportInternalNoteCorrectionReason;
       actionEtag: string;
       idempotencyKey: string;
     },
@@ -85,7 +104,7 @@ export interface SupportInternalNotesSource {
     caseId: string,
     noteId: string,
     input: {
-      reasonCode: string;
+      reasonCode: SupportInternalNoteTombstoneReason;
       actionEtag: string;
       idempotencyKey: string;
     },
@@ -166,6 +185,7 @@ function mapRevision(
     noteId: value.noteId,
     revisionNumber: value.revisionNumber,
     body: value.body,
+    reasonCode: value.reasonCode,
     authorName: actorName(value.author, "author"),
     createdAt: date(value.createdAt, "createdAt"),
   };
@@ -236,11 +256,14 @@ const apiSource: SupportInternalNotesSource = {
   },
   async correct(projectId, caseId, noteId, input) {
     try {
-      const response = await supportInternalNoteCorrection(
+      const response = await supportInternalNoteCorrect(
         projectId,
         caseId,
         noteId,
-        { body: input.body, reasonCode: input.reasonCode },
+        {
+          body: input.body,
+          reasonCode: input.reasonCode as CorrectSupportInternalNoteDtoReasonCode,
+        },
         {
           headers: {
             "Idempotency-Key": input.idempotencyKey,
@@ -259,7 +282,9 @@ const apiSource: SupportInternalNotesSource = {
         projectId,
         caseId,
         noteId,
-        { reasonCode: input.reasonCode },
+        {
+          reasonCode: input.reasonCode as TombstoneSupportInternalNoteDtoReasonCode,
+        },
         {
           headers: {
             "Idempotency-Key": input.idempotencyKey,
@@ -274,23 +299,106 @@ const apiSource: SupportInternalNotesSource = {
   },
 };
 
+const mockNotes = new Map<string, SupportInternalNote[]>();
+
+function mockCaseNotes(caseId: string): SupportInternalNote[] {
+  const existing = mockNotes.get(caseId);
+  if (existing) return existing;
+  const seeded: SupportInternalNote[] = [
+    {
+      id: globalThis.crypto.randomUUID(),
+      caseId,
+      actionEtag: '"sin1.mock-note"',
+      body: "Проверить историю платежа перед публичным ответом.",
+      lifecycle: "ACTIVE",
+      currentRevisionNumber: 1,
+      creatorName: "Алина · Support",
+      createdAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+      updatedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+      tombstonedAt: null,
+      hasUnavailableReferences: false,
+    },
+  ];
+  mockNotes.set(caseId, seeded);
+  return seeded;
+}
+
 const mockSource: SupportInternalNotesSource = {
-  async list(_projectId, _caseId, _request, signal) {
+  async list(_projectId, caseId, _request, signal) {
     if (signal?.aborted) throw signal.reason;
-    throw new Error("Mock internal notes are not configured");
+    return { items: [...mockCaseNotes(caseId)], nextCursor: null };
   },
-  async revisions(_projectId, _caseId, _noteId, _request, signal) {
+  async revisions(_projectId, caseId, noteId, _request, signal) {
     if (signal?.aborted) throw signal.reason;
-    throw new Error("Mock internal notes are not configured");
+    const note = mockCaseNotes(caseId).find((item) => item.id === noteId);
+    return {
+      items: note?.body
+        ? [
+            {
+              id: `${note.id}:1`,
+              noteId: note.id,
+              revisionNumber: note.currentRevisionNumber,
+              body: note.body,
+              reasonCode: "INITIAL",
+              authorName: note.creatorName,
+              createdAt: note.updatedAt,
+            },
+          ]
+        : [],
+      nextCursor: null,
+    };
   },
-  async create() {
-    throw new Error("Mock internal notes are not configured");
+  async create(_projectId, caseId, input) {
+    const now = new Date().toISOString();
+    const note: SupportInternalNote = {
+      id: globalThis.crypto.randomUUID(),
+      caseId,
+      actionEtag: '"sin1.mock-created"',
+      body: input.body,
+      lifecycle: "ACTIVE",
+      currentRevisionNumber: 1,
+      creatorName: "Вы",
+      createdAt: now,
+      updatedAt: now,
+      tombstonedAt: null,
+      hasUnavailableReferences: false,
+    };
+    mockNotes.set(caseId, [note, ...mockCaseNotes(caseId)]);
+    return note;
   },
-  async correct() {
-    throw new Error("Mock internal notes are not configured");
+  async correct(_projectId, caseId, noteId, input) {
+    const current = mockCaseNotes(caseId).find((item) => item.id === noteId);
+    if (!current) throw new Error("Mock internal note is unavailable");
+    const updated = {
+      ...current,
+      body: input.body,
+      currentRevisionNumber: current.currentRevisionNumber + 1,
+      updatedAt: new Date().toISOString(),
+      actionEtag: '"sin1.mock-corrected"',
+    };
+    mockNotes.set(
+      caseId,
+      mockCaseNotes(caseId).map((item) => (item.id === noteId ? updated : item)),
+    );
+    return updated;
   },
-  async tombstone() {
-    throw new Error("Mock internal notes are not configured");
+  async tombstone(_projectId, caseId, noteId) {
+    const current = mockCaseNotes(caseId).find((item) => item.id === noteId);
+    if (!current) throw new Error("Mock internal note is unavailable");
+    const now = new Date().toISOString();
+    const updated: SupportInternalNote = {
+      ...current,
+      body: null,
+      lifecycle: "TOMBSTONED",
+      updatedAt: now,
+      tombstonedAt: now,
+      actionEtag: '"sin1.mock-tombstoned"',
+    };
+    mockNotes.set(
+      caseId,
+      mockCaseNotes(caseId).map((item) => (item.id === noteId ? updated : item)),
+    );
+    return updated;
   },
 };
 

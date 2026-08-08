@@ -14279,8 +14279,11 @@
             "type": "string"
           },
           "reasonCode": {
-            "maxLength": 64,
-            "minLength": 2,
+            "enum": [
+              "FACTUAL_CORRECTION",
+              "CLARIFICATION",
+              "REMOVE_SENSITIVE_DATA"
+            ],
             "type": "string"
           }
         },
@@ -40215,6 +40218,295 @@
         ],
         "type": "object"
       },
+      "SupportInternalNoteRealtimeChangedEventDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "noteId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "noteVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "caseId",
+          "noteId",
+          "noteVersion"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteRealtimeContractResponseDto": {
+        "properties": {
+          "authority": {
+            "enum": [
+              "REST_AUTHORITATIVE"
+            ],
+            "type": "string"
+          },
+          "changedEvent": {
+            "enum": [
+              "support.internal_note.changed.v1"
+            ],
+            "type": "string"
+          },
+          "changedEventPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/SupportInternalNoteRealtimeChangedEventDto"
+            ],
+            "type": "string"
+          },
+          "containsContent": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "correctionReasonCodes": {
+            "items": {
+              "enum": [
+                "FACTUAL_CORRECTION",
+                "CLARIFICATION",
+                "REMOVE_SENSITIVE_DATA"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reasonCatalogVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "reconcileOperationId": {
+            "enum": [
+              "SupportInternalNote_list"
+            ],
+            "type": "string"
+          },
+          "renewAckSchemaRefs": {
+            "items": {
+              "enum": [
+                "#/components/schemas/SupportInternalNoteRealtimeWatchSuccessAckDto",
+                "#/components/schemas/SupportInternalNoteRealtimeErrorAckDto"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "renewCommand": {
+            "enum": [
+              "support.internal_note.renew.v1"
+            ],
+            "type": "string"
+          },
+          "renewRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/SupportInternalNoteRealtimeWatchRequestDto"
+            ],
+            "type": "string"
+          },
+          "tombstoneReasonCodes": {
+            "items": {
+              "enum": [
+                "CREATED_IN_ERROR",
+                "DUPLICATE",
+                "POLICY_VIOLATION",
+                "PRIVACY_REQUEST"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unwatchAckSchemaRefs": {
+            "items": {
+              "enum": [
+                "#/components/schemas/SupportInternalNoteRealtimeUnwatchSuccessAckDto",
+                "#/components/schemas/SupportInternalNoteRealtimeErrorAckDto"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "unwatchCommand": {
+            "enum": [
+              "support.internal_note.unwatch.v1"
+            ],
+            "type": "string"
+          },
+          "unwatchRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/SupportInternalNoteRealtimeWatchRequestDto"
+            ],
+            "type": "string"
+          },
+          "watchAckSchemaRefs": {
+            "items": {
+              "enum": [
+                "#/components/schemas/SupportInternalNoteRealtimeWatchSuccessAckDto",
+                "#/components/schemas/SupportInternalNoteRealtimeErrorAckDto"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "watchCommand": {
+            "enum": [
+              "support.internal_note.watch.v1"
+            ],
+            "type": "string"
+          },
+          "watchRequestSchemaRef": {
+            "enum": [
+              "#/components/schemas/SupportInternalNoteRealtimeWatchRequestDto"
+            ],
+            "type": "string"
+          },
+          "watchTtlSeconds": {
+            "enum": [
+              60
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "authority",
+          "watchCommand",
+          "renewCommand",
+          "unwatchCommand",
+          "changedEvent",
+          "watchRequestSchemaRef",
+          "renewRequestSchemaRef",
+          "unwatchRequestSchemaRef",
+          "watchAckSchemaRefs",
+          "renewAckSchemaRefs",
+          "unwatchAckSchemaRefs",
+          "changedEventPayloadSchemaRef",
+          "reconcileOperationId",
+          "watchTtlSeconds",
+          "containsContent",
+          "reasonCatalogVersion",
+          "correctionReasonCodes",
+          "tombstoneReasonCodes"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteRealtimeErrorAckDto": {
+        "properties": {
+          "error": {
+            "enum": [
+              "BUSY",
+              "RATE_LIMITED",
+              "UNAUTHORIZED",
+              "CASE_ID_INVALID",
+              "CASE_NOT_FOUND_OR_FORBIDDEN",
+              "WATCH_NOT_FOUND",
+              "WATCH_LIMIT_EXCEEDED",
+              "SESSION_SOCKET_LIMIT_EXCEEDED",
+              "PROJECT_SOCKET_LIMIT_EXCEEDED",
+              "CASE_SOCKET_LIMIT_EXCEEDED",
+              "WATCH_IDENTITY_INVALID",
+              "CASE_NOT_FOUND"
+            ],
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "error"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteRealtimeUnwatchSuccessAckDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "caseId"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteRealtimeWatchRequestDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId"
+        ],
+        "type": "object"
+      },
+      "SupportInternalNoteRealtimeWatchSuccessAckDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ok": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "caseId",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
       "SupportInternalNoteResponseDto": {
         "properties": {
           "actionEtag": {
@@ -40347,6 +40639,13 @@
             "type": "string"
           },
           "reasonCode": {
+            "enum": [
+              "INITIAL",
+              "FACTUAL_CORRECTION",
+              "CLARIFICATION",
+              "REMOVE_SENSITIVE_DATA",
+              "LEGACY_OTHER"
+            ],
             "type": "string"
           },
           "revisionNumber": {
@@ -48404,6 +48703,9 @@
           "escalateCase": {
             "type": "boolean"
           },
+          "internalNotes": {
+            "$ref": "#/components/schemas/SupportWorkspaceInternalNoteCapabilitiesResponseDto"
+          },
           "manageCase": {
             "type": "boolean"
           },
@@ -48432,7 +48734,8 @@
           "claimAssignment",
           "releaseAssignment",
           "transferAssignment",
-          "escalateCase"
+          "escalateCase",
+          "internalNotes"
         ],
         "type": "object"
       },
@@ -48776,6 +49079,45 @@
           "isGuest",
           "lastSeenAt",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceInternalNoteCapabilitiesResponseDto": {
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "create": {
+            "type": "boolean"
+          },
+          "historyRead": {
+            "type": "boolean"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "realtimeWatch": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "tombstone": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "read",
+          "create",
+          "historyRead",
+          "correct",
+          "tombstone",
+          "realtimeWatch"
         ],
         "type": "object"
       },
@@ -50759,8 +51101,12 @@
       "TombstoneSupportInternalNoteDto": {
         "properties": {
           "reasonCode": {
-            "maxLength": 64,
-            "minLength": 2,
+            "enum": [
+              "CREATED_IN_ERROR",
+              "DUPLICATE",
+              "POLICY_VIOLATION",
+              "PRIVACY_REQUEST"
+            ],
             "type": "string"
           }
         },
@@ -61049,6 +61395,117 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_QUERY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -61056,6 +61513,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal notes"
         ],
@@ -61114,6 +61572,173 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_BODY_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_REUSED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_RETENTION_NOT_READY",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -61121,6 +61746,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal notes"
         ],
@@ -61132,7 +61758,7 @@
     },
     "/api/v1/admin/projects/{projectId}/cases/{caseId}/internal-notes/{noteId}/corrections": {
       "post": {
-        "operationId": "SupportInternalNote_correction",
+        "operationId": "SupportInternalNote_correct",
         "parameters": [
           {
             "in": "path",
@@ -61199,11 +61825,202 @@
             },
             "description": ""
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_BODY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_IF_MATCH_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_REASON_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
           "409": {
-            "description": "Version, idempotency or lifecycle conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_VERSION_CONFLICT"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "410": {
-            "description": "Tombstoned Note cannot be corrected."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_TOMBSTONED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_RETENTION_NOT_READY",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -61211,6 +62028,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal notes"
         ],
@@ -61279,6 +62097,117 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_QUERY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -61286,6 +62215,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal notes"
         ],
@@ -61370,8 +62300,175 @@
             },
             "description": ""
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_IF_MATCH_INVALID",
+                            "SUPPORT_INTERNAL_NOTE_REASON_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
           "404": {
-            "description": "Note is hidden or outside the current Case scope."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_INTERNAL_NOTE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_INTERNAL_NOTE_VERSION_CONFLICT",
+                            "SUPPORT_INTERNAL_NOTE_TOMBSTONED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_RETENTION_NOT_READY",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -61379,6 +62476,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal notes"
         ],
@@ -84736,6 +85834,154 @@
         ],
         "x-iam-permission": {
           "code": "project.support.external_work.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/internal-notes/realtime-contract": {
+      "get": {
+        "operationId": "SupportInternalNote_realtimeContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInternalNoteRealtimeContractResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal notes"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.internal_notes.read",
           "scope": "PROJECT"
         }
       }

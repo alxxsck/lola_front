@@ -19,15 +19,21 @@ import { CmsRealtimeClient } from "./cms-realtime-client";
 
 function fakeSocket() {
   const listeners = new Map<string, (...args: never[]) => void>();
-  const emitWithAck = vi.fn().mockImplementation(
-    async (_event: string, request: { conversationId?: string } = {}) => ({
-      ok: true,
-      conversationId: request.conversationId,
-      generation: "1",
-      expiresAt: "2026-08-08T10:01:00.000Z",
-      typingRevision: "1",
-    }),
-  );
+  const emitWithAck = vi
+    .fn()
+    .mockImplementation(
+      async (
+        _event: string,
+        request: { conversationId?: string; caseId?: string } = {},
+      ) => ({
+        ok: true,
+        conversationId: request.conversationId,
+        caseId: request.caseId,
+        generation: "1",
+        expiresAt: "2026-08-08T10:01:00.000Z",
+        typingRevision: "1",
+      }),
+    );
   return {
     connected: true,
     on: vi.fn((event: string, callback: (...args: never[]) => void) => {
@@ -42,6 +48,14 @@ function fakeSocket() {
       listeners.get(event)?.(value as never);
     },
   };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }
 
 describe("CmsRealtimeClient", () => {
@@ -103,7 +117,9 @@ describe("CmsRealtimeClient", () => {
       token: "access-token",
       projectId: "project-1",
     });
-    expect(JSON.stringify(mocks.io.mock.calls[0])).not.toContain("refreshToken");
+    expect(JSON.stringify(mocks.io.mock.calls[0])).not.toContain(
+      "refreshToken",
+    );
   });
 
   it("refreshes an expired access token before a reconnect handshake", async () => {
@@ -187,17 +203,22 @@ describe("CmsRealtimeClient", () => {
     await vi.waitFor(() => expect(reconciled).toHaveBeenCalled());
 
     expect(
-      socket.emitWithAck.mock.calls.filter(([event]) => event === "conversation.watch.v1"),
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "conversation.watch.v1",
+      ),
     ).toEqual([
       ["conversation.watch.v1", { conversationId: "conversation-1" }],
       ["conversation.watch.v1", { conversationId: "conversation-2" }],
       ["conversation.watch.v1", { conversationId: "conversation-2" }],
     ]);
     client.unwatchConversation("conversation-2");
-    expect(socket.emitWithAck).toHaveBeenLastCalledWith("conversation.unwatch.v1", {
-      conversationId: "conversation-2",
-      generation: "1",
-    });
+    expect(socket.emitWithAck).toHaveBeenLastCalledWith(
+      "conversation.unwatch.v1",
+      {
+        conversationId: "conversation-2",
+        generation: "1",
+      },
+    );
   });
 
   it("marks realtime degraded when the server rejects a conversation watch", async () => {
@@ -365,15 +386,18 @@ describe("CmsRealtimeClient", () => {
     await client.setConversationTyping(true);
     await vi.advanceTimersByTimeAsync(40_000);
 
-    expect(socket.emitWithAck).toHaveBeenCalledWith(
-      "conversation.typing.v1",
-      { conversationId: "conversation-1", generation: "17", isTyping: true },
-    );
+    expect(socket.emitWithAck).toHaveBeenCalledWith("conversation.typing.v1", {
+      conversationId: "conversation-1",
+      generation: "17",
+      isTyping: true,
+    });
     expect(socket.emitWithAck).toHaveBeenCalledWith(
       "conversation.watch.renew.v1",
       { conversationId: "conversation-1", generation: "17" },
     );
-    expect(JSON.stringify(socket.emitWithAck.mock.calls)).not.toContain("draft");
+    expect(JSON.stringify(socket.emitWithAck.mock.calls)).not.toContain(
+      "draft",
+    );
     client.deactivateProject();
   });
 
@@ -414,7 +438,10 @@ describe("CmsRealtimeClient", () => {
     const socket = fakeSocket();
     let watchGeneration = 0;
     socket.emitWithAck.mockImplementation(
-      async (event: string, request: { conversationId: string; generation?: string }) => {
+      async (
+        event: string,
+        request: { conversationId: string; generation?: string },
+      ) => {
         if (event === "conversation.watch.v1") {
           watchGeneration += 1;
           return {
@@ -488,10 +515,11 @@ describe("CmsRealtimeClient", () => {
     });
     await Promise.all([starting, stopping]);
 
-    expect(socket.emitWithAck).toHaveBeenCalledWith(
-      "conversation.typing.v1",
-      { conversationId: "conversation-1", generation: "1", isTyping: false },
-    );
+    expect(socket.emitWithAck).toHaveBeenCalledWith("conversation.typing.v1", {
+      conversationId: "conversation-1",
+      generation: "1",
+      isTyping: false,
+    });
     client.deactivateProject();
   });
 
@@ -583,10 +611,160 @@ describe("CmsRealtimeClient", () => {
       ).toHaveLength(2),
     );
 
-    expect(socket.emitWithAck).toHaveBeenCalledWith(
-      "conversation.typing.v1",
-      { conversationId: "conversation-1", generation: "2", isTyping: true },
+    expect(socket.emitWithAck).toHaveBeenCalledWith("conversation.typing.v1", {
+      conversationId: "conversation-1",
+      generation: "2",
+      isTyping: true,
+    });
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("owns an exact renewable internal-note Case watch and closes it on route change", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+
+    await expect(client.watchSupportInternalNotes("case-1")).resolves.toBe(
+      true,
     );
+    await vi.advanceTimersByTimeAsync(40_000);
+    client.unwatchSupportInternalNotes("case-1");
+
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "support.internal_note.watch.v1",
+      { caseId: "case-1" },
+    );
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "support.internal_note.renew.v1",
+      { caseId: "case-1" },
+    );
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "support.internal_note.unwatch.v1",
+      { caseId: "case-1" },
+    );
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("does not let a late Case A renew replace the active Case B renew timer", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    const lateCaseARenew = deferred<{
+      ok: boolean;
+      caseId: string;
+      expiresAt: string;
+    }>();
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { caseId?: string } = {}) => {
+        if (
+          event === "support.internal_note.renew.v1" &&
+          request.caseId === "case-1"
+        )
+          return lateCaseARenew.promise;
+        return {
+          ok: true,
+          caseId: request.caseId,
+          expiresAt: "2026-08-08T10:01:00.000Z",
+        };
+      },
+    );
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    await client.activateProject("project-1");
+    await client.watchSupportInternalNotes("case-1");
+
+    vi.advanceTimersByTime(40_000);
+    await Promise.resolve();
+    await client.watchSupportInternalNotes("case-2");
+    lateCaseARenew.resolve({
+      ok: true,
+      caseId: "case-1",
+      expiresAt: "2026-08-08T10:01:00.000Z",
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(40_000);
+
+    expect(socket.emitWithAck).toHaveBeenCalledWith(
+      "support.internal_note.renew.v1",
+      { caseId: "case-2" },
+    );
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("purges a terminal internal-note watch without retrying it", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { caseId?: string } = {}) => {
+        if (event === "support.internal_note.renew.v1")
+          return { ok: false, error: "UNAUTHORIZED" };
+        return {
+          ok: true,
+          caseId: request.caseId,
+          expiresAt: "2026-08-08T10:01:00.000Z",
+        };
+      },
+    );
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    const terminated = vi.fn();
+    client.onSupportInternalNoteWatchTerminated(terminated);
+    await client.activateProject("project-1");
+    await client.watchSupportInternalNotes("case-1");
+
+    await vi.advanceTimersByTimeAsync(40_000);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(terminated).toHaveBeenCalledOnce();
+    expect(terminated).toHaveBeenCalledWith("case-1");
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "support.internal_note.watch.v1",
+      ),
+    ).toHaveLength(1);
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "support.internal_note.renew.v1",
+      ),
+    ).toHaveLength(1);
+    client.deactivateProject();
+    vi.useRealTimers();
+  });
+
+  it("degrades a capacity-limited note watch without revoking REST note authority", async () => {
+    vi.useFakeTimers();
+    const socket = fakeSocket();
+    socket.emitWithAck.mockImplementation(
+      async (event: string, request: { caseId?: string } = {}) => {
+        if (event === "support.internal_note.watch.v1")
+          return { ok: false, error: "CASE_SOCKET_LIMIT_EXCEEDED" };
+        return { ok: true, caseId: request.caseId };
+      },
+    );
+    mocks.io.mockReturnValue(socket);
+    const client = new CmsRealtimeClient();
+    const terminated = vi.fn();
+    const reconciled = vi.fn();
+    client.onSupportInternalNoteWatchTerminated(terminated);
+    client.reconcile(reconciled);
+    await client.activateProject("project-1");
+
+    await expect(client.watchSupportInternalNotes("case-1")).resolves.toBe(
+      false,
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(terminated).not.toHaveBeenCalled();
+    expect(reconciled).toHaveBeenCalled();
+    expect(
+      socket.emitWithAck.mock.calls.filter(
+        ([event]) => event === "support.internal_note.watch.v1",
+      ),
+    ).toHaveLength(1);
     client.deactivateProject();
     vi.useRealTimers();
   });

@@ -158,7 +158,7 @@ function requireBrowserNotificationsPublished(document) {
 export function validateSupportContentLeadNotificationContract(document) {
   const noteList = operation(document, "SupportInternalNote_list");
   const noteCreate = operation(document, "SupportInternalNote_create");
-  const noteCorrection = operation(document, "SupportInternalNote_correction");
+  const noteCorrection = operation(document, "SupportInternalNote_correct");
   const noteRevisions = operation(document, "SupportInternalNote_revisions");
   const noteTombstone = operation(document, "SupportInternalNote_tombstone");
   requirePermission(noteList, "project.support.internal_notes.read");

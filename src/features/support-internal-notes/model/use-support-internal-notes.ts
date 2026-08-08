@@ -2,7 +2,9 @@ import { computed, ref } from "vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportInternalNote,
+  SupportInternalNoteCorrectionReason,
   SupportInternalNoteRevision,
+  SupportInternalNoteTombstoneReason,
   SupportInternalNotesSource,
 } from "@/features/support-internal-notes/api/support-internal-notes-source";
 
@@ -12,14 +14,28 @@ export interface SupportInternalNotesContext {
   canRead(): boolean;
   canReadHistory(): boolean;
   canWrite?(): boolean;
+  canCorrect?(): boolean;
   canRedact?(): boolean;
   onForbidden?(): void | Promise<void>;
+  onReconcileRequired?(): void | Promise<void>;
 }
 
 interface Scope {
   projectId: string;
   caseId: string;
 }
+
+const correctionReasons = new Set<SupportInternalNoteCorrectionReason>([
+  "FACTUAL_CORRECTION",
+  "CLARIFICATION",
+  "REMOVE_SENSITIVE_DATA",
+]);
+const tombstoneReasons = new Set<SupportInternalNoteTombstoneReason>([
+  "CREATED_IN_ERROR",
+  "DUPLICATE",
+  "POLICY_VIOLATION",
+  "PRIVACY_REQUEST",
+]);
 
 /** Owns one selected Case's private notes; no data survives a scope or authority change. */
 export function createSupportInternalNotesController(
@@ -45,11 +61,14 @@ export function createSupportInternalNotesController(
   let historyGeneration = 0;
   let notesAbort: AbortController | null = null;
   let historyAbort: AbortController | null = null;
+  let createMutationToken: symbol | null = null;
+  let correctionMutationToken: symbol | null = null;
+  let tombstoneMutationToken: symbol | null = null;
   const attempts = new Map<string, string>();
 
   const selectedHistoryNote = computed(() =>
     historyNoteId.value
-      ? notes.value.find((note) => note.id === historyNoteId.value) ?? null
+      ? (notes.value.find((note) => note.id === historyNoteId.value) ?? null)
       : null,
   );
 
@@ -65,6 +84,16 @@ export function createSupportInternalNotesController(
 
   function canRedact(): boolean {
     return Boolean(context.canRead() && context.canRedact?.());
+  }
+
+  function canCorrect(): boolean {
+    return Boolean(context.canRead() && context.canCorrect?.());
+  }
+
+  function validBody(value: string): boolean {
+    return (
+      Boolean(value) && new TextEncoder().encode(value).byteLength <= 20_480
+    );
   }
 
   function commandKey(identity: string): string {
@@ -90,7 +119,9 @@ export function createSupportInternalNotesController(
       notes.value = [note, ...notes.value];
       return;
     }
-    notes.value = notes.value.map((item) => (item.id === note.id ? note : item));
+    notes.value = notes.value.map((item) =>
+      item.id === note.id ? note : item,
+    );
   }
 
   async function handleMutationError(
@@ -98,16 +129,33 @@ export function createSupportInternalNotesController(
     scope: Scope,
     generation: number,
     fallback: string,
+    affectedNoteId?: string,
   ): Promise<void> {
     if (!isCurrentMutation(scope, generation)) return;
-    if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+    if (
+      cause instanceof ApiError &&
+      (cause.status === 403 || (cause.status === 404 && !affectedNoteId))
+    ) {
       await forbidden();
       return;
     }
-    mutationError.value =
-      cause instanceof ApiError && (cause.status === 409 || cause.status === 410)
-        ? "Заметка изменилась на сервере. Обновите список и повторите действие."
-        : fallback;
+    if (
+      cause instanceof ApiError &&
+      (cause.status === 404 || cause.status === 409 || cause.status === 410)
+    ) {
+      mutationError.value =
+        "Заметка изменилась на сервере. Состояние обновлено — проверьте текст и повторите действие.";
+      if (affectedNoteId && (cause.status === 404 || cause.status === 410)) {
+        notes.value = notes.value.filter((note) => note.id !== affectedNoteId);
+        if (historyNoteId.value === affectedNoteId) closeHistory();
+      }
+      await Promise.allSettled([
+        reconcile(),
+        Promise.resolve(context.onReconcileRequired?.()),
+      ]);
+      return;
+    }
+    mutationError.value = fallback;
   }
 
   function isCurrentNotes(scope: Scope, requestGeneration: number): boolean {
@@ -150,6 +198,9 @@ export function createSupportInternalNotesController(
     correctingNoteId.value = null;
     tombstoningNoteId.value = null;
     mutationError.value = "";
+    createMutationToken = null;
+    correctionMutationToken = null;
+    tombstoneMutationToken = null;
     attempts.clear();
   }
 
@@ -197,7 +248,10 @@ export function createSupportInternalNotesController(
       nextCursor.value = page.nextCursor;
     } catch (cause) {
       if (!isCurrentNotes(scope, requestGeneration)) return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
         await forbidden();
         return;
       }
@@ -212,7 +266,10 @@ export function createSupportInternalNotesController(
   }
 
   async function openHistory(noteId: string): Promise<void> {
-    if (!context.canReadHistory() || !notes.value.some((note) => note.id === noteId))
+    if (
+      !context.canReadHistory() ||
+      !notes.value.some((note) => note.id === noteId)
+    )
       return;
     closeHistory();
     historyNoteId.value = noteId;
@@ -263,7 +320,9 @@ export function createSupportInternalNotesController(
         historyNoteId.value !== noteId
       )
         return;
-      const byId = new Map(history.value.map((revision) => [revision.id, revision]));
+      const byId = new Map(
+        history.value.map((revision) => [revision.id, revision]),
+      );
       page.items.forEach((revision) => byId.set(revision.id, revision));
       history.value = [...byId.values()];
       historyNextCursor.value = page.nextCursor;
@@ -273,7 +332,10 @@ export function createSupportInternalNotesController(
         historyNoteId.value !== noteId
       )
         return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+      if (
+        cause instanceof ApiError &&
+        (cause.status === 403 || cause.status === 404)
+      ) {
         await forbidden();
         return;
       }
@@ -298,10 +360,13 @@ export function createSupportInternalNotesController(
   ): Promise<boolean> {
     const scope = currentScope();
     const normalizedBody = body.trim();
-    if (!scope || !canWrite() || !normalizedBody || creating.value) return false;
+    if (!scope || !canWrite() || !validBody(normalizedBody) || creating.value)
+      return false;
     const generation = notesGeneration;
+    const mutationToken = Symbol("create-internal-note");
     const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCREATE\u001f${normalizedBody}\u001f${conversationId ?? ""}`;
     creating.value = true;
+    createMutationToken = mutationToken;
     mutationError.value = "";
     try {
       const note = await source.create(scope.projectId, scope.caseId, {
@@ -322,7 +387,10 @@ export function createSupportInternalNotesController(
       );
       return false;
     } finally {
-      if (isCurrentMutation(scope, generation)) creating.value = false;
+      if (createMutationToken === mutationToken) {
+        createMutationToken = null;
+        creating.value = false;
+      }
     }
   }
 
@@ -334,28 +402,38 @@ export function createSupportInternalNotesController(
     const scope = currentScope();
     const note = notes.value.find((item) => item.id === noteId);
     const normalizedBody = body.trim();
-    const normalizedReason = reasonCode.trim().toUpperCase();
+    const normalizedReason = reasonCode
+      .trim()
+      .toUpperCase() as SupportInternalNoteCorrectionReason;
     if (
       !scope ||
       !note ||
       note.lifecycle !== "ACTIVE" ||
-      !canWrite() ||
-      !normalizedBody ||
+      !canCorrect() ||
+      !validBody(normalizedBody) ||
       !normalizedReason ||
+      !correctionReasons.has(normalizedReason) ||
       correctingNoteId.value
     )
       return false;
     const generation = notesGeneration;
+    const mutationToken = Symbol("correct-internal-note");
     const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCORRECT\u001f${note.id}\u001f${note.actionEtag}\u001f${normalizedBody}\u001f${normalizedReason}`;
     correctingNoteId.value = note.id;
+    correctionMutationToken = mutationToken;
     mutationError.value = "";
     try {
-      const updated = await source.correct(scope.projectId, scope.caseId, note.id, {
-        body: normalizedBody,
-        reasonCode: normalizedReason,
-        actionEtag: note.actionEtag,
-        idempotencyKey: commandKey(identity),
-      });
+      const updated = await source.correct(
+        scope.projectId,
+        scope.caseId,
+        note.id,
+        {
+          body: normalizedBody,
+          reasonCode: normalizedReason,
+          actionEtag: note.actionEtag,
+          idempotencyKey: commandKey(identity),
+        },
+      );
       if (!isCurrentMutation(scope, generation)) return false;
       attempts.delete(identity);
       upsert(updated);
@@ -367,10 +445,14 @@ export function createSupportInternalNotesController(
         scope,
         generation,
         "Не удалось исправить внутреннюю заметку. Текст сохранён.",
+        note.id,
       );
       return false;
     } finally {
-      if (isCurrentMutation(scope, generation)) correctingNoteId.value = null;
+      if (correctionMutationToken === mutationToken) {
+        correctionMutationToken = null;
+        correctingNoteId.value = null;
+      }
     }
   }
 
@@ -380,19 +462,24 @@ export function createSupportInternalNotesController(
   ): Promise<boolean> {
     const scope = currentScope();
     const note = notes.value.find((item) => item.id === noteId);
-    const normalizedReason = reasonCode.trim().toUpperCase();
+    const normalizedReason = reasonCode
+      .trim()
+      .toUpperCase() as SupportInternalNoteTombstoneReason;
     if (
       !scope ||
       !note ||
       note.lifecycle !== "ACTIVE" ||
       !canRedact() ||
       !normalizedReason ||
+      !tombstoneReasons.has(normalizedReason) ||
       tombstoningNoteId.value
     )
       return false;
     const generation = notesGeneration;
+    const mutationToken = Symbol("tombstone-internal-note");
     const identity = `${scope.projectId}\u001f${scope.caseId}\u001fTOMBSTONE\u001f${note.id}\u001f${note.actionEtag}\u001f${normalizedReason}`;
     tombstoningNoteId.value = note.id;
+    tombstoneMutationToken = mutationToken;
     mutationError.value = "";
     try {
       const updated = await source.tombstone(
@@ -416,10 +503,14 @@ export function createSupportInternalNotesController(
         scope,
         generation,
         "Не удалось удалить внутреннюю заметку. Причина сохранена.",
+        note.id,
       );
       return false;
     } finally {
-      if (isCurrentMutation(scope, generation)) tombstoningNoteId.value = null;
+      if (tombstoneMutationToken === mutationToken) {
+        tombstoneMutationToken = null;
+        tombstoningNoteId.value = null;
+      }
     }
   }
 

@@ -189,6 +189,15 @@ export interface SupportWorkspaceSelection {
     replyWithoutTranslation: boolean;
     suspendAi: boolean;
     transferAssignment: boolean;
+    internalNotes?: {
+      state: "AVAILABLE" | "UNAVAILABLE";
+      read: boolean;
+      create: boolean;
+      historyRead: boolean;
+      correct: boolean;
+      tombstone: boolean;
+      realtimeWatch: boolean;
+    };
   };
   endUser: {
     id: string;
@@ -677,6 +686,25 @@ function mockCapabilities(
     replyWithoutTranslation: false,
     suspendAi: false,
     transferAssignment: actionable && Boolean(assignment),
+    internalNotes: selectedCase
+      ? {
+          state: "AVAILABLE",
+          read: true,
+          create: true,
+          historyRead: true,
+          correct: true,
+          tombstone: true,
+          realtimeWatch: false,
+        }
+      : {
+          state: "UNAVAILABLE",
+          read: false,
+          create: false,
+          historyRead: false,
+          correct: false,
+          tombstone: false,
+          realtimeWatch: false,
+        },
   };
 }
 

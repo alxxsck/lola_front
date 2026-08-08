@@ -30,6 +30,7 @@ function revision(id = "revision-1"): SupportInternalNoteRevision {
     noteId: "note-1",
     revisionNumber: 1,
     body: "Проверить подтверждение оплаты",
+    reasonCode: "INITIAL",
     authorName: "Алина",
     createdAt: "2026-08-06T10:00:00.000Z",
   };
@@ -95,8 +96,14 @@ describe("support internal notes controller", () => {
       source({ create }),
     );
 
-    const first = await controller.create("Проверить реквизиты", "conversation-1");
-    const second = await controller.create("Проверить реквизиты", "conversation-1");
+    const first = await controller.create(
+      "Проверить реквизиты",
+      "conversation-1",
+    );
+    const second = await controller.create(
+      "Проверить реквизиты",
+      "conversation-1",
+    );
 
     expect(first).toBe(false);
     expect(second).toBe(true);
@@ -110,6 +117,61 @@ describe("support internal notes controller", () => {
       create.mock.calls[0]?.[2]?.idempotencyKey,
     );
     expect(controller.notes.value.map((item) => item.id)).toEqual(["note-2"]);
+  });
+
+  it("rejects oversized UTF-8 bodies and reason values outside the closed catalogs", async () => {
+    const create = vi.fn();
+    const correct = vi.fn();
+    const tombstone = vi.fn();
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+        canCorrect: () => true,
+        canRedact: () => true,
+      },
+      source({ create, correct, tombstone }),
+    );
+
+    await controller.load();
+
+    expect(await controller.create("я".repeat(10_241))).toBe(false);
+    expect(await controller.correct("note-1", "Исправлено", "FREE_TEXT")).toBe(
+      false,
+    );
+    expect(await controller.tombstone("note-1", "CONTENT_REMOVAL")).toBe(false);
+    expect(create).not.toHaveBeenCalled();
+    expect(correct).not.toHaveBeenCalled();
+    expect(tombstone).not.toHaveBeenCalled();
+  });
+
+  it("uses the distinct correction grant without requiring note creation authority", async () => {
+    const correct = vi.fn().mockResolvedValue(note());
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => false,
+        canCorrect: () => true,
+      },
+      source({ correct }),
+    );
+
+    await controller.load();
+
+    expect(
+      await controller.correct(
+        "note-1",
+        "Уточнённый контекст",
+        "CLARIFICATION",
+      ),
+    ).toBe(true);
+    expect(correct).toHaveBeenCalledOnce();
   });
 
   it("uses only the current Case scope and merges a cursor page", async () => {
@@ -200,9 +262,101 @@ describe("support internal notes controller", () => {
     expect(onForbidden).toHaveBeenCalledOnce();
   });
 
+  it("reconciles an OCC conflict immediately without treating an item 404 as Case authority loss", async () => {
+    const onForbidden = vi.fn();
+    const onReconcileRequired = vi.fn();
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({ items: [note()], nextCursor: null })
+      .mockResolvedValueOnce({ items: [], nextCursor: null });
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => true,
+        canCorrect: () => true,
+        onForbidden,
+        onReconcileRequired,
+      },
+      source({
+        list,
+        correct: vi.fn().mockRejectedValue(new ApiError(404, "hidden note")),
+      }),
+    );
+
+    await controller.load();
+    expect(
+      await controller.correct(
+        "note-1",
+        "Сохранённый черновик",
+        "CLARIFICATION",
+      ),
+    ).toBe(false);
+
+    expect(onForbidden).not.toHaveBeenCalled();
+    expect(onReconcileRequired).toHaveBeenCalledOnce();
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(controller.notes.value).toEqual([]);
+    expect(controller.mutationError.value).toContain("Состояние обновлено");
+    expect(controller.correctingNoteId.value).toBeNull();
+  });
+
+  it("releases the shared composer after a create conflict reconcile", async () => {
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+      },
+      source({
+        create: vi.fn().mockRejectedValue(new ApiError(409, "conflict")),
+        list: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
+      }),
+    );
+
+    expect(await controller.create("Сохранённый черновик")).toBe(false);
+
+    expect(controller.creating.value).toBe(false);
+    expect(controller.mutationError.value).toContain("Состояние обновлено");
+  });
+
+  it("removes a tombstoned body before the authoritative 410 reconcile completes", async () => {
+    const refresh = deferred<SupportInternalNotesPage<SupportInternalNote>>();
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({ items: [note()], nextCursor: null })
+      .mockReturnValueOnce(refresh.promise);
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => true,
+        canRedact: () => true,
+      },
+      source({
+        list,
+        tombstone: vi.fn().mockRejectedValue(new ApiError(410, "gone")),
+      }),
+    );
+
+    await controller.load();
+    const mutation = controller.tombstone("note-1", "PRIVACY_REQUEST");
+    await vi.waitFor(() => expect(controller.notes.value).toEqual([]));
+    refresh.resolve({ items: [], nextCursor: null });
+    await mutation;
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(controller.tombstoningNoteId.value).toBeNull();
+  });
+
   it("requires history authority and discards history when that grant changes in flight", async () => {
     let canReadHistory = true;
-    const pending = deferred<SupportInternalNotesPage<SupportInternalNoteRevision>>();
+    const pending =
+      deferred<SupportInternalNotesPage<SupportInternalNoteRevision>>();
     const revisions = vi.fn().mockReturnValue(pending.promise);
     const controller = createSupportInternalNotesController(
       {

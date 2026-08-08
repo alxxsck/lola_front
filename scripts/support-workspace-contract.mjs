@@ -24,6 +24,17 @@ export function validateSupportWorkspaceMessagingContract(document) {
     document,
     "AdminConversationCollaboration_mark",
   );
+  const internalNoteList = operation(document, "SupportInternalNote_list");
+  const internalNoteCreate = operation(document, "SupportInternalNote_create");
+  const internalNoteCorrect = operation(document, "SupportInternalNote_correct");
+  const internalNoteTombstone = operation(
+    document,
+    "SupportInternalNote_tombstone",
+  );
+  const internalNoteRealtime = operation(
+    document,
+    "SupportInternalNote_realtimeContract",
+  );
   const workspacePermissions = new Set(
     workspaceRead["x-iam-any-permission"]?.map((value) => value.code) ?? [],
   );
@@ -37,6 +48,17 @@ export function validateSupportWorkspaceMessagingContract(document) {
   requirePermission(lookupMessageOutcome, "project.conversations.reply");
   requirePermission(readPosition, "project.conversations.read");
   requirePermission(markReadPosition, "project.conversations.read");
+  requirePermission(internalNoteList, "project.support.internal_notes.read");
+  requirePermission(internalNoteCreate, "project.support.internal_notes.write");
+  requirePermission(internalNoteCorrect, "project.support.internal_notes.write");
+  requirePermission(
+    internalNoteTombstone,
+    "project.support.internal_notes.redact",
+  );
+  requirePermission(
+    internalNoteRealtime,
+    "project.support.internal_notes.read",
+  );
   if (parameter(workspaceRead, "messageLimit").schema?.maximum !== 100) {
     throw new Error(
       "SupportWorkspace_read messageLimit must remain bounded at 100",
@@ -94,6 +116,56 @@ export function validateSupportWorkspaceMessagingContract(document) {
     "releaseAssignment",
     "transferAssignment",
     "escalateCase",
+    "internalNotes",
+  ]);
+  requireProperties(document, "SupportWorkspaceInternalNoteCapabilitiesResponseDto", [
+    "state",
+    "read",
+    "create",
+    "historyRead",
+    "correct",
+    "tombstone",
+    "realtimeWatch",
+  ]);
+  requireEnumValues(
+    document,
+    "SupportWorkspaceInternalNoteCapabilitiesResponseDto",
+    "state",
+    ["AVAILABLE", "UNAVAILABLE"],
+  );
+  for (const mutation of [
+    internalNoteCreate,
+    internalNoteCorrect,
+    internalNoteTombstone,
+  ]) {
+    const key = parameter(mutation, "Idempotency-Key");
+    if (key.in !== "header" || key.required !== true)
+      throw new Error(`${mutation.operationId} must require Idempotency-Key`);
+  }
+  for (const mutation of [internalNoteCorrect, internalNoteTombstone]) {
+    const etag = parameter(mutation, "If-Match");
+    if (etag.in !== "header" || etag.required !== true)
+      throw new Error(`${mutation.operationId} must require If-Match`);
+  }
+  requireProperties(document, "SupportInternalNoteRealtimeContractResponseDto", [
+    "contractVersion",
+    "authority",
+    "watchCommand",
+    "renewCommand",
+    "unwatchCommand",
+    "changedEvent",
+    "watchTtlSeconds",
+    "containsContent",
+    "correctionReasonCodes",
+    "tombstoneReasonCodes",
+  ]);
+  requireProperties(document, "SupportInternalNoteRealtimeChangedEventDto", [
+    "contractVersion",
+    "eventId",
+    "projectId",
+    "caseId",
+    "noteId",
+    "noteVersion",
   ]);
   requireProperties(document, "SupportWorkspaceMessagePageResponseDto", [
     "items",

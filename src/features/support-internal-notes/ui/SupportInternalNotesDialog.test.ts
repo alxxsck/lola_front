@@ -39,8 +39,10 @@ function render(overrides: Record<string, unknown> = {}) {
         Message: { template: "<div><slot /></div>" },
         Tag: { template: "<span><slot /></span>" },
         Button: {
+          props: ["label", "disabled"],
           emits: ["click"],
-          template: "<button type=\"button\" @click=\"$emit('click')\"><slot /></button>",
+          template:
+            '<button type="button" :disabled="disabled" @click="$emit(\'click\')">{{ label }}<slot /></button>',
         },
       },
     },
@@ -72,16 +74,11 @@ describe("support internal notes dialog", () => {
     expect(wrapper.text()).toContain("Текст заметки удалён.");
   });
 
-  it("emits a private note draft only after the write capability is granted", async () => {
-    const wrapper = render({ canWrite: true });
+  it("keeps note creation in the shared conversation composer", () => {
+    const wrapper = render();
 
-    const composer = wrapper.get(".internal-note-composer");
-    await composer.get("textarea").setValue("Передать смене детали обращения");
-    await composer.trigger("submit");
-
-    const event = wrapper.emitted("create")?.[0];
-    expect(event?.[0]).toBe("Передать смене детали обращения");
-    expect(event?.[1]).toBeTypeOf("function");
+    expect(wrapper.find(".internal-note-composer").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Сохранить заметку");
   });
 
   it("delegates lazy history loading only when the separate grant is present", async () => {
@@ -90,5 +87,52 @@ describe("support internal notes dialog", () => {
     await wrapper.get("button").trigger("click");
 
     expect(wrapper.emitted("openHistory")).toEqual([["note-1"]]);
+  });
+
+  it("purges a correction draft when correction authority is revoked", async () => {
+    const wrapper = render({ canCorrect: true });
+    await wrapper.get("button:nth-of-type(1)").trigger("click");
+    const correction = wrapper.get(".internal-note-correction textarea");
+    await correction.setValue("Чувствительный черновик исправления");
+
+    await wrapper.setProps({ canCorrect: false });
+    expect(wrapper.find(".internal-note-correction").exists()).toBe(false);
+    await wrapper.setProps({ canCorrect: true });
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Исправить"))!
+      .trigger("click");
+
+    expect(
+      (
+        wrapper.get(".internal-note-correction textarea")
+          .element as HTMLTextAreaElement
+      ).value,
+    ).toBe("<strong>Не HTML</strong>");
+  });
+
+  it("blocks a multibyte correction above the backend byte limit", async () => {
+    const wrapper = render({ canCorrect: true });
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Исправить"))!
+      .trigger("click");
+    await wrapper
+      .get(".internal-note-correction textarea")
+      .setValue("я".repeat(10_241));
+
+    expect(
+      wrapper
+        .get(".internal-note-correction__counter")
+        .text()
+        .replaceAll("\u00a0", " "),
+    ).toContain("20 482 / 20 480");
+    expect(
+      wrapper
+        .findAll("button")
+        .find((button) => button.text().includes("Сохранить исправление"))!
+        .attributes("disabled"),
+    ).toBeDefined();
+    expect(wrapper.emitted("correct")).toBeUndefined();
   });
 });

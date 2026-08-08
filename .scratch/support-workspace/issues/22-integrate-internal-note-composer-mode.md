@@ -4,14 +4,14 @@
 
 **Blocked by:** 03 — Синхронизировать content, Lead Control и notification-контракты; 06 — Перевести Support chat на Conversation Surface.
 
-**Status:** partially-blocked-by-backend
+**Status:** completed
 
-**Backend gate (audit 2026-08-07):** note reads и endpoints опубликованы; Case-scoped note
-actions и полный conflict/lifecycle contract отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#22--internal-note-composer-mode).
+**Backend gate:** разблокирован backend `4a33805`, handoff `255b509`.
+Frontend закрепляет exact Case scope, закрытые reason catalogs, OCC/reconcile и content-free realtime lease.
 
-- [ ] `Публичный ответ` и `Внутренняя заметка` имеют разные визуальные состояния и draft keys.
-- [ ] Note endpoint нельзя вызвать из public mode и наоборот.
-- [ ] Note permissions/allowed actions приходят из текущей Case projection.
-- [ ] Создание/correction/tombstone отображаются в разрешённой internal timeline.
-- [ ] Revoke немедленно очищает note text, history и draft из UI/cache.
-- [ ] End User projection/e2e не содержит note body, metadata или attachment grants.
+- [x] `Публичный ответ` и `Внутренняя заметка` имеют разные визуальные состояния и Case-scoped draft keys.
+- [x] Note endpoint нельзя вызвать из public mode и наоборот.
+- [x] Note permissions/allowed actions приходят из текущей Case projection.
+- [x] Создание/correction/tombstone отображаются в разрешённой internal timeline.
+- [x] Revoke немедленно очищает note text, history и draft из UI/cache.
+- [x] End User projection/e2e не содержит note body, metadata или attachment grants.

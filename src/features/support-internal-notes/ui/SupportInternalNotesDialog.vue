@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -9,41 +9,42 @@ import type {
   SupportInternalNoteRevision,
 } from "@/features/support-internal-notes/api/support-internal-notes-source";
 
-const props = withDefaults(defineProps<{
-  visible: boolean;
-  notes: SupportInternalNote[];
-  nextCursor: string | null;
-  loading?: boolean;
-  loadingMore?: boolean;
-  error?: string;
-  canReadHistory?: boolean;
-  canWrite?: boolean;
-  canRedact?: boolean;
-  creating?: boolean;
-  correctingNoteId?: string | null;
-  tombstoningNoteId?: string | null;
-  mutationError?: string;
-  selectedHistoryNote: SupportInternalNote | null;
-  history: SupportInternalNoteRevision[];
-  historyNextCursor: string | null;
-  historyLoading?: boolean;
-  historyLoadingMore?: boolean;
-  historyError?: string;
-}>(), {
-  loading: false,
-  loadingMore: false,
-  error: "",
-  canReadHistory: false,
-  canWrite: false,
-  canRedact: false,
-  creating: false,
-  correctingNoteId: null,
-  tombstoningNoteId: null,
-  mutationError: "",
-  historyLoading: false,
-  historyLoadingMore: false,
-  historyError: "",
-});
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    notes: SupportInternalNote[];
+    nextCursor: string | null;
+    loading?: boolean;
+    loadingMore?: boolean;
+    error?: string;
+    canReadHistory?: boolean;
+    canCorrect?: boolean;
+    canRedact?: boolean;
+    correctingNoteId?: string | null;
+    tombstoningNoteId?: string | null;
+    mutationError?: string;
+    selectedHistoryNote: SupportInternalNote | null;
+    history: SupportInternalNoteRevision[];
+    historyNextCursor: string | null;
+    historyLoading?: boolean;
+    historyLoadingMore?: boolean;
+    historyError?: string;
+  }>(),
+  {
+    loading: false,
+    loadingMore: false,
+    error: "",
+    canReadHistory: false,
+    canCorrect: false,
+    canRedact: false,
+    correctingNoteId: null,
+    tombstoningNoteId: null,
+    mutationError: "",
+    historyLoading: false,
+    historyLoadingMore: false,
+    historyError: "",
+  },
+);
 
 const emit = defineEmits<{
   "update:visible": [value: boolean];
@@ -52,26 +53,26 @@ const emit = defineEmits<{
   openHistory: [noteId: string];
   closeHistory: [];
   loadHistoryMore: [];
-  create: [body: string, onSucceeded: () => void];
   correct: [
     noteId: string,
     body: string,
     reasonCode: string,
     onSucceeded: () => void,
   ];
-  tombstone: [
-    noteId: string,
-    reasonCode: string,
-    onSucceeded: () => void,
-  ];
+  tombstone: [noteId: string, reasonCode: string, onSucceeded: () => void];
 }>();
 
-const createBody = ref("");
 const correctionNoteId = ref<string | null>(null);
 const correctionBody = ref("");
-const correctionReason = ref("OPERATOR_CORRECTION");
+const correctionReason = ref("FACTUAL_CORRECTION");
 const tombstoneNoteId = ref<string | null>(null);
-const tombstoneReason = ref("CONTENT_REMOVAL");
+const tombstoneReason = ref("CREATED_IN_ERROR");
+const correctionByteLength = computed(
+  () => new TextEncoder().encode(correctionBody.value.trim()).byteLength,
+);
+const correctionBodyInvalid = computed(
+  () => !correctionBody.value.trim() || correctionByteLength.value > 20_480,
+);
 
 const visibleModel = computed({
   get: () => props.visible,
@@ -100,26 +101,62 @@ function dateTime(value: string): string {
   });
 }
 
-function submitCreate(): void {
-  const body = createBody.value.trim();
-  if (!body || props.creating) return;
-  emit("create", body, () => {
-    createBody.value = "";
-  });
+function revisionReasonLabel(
+  value: SupportInternalNoteRevision["reasonCode"],
+): string {
+  return {
+    INITIAL: "Создание заметки",
+    FACTUAL_CORRECTION: "Исправление факта",
+    CLARIFICATION: "Уточнение",
+    REMOVE_SENSITIVE_DATA: "Удаление чувствительных данных",
+    LEGACY_OTHER: "Изменение из прежней версии",
+  }[value];
 }
 
+function resetCorrection(): void {
+  correctionNoteId.value = null;
+  correctionBody.value = "";
+  correctionReason.value = "FACTUAL_CORRECTION";
+}
+
+function resetTombstone(): void {
+  tombstoneNoteId.value = null;
+  tombstoneReason.value = "CREATED_IN_ERROR";
+}
+
+watch(
+  () => [props.visible, props.canCorrect, props.notes] as const,
+  ([visible, canCorrect, notes]) => {
+    const selected = notes.find((note) => note.id === correctionNoteId.value);
+    if (!visible || !canCorrect || !selected || selected.lifecycle !== "ACTIVE")
+      resetCorrection();
+  },
+  { flush: "sync" },
+);
+
+watch(
+  () => [props.visible, props.canRedact, props.notes] as const,
+  ([visible, canRedact, notes]) => {
+    const selected = notes.find((note) => note.id === tombstoneNoteId.value);
+    if (!visible || !canRedact || !selected || selected.lifecycle !== "ACTIVE")
+      resetTombstone();
+  },
+  { flush: "sync" },
+);
+
 function startCorrection(note: SupportInternalNote): void {
-  if (!props.canWrite || note.lifecycle !== "ACTIVE" || !note.body) return;
+  if (!props.canCorrect || note.lifecycle !== "ACTIVE" || !note.body) return;
   correctionNoteId.value = note.id;
   correctionBody.value = note.body;
-  correctionReason.value = "OPERATOR_CORRECTION";
+  correctionReason.value = "FACTUAL_CORRECTION";
   tombstoneNoteId.value = null;
 }
 
 function submitCorrection(noteId: string): void {
   const body = correctionBody.value.trim();
   const reasonCode = correctionReason.value.trim().toUpperCase();
-  if (!body || !reasonCode || props.correctingNoteId) return;
+  if (correctionBodyInvalid.value || !reasonCode || props.correctingNoteId)
+    return;
   emit("correct", noteId, body, reasonCode, () => {
     correctionNoteId.value = null;
     correctionBody.value = "";
@@ -129,7 +166,7 @@ function submitCorrection(noteId: string): void {
 function startTombstone(noteId: string): void {
   if (!props.canRedact) return;
   tombstoneNoteId.value = noteId;
-  tombstoneReason.value = "CONTENT_REMOVAL";
+  tombstoneReason.value = "CREATED_IN_ERROR";
   correctionNoteId.value = null;
 }
 
@@ -150,45 +187,33 @@ function submitTombstone(noteId: string): void {
     :style="{ width: 'min(780px, calc(100vw - 24px))' }"
   >
     <Message severity="info" :closable="false">
-      Внутреннюю заметку пользователь не увидит. Не вставляйте в неё секреты
-      или текст, который должен уйти в публичный ответ.
+      Внутреннюю заметку пользователь не увидит. Не вставляйте в неё секреты или
+      текст, который должен уйти в публичный ответ.
     </Message>
 
     <Message v-if="error" severity="error" :closable="false">
       {{ error }}
-      <Button type="button" label="Повторить" size="small" text @click="emit('reload')" />
+      <Button
+        type="button"
+        label="Повторить"
+        size="small"
+        text
+        @click="emit('reload')"
+      />
     </Message>
     <Message v-if="mutationError" severity="error" :closable="false">
       {{ mutationError }}
-      <Button type="button" label="Обновить список" size="small" text @click="emit('reload')" />
-    </Message>
-    <form
-      v-if="canWrite"
-      class="internal-note-composer"
-      :aria-busy="creating"
-      @submit.prevent="submitCreate"
-    >
-      <label>
-        <span>Новая внутренняя заметка</span>
-        <textarea
-          v-model="createBody"
-          rows="3"
-          maxlength="20480"
-          placeholder="Что важно передать команде? Пользователь этого не увидит."
-          :disabled="creating"
-        />
-      </label>
       <Button
-        type="submit"
-        label="Сохранить заметку"
-        icon="pi pi-file-edit"
-        :loading="creating"
-        :disabled="!createBody.trim()"
+        type="button"
+        label="Обновить список"
+        size="small"
+        text
+        @click="emit('reload')"
       />
-    </form>
+    </Message>
     <p v-if="loading" class="internal-notes-empty">Загружаем заметки…</p>
     <p v-else-if="!notes.length && !error" class="internal-notes-empty">
-      В этом Case пока нет доступных заметок.
+      В этом обращении пока нет доступных заметок.
     </p>
     <ol v-else class="internal-notes-list">
       <li v-for="note in notes" :key="note.id">
@@ -217,7 +242,10 @@ function submitTombstone(noteId: string): void {
                 : "Текст заметки недоступен."
             }}
           </p>
-          <p v-if="note.hasUnavailableReferences" class="internal-note__unavailable">
+          <p
+            v-if="note.hasUnavailableReferences"
+            class="internal-note__unavailable"
+          >
             Некоторые связанные объекты больше недоступны.
           </p>
           <form
@@ -234,15 +262,25 @@ function submitTombstone(noteId: string): void {
                 maxlength="20480"
                 :disabled="correctingNoteId === note.id"
               />
+              <small
+                class="internal-note-correction__counter"
+                :class="{ 'is-invalid': correctionByteLength > 20480 }"
+              >
+                {{ correctionByteLength.toLocaleString("ru-RU") }} / 20 480 байт
+              </small>
             </label>
             <label>
               <span>Код причины</span>
-              <input
+              <select
                 v-model="correctionReason"
-                maxlength="64"
-                pattern="[A-Za-z][A-Za-z0-9_]{1,63}"
                 :disabled="correctingNoteId === note.id"
-              />
+              >
+                <option value="FACTUAL_CORRECTION">Исправление факта</option>
+                <option value="CLARIFICATION">Уточнение</option>
+                <option value="REMOVE_SENSITIVE_DATA">
+                  Удаление чувствительных данных
+                </option>
+              </select>
             </label>
             <div class="internal-note-correction__actions">
               <Button
@@ -257,7 +295,7 @@ function submitTombstone(noteId: string): void {
                 type="submit"
                 label="Сохранить исправление"
                 :loading="correctingNoteId === note.id"
-                :disabled="!correctionBody.trim() || !correctionReason.trim()"
+                :disabled="correctionBodyInvalid || !correctionReason.trim()"
               />
             </div>
           </form>
@@ -270,12 +308,15 @@ function submitTombstone(noteId: string): void {
             <p>Текст будет скрыт, но audit trail и факт удаления сохранятся.</p>
             <label>
               <span>Код причины</span>
-              <input
+              <select
                 v-model="tombstoneReason"
-                maxlength="64"
-                pattern="[A-Za-z][A-Za-z0-9_]{1,63}"
                 :disabled="tombstoningNoteId === note.id"
-              />
+              >
+                <option value="CREATED_IN_ERROR">Создано по ошибке</option>
+                <option value="DUPLICATE">Дубликат</option>
+                <option value="POLICY_VIOLATION">Нарушение политики</option>
+                <option value="PRIVACY_REQUEST">Запрос на приватность</option>
+              </select>
             </label>
             <div class="internal-note-correction__actions">
               <Button
@@ -311,7 +352,7 @@ function submitTombstone(noteId: string): void {
                 @click="emit('openHistory', note.id)"
               />
               <Button
-                v-if="canWrite && note.lifecycle === 'ACTIVE'"
+                v-if="canCorrect && note.lifecycle === 'ACTIVE'"
                 type="button"
                 label="Исправить"
                 icon="pi pi-pencil"
@@ -384,7 +425,8 @@ function submitTombstone(noteId: string): void {
               </time>
             </header>
             <p class="internal-note-history__author">
-              {{ revision.authorName }}
+              {{ revision.authorName }} ·
+              {{ revisionReasonLabel(revision.reasonCode) }}
             </p>
             <p class="internal-note__body">{{ revision.body }}</p>
           </article>
@@ -421,7 +463,6 @@ function submitTombstone(noteId: string): void {
 .internal-note {
   padding: 14px;
 }
-.internal-note-composer,
 .internal-note-correction,
 .internal-note-tombstone {
   display: grid;
@@ -432,7 +473,6 @@ function submitTombstone(noteId: string): void {
   border-radius: 12px;
   background: var(--surface-card);
 }
-.internal-note-composer > label,
 .internal-note-correction > label,
 .internal-note-tombstone > label {
   display: grid;
@@ -440,10 +480,9 @@ function submitTombstone(noteId: string): void {
   color: var(--text-secondary);
   font-size: 0.76rem;
 }
-.internal-note-composer textarea,
 .internal-note-correction textarea,
-.internal-note-correction input,
-.internal-note-tombstone input {
+.internal-note-correction select,
+.internal-note-tombstone select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -451,20 +490,16 @@ function submitTombstone(noteId: string): void {
   color: var(--text-primary);
   font: inherit;
 }
-.internal-note-composer textarea,
 .internal-note-correction textarea {
   min-height: 76px;
   padding: 9px;
   resize: vertical;
 }
-.internal-note-correction input,
-.internal-note-tombstone input {
+.internal-note-correction select,
+.internal-note-tombstone select {
   min-height: 34px;
   padding: 6px 8px;
   font-family: var(--font-mono);
-}
-.internal-note-composer > :deep(.p-button) {
-  justify-self: end;
 }
 .internal-note-correction,
 .internal-note-tombstone {
@@ -486,6 +521,14 @@ function submitTombstone(noteId: string): void {
   align-items: center;
   flex-wrap: wrap;
   gap: 4px;
+}
+.internal-note-correction__counter {
+  color: var(--text-muted);
+  text-align: right;
+}
+.internal-note-correction__counter.is-invalid {
+  color: var(--status-danger-text);
+  font-weight: 700;
 }
 .internal-note__header,
 .internal-note footer,
@@ -565,9 +608,6 @@ function submitTombstone(noteId: string): void {
   .internal-note-history__list header {
     align-items: flex-start;
     flex-direction: column;
-  }
-  .internal-note-composer > :deep(.p-button) {
-    width: 100%;
   }
 }
 </style>

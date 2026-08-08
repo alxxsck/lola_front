@@ -292,6 +292,15 @@ describe("support workspace selection contract mapper", () => {
         replyWithoutTranslation: false,
         suspendAi: true,
         transferAssignment: true,
+        internalNotes: {
+          state: "AVAILABLE",
+          read: true,
+          create: true,
+          historyRead: true,
+          correct: true,
+          tombstone: true,
+          realtimeWatch: true,
+        },
       },
       classificationOptions: [],
       endUser: {
