@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
@@ -17,16 +18,22 @@ const props = withDefaults(
     uiSchema: Record<string, unknown>;
     modelValue: Record<string, unknown>;
     elements?: UiElement[];
+    elementsLoading?: boolean;
+    elementsError?: string | null;
     disabled?: boolean;
   }>(),
-  { elements: () => [] },
+  { elements: () => [], elementsLoading: false, elementsError: null },
 );
 const emit = defineEmits<{
   "update:modelValue": [value: Record<string, unknown>];
+  "retry-elements": [];
 }>();
 
 const form = computed(() =>
   buildProjectActionForm(props.schema, props.uiSchema),
+);
+const hasTargetField = computed(() =>
+  form.value.fields.some((field) => field.kind === "target"),
 );
 
 function update(key: string, value: unknown) {
@@ -58,6 +65,20 @@ function stringValue(key: string): string | undefined {
       </ul>
     </Message>
     <div v-else-if="form.fields.length" class="schema-fields">
+      <Message
+        v-if="elementsError && hasTargetField"
+        severity="warn"
+        :closable="false"
+        class="element-catalog-feedback"
+      >
+        <span>{{ elementsError }}</span>
+        <Button
+          label="Повторить"
+          severity="secondary"
+          size="small"
+          @click="emit('retry-elements')"
+        />
+      </Message>
       <div
         v-for="field in form.fields"
         :key="field.key"
@@ -73,14 +94,23 @@ function stringValue(key: string): string | undefined {
         <small v-if="field.description">{{ field.description }}</small>
         <UiElementPicker
           v-if="field.kind === 'target'"
+          class="schema-target-picker"
           :model-value="stringValue(field.key) ?? ''"
           :elements="elements"
           :allowed-kinds="field.targetKinds"
           :label="`${field.label}${field.required ? ' *' : ''}`"
           :required="field.required"
           :allow-empty="!field.required"
-          :disabled="disabled"
-          placeholder="Выберите объект интерфейса"
+          :disabled="
+            disabled ||
+            (elementsLoading && !elements.length) ||
+            Boolean(elementsError && !elements.length)
+          "
+          :placeholder="
+            elementsLoading && !elements.length
+              ? 'Загружаем каталог…'
+              : 'Выберите объект интерфейса'
+          "
           @update:model-value="update(field.key, $event)"
         />
         <Select
@@ -175,6 +205,18 @@ function stringValue(key: string): string | undefined {
 .schema-field :deep(.p-multiselect),
 .schema-field :deep(.p-inputnumber) {
   width: 100%;
+}
+.schema-target-picker {
+  --catalog-picker-trigger-height: calc(
+    1.5em + 2 * var(--p-form-field-padding-y) + 2px
+  );
+}
+.schema-target-picker :deep(.catalog-picker__trigger) {
+  padding-block: 3px;
+}
+.element-catalog-feedback :deep(.p-message-content) {
+  justify-content: space-between;
+  gap: 12px;
 }
 .empty-config {
   display: flex;

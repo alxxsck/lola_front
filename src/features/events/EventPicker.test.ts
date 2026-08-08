@@ -71,6 +71,24 @@ describe("EventPicker", () => {
     ]);
   });
 
+  it("describes a required picker without invalid button aria", () => {
+    const wrapper = mount(EventPicker, {
+      props: {
+        modelValue: "",
+        label: "Событие запуска",
+        placeholder: "Выберите событие",
+        required: true,
+        load: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
+      },
+      global: { plugins: [PrimeVue] },
+    });
+
+    const trigger = wrapper.get('[data-testid="event-picker-trigger"]');
+    const descriptionId = trigger.attributes("aria-describedby");
+    expect(trigger.attributes("aria-required")).toBeUndefined();
+    expect(wrapper.get(`#${descriptionId}`).text()).toBe("Обязательное поле");
+  });
+
   it("passes a debounced global query to the catalog loader", async () => {
     vi.useFakeTimers();
     const load = vi.fn().mockResolvedValue({ items: [], nextCursor: null });

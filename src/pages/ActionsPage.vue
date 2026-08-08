@@ -50,6 +50,8 @@ const executor = ref<ExecutorFilter>("ALL");
 const origin = ref<OriginFilter>("ALL");
 const selected = shallowRef<ProjectAction | null>(null);
 const elements = ref<UiElement[]>([]);
+const elementsLoading = ref(false);
+const elementsError = ref<string | null>(null);
 
 const projectId = computed(() => auth.project?.id ?? "");
 const effectivePermissionCodes = computed(
@@ -190,10 +192,15 @@ async function refresh() {
 
 async function loadElements(preserveOnError = false): Promise<void> {
   if (!projectId.value) return;
+  elementsLoading.value = true;
+  elementsError.value = null;
   try {
     elements.value = await repository.getElements(projectId.value);
   } catch {
     if (!preserveOnError) elements.value = [];
+    elementsError.value = "Не удалось загрузить каталог интерфейса.";
+  } finally {
+    elementsLoading.value = false;
   }
 }
 
@@ -643,6 +650,8 @@ function surfaceLabel(value: string): string {
         v-if="selected"
         :action="selected"
         :elements="elements"
+        :elements-loading="elementsLoading"
+        :elements-error="elementsError"
         :effective-permission-codes="effectivePermissionCodes"
         :preview="store.previewByAction[selected.id]"
         :preview-loading="store.previewLoadingByAction[selected.id]"
@@ -652,6 +661,7 @@ function surfaceLabel(value: string): string {
         @save="saveSelected"
         @archive="archiveSelected"
         @retry-preview="store.loadPreview(projectId, selected.id, true)"
+        @retry-elements="loadElements(true)"
       />
     </Dialog>
   </div>

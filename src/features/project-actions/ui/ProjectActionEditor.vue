@@ -40,6 +40,8 @@ import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
 const props = defineProps<{
   action: ProjectAction;
   elements?: UiElement[];
+  elementsLoading?: boolean;
+  elementsError?: string | null;
   effectivePermissionCodes: readonly string[];
   preview?: AiCapabilityPreview;
   previewLoading?: boolean;
@@ -51,6 +53,7 @@ const emit = defineEmits<{
   save: [input: ConfigureProjectActionInput];
   archive: [];
   retryPreview: [];
+  retryElements: [];
 }>();
 
 const draft = ref(createProjectActionDraft(props.action));
@@ -349,7 +352,10 @@ function confirmArchive() {
         :schema="action.actionTypeRevision.projectConfigSchema"
         :ui-schema="action.actionTypeRevision.uiSchema"
         :elements="elements"
+        :elements-loading="elementsLoading"
+        :elements-error="elementsError"
         :disabled="!canEditConfiguration"
+        @retry-elements="emit('retryElements')"
       />
     </section>
 

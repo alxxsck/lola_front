@@ -95,6 +95,7 @@ const visible = ref(false);
 const appendTarget = import.meta.env.MODE === "test" ? "self" : "body";
 const labelId = useId();
 const summaryId = useId();
+const requiredDescriptionId = useId();
 const searchInput = ref<HTMLInputElement | null>(null);
 const options = ref<CatalogPickerOption[]>([]);
 const draftValues = ref<string[]>([]);
@@ -296,12 +297,20 @@ watch(
     >
       {{ label }}
     </span>
+    <span
+      v-if="required"
+      :id="requiredDescriptionId"
+      class="catalog-picker__label--visually-hidden"
+    >
+      Обязательное поле
+    </span>
     <button
       type="button"
       class="catalog-picker__trigger"
       :data-testid="testId('trigger')"
       :disabled="disabled"
       :aria-labelledby="`${labelId} ${summaryId}`"
+      :aria-describedby="required ? requiredDescriptionId : undefined"
       aria-haspopup="dialog"
       :aria-expanded="visible"
       @click="open"

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   loadPreview: vi.fn(),
   configure: vi.fn(),
   archive: vi.fn(),
+  getElements: vi.fn(),
   toast: vi.fn(),
 }));
 
@@ -97,6 +98,9 @@ vi.mock("@/features/auth/auth.store", () => ({
 vi.mock("@/features/project-actions/model/project-actions.store", () => ({
   useProjectActionsStore: () => store,
 }));
+vi.mock("@/shared/api/repository", () => ({
+  repository: { getElements: mocks.getElements },
+}));
 vi.mock("primevue/usetoast", () => ({
   useToast: () => ({ add: mocks.toast }),
 }));
@@ -107,6 +111,7 @@ describe("ActionsPage", () => {
     mocks.ensureLoaded.mockResolvedValue(undefined);
     mocks.loadPreview.mockResolvedValue({ tool: null, issues: [] });
     mocks.configure.mockResolvedValue(action);
+    mocks.getElements.mockResolvedValue([]);
   });
 
   it("loads Project Actions and reconciles an OWNER edit through the domain store", async () => {
@@ -176,5 +181,35 @@ describe("ActionsPage", () => {
       "action-1",
       true,
     );
+  });
+
+  it("exposes a failed interface catalog load and retries it", async () => {
+    mocks.getElements
+      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockResolvedValueOnce([]);
+    const wrapper = shallowMount(ActionsPage, {
+      global: {
+        stubs: {
+          Dialog: {
+            props: ["visible"],
+            template: '<div v-if="visible"><slot /></div>',
+          },
+        },
+      },
+    });
+    await flushPromises();
+
+    const card = wrapper.getComponent(ProjectActionCard);
+    card.vm.$emit("select", action);
+    await flushPromises();
+    const editor = wrapper.getComponent(ProjectActionEditor);
+    expect(editor.props("elementsError")).toBe(
+      "Не удалось загрузить каталог интерфейса.",
+    );
+
+    editor.vm.$emit("retryElements");
+    await flushPromises();
+    expect(mocks.getElements).toHaveBeenCalledTimes(2);
+    expect(editor.props("elementsError")).toBeNull();
   });
 });
