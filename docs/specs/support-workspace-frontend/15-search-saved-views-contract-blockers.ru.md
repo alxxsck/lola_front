@@ -170,3 +170,24 @@ Prisma/build/lint, production bootstrap `/health` 200. PostgreSQL load: 20 001 D
 20 000 capacity risks, 500 operators, по 100 reads каждого типа при concurrency 10;
 capacity p95 216,8 мс, selected routing p95 23,8 мс. Финальные независимые
 spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 20 — permission-gated Inspector tabs
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `05bbbbd` убирает raw external identifiers из workspace/Case projections и
+публикует permission-safe Product Profile: closed `HIDDEN | VISIBLE(BASE | RESTRICTED)` policy,
+отдельные base/restricted Permissions, omission denied fields и permission-safe metadata/version.
+List и detail повторно проверяют current IAM в одной transaction; профиль и Events отдаются с
+`no-store`. Guarded rollout не расширяет managed-role privileges до явной activation.
+
+Для вкладки Events готов отдельный Case-scoped immutable recipe v1: payload-free allowlist,
+обязательное bounded 31-day окно, страница до 100 строк, signed recipe/IAM/project/case-bound cursor
+и PostgreSQL commit snapshot fence. Dedicated Inspector Permission не открывает raw Project event
+logs. Actor/Project rate budget возвращает typed 429, хранится в authoritative PostgreSQL и
+обслуживается отдельным bounded pool без starvation audited IAM transaction.
+
+Проверено: 540 clean migrations, build/TypeScript/Prisma/lint, targeted contracts и live HTTP/DB
+smoke с typed `200/400/401/403/404`. PostgreSQL load: 50 000 Events, из них 90% вне recipe,
+100 reads при concurrency 10 — p95 19,6 мс, deep page 5,0 мс; 100 rate admissions — p95 23,3 мс.
+Финальные независимые spec/standards/architecture/security/scalability review — CLEAN.
