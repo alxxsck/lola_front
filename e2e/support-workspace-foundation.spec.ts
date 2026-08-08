@@ -206,9 +206,11 @@ test("recovers an accepted reply after reload without creating a duplicate", asy
 test("keeps the selected operator workspace free of serious structural accessibility violations", async ({
   page,
 }) => {
-  await page
-    .getByRole("button", { name: /Бонусы и программа лояльности/ })
-    .click();
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  if ((page.viewportSize()?.width ?? 1_280) > 760)
+    await queue.locator(".search-result-row, .conversation-row").first().click();
+  await queue.locator(".inbox-tools__trigger").click();
+  await expect(queue.locator(".inbox-tools__panel")).toBeVisible();
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])
@@ -285,6 +287,7 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
 }) => {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   await expect(queue.getByRole("heading", { name: "Входящие" })).toBeVisible();
+  await queue.locator(".inbox-tools__trigger").click();
   await queue.getByRole("button", { name: "Новый поиск" }).click();
   await queue
     .getByRole("searchbox", { name: "Поиск по поддержке" })
@@ -336,7 +339,12 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/support/inbox");
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await queue.getByRole("button", { name: "Обращения" }).click();
+  await queue
+    .getByRole("button", { name: "Обращения", exact: true })
+    .click();
+  const searchToolsTrigger = queue.locator(".inbox-tools__trigger");
+  await expect(searchToolsTrigger).toHaveAttribute("aria-expanded", "false");
+  await searchToolsTrigger.click();
   await queue.getByRole("button", { name: "Новый поиск" }).click();
   await queue
     .getByRole("searchbox", { name: "Поиск по поддержке" })
@@ -374,6 +382,8 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
     expect(row.overlap).toBeLessThanOrEqual(1);
   }
 
+  await expect(searchToolsTrigger).toHaveAttribute("aria-expanded", "false");
+  await searchToolsTrigger.click();
   const saveView = queue.getByRole("button", { name: "Сохранить поиск" });
   await expect(saveView).toBeVisible();
   const saveViewAlignment = await saveView.evaluate((button) => {
@@ -510,7 +520,9 @@ test("restores typed inbox routes with Back and Forward and keeps a Case without
   page,
 }) => {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await queue.getByRole("button", { name: "Обращения" }).click();
+  await queue
+    .getByRole("button", { name: "Обращения", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
   await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
   await expect(page).toHaveURL(
@@ -520,7 +532,11 @@ test("restores typed inbox routes with Back and Forward and keeps a Case without
   await page.goBack();
   await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
   await expect(
-    queue.getByRole("button", { name: "Обращения", pressed: true }),
+    queue.getByRole("button", {
+      name: "Обращения",
+      exact: true,
+      pressed: true,
+    }),
   ).toBeVisible();
 
   await page.goForward();

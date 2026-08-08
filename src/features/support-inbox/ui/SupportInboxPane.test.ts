@@ -52,6 +52,21 @@ const unreadConversation: SupportInboxItem = {
   },
 };
 
+const systemView = {
+  code: "MY_ACTIVE" as const,
+  permitted: true,
+  surface: "CASES" as const,
+  scope: "SYSTEM" as const,
+  displayNameKey: "my-active",
+  count: { state: "EXACT" as const, value: 3, cappedAt: 100 },
+  freshness: {
+    state: "READY" as const,
+    lagSeconds: 0,
+    indexedThrough: "2026-08-08T10:00:00.000Z",
+    sourceWatermarks: {},
+  },
+};
+
 function render(overrides: Record<string, unknown> = {}) {
   return mount(SupportInboxPane, {
     props: {
@@ -92,6 +107,59 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SupportInboxPane", () => {
+  it("keeps search tools compact until the operator opens them", async () => {
+    const wrapper = render({ viewSystem: [systemView] });
+    const trigger = wrapper.get(".inbox-tools__trigger");
+
+    expect(trigger.attributes("aria-expanded")).toBe("false");
+    expect(wrapper.find(".inbox-tools__panel").exists()).toBe(false);
+    expect(trigger.text()).toContain("Поиск и представления");
+
+    await trigger.trigger("click");
+
+    expect(trigger.attributes("aria-expanded")).toBe("true");
+    expect(wrapper.get(".inbox-tools__panel").isVisible()).toBe(true);
+    expect(wrapper.text()).toContain("Мои обращения");
+    expect(wrapper.find("[data-support-search-input]").exists()).toBe(true);
+  });
+
+  it("shows the active view in the compact summary and collapses after selection", async () => {
+    const wrapper = render({
+      viewSystem: [systemView],
+      viewSelection: { kind: "SYSTEM", code: "MY_ACTIVE" },
+      viewActive: true,
+    });
+    const trigger = wrapper.get(".inbox-tools__trigger");
+
+    expect(trigger.text()).toContain("Мои обращения");
+    expect(trigger.text()).toContain("Системное представление");
+
+    await trigger.trigger("click");
+    await wrapper.get(".view-list button").trigger("click");
+
+    expect(wrapper.emitted("selectView")?.[0]).toEqual([
+      { kind: "SYSTEM", code: "MY_ACTIVE" },
+    ]);
+    expect(trigger.attributes("aria-expanded")).toBe("false");
+    expect(wrapper.find(".inbox-tools__panel").exists()).toBe(false);
+  });
+
+  it("summarizes active filters while their controls stay collapsed", () => {
+    const wrapper = render({
+      searchActive: true,
+      searchState: {
+        ...searchState,
+        filters: { priorities: ["HIGH"], assignmentStates: ["UNASSIGNED"] },
+      },
+    });
+    const trigger = wrapper.get(".inbox-tools__trigger");
+
+    expect(trigger.text()).toContain("Настроенный поиск");
+    expect(trigger.text()).toContain("Обращения · 2 фильтра");
+    expect(trigger.attributes("aria-expanded")).toBe("false");
+    expect(wrapper.find(".search-controls").exists()).toBe(false);
+  });
+
   it("renders the authoritative unread count without deriving it from time", () => {
     const wrapper = render({
       mode: "ALL_CONVERSATIONS",

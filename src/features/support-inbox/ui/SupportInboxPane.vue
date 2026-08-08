@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, nextTick, ref, watch } from "vue";
 import Skeleton from "primevue/skeleton";
 import type {
   SupportInboxItem,
@@ -21,7 +22,7 @@ import SupportViewsRail from "@/features/support-views/ui/SupportViewsRail.vue";
 import { relativeTime } from "@/shared/lib/format";
 import { slaSignalLabel } from "@/features/support-case-operations/model/support-case-operations";
 
-defineProps<{
+const props = defineProps<{
   mode: SupportInboxMode;
   items: readonly SupportInboxItem[];
   selectedKey?: string;
@@ -77,6 +78,109 @@ const emit = defineEmits<{
   defaultView: [selection: SupportViewSelection];
   customSearch: [];
 }>();
+
+const searchToolsExpanded = ref(false);
+const searchToolsPanel = ref<HTMLElement | null>(null);
+const searchToolsPanelId = "support-inbox-search-tools";
+const systemViewNames: Record<string, string> = {
+  MY_ACTIVE: "Мои обращения",
+  MY_TEAM_UNASSIGNED: "Неназначенные команды",
+  ALL_CASES: "Все обращения",
+  ALL_CONVERSATIONS: "Все диалоги",
+};
+const searchScopeNames = {
+  CASES: "Обращения",
+  CONVERSATIONS: "Диалоги",
+  MESSAGES: "Сообщения",
+  END_USERS: "Пользователи",
+} as const;
+
+const activeFilterCount = computed(() =>
+  Object.values(props.searchState.filters).reduce((total, value) => {
+    if (Array.isArray(value)) return total + value.length;
+    return value == null || value === "" ? total : total + 1;
+  }, 0),
+);
+
+const searchToolsTitle = computed(() => {
+  if (props.viewSelection?.kind === "SYSTEM")
+    return systemViewNames[props.viewSelection.code] ?? "Представление";
+  if (props.viewSelection?.kind === "SAVED") {
+    const selectedId = props.viewSelection.id;
+    return (
+      props.viewSaved.find((item) => item.id === selectedId)?.draft.displayName ??
+      "Сохранённое представление"
+    );
+  }
+  if (props.searchState.phrase.trim())
+    return `Поиск: ${props.searchState.phrase.trim()}`;
+  if (props.searchActive) return "Настроенный поиск";
+  return "Поиск и представления";
+});
+
+function filterCountLabel(count: number): string {
+  const lastTwo = count % 100;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} фильтров`;
+  const last = count % 10;
+  if (last === 1) return `${count} фильтр`;
+  if (last >= 2 && last <= 4) return `${count} фильтра`;
+  return `${count} фильтров`;
+}
+
+const searchToolsDescription = computed(() => {
+  if (props.viewSelection?.kind === "SYSTEM") return "Системное представление";
+  if (props.viewSelection?.kind === "SAVED")
+    return "Сохранённое представление";
+  if (props.searchActive) {
+    const count = activeFilterCount.value;
+    const filters = count ? ` · ${filterCountLabel(count)}` : "";
+    return `${searchScopeNames[props.searchState.scope]}${filters}`;
+  }
+  return "Найти чат или настроить очередь";
+});
+
+function toggleSearchTools(): void {
+  searchToolsExpanded.value = !searchToolsExpanded.value;
+}
+
+function handleSelectView(selection: SupportViewSelection): void {
+  searchToolsExpanded.value = false;
+  emit("selectView", selection);
+}
+
+function handleSubmitSearch(state: SupportSearchRouteState): void {
+  searchToolsExpanded.value = false;
+  emit("submitSearch", state);
+}
+
+function handleCloseSearch(): void {
+  searchToolsExpanded.value = false;
+  emit("closeSearch");
+}
+
+function handleCustomSearch(): void {
+  searchToolsExpanded.value = true;
+  emit("customSearch");
+}
+
+function openSearchTools(options: { focusSearch?: boolean } = {}): void {
+  searchToolsExpanded.value = true;
+  if (!options.focusSearch) return;
+  void nextTick(() => {
+    searchToolsPanel.value
+      ?.querySelector<HTMLInputElement>("[data-support-search-input]")
+      ?.focus({ preventScroll: true });
+  });
+}
+
+watch(
+  () => props.viewConflict,
+  (conflict) => {
+    if (conflict) searchToolsExpanded.value = true;
+  },
+);
+
+defineExpose({ openSearchTools });
 
 function searchKind(value: SupportSearchResult["kind"]): string {
   return {
@@ -188,35 +292,75 @@ function unreadLabel(
       </button>
     </div>
 
-    <SupportViewsRail
+    <section
       v-if="canSearch"
-      :system="viewSystem"
-      :saved="viewSaved"
-      :selection="viewSelection"
-      :search-scope="searchState.scope"
-      :can-create="viewCanCreate"
-      :can-manage-all="viewCanManageAll"
-      :mutating="viewMutating"
-      :conflict="viewConflict"
-      @select="emit('selectView', $event)"
-      @create="emit('createView', $event)"
-      @replace="emit('replaceView', $event)"
-      @publish="emit('publishView', $event)"
-      @archive="emit('archiveView', $event)"
-      @set-default="emit('defaultView', $event)"
-      @custom-search="emit('customSearch')"
-    />
+      class="inbox-tools"
+      aria-label="Поиск и представления"
+    >
+      <button
+        type="button"
+        class="inbox-tools__trigger"
+        :class="{ active: searchActive || viewActive }"
+        :aria-expanded="searchToolsExpanded"
+        :aria-controls="searchToolsPanelId"
+        @click="toggleSearchTools"
+      >
+        <span class="inbox-tools__icon" aria-hidden="true">
+          <i :class="viewActive ? 'pi pi-bookmark' : 'pi pi-search'" />
+        </span>
+        <span class="inbox-tools__copy">
+          <strong>{{ searchToolsTitle }}</strong>
+          <small>{{ searchToolsDescription }}</small>
+        </span>
+        <span
+          v-if="!searchActive && !viewActive"
+          class="inbox-tools__shortcut"
+          aria-hidden="true"
+          >⌘ K</span
+        >
+        <i
+          class="pi pi-chevron-down inbox-tools__chevron"
+          aria-hidden="true"
+        />
+      </button>
 
-    <SupportSearchToolbar
-      v-if="canSearch"
-      :model-value="searchState"
-      :active="searchActive"
-      :loading="searchLoading"
-      :locked="viewActive"
-      @update:model-value="emit('changeSearch', $event)"
-      @submit="emit('submitSearch', $event)"
-      @close="emit('closeSearch')"
-    />
+      <Transition name="inbox-tools-panel">
+        <div
+          v-if="searchToolsExpanded"
+          :id="searchToolsPanelId"
+          ref="searchToolsPanel"
+          class="inbox-tools__panel"
+        >
+          <SupportViewsRail
+            :system="viewSystem"
+            :saved="viewSaved"
+            :selection="viewSelection"
+            :search-scope="searchState.scope"
+            :can-create="viewCanCreate"
+            :can-manage-all="viewCanManageAll"
+            :mutating="viewMutating"
+            :conflict="viewConflict"
+            @select="handleSelectView"
+            @create="emit('createView', $event)"
+            @replace="emit('replaceView', $event)"
+            @publish="emit('publishView', $event)"
+            @archive="emit('archiveView', $event)"
+            @set-default="emit('defaultView', $event)"
+            @custom-search="handleCustomSearch"
+          />
+
+          <SupportSearchToolbar
+            :model-value="searchState"
+            :active="searchActive"
+            :loading="searchLoading"
+            :locked="viewActive"
+            @update:model-value="emit('changeSearch', $event)"
+            @submit="handleSubmitSearch"
+            @close="handleCloseSearch"
+          />
+        </div>
+      </Transition>
+    </section>
 
     <div
       v-if="searchActive || viewActive"
@@ -584,6 +728,129 @@ function unreadLabel(
   font-size: 0.82rem;
   line-height: 1;
 }
+.inbox-tools {
+  margin: 0 12px 10px;
+  display: grid;
+  gap: 8px;
+}
+.inbox-tools__trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 7px 9px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.inbox-tools__trigger:hover {
+  background: var(--surface-muted);
+}
+.inbox-tools__trigger.active {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
+}
+.inbox-tools__trigger:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.inbox-tools__trigger:active {
+  transform: scale(0.99);
+}
+.inbox-tools__icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+.inbox-tools__trigger.active .inbox-tools__icon {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.inbox-tools__icon i {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.inbox-tools__copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+.inbox-tools__copy strong,
+.inbox-tools__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-tools__copy strong {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.inbox-tools__copy small {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.inbox-tools__shortcut {
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.inbox-tools__chevron {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1;
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.inbox-tools__trigger[aria-expanded="true"] .inbox-tools__chevron {
+  transform: rotate(180deg);
+}
+.inbox-tools__panel {
+  max-height: min(56vh, 520px);
+  padding: 1px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.inbox-tools__panel :deep(.views-rail) {
+  margin: 0 0 8px;
+}
+.inbox-tools__panel :deep(.search-rail) {
+  margin: 0;
+}
+.inbox-tools-panel-enter-active,
+.inbox-tools-panel-leave-active {
+  transition:
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.inbox-tools-panel-enter-from,
+.inbox-tools-panel-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
 .inbox-list {
   min-height: 0;
   flex: 1;
@@ -947,6 +1214,20 @@ function unreadLabel(
   .inbox-modes button {
     min-height: 44px;
     font-size: 0.82rem;
+  }
+  .inbox-tools__trigger {
+    min-height: 52px;
+  }
+  .inbox-tools__panel {
+    max-height: 60vh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inbox-tools__trigger,
+  .inbox-tools__chevron,
+  .inbox-tools-panel-enter-active,
+  .inbox-tools-panel-leave-active {
+    transition-duration: 0.01ms;
   }
 }
 </style>

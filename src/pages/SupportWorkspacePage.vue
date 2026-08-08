@@ -311,6 +311,7 @@ const supportSearchRouteKeys = new Set([
 ]);
 let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
+const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(null);
 const supportContext = ref<InstanceType<
   typeof SupportConversationContext
 > | null>(null);
@@ -1173,6 +1174,7 @@ async function startCustomSupportSearch(): Promise<void> {
   searchOpen.value = true;
   await supportViews.clearSelection();
   await syncSupportSearchRoute(searchState.value);
+  supportInboxPane.value?.openSearchTools({ focusSearch: true });
 }
 
 async function createSupportView(value: {
@@ -1486,11 +1488,7 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault();
     searchOpen.value = true;
-    void nextTick(() =>
-      document
-        .querySelector<HTMLInputElement>("[data-support-search-input]")
-        ?.focus({ preventScroll: true }),
-    );
+    supportInboxPane.value?.openSearchTools({ focusSearch: true });
     return;
   }
   if (
@@ -2404,6 +2402,7 @@ onBeforeUnmount(() => {
         }"
       >
         <SupportInboxPane
+          ref="supportInboxPane"
           :mode="inboxMode"
           :items="inbox.items.value"
           :selected-key="selectedInboxKey"
