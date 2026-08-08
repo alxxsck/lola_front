@@ -147,3 +147,26 @@ initial batches по 50, concurrency 5, p95 10215,4 мс, typed conflicts вос
 outcome lookup 48,2 мс. Candidate gate: 20k Cases, 500 operators/2000 Team bindings, 100 concurrent
 reads, p95 1060,5 мс, payload 724275 bytes. Финальные независимые
 spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 19 — SLA, routing и availability context
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `442d185` публикует typed `slaSignal` для каждой строки unified `CASES` Inbox
+одним bounded batch-read; selected-Case включает response/resolution clocks, waiting/pause/breach
+semantics, rollout/freshness и action ETag. SHADOW/degraded SLA остаётся явно маркированным и не
+может быть подписан UI как contractual.
+
+Selected-Case routing context возвращает одну server-proven causal chain: current Queue/Decision,
+eligibility/exclusion counts, offer/reservation и typed evaluation/fallback/exhausted/degraded
+state. Visibility разделена на Lead `FULL`, own-safe operator `OWN` и `NONE`; candidate identities
+не раскрываются без Lead authority. LIVE work fenced current activation и имеет deterministic
+owner priority над SHADOW. Lead investigation содержит те же routing facts, а `CAPACITY_RISKS`
+использует Project-shared immutable snapshot, signed IAM-bound cursor и bounded cleanup/admission.
+Skill/language capacity не заявлена доступной без отдельной authoritative projection.
+
+Проверено: полный repo test suite без failures, 129 targeted tests, 537 clean migrations,
+Prisma/build/lint, production bootstrap `/health` 200. PostgreSQL load: 20 001 Decisions,
+20 000 capacity risks, 500 operators, по 100 reads каждого типа при concurrency 10;
+capacity p95 216,8 мс, selected routing p95 23,8 мс. Финальные независимые
+spec/standards/architecture/security/scalability review — CLEAN.

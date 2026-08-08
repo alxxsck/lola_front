@@ -4,10 +4,12 @@
 
 **Blocked by:** 02 — Синхронизировать inbox, Case и workforce-контракты; 16 — Завершить Case workflow и классификацию.
 
-**Status:** partially-blocked-by-backend
+**Status:** ready-for-frontend
 
-**Backend gate (audit 2026-08-07):** own availability/offers доступны; selected-Case SLA
-clocks, routing reason/reservation и live capacity projection отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#19--sla-routing-и-availability-context).
+**Backend gate (resolved 2026-08-08):** backend `main` `442d185` публикует typed SLA signal
+для unified Inbox, selected-Case response/resolution clocks с action ETag, privacy-scoped current
+routing context (`FULL | OWN | NONE`), Lead investigation routing facts и snapshot-paginated
+current capacity risks. Блокер снят; задачу можно брать в frontend-разработку. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#19--sla-routing-и-availability-context).
 
 - [ ] Inspector показывает queue, routing reason, team/skills eligibility и assignment offer/reservation state.
 - [ ] Availability/capacity не выводятся из socket online или presence.

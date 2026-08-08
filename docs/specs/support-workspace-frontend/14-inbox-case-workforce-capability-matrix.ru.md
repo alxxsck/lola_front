@@ -3,9 +3,10 @@
 Статус: normative baseline для frontend Task 02
 Версия: 1
 Дата: 7 августа 2026 года
-Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
+Backend source: `442d185dfb6cd6c9ac9902b7cfbb167291d249b6`
 Assignment contract update: `bdf8116`
-Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b55647719a948aa0e`
+SLA/routing context update: `442d185`
+Pinned contract: `sha256:947ab0cb385be59df088076579d339d236cdc4c8bf4888fcebf7677915921d01`
 
 Документ отделяет опубликованный transport contract от возможности построить
 безопасный UI. `READY` означает полный typed contract. `RELEASE_GATED` требует
@@ -17,7 +18,7 @@ DTO, N+1-запросами или вычислением в браузере.
 
 | Capability                             | Operation / bounds                                                                             | Permission                                            | Authority / revision                                                | Status                                                                          |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Cases inbox                            | `SupportWorkspace_read`, `mode=CASES`, cursor ≤ 2048, limit ≤ 100                              | `project.cases.read` или `project.conversations.read` | только bounded Case row: state, priority, group, attention, version | `READY`; row не содержит assignment, unread, waiting или SLA                    |
+| Cases inbox                            | `SupportWorkspace_read`, `mode=CASES`, cursor ≤ 2048, limit ≤ 100                              | `project.cases.read` или `project.conversations.read` | bounded Case row + typed most-important `slaSignal` одним batch-read | `READY`; SLA rollout/freshness и semantic state server-owned                    |
 | Conversations inbox                    | `SupportWorkspace_read`, `mode=ALL_CONVERSATIONS`, cursor ≤ 2048, limit ≤ 100                  | как у workspace                                       | bounded Conversation metadata                                       | `READY`                                                                         |
 | Расширенный Case list                  | `EndUserCases_list`, cursor ≤ 2048, limit ≤ 100                                                | `project.cases.read`                                  | server filters и sort                                               | `READY`, legacy read projection                                                 |
 | Conversation list                      | `AdminProjectConversations_list`, cursor ≤ 1024, limit ≤ 100                                   | `project.conversations.read`                          | status и exact End User filters                                     | `READY`, без Case/SLA semantics                                                 |
@@ -77,7 +78,7 @@ Backend gates: `SUPPORT_PLATFORM_WORKFORCE_API_ENABLED` и
 | Lead override          | `SupportOperatorAvailability_overrideOperator`         | override          | `If-Match`, idempotency, audited reason                  | command published; eligible operator catalog `NOT_PUBLISHED` |
 | Teams/skills/workforce | `SupportWorkforce_getWorkforce/listTeams/listSkills`   | teams read/manage | root version, `sw1` ETag, immutable published revision   | `RELEASE_GATED`                                              |
 | Capacity configuration | Workforce operator `maxCapacityUnits`                  | teams manage      | versioned configuration                                  | `READY` как config, не live utilization                      |
-| Case-desk workload     | операции нет                                           | не опубликовано   | live load/capacity evidence отсутствует                  | `NOT_PUBLISHED`                                              |
+| Case-desk workload     | `SupportLead_read`, `view=CAPACITY_RISKS`              | Lead Control read | current causal gap, immutable snapshot, signed cursor    | `READY` для Team/Queue gap; skill/language честно unavailable |
 
 Availability никогда не выводится из socket online или browser presence.
 
@@ -87,11 +88,11 @@ Availability никогда не выводится из socket online или br
 | --------------------------------------- | ------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
 | Queue catalog/cases                     | `SupportQueue_list/cases`                         | queues read/manage            | queue revision/generation, freshness, high-water, bounded cursor | `RELEASE_GATED`                                               |
 | Queue SLA signal                        | `SupportQueueEntryResponseDto.slaDueAt`           | queue authority               | nullable deadline без clock explanation                          | `READY` только как sparse queue signal                        |
-| Routing investigation                   | `SupportRoutingRuntime_decisionDetail/activation` | routing read/manage           | queue/policy/workforce revisions, hashes, algorithm revision     | `RELEASE_GATED`; candidate details частично arbitrary objects |
-| Current-Case routing reason/reservation | projection отсутствует                            | не опубликовано               | Case не связан с typed decision/reservation                      | `NOT_PUBLISHED`                                               |
+| Routing investigation                   | `SupportLead_read(INVESTIGATION)`                  | Lead Control read             | current typed routing facts + bounded evidence                    | `READY`; FULL Lead visibility                                  |
+| Current-Case routing reason/reservation | `SupportWorkspace_read`, `mode=SELECTION`          | routing read/manage или own receive | causal Decision, Queue, eligibility, offer/reservation/fallback | `READY`; privacy scopes `FULL \| OWN \| NONE`                 |
 | SLA settings                            | `SupportSlaConfiguration_read`                    | SLA read/manage               | root version, `ssla1` ETag, rollout, checkpoint                  | `READY` для settings                                          |
 | SLA correction                          | `SupportSlaHumanCommand_correctClock`             | `project.support.sla.correct` | `sslah1` ETag, idempotency, typed conflicts                      | command published                                             |
-| Selected-Case SLA clocks                | workspace DTO / read operation отсутствуют        | не опубликовано               | clock/action ETag не доступен generated client                   | `NOT_PUBLISHED`                                               |
+| Selected-Case SLA clocks                | `SupportWorkspace_read`, `mode=SELECTION`          | SLA read + Case authority     | response/resolution clocks, waiting/pause/breach, action ETag    | `READY`; SHADOW/degraded явно маркирован                       |
 
 Queue freshness values: `READY`, `BUILDING`, `DEGRADED`. Routing `outcome`
 пока просто string; неизвестное значение нельзя превращать в success.
@@ -110,8 +111,6 @@ force и unknown-outcome fixtures могут переходить на published
 | Gap                                                         | Следующий owner                     |
 | ----------------------------------------------------------- | ----------------------------------- |
 | typed search/Saved View responses и закрытая filter grammar | backend search + Task 11            |
-| live capacity, current routing reason/reservation           | backend workforce/routing + Task 19 |
-| selected-Case SLA clock projection/action ETag              | backend SLA/workspace + Task 19     |
 
 Task 02 не реализует inbox UI, Case actions или settings. Он фиксирует границу,
 после которой Tasks 09–11 и 16–19 могут работать без client-derived truth.

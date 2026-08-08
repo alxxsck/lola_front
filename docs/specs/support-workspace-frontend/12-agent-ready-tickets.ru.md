@@ -13,12 +13,12 @@ criteria и прямые блокирующие зависимости. Посл
 ## Актуальные backend execution gates
 
 Источник истины: [аудит backend-блокеров 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md),
-backend `main` `3791c37bf7c3f70f1114b16682ef643fc62107af`, OpenAPI SHA-256
-`dda53093e2be430610e308265d490f77d5869ac1947e489a1cc2572d6a8c43b7`.
+backend `main` `442d185dfb6cd6c9ac9902b7cfbb167291d249b6`, OpenAPI SHA-256
+`947ab0cb385be59df088076579d339d236cdc4c8bf4888fcebf7677915921d01`.
 
-- **Нет прямого backend-блокера:** 01–13, 20, 27.
-- **Можно делать только незаблокированную часть:** 15–19, 22, 24–26.
-- **Полный backend blocker:** 14, 21, 23, 30–38.
+- **Нет прямого backend-блокера:** 01–20.
+- **Можно делать только незаблокированную часть:** 22, 24–26.
+- **Полный backend blocker:** 21, 23, 27, 30–38.
 - **Транзитивный blocker через core:** 28–29.
 
 Статус и точное условие снятия gate продублированы в каждом соответствующем
@@ -48,12 +48,12 @@ backend 31–35; legacy Case policy и raw JSON editor эти gates не сни�
 | 11  | Saved Views                                              | 02, 09                           | [Открыть](../../../.scratch/support-workspace/issues/11-add-saved-support-views.md)                      |
 | 12  | Tablet/mobile route stack                                | 08, 09                           | [Открыть](../../../.scratch/support-workspace/issues/12-finish-responsive-route-stack.md)                |
 | 13  | Durable send и idempotency recovery — выполнено          | 01, 06                           | [Открыть](../../../.scratch/support-workspace/issues/13-add-durable-send-idempotency-recovery.md)        |
-| 14  | Read/unread и first-unread                               | 01, 06 + backend full            | [Открыть](../../../.scratch/support-workspace/issues/14-add-read-unread-first-unread.md)                 |
-| 15  | Delivery и reconnect reconciliation                      | 01, 13 + backend partial         | [Открыть](../../../.scratch/support-workspace/issues/15-add-delivery-reconnect-reconciliation.md)        |
-| 16  | Case workflow и классификация                            | 02, 09 + backend partial         | [Открыть](../../../.scratch/support-workspace/issues/16-complete-case-workflow-classification.md)        |
-| 17  | Действия оператора с назначением                         | 02, 16 + backend partial         | [Открыть](../../../.scratch/support-workspace/issues/17-complete-operator-assignment-actions.md)         |
+| 14  | Read/unread и first-unread — backend ready               | 01, 06                           | [Открыть](../../../.scratch/support-workspace/issues/14-add-read-unread-first-unread.md)                 |
+| 15  | Delivery и reconnect reconciliation — backend ready      | 01, 13                           | [Открыть](../../../.scratch/support-workspace/issues/15-add-delivery-reconnect-reconciliation.md)        |
+| 16  | Case workflow и классификация — backend ready            | 02, 09                           | [Открыть](../../../.scratch/support-workspace/issues/16-complete-case-workflow-classification.md)        |
+| 17  | Действия оператора с назначением — backend ready         | 02, 16                           | [Открыть](../../../.scratch/support-workspace/issues/17-complete-operator-assignment-actions.md)         |
 | 18  | Назначение и override для лида — backend ready `9a93282` | 02, 16, 17                       | [Открыть](../../../.scratch/support-workspace/issues/18-add-lead-assignment-overrides.md)                |
-| 19  | SLA, routing и availability                              | 02, 16 + backend partial         | [Открыть](../../../.scratch/support-workspace/issues/19-add-sla-routing-availability-context.md)         |
+| 19  | SLA, routing и availability — backend ready `442d185`    | 02, 16                           | [Открыть](../../../.scratch/support-workspace/issues/19-add-sla-routing-availability-context.md)         |
 | 20  | Permission-gated inspector tabs                          | 02, 16; direct API ready         | [Открыть](../../../.scratch/support-workspace/issues/20-add-sensitive-inspector-tabs.md)                 |
 | 21  | Viewers, typing и collision warning                      | 01, 06 + backend full            | [Открыть](../../../.scratch/support-workspace/issues/21-add-viewers-typing-collision-warning.md)         |
 | 22  | Internal-note composer mode                              | 03, 06 + backend partial         | [Открыть](../../../.scratch/support-workspace/issues/22-integrate-internal-note-composer-mode.md)        |

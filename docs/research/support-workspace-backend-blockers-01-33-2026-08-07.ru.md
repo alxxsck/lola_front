@@ -84,8 +84,8 @@ single-command outcome lookup; safe Lead target catalog и полная Lead tim
 
 ## Итоговая карта
 
-Сводно с учётом оперативных обновлений: **19** задач не имеют прямого backend-блокера, **7** имеют
-полный blocker, **5** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через
+Сводно с учётом оперативных обновлений: **20** задач не имеют прямого backend-блокера, **7** имеют
+полный blocker, **4** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через
 core.
 
 |   № | Задача                                   | Backend-статус                          | Что именно мешает полному завершению                                                |
@@ -108,16 +108,16 @@ core.
 |  16 | Case workflow/classification             | Нет (снят `2113c99`)                    | Полный server-owned workflow/classification contract опубликован                    |
 |  17 | Operator assignment actions              | Нет (снят `bdf8116`)                    | Case-scoped eligible targets и typed offer errors опубликованы                      |
 |  18 | Lead assignment overrides                | Нет (снят `9a93282`)                    | Force/bulk/outcome/target contracts опубликованы                                    |
-|  19 | SLA/routing/availability context         | **Частичный**                           | Нет selected-Case clocks, current routing reason/reservation и live load projection |
+|  19 | SLA/routing/availability context         | Нет (снят `442d185`)                    | Typed Inbox/selected-Case SLA, routing context и capacity risks опубликованы         |
 |  20 | Sensitive inspector tabs                 | Нет прямого; наследует 16               | Нужные profile/event/activity reads опубликованы; Case mutations ждут 16            |
 |  21 | Viewers/typing/collision                 | **Полный**                              | Нет operator watch/viewer/typing TTL/generation contract                            |
 |  22 | Internal-note composer                   | **Частичный**                           | Нет Case-scoped note actions, reason catalog и typed conflict/lifecycle errors      |
 |  23 | Public/note attachments                  | **Полный**                              | Нет upload/scan/grant/attachment-send контрактов                                    |
 |  24 | Support Macros                           | **Частичный**                           | Нет полного preview/history/rollback и typed failure/provenance read contract       |
 |  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract    |
-|  26 | Lead Control                             | **Частичный**                           | Capacity/routing facts и отдельный project rollout/admission ещё не опубликованы    |
+|  26 | Lead Control                             | **Частичный**                           | Capacity/routing facts готовы; отдельный project rollout/admission ещё не опубликован |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
-|  28 | Legacy entry-point cutover               | **Частичный, транзитивный**             | Core cutover ждёт незакрытые backend gaps 10–19; нет project shell rollout contract |
+|  28 | Legacy entry-point cutover               | **Частичный, транзитивный**             | Backend gaps 10–19 сняты; нет project shell rollout contract                        |
 |  29 | Pilot/rollback hardening                 | **Частичный, транзитивный**             | Pilot ждёт core cutover и typed project rollout/admission                           |
 |  30 | JSM/HelpDesk contract sync               | **Полный**                              | External Work существует только как нормативная спека, API отсутствует              |
 |  31 | Integration Settings/External Work       | **Полный**                              | Нет connection/catalog/mapping/inbox/receipt APIs                                   |
@@ -401,27 +401,27 @@ outcome lookup 48,2 мс. Candidate gate: 20k Cases/500 operators/2000 bindings/
 
 ### 19 — SLA, routing и availability context
 
-**Статус: частичный backend-блокер.**
+**Статус: backend-блокер снят в `442d185`; проверено, можно брать задачу 19 в
+frontend-разработку.**
 
-Готово: queue catalog/cases, sparse `SupportQueueEntryResponseDto.slaDueAt`, routing policy/decision
-admin reads, own offers, availability reads/mutations и SLA settings/human correction commands.
+Unified `CASES` Inbox публикует typed наиболее важный `slaSignal` одним bounded batch-read.
+Selected-Case содержит response/resolution clocks, waiting/pause/breach state, rollout/freshness и
+action ETag. Routing context возвращает current causal Queue/Decision, eligibility counts,
+offer/reservation и typed evaluation/fallback/exhausted/degraded state с privacy scopes
+`FULL | OWN | NONE`; LIVE fenced current activation и имеет owner priority над SHADOW.
 
-Не хватает:
+Lead investigation публикует routing facts. `CAPACITY_RISKS` доступен через immutable
+Project-shared snapshot и signed IAM-bound cursor с bounded admission/cleanup. Skill/language
+capacity остаётся честно `UNAVAILABLE`, пока для неё нет отдельной authoritative projection.
 
-- selected-Case response/resolution clocks, pause/resume/breach state и action ETag;
-- current Case routing reason, queue decision, candidates, offer/reservation/fallback projection;
-- live current load/capacity/eligibility projection для Case desk;
-- production capacity risks: `SupportLeadCapacityRisksDataDto.state` сейчас только `UNAVAILABLE`,
-  `items.maxItems=0`;
-- routing facts в Case investigation не опубликованы как данные:
-  `SupportLeadInvestigationDataDto.routingFactsState` имеет единственное значение
-  `UNAVAILABLE` и не связан typed identity с selection.
+Проверено: полный repo test suite без failures, 129 targeted tests, 537 clean migrations,
+Prisma/build/lint, production bootstrap `/health` 200. PostgreSQL load: 20 001 Decisions,
+20 000 capacity risks, 500 operators, по 100 reads каждого типа, concurrency 10;
+capacity p95 216,8 мс, selected routing p95 23,8 мс. Независимые
+spec/standards/architecture/security/scalability review — CLEAN.
 
-Что может frontend сейчас: own availability, queue/admin routing surfaces, own offers и sparse queue
-deadline. Полный Case inspector и SLA signal в unified inbox сделать нельзя.
-
-Evidence: `SupportQueueEntryResponseDto`, `SupportOperatorAvailabilityResponseDto`,
-`SupportLeadCapacityRisksDataDto`, `SupportRoutingDecision*`, `SupportSla*`.
+Evidence: `SupportWorkspace_read`, `PrismaSupportSlaCaseRead`,
+`PrismaSupportCaseRoutingContextRead`, `SupportLead_read(CAPACITY_RISKS|INVESTIGATION)`.
 
 ### 20 — Permission-gated inspector tabs
 
@@ -588,8 +588,7 @@ Evidence: `docs/specs/support-platform/20-personal-browser-notifications.ru.md`,
 
 **Статус: частичный транзитивный backend-блокер.**
 
-Сам redirect/deep-link adapter является frontend work. Но production core cutover по dependency
-list ticket ждёт полноту 10–20. Backend gaps задач 10, 11, 13, 14, 15, 16, 17, 18 и 19 поэтому
+Сам redirect/deep-link adapter является frontend work. Backend gaps задач 10–19 сняты и больше не
 блокируют завершение 28. Задачи 21–27 и 30–33 по принятому scope core cutover не блокируют.
 
 Дополнительно не опубликован typed project-level rollout/admission
@@ -692,8 +691,8 @@ schemas.
 2. **Messaging recovery/read state** — idempotency outcome lookup, reader high-water/unread/first
    unread, delivery lookup/retry, typed realtime admission. Разблокирует 13–15.
 3. **Case desk authority** — workflow/classification закрыты в `2113c99`, operator assignment — в
-   `bdf8116`, Lead force/bulk/outcome/targets — в `9a93282`; остаётся selected-Case
-   SLA/routing/load projection. Разблокирует 19 и оставшуюся часть 26.
+   `bdf8116`, Lead force/bulk/outcome/targets — в `9a93282`, selected-Case SLA/routing/load
+   projection — в `442d185`. Задача 19 разблокирована; для 26 остаётся project rollout/admission.
 4. **Collaboration/files/content completion** — typing/viewers contract, Message/Note attachments,
    note actions, Macro/Knowledge missing lifecycle/error/provenance contracts. Разблокирует 21–25.
 5. **Project rollout** — typed Support Workspace/Lead Control admission для 28–29.
