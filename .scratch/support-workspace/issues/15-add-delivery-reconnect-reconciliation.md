@@ -4,14 +4,15 @@
 
 **Blocked by:** 01 — Синхронизировать workspace и messaging-контракты; 13 — Добавить durable send и idempotency recovery.
 
-**Status:** partially-blocked-by-backend
+**Status:** ready-for-frontend
 
-**Backend gate (audit 2026-08-07):** REST delivery/reconcile можно реализовать, но ticket
-нельзя закрыть без delivery/outcome lookup-retry и typed realtime contract. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#15--delivery-и-reconnect-reconciliation).
+**Backend gate (проверено 2026-08-08):** снят backend `main` `0f5404f`. Опубликованы
+authoritative delivery receipt, безопасный lookup/retry, полный typed realtime contract и bounded
+REST reconciliation contract. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#15--delivery-и-reconnect-reconciliation).
 
-- [ ] `Accepted / Delivered / Read / Failed` показываются только для релевантного исходящего Message.
-- [ ] Delivery state не откатывается назад из-за out-of-order события.
-- [ ] Checkpoint gap запускает bounded REST reconcile.
-- [ ] Realtime остаётся hint, а REST projection побеждает конфликтующее событие.
-- [ ] Selection/project generation guards игнорируют устаревший response.
-- [ ] Ошибка доставки остаётся рядом с Message и предлагает безопасный lookup/retry path.
+- [x] `Accepted / Delivered / Read / Failed` показываются только для релевантного исходящего Message.
+- [x] Delivery state не откатывается назад из-за out-of-order события.
+- [x] Checkpoint gap запускает bounded REST reconcile.
+- [x] Realtime остаётся hint, а REST projection побеждает конфликтующее событие.
+- [x] Selection/project generation guards игнорируют устаревший response.
+- [x] Ошибка доставки остаётся рядом с Message и предлагает безопасный lookup/retry path.

@@ -87,8 +87,8 @@ Surface states и e2e без дублирования Message.
 | 11 | Saved Views | Нет (снят `9da7bc9`) | Typed Saved Views/presets/count/freshness опубликованы |
 | 12 | Responsive route stack | Нет | Frontend routing/layout |
 | 13 | Durable send/idempotency recovery | Нет (снят `3791c37`); frontend complete | `AdminMessaging_lookupOutcome` опубликован и подключён |
-| 14 | Read/unread/first-unread | **Полный** | Нет reader-scoped read position, unread projection и monotonic ACK |
-| 15 | Delivery/reconnect reconciliation | **Частичный** | Нет lookup/retry command и опубликованного typed realtime contract |
+| 14 | Read/unread/first-unread | Нет (снят `75739a1`) | Reader-scoped read state и monotonic ACK опубликованы |
+| 15 | Delivery/reconnect reconciliation | Нет (снят `0f5404f`) | Lookup/retry и полный typed realtime contract опубликованы |
 | 16 | Case workflow/classification | **Частичный** | Нет priority floor, action-level authority, confidence/evidence и typed audit/errors |
 | 17 | Operator assignment actions | **Частичный** | Нет Case-scoped eligible Team/operator targets и typed offer errors |
 | 18 | Lead assignment overrides | **Частичный** | Нет eligible targets, explicit override action, bulk receipt и outcome lookup |
@@ -288,29 +288,33 @@ index-backed load gate на 20k Conversations и 10k Messages, локальны�
 
 ### 15 — Delivery и reconnect reconciliation
 
-**Статус: частичный backend-блокер.**
+**Статус: backend-блокер снят; готово, можно проверять и брать в frontend-разработку.**
 
-Готово: `AdminMessageDeliveryResponseDto` публикует `PENDING`, `DELIVERING`, `DELIVERED`, `READ`,
-`FAILED`, `CANCELLED`, `NOT_REDELIVERED`; history/send и workspace checkpoint позволяют bounded REST
-reconcile.
+Backend `main` `0f5404f` публикует authoritative delivery receipt с `generation`, `version`,
+`errorCode`, `retryEligible` и `allowedActions` в history/send/lookup/workspace. Статусы
+`PENDING`, `DELIVERING`, `DELIVERED`, `READ`, `FAILED` и `CANCELLED` принадлежат server projection;
+HTTP success не означает `DELIVERED`.
 
-Не хватает:
+Безопасный retry выполняется через `AdminMessaging_retryFailedDelivery` с `Idempotency-Key`, точными
+`expectedGeneration/expectedVersion`, actor/tenant scope и permission `project.conversations.reply`.
+Неизвестный outcome не становится retryable; stale, ambiguous и idempotency-conflict ответы typed.
 
-- отдельной delivery lookup/retry command с declared intent и idempotency;
-- outcome lookup после timeout;
-- опубликованного frontend transport contract для
-  `conversation.message/delivery/translation.upserted.v1` с version/generation/revoke semantics.
+`SupportRealtime_deliveryContract` публикует event names и OpenAPI schema refs для Message upsert,
+Translation upsert, Delivery upsert и Delivery revoke. Delivery merge key —
+`(generation, version, operationPrecedence)`; revoke побеждает upsert при равном ключе.
+`eventSequence` scoped на Conversation и используется только как gap hint. Любой gap/reconnect
+запускает bounded `SupportWorkspace_read`, а REST всегда побеждает realtime.
 
-Backend source содержит realtime publisher/gateway, а spec описывает hints, но эти payloads не
-являются OpenAPI/frontend contract.
+Outbox commit-atomic, lease/fence-safe и bounded: 12 publish attempts, dead lifecycle, health sample
+до 100 000 и суммарный purge не более 500 transport hints за проход. Retention: published 7 дней,
+dead 30 дней; Message, delivery receipt и audit evidence не удаляются.
 
-Что может frontend сейчас: показывать только REST delivery, monotonic merge и reconcile snapshot
-после reconnect/checkpoint change. Нельзя реализовать безопасную retry action для failed/unknown
-delivery.
+Проверено: полный suite 3848/3848, focused 65/65, build/typecheck/Prisma/architecture, чистая БД со
+всеми 533 migrations, lifecycle proof и нагрузочные планы по 20 000 pending, published и dead
+outbox rows без `Sort`, production startup/health в двух IAM profiles и повторные
+spec/standards/architecture/security/scalability review без P0/P1.
 
-Evidence: `src/modules/cms-realtime/cms.gateway.ts`,
-`src/modules/cms-realtime/cms-conversation-realtime.publisher.ts`,
-`docs/specs/support-platform/03-durable-conversation-delivery.ru.md`.
+Frontend перед реализацией должен обновить pinned OpenAPI/generated client из backend `0f5404f`.
 
 ### 16 — Case workflow и классификация
 

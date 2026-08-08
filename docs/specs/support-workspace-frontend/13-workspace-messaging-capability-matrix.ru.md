@@ -1,10 +1,10 @@
 # W0: capability matrix рабочего места и переписки
 
 Статус: normative baseline для frontend Task 01
-Версия: 2
-Дата: 7 августа 2026 года
-Backend source: `3791c37bf7c3f70f1114b16682ef643fc62107af`
-Pinned contract: `sha256:dda53093e2be430610e308265d490f77d5869ac1947e489a1cc2572d6a8c43b7`
+Версия: 3
+Дата: 8 августа 2026 года
+Backend source: `0f5404fcc07b9bebc8c23776177d1576e7075bf4`
+Pinned contract: `sha256:0ebe0c20bcc0e41a747d2f876d8d25f19d543ad3ee230ce496fcd0ae6542c3d0`
 
 Этот документ отделяет опубликованный production contract от backend intent.
 `READY` означает, что операция есть в pinned OpenAPI. `RELEASE_GATED` означает,
@@ -22,8 +22,9 @@ Pinned contract: `sha256:dda53093e2be430610e308265d490f77d5869ac1947e489a1cc2572
 | Idempotent replay | тот же `AdminMessaging_send` с тем же body/key; response `duplicate=true` | как у send | как у send | authoritative stored Message + delivery receipt | повтор использует **тот же** key | `unknownSendOutcome` | `RELEASE_GATED` |
 | Lookup попытки после timeout | `GET AdminMessaging_lookupOutcome` | `project.conversations.reply` | actor + Project + End User scope; чужой receipt concealed | persisted Message + актуальный delivery receipt | обязательный исходный `Idempotency-Key` | `unknownSendOutcome.lookupOperation=AdminMessaging_lookupOutcome` | `READY`; frontend Task 13 complete |
 | Durable CMS read position / first unread | `GET/POST .../read-position`; inbox/workspace `readState`; history `anchorOrdinal`, `nextCursor`, `newerCursor` | `project.conversations.read` | CMS reader из текущего IAM context; read/ACK в authorization-bound transaction | monotonic ordinal ACK; REST reconcile после reload/reconnect; signed direction-bound cursors | ACK idempotent и не уменьшает high-water | backend `75739a1`; unit/OpenAPI/PostgreSQL/load proofs | `READY`; frontend Task 14 можно брать в разработку |
-| Message delivery | `AdminMessageDeliveryResponseDto` внутри history/send/lookup: `id`, `channel`, `commandIds`, `interactionSessionId`, `status`, `acceptedAt` | read/reply permission родительской операции | server receipt; HTTP success не равен `DELIVERED` | merge authority — server status; checkpoint только запускает reconcile | command identity и исходный lookup key сохраняются до terminal outcome | `fullSelectionSuccess`, `unknownSendOutcome` | `support_durable_delivery`; `RELEASE_GATED` |
-| Realtime invalidation | `conversation.watch.v1`, `conversation.message.upserted.v1`, `conversation.translation.upserted.v1`, `conversation.delivery.upserted.v1` вне OpenAPI | `project.conversations.read` при watch | hint не даёт ownership/action authority | duplicate/reorder/loss → bounded REST reconcile; revoke → unwatch + purge | не применимо | typed public payload отсутствует | `DOCS_ONLY_NOT_PUBLISHED`; REST остаётся authority |
+| Message delivery | `AdminMessageDeliveryResponseDto` внутри history/send/lookup/workspace: `status`, `generation`, `version`, `errorCode`, `retryEligible`, `allowedActions` | read/reply permission родительской операции | server receipt; HTTP success не равен `DELIVERED` | merge authority — server generation/version; REST побеждает hint | command identity и исходный lookup key сохраняются до terminal outcome | backend `0f5404f`; REST/OpenAPI/PostgreSQL proofs | `support_durable_delivery`; `READY`, frontend Task 15 можно брать |
+| Safe failed-delivery retry | `POST AdminMessaging_retryFailedDelivery` | `project.conversations.reply` | только доказанный `KNOWN_NOT_DELIVERED`; ambiguous/foreign/stale fail closed | обязательны точные `expectedGeneration/expectedVersion` | обязательный actor-scoped `Idempotency-Key` | typed `409/422` с актуальным receipt | `READY`; frontend Task 15 |
+| Realtime invalidation | `GET SupportRealtime_deliveryContract`: `conversation.message.upserted.v1`, `conversation.message.translation.upserted.v1`, delivery upsert/revoke и schema refs | `project.conversations.read` при watch и чтении contract | hint не даёт ownership/action authority | per-Conversation sequence gap → bounded `SupportWorkspace_read`; REST wins; Delivery revoke wins equal key | eventId + monotonic Delivery key | public OpenAPI DTO для всех четырёх payloads | `READY`; frontend Task 15 |
 
 ## 2. Семантика workspace projection
 
@@ -62,10 +63,10 @@ Contract mutation tests обязаны падать при удалении oper
 | --- | --- | --- |
 | `support_workspace_shell` | временный `VITE_SUPPORT_WORKSPACE_ENABLED`; typed per-project flag не опубликован | backend rollout contract + frontend route smoke |
 | `support_project_inbox` | отдельный typed flag не опубликован | Task 02 + backend inbox handoff |
-| `support_durable_delivery` | backend contract готов, Task 13 complete; rollout gated | backend SDK ACK/load proof + frontend Task 15 |
+| `support_durable_delivery` | backend contract и release proof готовы; frontend Tasks 13–15 разблокированы | backend `0f5404f`; SDK ACK + 60k outbox load proof |
 | Idempotency lookup | опубликован и подключён | backend `3791c37` + frontend Task 13 tests/e2e |
-| Read position / first unread | отсутствует | backend conversation owner |
-| Typed realtime payload/checkpoint | отсутствует | backend realtime owner |
+| Read position / first unread | опубликован | backend `75739a1` |
+| Typed realtime payload/reconcile | опубликован | backend `0f5404f` |
 
 Task 01 не реализует send state machine, unread UI или delivery reconcile. Он
 фиксирует проверяемую границу, от которой блокерами вперёд работают Tasks

@@ -81,3 +81,18 @@ envelope и server high-water для ACK-ahead conflict.
 
 Проверено: unit/OpenAPI, build, architecture, PostgreSQL/load, production health-smoke и повторные
 spec/standards/architecture/security/scalability review без P0/P1.
+
+### Ticket 15 — delivery и reconnect reconciliation
+
+**Готово, можно проверять и брать в разработку.**
+
+Backend `main` `0f5404f` публикует authoritative Delivery receipt в history/send/lookup/workspace,
+безопасный `AdminMessaging_retryFailedDelivery` и `SupportRealtime_deliveryContract` со schema refs
+для Message upsert, Translation upsert, Delivery upsert и Delivery revoke. Merge выполняется по
+`generation/version/operationPrecedence`; realtime остаётся hint, а gap/reconnect всегда приводит к
+bounded `SupportWorkspace_read`, который побеждает конфликтующее событие.
+
+Проверено: 3848/3848 тестов, build/typecheck/Prisma/architecture, 533 migrations на чистой БД,
+PostgreSQL lifecycle и index-backed load по 20k pending/published/dead hints без `Sort`, два
+production health-профиля и повторные spec/standards/architecture/security/scalability review без
+P0/P1.
