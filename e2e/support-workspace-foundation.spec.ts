@@ -346,6 +346,50 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
   );
   await expect(slaSignal).toContainText("Риск первого ответа");
   await expect(slaSignal).toContainText("теневой прогноз");
+  const slaSignalLayout = await slaSignal.evaluate((element) => {
+    const copy = element.querySelector("span")!;
+    const style = getComputedStyle(copy);
+    return {
+      whiteSpace: style.whiteSpace,
+      textOverflow: style.textOverflow,
+      horizontalOverflow: copy.scrollWidth - copy.clientWidth,
+    };
+  });
+  expect(slaSignalLayout.whiteSpace).toBe("normal");
+  expect(slaSignalLayout.textOverflow).not.toBe("ellipsis");
+  expect(slaSignalLayout.horizontalOverflow).toBeLessThanOrEqual(1);
+
+  const inboxRowsLayout = await queue.locator(".inbox-row").evaluateAll((rows) =>
+    rows.map((row, index) => {
+      const rect = row.getBoundingClientRect();
+      const nextRect = rows[index + 1]?.getBoundingClientRect();
+      return {
+        contentOverflow: row.scrollHeight - row.clientHeight,
+        overlap: nextRect ? rect.bottom - nextRect.top : 0,
+      };
+    }),
+  );
+  for (const row of inboxRowsLayout) {
+    expect(row.contentOverflow).toBeLessThanOrEqual(1);
+    expect(row.overlap).toBeLessThanOrEqual(1);
+  }
+
+  const saveView = queue.getByRole("button", { name: "Сохранить поиск" });
+  await expect(saveView).toBeVisible();
+  const saveViewAlignment = await saveView.evaluate((button) => {
+    const icon = button.querySelector("i")!.getBoundingClientRect();
+    const label = button.querySelector("span")!.getBoundingClientRect();
+    return {
+      iconWidth: icon.width,
+      iconHeight: icon.height,
+      centerDelta: Math.abs(
+        icon.top + icon.height / 2 - (label.top + label.height / 2),
+      ),
+    };
+  });
+  expect(saveViewAlignment.iconWidth).toBeLessThanOrEqual(16.5);
+  expect(saveViewAlignment.iconHeight).toBeLessThanOrEqual(16.5);
+  expect(saveViewAlignment.centerDelta).toBeLessThanOrEqual(1);
 
   await queue.getByRole("button", { name: /Не запускается игра/ }).click();
   const desktopContext = page.locator(".context-pane");

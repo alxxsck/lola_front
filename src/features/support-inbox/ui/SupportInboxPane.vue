@@ -555,6 +555,10 @@ function unreadLabel(
   min-width: 0;
   min-height: 40px;
   padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -562,6 +566,7 @@ function unreadLabel(
   font: inherit;
   font-size: 0.78rem;
   font-weight: 650;
+  line-height: 1;
   cursor: pointer;
 }
 .inbox-modes button.active {
@@ -570,13 +575,21 @@ function unreadLabel(
   box-shadow: var(--shadow-subtle);
 }
 .inbox-modes i {
-  margin-right: 5px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: inline-grid;
+  place-items: center;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1;
 }
 .inbox-list {
   min-height: 0;
   flex: 1;
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -682,6 +695,7 @@ function unreadLabel(
   position: relative;
   width: 100%;
   min-height: 72px;
+  flex: 0 0 auto;
   padding: 12px 14px;
   display: flex;
   align-items: flex-start;
@@ -807,7 +821,19 @@ function unreadLabel(
   color: var(--status-danger-text);
 }
 .attention-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--status-warning-text);
+}
+.attention-copy i {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.72rem;
+  line-height: 1;
 }
 .inbox-sla-signal {
   min-width: 0;
@@ -825,9 +851,9 @@ function unreadLabel(
 }
 .inbox-sla-signal span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 .inbox-sla-signal.signal-sla_at_risk,
 .inbox-sla-signal.signal-sla_paused {

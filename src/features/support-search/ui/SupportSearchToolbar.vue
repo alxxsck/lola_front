@@ -343,10 +343,11 @@ function submit(): void {
 .search-rail { margin: 0 12px 10px; display: grid; gap: 8px; }
 .search-form { min-height: 40px; padding: 0 8px 0 11px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-card); }
 .search-form:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--focus-ring); }
-.search-form > i { color: var(--text-muted); font-size: .8rem; }
+.search-form > i { width: 16px; height: 16px; flex: 0 0 16px; display: inline-grid; place-items: center; color: var(--text-muted); font-size: .8rem; line-height: 1; }
 .search-form input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: .78rem; }
 .search-shortcut { padding: 2px 5px; border: 1px solid var(--line); border-radius: 5px; color: var(--text-muted); font-size: .66rem; font-weight: 700; }
-.search-submit, .direction-button { width: 32px; height: 32px; border: 0; border-radius: 7px; background: transparent; color: var(--brand); cursor: pointer; }
+.search-submit, .direction-button { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--brand); line-height: 1; cursor: pointer; }
+.search-submit i, .direction-button i { font-size: .8rem; line-height: 1; }
 .search-submit:hover, .direction-button:hover { background: var(--brand-soft); }
 .search-controls { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px; }
 .search-controls > label:first-child { min-width: 0; }

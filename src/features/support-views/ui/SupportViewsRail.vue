@@ -146,11 +146,12 @@ function submitCreate(): void {
 .views-rail { margin: 0 12px 10px; padding: 10px; display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--surface-card) 88%, var(--brand-soft)); }
 .views-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .76rem; }
 .views-heading-actions { display: flex; align-items: center; gap: 4px; }
-.views-heading button, .default-action { border: 0; background: transparent; color: var(--text-brand); font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer; }
+.views-heading button, .default-action { min-height: 32px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 0; background: transparent; color: var(--text-brand); font: inherit; font-size: .7rem; font-weight: 700; line-height: 1; cursor: pointer; }
 .view-list, .saved-list { display: grid; gap: 3px; }
 .view-list button, .saved-list button { min-width: 0; min-height: 34px; padding: 6px 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px; border: 0; border-radius: 7px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
 .view-list button:hover, .saved-list button:hover, .view-list button.active, .saved-list button.active { background: var(--brand-soft); color: var(--text-primary); }
 .view-list button > span, .saved-list button > span { min-width: 0; display: flex; align-items: center; gap: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; font-weight: 650; }
+.views-heading button > i, .default-action > i, .view-actions button > i, .view-list button > span > i, .saved-list button > span > i { width: 16px; height: 16px; flex: 0 0 16px; display: inline-grid; place-items: center; font-size: .78rem; line-height: 1; }
 .view-list small, .saved-list small { flex: 0 0 auto; color: var(--text-muted); font-size: .64rem; }
 .freshness { color: var(--status-warning-text); font-size: .65rem; }
 .saved-list summary { padding: 3px 7px; display: flex; justify-content: space-between; color: var(--text-muted); font-size: .66rem; font-weight: 750; cursor: pointer; list-style: none; text-transform: uppercase; letter-spacing: .05em; }
