@@ -306,7 +306,8 @@ describe("ProfileFieldEditorPage", () => {
     expect(wrapper.text()).toContain("Где можно использовать поле");
     expect(wrapper.text()).toContain("Обязательно ли передавать поле?");
     expect(wrapper.text()).not.toContain("Нужно ли передавать поле?");
-    expect(wrapper.text()).toContain("Для чего нужно это поле? *");
+    expect(wrapper.text()).toContain("Для чего нужно это поле?");
+    expect(wrapper.text()).not.toContain("Для чего нужно это поле? *");
     expect(wrapper.text()).toContain("Пример для ИИ");
     expect(wrapper.text()).toContain("ИИ получит значение и описание поля");
     expect(wrapper.text()).toContain("Поле придёт во фронтенд");
@@ -319,7 +320,12 @@ describe("ProfileFieldEditorPage", () => {
 
     const vm = wrapper.vm as unknown as {
       form: { valueType: string };
+      cmsReadAccess: "HIDDEN" | "BASE" | "RESTRICTED";
     };
+    vm.cmsReadAccess = "BASE";
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Для чего нужно это поле? *");
+
     vm.form.valueType = "DECIMAL";
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain("Всего цифр");
@@ -377,7 +383,7 @@ describe("ProfileFieldEditorPage", () => {
     };
     vm.form.classification = "INTERNAL";
     Object.assign(vm.form.policies, {
-      adminRead: false,
+      cmsRead: { mode: "HIDDEN" },
       aiRead: false,
       audienceRead: false,
       clientRead: false,
@@ -391,6 +397,36 @@ describe("ProfileFieldEditorPage", () => {
     expect(wrapper.text()).toContain(
       "Необязательно для внутреннего поля, недоступного другим разделам.",
     );
+  });
+
+  it("round-trips restricted CMS access without broadening it to base", async () => {
+    const wrapper = shallowMount(ProfileFieldEditorPage);
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      form: {
+        policies: {
+          cmsRead:
+            | { mode: "HIDDEN" }
+            | { mode: "VISIBLE"; access: "BASE" | "RESTRICTED" };
+        };
+      };
+      cmsReadAccess: "HIDDEN" | "BASE" | "RESTRICTED";
+    };
+
+    vm.form.policies.cmsRead = {
+      mode: "VISIBLE",
+      access: "RESTRICTED",
+    };
+    await wrapper.vm.$nextTick();
+
+    expect(vm.cmsReadAccess).toBe("RESTRICTED");
+    expect(vm.form.policies.cmsRead).toEqual({
+      mode: "VISIBLE",
+      access: "RESTRICTED",
+    });
+
+    vm.cmsReadAccess = "HIDDEN";
+    expect(vm.form.policies.cmsRead).toEqual({ mode: "HIDDEN" });
   });
 
   it("edits a Locale Attribute as canonical locale chips with a required default", async () => {

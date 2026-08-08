@@ -20,11 +20,6 @@ export type AdminEndUserProfilesListParams = {
    */
   cursor?: string;
   /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  externalUserId?: string;
-  /**
    * Comma-separated allowlist of up to 10 Attribute definition IDs.
    */
   selectedDefinitionIds?: string;

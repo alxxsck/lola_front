@@ -13,7 +13,7 @@ describe("Attribute Contract draft", () => {
       position: 10,
       requirement: "OPTIONAL",
       policies: {
-        adminRead: true,
+        cmsRead: { mode: "HIDDEN" },
         aiRead: false,
         audienceRead: false,
         clientRead: false,
@@ -48,7 +48,7 @@ describe("Attribute Contract draft", () => {
       classification: "PERSONAL" as const,
       policies: {
         ...createContractField(10).policies,
-        adminRead: false,
+        cmsRead: { mode: "HIDDEN" as const },
       },
     };
     const exposed = {
@@ -63,16 +63,18 @@ describe("Attribute Contract draft", () => {
 
     const issues = validateContractDocument({ fields: [personal, exposed] });
 
-    expect(issues.filter((issue) => issue.code === "PURPOSE_REQUIRED")).toEqual([
-      expect.objectContaining({
-        path: "fields.0.purpose",
-        message: expect.stringContaining("Электронная почта"),
-      }),
-      expect.objectContaining({
-        path: "fields.1.purpose",
-        message: expect.stringContaining("Уровень лояльности"),
-      }),
-    ]);
+    expect(issues.filter((issue) => issue.code === "PURPOSE_REQUIRED")).toEqual(
+      [
+        expect.objectContaining({
+          path: "fields.0.purpose",
+          message: expect.stringContaining("Электронная почта"),
+        }),
+        expect.objectContaining({
+          path: "fields.1.purpose",
+          message: expect.stringContaining("Уровень лояльности"),
+        }),
+      ],
+    );
   });
 
   it("keeps DECIMAL enum precision and parses scalar constraints by declared type", () => {

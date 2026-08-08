@@ -16,6 +16,7 @@ import { formatProfileValue } from "@/features/end-user-profile/model/profile-va
 import UserWorkspaceDialog from "@/features/end-user-workspace/UserWorkspaceDialog.vue";
 import type {
   CmsProfileSummaryResponseDto,
+  ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
 } from "@/shared/api/generated/models";
 import { repository } from "@/shared/api/repository";
@@ -68,6 +69,26 @@ const aiFilterOptions = [
   { value: "SUSPENDED", label: "AI приостановлен" },
 ];
 
+function summaryFromProfile(
+  profile: ProfileProjectionResponseDto,
+): CmsProfileSummaryResponseDto {
+  return {
+    endUserId: profile.endUserId,
+    fields: profile.fields,
+    lastSeenAt:
+      profile.observedAt ?? profile.receivedAt ?? new Date(0).toISOString(),
+    observedAt: profile.observedAt,
+    profileVersion: profile.profileVersion,
+    syncStatus: profile.syncStatus,
+    conversationAiSuspensionSummary: {
+      activeConversationCount: 0,
+      nearestSuspendedUntil: null,
+      mostRecentlyStartedConversationId: null,
+      serverTime: new Date().toISOString(),
+    },
+  };
+}
+
 async function load(append = false): Promise<void> {
   const projectId = auth.project?.id;
   if (!projectId || (append && !nextCursor.value)) return;
@@ -79,24 +100,35 @@ async function load(append = false): Promise<void> {
     const response =
       repository.mode === "mock"
         ? await loadMockProfiles(projectId)
-        : await endUserProfileRepository.list(projectId, {
-            limit: 50,
-            ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
-            ...(appliedQuery.value
-              ? { externalUserId: appliedQuery.value }
-              : {}),
-            ...(aiFilter.value === "SUSPENDED"
-              ? { hasActiveConversationAiSuspension: true }
-              : {}),
-            ...(filterDefinitionId.value && filterValue.value
-              ? {
-                  filterDefinitionId: filterDefinitionId.value,
-                  filterOperator: filterOperator.value,
-                  filterValue: filterValue.value,
-                }
-              : {}),
-            sort: sort.value,
-          });
+        : appliedQuery.value
+          ? {
+              items: [
+                summaryFromProfile(
+                  await endUserProfileRepository.profile(
+                    projectId,
+                    appliedQuery.value,
+                  ),
+                ),
+              ],
+              nextCursor: null,
+            }
+          : await endUserProfileRepository.list(projectId, {
+              limit: 50,
+              ...(append && nextCursor.value
+                ? { cursor: nextCursor.value }
+                : {}),
+              ...(aiFilter.value === "SUSPENDED"
+                ? { hasActiveConversationAiSuspension: true }
+                : {}),
+              ...(filterDefinitionId.value && filterValue.value
+                ? {
+                    filterDefinitionId: filterDefinitionId.value,
+                    filterOperator: filterOperator.value,
+                    filterValue: filterValue.value,
+                  }
+                : {}),
+              sort: sort.value,
+            });
     if (request !== requestSequence) return;
     items.value = append ? [...items.value, ...response.items] : response.items;
     nextCursor.value = response.nextCursor ?? null;
@@ -171,7 +203,6 @@ async function loadMockProfiles(
       );
       return {
         endUserId: user.id,
-        externalUserId: user.externalId,
         locale: user.locale,
         lastSeenAt: user.lastSeenAt,
         observedAt: user.lastSeenAt,
@@ -202,7 +233,8 @@ async function loadMockProfiles(
     .filter(
       (profile) =>
         !normalizedQuery ||
-        profile.externalUserId.toLowerCase().includes(normalizedQuery),
+        profile.endUserId.toLowerCase().includes(normalizedQuery) ||
+        userDisplayName(profile).toLowerCase().includes(normalizedQuery),
     )
     .filter(
       (profile) =>
@@ -282,12 +314,12 @@ function userDisplayName(profile: CmsProfileSummaryResponseDto): string {
       field.access === "ALLOWED" &&
       field.value,
   );
-  if (!displayName?.value) return profile.externalUserId;
-  return formatProfileValue(displayName.value).trim() || profile.externalUserId;
+  if (!displayName?.value) return "Пользователь";
+  return formatProfileValue(displayName.value).trim() || "Пользователь";
 }
 
 function userProductId(profile: CmsProfileSummaryResponseDto): string {
-  return profile.externalUserId;
+  return `ID ${profile.endUserId.slice(0, 8)}`;
 }
 
 function syncSeverity(
@@ -324,11 +356,7 @@ onMounted(async () => {
         auth.project.id,
         endUserId,
       );
-      const exact = await endUserProfileRepository.list(auth.project.id, {
-        limit: 50,
-        externalUserId: detail.externalUserId,
-      });
-      profile = exact.items.find((item) => item.endUserId === endUserId);
+      profile = summaryFromProfile(detail);
     } catch {
       error.value = "Не удалось открыть пользователя по ссылке";
     }
@@ -392,11 +420,11 @@ onBeforeUnmount(() => {
 
     <form class="filters card" @submit.prevent="search">
       <label class="search"
-        ><span>ID пользователя в вашем продукте</span>
+        ><span>Внутренний ID пользователя</span>
         <div>
           <i class="pi pi-search" /><InputText
             v-model="query"
-            placeholder="user-123"
+            placeholder="UUID пользователя"
           /><Button type="submit" label="Найти" /></div
       ></label>
       <label
@@ -471,7 +499,7 @@ onBeforeUnmount(() => {
           ><template #body="{ data }"
             ><div class="user-cell">
               <span class="avatar">{{
-                data.externalUserId.slice(0, 1).toUpperCase()
+                userDisplayName(data).slice(0, 1).toUpperCase()
               }}</span>
               <div>
                 <strong>{{ userDisplayName(data) }}</strong
@@ -513,7 +541,7 @@ onBeforeUnmount(() => {
               severity="secondary"
               text
               rounded
-              :aria-label="`Открыть профиль ${data.externalUserId}`"
+              :aria-label="`Открыть профиль ${userDisplayName(data)}`"
               @click.stop="openProfile(data)" /></template
         ></Column>
       </DataTable>
@@ -535,7 +563,6 @@ onBeforeUnmount(() => {
     v-model:visible="workspaceVisible"
     :project-id="auth.project.id"
     :end-user-id="selected?.endUserId ?? null"
-    :external-user-id="selected?.externalUserId"
     :preferred-conversation-id="
       typeof route.query.conversationId === 'string'
         ? route.query.conversationId

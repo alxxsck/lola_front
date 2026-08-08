@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import Button from "primevue/button";
-import Message from "primevue/message";
 import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
 import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
 import type { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
@@ -9,9 +8,11 @@ import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/Sup
 import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
 import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
+import type { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
+import SupportInspectorState from "@/features/support-inspector/ui/SupportInspectorState.vue";
 import type {
-  ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
+  SupportLeadSafeFactDto,
 } from "@/shared/api/generated/models";
 import {
   formatProfileValue,
@@ -39,14 +40,10 @@ const props = withDefaults(
     >;
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
-    canReadProfile?: boolean;
-    profile?: ProfileProjectionResponseDto | null;
-    profileLoading?: boolean;
-    profileError?: string;
+    inspector: ReturnType<typeof createSupportInspectorController>;
     caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
   }>(),
   {
-    canReadProfile: false,
     canManageCase: false,
     canReadCaseDesk: false,
     canReadSlaContext: false,
@@ -57,35 +54,20 @@ const props = withDefaults(
     leadAssignmentController: undefined,
     availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
-    profile: null,
-    profileLoading: false,
-    profileError: "",
   },
 );
 
 const emit = defineEmits<{
-  loadProfile: [];
   openInternalNotes: [];
   classifyCase: [];
   reconcileOperations: [expiresAt: string];
 }>();
 
-type InspectorTab = "USER" | "CASE" | "ACTIVITY" | "ACTIONS";
-const activeTab = ref<InspectorTab>("USER");
 const caseDeskView = ref<InstanceType<typeof SupportCaseDesk> | null>(null);
-const inspectorTabs = [
-  { id: "USER" as const, label: "Пользователь", icon: "pi pi-user" },
-  { id: "CASE" as const, label: "Кейс", icon: "pi pi-briefcase" },
-  { id: "ACTIVITY" as const, label: "История", icon: "pi pi-history" },
-  { id: "ACTIONS" as const, label: "Действия", icon: "pi pi-bolt" },
-];
-
-watch(
-  () => props.selection.endUser.id,
-  () => {
-    activeTab.value = "USER";
-  },
-);
+const inspectorTabList = ref<HTMLElement | null>(null);
+const activeTab = computed(() => props.inspector.activeTab.value);
+const inspectorTabs = computed(() => props.inspector.tabs.value);
+const profile = computed(() => props.inspector.profile.data.value);
 
 const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
@@ -146,7 +128,7 @@ function labelCasePriority(value: string): string {
 
 const visibleProfileFields = computed(
   () =>
-    props.profile?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
+    profile.value?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
 );
 
 function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
@@ -156,9 +138,7 @@ function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
   return formatProfileValue(field.value);
 }
 
-function profileSyncStatusLabel(
-  value: ProfileProjectionResponseDto["syncStatus"],
-): string {
+function profileSyncStatusLabel(value: string): string {
   return (
     {
       VALID: "Снимок проверен",
@@ -168,9 +148,7 @@ function profileSyncStatusLabel(
   );
 }
 
-function profileProvenanceLabel(
-  value: ProfileProjectionResponseDto["provenance"],
-): string {
+function profileProvenanceLabel(value: string): string {
   return value === "PRODUCT_PROFILE" ? "Профиль продукта" : value;
 }
 
@@ -187,7 +165,7 @@ function profileClassificationLabel(
 }
 
 function requestClassification(): void {
-  activeTab.value = "CASE";
+  void props.inspector.open("CASE");
   if (props.caseDesk) {
     caseDeskView.value?.requestClassification();
     return;
@@ -195,414 +173,609 @@ function requestClassification(): void {
   emit("classifyCase");
 }
 
-function activityTypeLabel(value: string): string {
+function moveInspectorTab(event: KeyboardEvent, currentIndex: number): void {
+  const count = inspectorTabs.value.length;
+  if (!count) return;
+  let nextIndex: number | null = null;
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % count;
+  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + count) % count;
+  if (event.key === "Home") nextIndex = 0;
+  if (event.key === "End") nextIndex = count - 1;
+  if (nextIndex === null) return;
+  event.preventDefault();
+  const tab = inspectorTabs.value[nextIndex];
+  if (!tab) return;
+  void props.inspector.open(tab.id);
+  void nextTick(() => {
+    const element = inspectorTabList.value?.querySelector<HTMLElement>(
+      `#support-inspector-tab-${tab.id.toLowerCase()}`,
+    );
+    element?.focus();
+    element?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+}
+
+function activityTypeLabel(value: SupportLeadSafeFactDto["eventCode"]): string {
   return (
     {
-      CREATED: "Кейс создан",
-      UPDATED: "Кейс обновлён",
-      STATUS_CHANGED: "Статус изменён",
-      CORRECTED: "Классификация уточнена",
-      ASSIGNED: "Назначение изменено",
-      REOPENED: "Кейс переоткрыт",
-      ADMIN_ATTENTION_REQUESTED: "Запрошена эскалация",
-      ADMIN_ATTENTION_CLAIMED: "Эскалация принята",
-      ADMIN_ATTENTION_RELEASED: "Эскалация освобождена",
-      ADMIN_ATTENTION_TRANSFERRED: "Эскалация передана",
-      ADMIN_ATTENTION_CLOSED: "Эскалация закрыта",
-      ADMIN_ATTENTION_CANCELLED: "Эскалация отменена",
-    }[value] ?? "Кейс обновлён"
+      CASE_CHANGED: "Обращение изменено",
+      ADMIN_REPLY_ACCEPTED: "Ответ принят",
+      SUPPORT_CASE_ASSIGNMENT_CLAIMED: "Обращение принято оператором",
+      SUPPORT_CASE_ASSIGNMENT_ASSIGNED: "Оператор назначен",
+      SUPPORT_CASE_ASSIGNMENT_RELEASED: "Назначение освобождено",
+      SUPPORT_CASE_ASSIGNMENT_TRANSFERRED: "Обращение передано",
+      SUPPORT_CASE_ASSIGNMENT_COMPLETED: "Работа завершена",
+      SUPPORT_ASSIGNMENT_RESERVED: "Работа зарезервирована",
+      SUPPORT_ASSIGNMENT_OFFERED: "Оператору предложена работа",
+      SUPPORT_ASSIGNMENT_OFFER_ACCEPTED: "Предложение принято",
+      SUPPORT_ASSIGNMENT_OFFER_DECLINED: "Предложение отклонено",
+      SUPPORT_ASSIGNMENT_RESERVATION_EXPIRED: "Резерв истёк",
+      SUPPORT_ASSIGNMENT_RESERVATION_CANCELLED: "Резерв отменён",
+      SUPPORT_ASSIGNMENT_AUTO_ASSIGNED: "Назначено автоматически",
+      SUPPORT_ASSIGNMENT_ROUTING_FALLBACK_SCHEDULED:
+        "Запланирован повторный подбор",
+      OPERATOR_AVAILABILITY_CHANGED: "Доступность оператора изменилась",
+      SUPPORT_WORKFORCE_REVISION_PUBLISHED: "Состав поддержки обновлён",
+      SUPPORT_TEAM_CREATED: "Команда создана",
+      SUPPORT_TEAM_RENAMED: "Команда переименована",
+      SUPPORT_TEAM_ARCHIVED: "Команда архивирована",
+      SUPPORT_SKILL_CREATED: "Навык создан",
+      SUPPORT_SKILL_RENAMED: "Навык переименован",
+      SUPPORT_SKILL_ARCHIVED: "Навык архивирован",
+      SLA_CLOCK_CHANGED: "SLA обновлён",
+      SLA_CLOCK_CORRECTED: "SLA скорректирован",
+      SLA_POLICY_MIGRATED: "SLA перенесён на новую политику",
+      CONVERSATION_DELIVERY_CHANGED: "Доставка сообщения изменилась",
+    }[value] ?? "Активность поддержки"
   );
 }
 
-function activityActorLabel(actor: {
-  type: string;
-  cmsUserId?: string | null;
-}): string {
-  if (actor.type === "CMS_USER")
-    return actor.cmsUserId ? `Оператор ${actor.cmsUserId}` : "Оператор";
-  if (actor.type === "BREAK_GLASS") return "Break-glass операция";
-  if (actor.type === "SYSTEM_OR_BREAK_GLASS") return "Система или break-glass";
+function activityActorLabel(actor: SupportLeadSafeFactDto["actor"]): string {
+  if (actor.type === "CMS_USER") return "Оператор";
+  if (actor.type === "BREAK_GLASS") return "Аварийный доступ";
   return "Система";
 }
 
-const activityFieldLabels: Record<string, string> = {
-  status: "Статус",
-  groupCode: "Категория",
-  type: "Тип",
-  impact: "Влияние",
-  urgency: "Срочность",
-  priority: "Приоритет",
-};
+function activityFactKindLabel(
+  value: SupportLeadSafeFactDto["factKind"],
+): string {
+  const labels: Record<string, string> = {
+    ASSIGNMENT: "Назначение",
+    AVAILABILITY: "Доступность",
+    CASE: "Обращение",
+    DEPENDENCY: "Зависимость",
+    DELIVERY: "Доставка",
+    INTERVENTION: "Вмешательство",
+    REPLY: "Ответ",
+    SLA: "SLA",
+    WORKFORCE: "Команда поддержки",
+  };
+  return labels[value] ?? "Изменение";
+}
 
-function activityValueLabel(key: string, value: unknown): string {
-  if (typeof value !== "string") return "—";
-  if (key === "status") return labelCaseStatus(value);
-  if (key === "priority") return labelCasePriority(value);
-  if (key === "groupCode")
-    return (
-      props.selection.classificationOptions.find((item) => item.code === value)
-        ?.label ?? value
-    );
+function activityReasonLabel(
+  value: SupportLeadSafeFactDto["reasonCode"],
+): string | null {
+  if (!value) return null;
+  const labels: Record<string, string> = {
+    SELF_CLAIM: "Оператор взял обращение",
+    SKILL_MATCH: "Подобран по навыкам",
+    LOAD_BALANCE: "Балансировка нагрузки",
+    LEAD_INTERVENTION: "Решение лида",
+    WORK_RETURNED: "Работа возвращена в очередь",
+    SHIFT_END: "Смена завершена",
+    LEAD_REBALANCE: "Лид перераспределил нагрузку",
+    SKILL_HANDOFF: "Передача по компетенции",
+    CASE_RESOLVED: "Обращение решено",
+    CASE_UNRESOLVED: "Обращение не решено",
+    CASE_CANCELLED: "Обращение отменено",
+    ROUTING_AUTO_ASSIGN: "Автоматическая маршрутизация",
+    ROUTING_OFFER_ACCEPTED: "Оператор принял предложение",
+    OPERATOR_DECLINED: "Оператор отказался",
+    RESERVATION_EXPIRED: "Истёк резерв",
+    END_USER_CASE_CREATED: "Создано новое обращение",
+    END_USER_CASE_MESSAGE_LINKED: "Сообщение связано с обращением",
+    END_USER_CASE_REOPENED: "Обращение переоткрыто",
+    END_USER_CASE_UPDATED: "Данные обращения обновлены",
+    END_USER_CASE_STATUS_CHANGED: "Изменён статус",
+    END_USER_CASE_ASSIGNED: "Изменено назначение",
+    END_USER_CASE_CORRECTED: "Исправлена классификация",
+    END_USER_CASE_MERGED: "Обращения объединены",
+    END_USER_CASE_SPLIT: "Обращение разделено",
+    OTHER: "Другая причина",
+  };
+  return labels[value] ?? value;
+}
+
+function eventSourceLabel(value: string): string {
   return (
     {
-      INFORMATION_REQUEST: "Информационный запрос",
-      PROBLEM_RESOLUTION: "Решение проблемы",
-      DECISION_SUPPORT: "Помощь с решением",
-      ACTION_REQUEST: "Запрос действия",
-      FEEDBACK: "Обратная связь",
-      OTHER: "Другое",
-      LOW: "Низкое",
-      MEDIUM: "Среднее",
-      HIGH: "Высокое",
-      CRITICAL: "Критическое",
-      IMMEDIATE: "Немедленная",
+      SERVER: "Backend продукта",
+      FRONTEND: "Интерфейс продукта",
+      INTERNAL: "Lola",
+      INTEGRATION: "Интеграция",
     }[value] ?? value
   );
 }
 
-function activityChanges(previous: unknown, next: unknown) {
-  const before =
-    previous && typeof previous === "object"
-      ? (previous as Record<string, unknown>)
-      : {};
-  const after =
-    next && typeof next === "object" ? (next as Record<string, unknown>) : {};
-  return Object.keys(activityFieldLabels)
-    .filter(
-      (key) =>
-        before[key] !== after[key] &&
-        (before[key] !== undefined || after[key] !== undefined),
-    )
-    .map((key) => ({
-      key,
-      label: activityFieldLabels[key]!,
-      previous: activityValueLabel(key, before[key]),
-      next: activityValueLabel(key, after[key]),
-    }));
+function eventStatusLabel(value: string): string {
+  return (
+    { RECEIVED: "Получено", PROCESSED: "Обработано", FAILED: "Ошибка" }[
+      value
+    ] ?? value
+  );
 }
+
+onMounted(() => void props.inspector.loadActiveTab());
 
 defineExpose({ requestClassification });
 </script>
 
 <template>
   <div class="support-conversation-context">
-    <div class="inspector-tabs" role="tablist" aria-label="Разделы контекста">
+    <div
+      ref="inspectorTabList"
+      class="inspector-tabs"
+      role="tablist"
+      aria-label="Разделы контекста"
+    >
       <button
-        v-for="tab in inspectorTabs"
+        v-for="(tab, tabIndex) in inspectorTabs"
         :key="tab.id"
         type="button"
         role="tab"
+        :id="`support-inspector-tab-${tab.id.toLowerCase()}`"
+        :aria-controls="`support-inspector-panel-${tab.id.toLowerCase()}`"
         :aria-selected="activeTab === tab.id"
+        :tabindex="activeTab === tab.id ? 0 : -1"
         :class="{ active: activeTab === tab.id }"
-        @click="activeTab = tab.id"
+        @click="inspector.open(tab.id)"
+        @keydown="moveInspectorTab($event, tabIndex)"
       >
         <i :class="tab.icon" aria-hidden="true" />
         {{ tab.label }}
       </button>
     </div>
 
-    <section
-      v-if="activeTab === 'USER'"
-      class="inspector-section user-section"
-      aria-label="Пользователь"
-    >
-      <header class="user-card">
-        <span class="user-avatar">{{ userInitial }}</span>
-        <div>
-          <span class="section-kicker">Пользователь</span>
-          <h3>{{ userLabel }}</h3>
-          <p>Активность {{ relativeTime(selection.endUser.lastSeenAt) }}</p>
-        </div>
-      </header>
-
-      <dl class="context-grid">
-        <div class="context-field">
-          <dt>Язык</dt>
-          <dd>{{ selection.endUser.locale?.toUpperCase() ?? "Не указан" }}</dd>
-        </div>
-        <div class="context-field">
-          <dt>Диалог</dt>
-          <dd>
-            {{
-              !conversation
-                ? "Нет связанного чата"
-                : conversation.status === "OPEN"
-                  ? "Активный"
-                  : "Закрыт"
-            }}
-          </dd>
-        </div>
-        <div class="context-field">
-          <dt>Сообщений</dt>
-          <dd>{{ conversation?.messageCount ?? "—" }}</dd>
-        </div>
-      </dl>
-      <div class="section-heading profile-heading">
-        <div>
-          <span class="section-kicker">Профиль</span>
-          <h3>Данные пользователя</h3>
-        </div>
-        <Button
-          v-if="canReadProfile"
-          label="Обновить"
-          icon="pi pi-refresh"
-          size="small"
-          severity="secondary"
-          text
-          :loading="profileLoading"
-          @click="emit('loadProfile')"
-        />
-      </div>
-      <Message v-if="profileError" severity="error" :closable="false">
-        {{ profileError }}
-      </Message>
-      <template v-else-if="profile">
-        <p class="profile-meta">
-          {{
-            profile.observedAt
-              ? `Снимок обновлён ${relativeTime(profile.observedAt)}`
-              : "Время снимка не передано"
-          }}
-        </p>
-        <p class="profile-meta">
-          {{ profileSyncStatusLabel(profile.syncStatus) }} · источник:
-          {{ profileProvenanceLabel(profile.provenance) }}
-        </p>
-        <dl v-if="visibleProfileFields.length" class="profile-fields">
-          <div v-for="field in visibleProfileFields" :key="field.definitionId">
-            <dt>{{ field.label }}</dt>
-            <dd>{{ profileFieldValue(field) }}</dd>
-            <small>
-              {{ profileValueStateLabel(field.availability) }}
-              · {{ profileClassificationLabel(field.classification) }}
-              <template v-if="field.observedAt">
-                · обновлено {{ relativeTime(field.observedAt) }}
-              </template>
-              <template v-if="field.untrustedData">
-                · требует проверки</template
-              >
-            </small>
-          </div>
-        </dl>
-        <p v-else class="empty-copy">
-          Разрешённых полей в актуальном снимке нет.
-        </p>
-      </template>
-      <div v-else class="empty-card">
-        <i class="pi pi-id-card" aria-hidden="true" />
-        <p>
-          <template v-if="canReadProfile"
-            >Загрузите актуальные данные профиля.</template
-          >
-          <template v-else
-            >У вас нет прав на персональные данные пользователя.</template
-          >
-        </p>
-      </div>
-    </section>
-
-    <section
-      v-if="activeTab === 'CASE'"
-      class="inspector-section case-section"
-      aria-label="Кейс"
-    >
-      <SupportCaseDesk
-        v-if="canReadCaseDesk && caseDesk && selection.case"
-        ref="caseDeskView"
-        :controller="caseDesk"
-        :classification-options="selection.classificationOptions"
-      />
-      <template v-else-if="selection.case">
-        <header class="case-header">
-          <span class="section-kicker"
-            >Кейс #{{ selection.case.projectSequence }}</span
-          >
-          <h3>{{ selection.case.title }}</h3>
-          <div class="case-badges">
-            <span class="status-badge">{{
-              labelCaseStatus(selection.case.status)
-            }}</span>
-            <span class="priority-badge">{{
-              labelCasePriority(selection.case.priority)
-            }}</span>
-          </div>
-        </header>
-        <dl class="context-grid case-grid">
-          <div class="context-field">
-            <dt>Категория</dt>
-            <dd>{{ selection.case.groupCode }}</dd>
-          </div>
-          <div class="context-field">
-            <dt>Назначен</dt>
-            <dd>
-              {{
-                selection.case.assignment?.operatorName ??
-                selection.case.assignee?.displayName ??
-                "Не назначен"
-              }}
-            </dd>
-          </div>
-          <div
-            v-if="selection.case.assignment"
-            class="context-field context-field--wide"
-          >
-            <dt>Команда</dt>
-            <dd>{{ selection.case.assignment.teamName }}</dd>
-          </div>
-          <div class="context-field context-field--wide">
-            <dt>Последнее изменение</dt>
-            <dd>{{ relativeTime(selection.case.updatedAt) }}</dd>
-          </div>
-        </dl>
-      </template>
-      <div v-else class="empty-card">
-        <i class="pi pi-briefcase" aria-hidden="true" />
-        <p>Для этого диалога кейс не создан.</p>
-      </div>
-      <SupportCaseOperationsContext
-        v-if="selection.case"
-        :case-id="selection.case.id"
-        :sla="canReadSlaContext ? selection.sla : null"
-        :routing="canReadRoutingContext ? selection.routing : null"
-        :reservation-reconcile-attempt="reservationReconcileAttempt"
-        :reservation-reconcile-in-flight="reservationReconcileInFlight"
-        @reconcile="emit('reconcileOperations', $event)"
-      />
-    </section>
-
-    <section
-      v-if="activeTab === 'ACTIVITY'"
-      class="inspector-section activity-section"
-      aria-label="История кейса"
-    >
-      <div class="section-heading">
-        <div>
-          <span class="section-kicker">Журнал</span>
-          <h3>Кто, что и почему изменил</h3>
-        </div>
-      </div>
-      <ol
-        v-if="caseDesk?.detail.value?.timeline.events.length"
-        class="activity-list"
+    <Transition name="inspector-panel" mode="out-in">
+      <div
+        :key="activeTab"
+        class="inspector-panel"
+        role="tabpanel"
+        :id="`support-inspector-panel-${activeTab.toLowerCase()}`"
+        :aria-labelledby="`support-inspector-tab-${activeTab.toLowerCase()}`"
       >
-        <li
-          v-for="event in [...caseDesk.detail.value.timeline.events].reverse()"
-          :key="event.id"
+        <section
+          v-if="activeTab === 'CASE'"
+          class="inspector-section case-section"
+          aria-label="Обращение"
         >
-          <span class="activity-marker" aria-hidden="true" />
-          <div>
-            <header>
-              <strong>{{ activityTypeLabel(event.type) }}</strong>
-              <time :datetime="event.createdAt">{{
-                relativeTime(event.createdAt)
-              }}</time>
-            </header>
-            <p>
-              {{ activityActorLabel(event.actor) }} · версия
-              {{ event.caseVersion }}
-            </p>
-            <p v-if="event.reason" class="activity-reason">
-              {{ event.reason }}
-            </p>
-            <dl
-              v-if="activityChanges(event.previous, event.next).length"
-              class="activity-change"
-            >
-              <div
-                v-for="change in activityChanges(event.previous, event.next)"
-                :key="change.key"
+          <SupportCaseDesk
+            v-if="canReadCaseDesk && caseDesk && selection.case"
+            ref="caseDeskView"
+            :controller="caseDesk"
+            :classification-options="selection.classificationOptions"
+          />
+          <template v-else-if="selection.case">
+            <header class="case-header">
+              <span class="section-kicker"
+                >Обращение #{{ selection.case.projectSequence }}</span
               >
-                <dt>{{ change.label }}</dt>
+              <h3>{{ selection.case.title }}</h3>
+              <div class="case-badges">
+                <span class="status-badge">{{
+                  labelCaseStatus(selection.case.status)
+                }}</span>
+                <span class="priority-badge">{{
+                  labelCasePriority(selection.case.priority)
+                }}</span>
+              </div>
+            </header>
+            <dl class="context-grid case-grid">
+              <div class="context-field">
+                <dt>Категория</dt>
+                <dd>{{ selection.case.groupCode }}</dd>
+              </div>
+              <div class="context-field">
+                <dt>Назначен</dt>
                 <dd>
-                  <span>{{ change.previous }}</span
-                  ><i aria-hidden="true">→</i><strong>{{ change.next }}</strong>
+                  {{
+                    selection.case.assignment?.operatorName ??
+                    selection.case.assignee?.displayName ??
+                    "Не назначен"
+                  }}
                 </dd>
               </div>
+              <div
+                v-if="selection.case.assignment"
+                class="context-field context-field--wide"
+              >
+                <dt>Команда</dt>
+                <dd>{{ selection.case.assignment.teamName }}</dd>
+              </div>
+              <div class="context-field context-field--wide">
+                <dt>Последнее изменение</dt>
+                <dd>{{ relativeTime(selection.case.updatedAt) }}</dd>
+              </div>
             </dl>
+          </template>
+          <div v-else class="empty-card">
+            <i class="pi pi-briefcase" aria-hidden="true" />
+            <p>Для этого диалога обращение не создано.</p>
           </div>
-        </li>
-      </ol>
-      <div v-else class="empty-card">
-        <i class="pi pi-history" aria-hidden="true" />
-        <p>События кейса пока не зафиксированы.</p>
-      </div>
-    </section>
 
-    <section
-      v-if="activeTab === 'ACTIONS'"
-      class="inspector-section actions-section"
-      aria-label="Действия"
-    >
-      <div class="section-heading">
-        <div>
-          <span class="section-kicker">Управление</span>
-          <h3>Действия с диалогом</h3>
-        </div>
+          <SupportCaseOperationsContext
+            v-if="selection.case"
+            :case-id="selection.case.id"
+            :sla="canReadSlaContext ? selection.sla : null"
+            :routing="canReadRoutingContext ? selection.routing : null"
+            :reservation-reconcile-attempt="reservationReconcileAttempt"
+            :reservation-reconcile-in-flight="reservationReconcileInFlight"
+            @reconcile="emit('reconcileOperations', $event)"
+          />
+
+          <div class="case-actions">
+            <div class="section-heading">
+              <div>
+                <span class="section-kicker">Управление</span>
+                <h3>Действия с обращением</h3>
+              </div>
+            </div>
+            <div v-if="hasAvailableActions" class="action-stack">
+              <SupportAssignmentDesk
+                v-if="assignmentController && selection.case"
+                :controller="assignmentController"
+                :assignment="selection.case.assignment"
+                :claimant-label="claimantLabel"
+                viewers-label="Presence ещё не подключён"
+                :availability-label="availabilityLabel"
+              />
+              <SupportLeadAssignmentDesk
+                v-if="leadAssignmentController && selection.case"
+                :controller="leadAssignmentController"
+                :case-id="selection.case.id"
+                :case-label="selection.case.title"
+              />
+              <Button
+                v-if="canManageCase"
+                class="classify-case"
+                label="Классификация и приоритет"
+                icon="pi pi-tags"
+                severity="secondary"
+                outlined
+                @click="requestClassification"
+              />
+              <Button
+                v-if="canReadInternalNotes"
+                class="internal-notes-link"
+                label="Внутренние заметки"
+                icon="pi pi-file-edit"
+                severity="secondary"
+                outlined
+                @click="emit('openInternalNotes')"
+              />
+            </div>
+            <p v-else class="empty-copy">
+              Для этого обращения сейчас нет доступных действий.
+            </p>
+          </div>
+        </section>
+
+        <section
+          v-else-if="activeTab === 'USER'"
+          class="inspector-section user-section"
+          aria-label="Пользователь"
+        >
+          <header class="user-card">
+            <span class="user-avatar">{{ userInitial }}</span>
+            <div>
+              <span class="section-kicker">Пользователь</span>
+              <h3>{{ userLabel }}</h3>
+              <p>Активность {{ relativeTime(selection.endUser.lastSeenAt) }}</p>
+            </div>
+          </header>
+          <dl class="context-grid">
+            <div class="context-field">
+              <dt>Язык</dt>
+              <dd>
+                {{ selection.endUser.locale?.toUpperCase() ?? "Не указан" }}
+              </dd>
+            </div>
+            <div class="context-field">
+              <dt>Диалог</dt>
+              <dd>
+                {{
+                  !conversation
+                    ? "Нет связанного чата"
+                    : conversation.status === "OPEN"
+                      ? "Активный"
+                      : "Закрыт"
+                }}
+              </dd>
+            </div>
+            <div class="context-field">
+              <dt>Сообщений</dt>
+              <dd>{{ conversation?.messageCount ?? "—" }}</dd>
+            </div>
+            <div class="context-field">
+              <dt>В проекте с</dt>
+              <dd>{{ relativeTime(selection.endUser.createdAt) }}</dd>
+            </div>
+          </dl>
+          <p class="privacy-copy">
+            В рабочем месте используется внутренний идентификатор. Внешний ID
+            продукта здесь не раскрывается.
+          </p>
+        </section>
+
+        <section
+          v-else-if="activeTab === 'DATA'"
+          class="inspector-section data-section"
+          aria-label="Данные пользователя"
+        >
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Профиль продукта</span>
+              <h3>Актуальные данные продукта</h3>
+            </div>
+            <Button
+              label="Обновить данные"
+              aria-label="Обновить данные пользователя"
+              icon="pi pi-refresh"
+              size="small"
+              severity="secondary"
+              text
+              :loading="inspector.profile.loading.value"
+              @click="inspector.reloadActiveTab()"
+            />
+          </div>
+          <SupportInspectorState
+            :loading="inspector.profile.loading.value"
+            :error="inspector.profile.error.value"
+            :has-content="Boolean(profile)"
+            :empty="
+              inspector.profile.loaded.value && !visibleProfileFields.length
+            "
+            empty-title="Разрешённых данных нет"
+            empty-copy="Product Profile не содержит доступных полей для вашей роли."
+            empty-icon="pi pi-database"
+            @retry="inspector.reloadActiveTab()"
+          >
+            <template v-if="profile">
+              <div class="projection-meta">
+                <span>{{ profileSyncStatusLabel(profile.syncStatus) }}</span>
+                <span>Версия {{ profile.profileVersion }}</span>
+                <span>{{
+                  profile.observedAt
+                    ? `Наблюдалось ${relativeTime(profile.observedAt)}`
+                    : "Время не передано"
+                }}</span>
+                <span
+                  >Источник:
+                  {{ profileProvenanceLabel(profile.provenance) }}</span
+                >
+              </div>
+              <dl class="profile-fields">
+                <div
+                  v-for="field in visibleProfileFields"
+                  :key="field.definitionId"
+                >
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ profileFieldValue(field) }}</dd>
+                  <small>
+                    {{ profileValueStateLabel(field.availability) }} ·
+                    {{ profileClassificationLabel(field.classification) }}
+                    <template v-if="field.observedAt">
+                      · {{ relativeTime(field.observedAt) }}</template
+                    >
+                    <template v-if="field.untrustedData">
+                      · требует проверки</template
+                    >
+                  </small>
+                </div>
+              </dl>
+            </template>
+          </SupportInspectorState>
+        </section>
+
+        <section
+          v-else-if="activeTab === 'EVENTS'"
+          class="inspector-section events-section"
+          aria-label="События пользователя"
+        >
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Последние 30 дней</span>
+              <h3>События, связанные с обращением</h3>
+            </div>
+            <Button
+              label="Обновить события"
+              aria-label="Обновить события"
+              icon="pi pi-refresh"
+              size="small"
+              severity="secondary"
+              text
+              :loading="inspector.events.loading.value"
+              @click="inspector.reloadActiveTab()"
+            />
+          </div>
+          <SupportInspectorState
+            :loading="inspector.events.loading.value"
+            :error="inspector.events.error.value"
+            :has-content="Boolean(inspector.events.data.value?.items.length)"
+            :empty="
+              inspector.events.loaded.value &&
+              !inspector.events.data.value?.items.length
+            "
+            empty-title="Событий пока нет"
+            empty-copy="В безопасном рецепте для этого обращения ничего не найдено."
+            empty-icon="pi pi-bolt"
+            @retry="inspector.reloadActiveTab()"
+          >
+            <ol class="event-list">
+              <li
+                v-for="event in inspector.events.data.value?.items ?? []"
+                :key="event.id"
+              >
+                <span
+                  class="event-icon"
+                  :class="`status-${event.status.toLowerCase()}`"
+                >
+                  <i class="pi pi-wave-pulse" aria-hidden="true" />
+                </span>
+                <div>
+                  <header>
+                    <strong>{{ event.name }}</strong>
+                    <time :datetime="event.occurredAt">{{
+                      relativeTime(event.occurredAt)
+                    }}</time>
+                  </header>
+                  <p>
+                    {{ eventSourceLabel(event.source) }} ·
+                    {{ eventStatusLabel(event.status) }}
+                  </p>
+                  <code>{{ event.code }}</code>
+                </div>
+              </li>
+            </ol>
+            <Button
+              v-if="inspector.events.data.value?.nextCursor"
+              class="load-more-context"
+              label="Показать более ранние"
+              icon="pi pi-chevron-down"
+              severity="secondary"
+              outlined
+              :loading="inspector.events.loading.value"
+              @click="inspector.loadMoreEvents()"
+            />
+          </SupportInspectorState>
+        </section>
+
+        <section
+          v-else
+          class="inspector-section activity-section"
+          aria-label="Активность поддержки"
+        >
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Причинная лента</span>
+              <h3>Кто и почему изменил обращение</h3>
+            </div>
+            <Button
+              label="Обновить активность"
+              aria-label="Обновить активность"
+              icon="pi pi-refresh"
+              size="small"
+              severity="secondary"
+              text
+              :loading="inspector.activity.loading.value"
+              @click="inspector.reloadActiveTab()"
+            />
+          </div>
+          <SupportInspectorState
+            :loading="inspector.activity.loading.value"
+            :error="inspector.activity.error.value"
+            :has-content="
+              Boolean(inspector.activity.data.value?.data.facts.length)
+            "
+            :empty="
+              inspector.activity.loaded.value &&
+              !inspector.activity.data.value?.data.facts.length
+            "
+            empty-title="Активности пока нет"
+            empty-copy="Серверная причинная лента ещё не содержит фактов по обращению."
+            empty-icon="pi pi-history"
+            @retry="inspector.reloadActiveTab()"
+          >
+            <div v-if="inspector.activity.data.value" class="projection-meta">
+              <span>{{
+                inspector.activity.data.value.freshnessState === "READY"
+                  ? "Данные актуальны"
+                  : inspector.activity.data.value.freshnessState
+              }}</span>
+              <span
+                >Рассчитано
+                {{
+                  relativeTime(inspector.activity.data.value.computedAt)
+                }}</span
+              >
+            </div>
+            <ol class="activity-list">
+              <li
+                v-for="fact in inspector.activity.data.value?.data.facts ?? []"
+                :key="fact.activityId"
+              >
+                <span class="activity-marker" aria-hidden="true" />
+                <div>
+                  <header>
+                    <strong>{{ activityTypeLabel(fact.eventCode) }}</strong>
+                    <time :datetime="fact.occurredAt">{{
+                      relativeTime(fact.occurredAt)
+                    }}</time>
+                  </header>
+                  <p>
+                    {{ activityActorLabel(fact.actor) }} ·
+                    {{ activityFactKindLabel(fact.factKind) }}
+                  </p>
+                  <p
+                    v-if="activityReasonLabel(fact.reasonCode)"
+                    class="activity-reason"
+                  >
+                    {{ activityReasonLabel(fact.reasonCode) }}
+                  </p>
+                </div>
+              </li>
+            </ol>
+            <Button
+              v-if="inspector.activity.data.value?.nextCursor"
+              class="load-more-context"
+              label="Показать более ранние"
+              icon="pi pi-chevron-down"
+              severity="secondary"
+              outlined
+              :loading="inspector.activity.loading.value"
+              @click="inspector.loadMoreActivity()"
+            />
+          </SupportInspectorState>
+        </section>
       </div>
-      <div v-if="hasAvailableActions" class="action-stack">
-        <SupportAssignmentDesk
-          v-if="assignmentController && selection.case"
-          :controller="assignmentController"
-          :assignment="selection.case.assignment"
-          :claimant-label="claimantLabel"
-          viewers-label="Presence ещё не подключён"
-          :availability-label="availabilityLabel"
-        />
-        <SupportLeadAssignmentDesk
-          v-if="leadAssignmentController && selection.case"
-          :controller="leadAssignmentController"
-          :case-id="selection.case.id"
-          :case-label="selection.case.title"
-        />
-        <Button
-          v-if="canManageCase"
-          class="classify-case"
-          label="Классификация и приоритет"
-          icon="pi pi-tags"
-          severity="secondary"
-          outlined
-          @click="requestClassification"
-        />
-        <Button
-          v-if="canReadInternalNotes"
-          class="internal-notes-link"
-          label="Внутренние заметки"
-          icon="pi pi-file-edit"
-          severity="secondary"
-          outlined
-          @click="emit('openInternalNotes')"
-        />
-      </div>
-      <div v-else class="empty-card">
-        <i class="pi pi-lock" aria-hidden="true" />
-        <p>Для этого диалога сейчас нет доступных действий.</p>
-      </div>
-    </section>
+    </Transition>
   </div>
 </template>
 
 <style scoped>
 .inspector-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(82px, 1fr);
+  grid-template-columns: none;
   gap: 2px;
-  margin: -4px -8px 24px;
+  margin: -4px -8px 20px;
   padding: 4px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
   border-bottom: 1px solid var(--line);
 }
 .inspector-tabs button {
   min-height: 44px;
-  padding: 0 8px;
+  min-width: 82px;
+  padding: 0 6px;
+  overflow: hidden;
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 0.74rem;
+  font-size: 0.64rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
+  scroll-snap-align: nearest;
+  transition:
+    color 140ms ease-out,
+    background-color 140ms ease-out,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inspector-tabs button i {
   display: block;
@@ -611,7 +784,10 @@ defineExpose({ requestClassification });
 }
 .inspector-tabs button.active {
   background: var(--brand-soft);
-  color: var(--brand);
+  color: var(--text-brand);
+}
+.inspector-tabs button:active {
+  transform: scale(0.97);
 }
 .inspector-tabs button:focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -619,6 +795,23 @@ defineExpose({ requestClassification });
 }
 .inspector-section {
   min-height: 260px;
+}
+.inspector-panel {
+  min-height: 260px;
+}
+.inspector-panel-enter-active,
+.inspector-panel-leave-active {
+  transition:
+    opacity 140ms ease-out,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.inspector-panel-enter-from {
+  opacity: 0;
+  transform: translateX(6px);
+}
+.inspector-panel-leave-to {
+  opacity: 0;
+  transform: translateX(-4px);
 }
 .user-card {
   display: flex;
@@ -697,6 +890,33 @@ defineExpose({ requestClassification });
   padding-top: 20px;
   border-top: 1px solid var(--line);
 }
+.privacy-copy {
+  margin: 14px 0 0;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.projection-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.projection-meta span {
+  min-height: 24px;
+  padding: 4px 7px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
 .profile-meta,
 .empty-copy {
   margin: 8px 0 0;
@@ -739,6 +959,11 @@ defineExpose({ requestClassification });
   display: grid;
   gap: 10px;
 }
+.case-actions {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
 .action-stack :deep(.p-button) {
   width: 100%;
   justify-content: flex-start;
@@ -749,6 +974,71 @@ defineExpose({ requestClassification });
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.event-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.event-list li {
+  min-width: 0;
+  padding: 12px 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+.event-list li:first-child {
+  padding-top: 2px;
+}
+.event-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+.event-icon.status-failed {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.event-list header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.event-list strong {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.event-list time,
+.event-list p,
+.event-list code {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+.event-list time {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+.event-list p {
+  margin: 4px 0 0;
+}
+.event-list code {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .activity-list li {
   position: relative;
@@ -796,41 +1086,6 @@ defineExpose({ requestClassification });
 .activity-list .activity-reason {
   color: var(--text-primary);
 }
-.activity-list .activity-change {
-  display: grid;
-  gap: 7px;
-  margin: 8px 0 0;
-  padding: 8px 9px;
-  border-left: 2px solid var(--brand);
-  background: var(--surface-muted);
-}
-.activity-change > div {
-  display: grid;
-  gap: 3px;
-}
-.activity-change dt {
-  color: var(--text-muted);
-  font-size: 0.62rem;
-}
-.activity-change dd {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-size: 0.68rem;
-  overflow-wrap: anywhere;
-}
-.activity-change dd span {
-  color: var(--text-muted);
-  text-decoration: line-through;
-}
-.activity-change dd i {
-  color: var(--brand);
-  font-style: normal;
-}
-.activity-change dd strong {
-  color: var(--text-primary);
-}
 .empty-card {
   display: grid;
   justify-items: center;
@@ -856,8 +1111,10 @@ defineExpose({ requestClassification });
   margin: 12px 0 0;
 }
 .profile-fields > div {
+  padding: 10px 0;
   display: grid;
   gap: 3px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
 }
 .profile-fields dt,
 .profile-fields small {
@@ -870,9 +1127,24 @@ defineExpose({ requestClassification });
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.load-more-context {
+  width: 100%;
+  margin-top: 12px;
+}
 @media (max-width: 720px) {
   .inspector-tabs {
     margin-inline: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inspector-tabs button,
+  .inspector-panel-enter-active,
+  .inspector-panel-leave-active {
+    transition-duration: 1ms;
+  }
+  .inspector-panel-enter-from,
+  .inspector-panel-leave-to {
+    transform: none;
   }
 }
 </style>

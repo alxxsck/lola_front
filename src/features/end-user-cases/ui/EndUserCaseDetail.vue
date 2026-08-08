@@ -112,8 +112,9 @@ const resolutionLabel = (assessment: string): string =>
   })[assessment] ?? "Статус решения неизвестен";
 
 const roleLabel = (role: string): string =>
-  ({ USER: "Пользователь", ASSISTANT: "Retenive", ADMIN: "Администратор" })[role] ??
-  role;
+  ({ USER: "Пользователь", ASSISTANT: "Retenive", ADMIN: "Администратор" })[
+    role
+  ] ?? role;
 
 const messageChannel = (message: {
   role: string;
@@ -128,7 +129,6 @@ const messageChannel = (message: {
       : {};
   return metadata.source === "voice" ? "VOICE" : "TEXT";
 };
-
 </script>
 
 <template>
@@ -178,9 +178,9 @@ const messageChannel = (message: {
                 params: { endUserId: value.case.endUser.id },
               }"
             >
-              {{ value.case.endUser.externalId }}
+              Открыть профиль
             </RouterLink>
-            <strong v-else>{{ value.case.endUser.externalId }}</strong>
+            <strong v-else>Внутренний профиль</strong>
           </div>
           <div>
             <span>Исполнитель</span>

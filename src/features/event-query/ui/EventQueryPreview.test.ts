@@ -67,7 +67,6 @@ describe("EventQueryPreview", () => {
     vi.clearAllMocks();
     vi.mocked(endUserProfileRepository.resolveIdentity).mockResolvedValue({
       endUserId: "00000000-0000-4000-8000-000000000001",
-      externalUserId: "player-42",
     });
     vi.mocked(eventQueryRepository.listItems).mockResolvedValue({
       audience: "INTERNAL_AI",

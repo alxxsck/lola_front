@@ -98,11 +98,11 @@ import {
   canReadSupportInternalNoteHistory,
   canReadSupportInternalNotes,
 } from "@/features/support-workspace/model/support-workspace-access";
-import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
+import { supportInspectorSource } from "@/features/support-inspector/api/support-inspector-source";
+import { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
-import { createSupportUserProfileController } from "@/features/support-user-profile/model/use-support-user-profile";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
@@ -167,13 +167,13 @@ const canReadSlaContext = computed(() =>
 const routingContextVisibility = computed<"FULL" | "OWN" | "NONE">(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
   if (
-    ([
-      "project.support.routing.read",
-      "project.support.routing.manage",
-      "project.support.lead_control.read",
-    ] as const).some((permission) =>
-      hasProjectPermission(permissions, permission),
-    )
+    (
+      [
+        "project.support.routing.read",
+        "project.support.routing.manage",
+        "project.support.lead_control.read",
+      ] as const
+    ).some((permission) => hasProjectPermission(permissions, permission))
   )
     return "FULL";
   return hasProjectPermission(permissions, "project.support.routing.receive")
@@ -311,7 +311,9 @@ const supportSearchRouteKeys = new Set([
 ]);
 let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
-const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(null);
+const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(
+  null,
+);
 const supportContext = ref<InstanceType<
   typeof SupportConversationContext
 > | null>(null);
@@ -1044,7 +1046,9 @@ const leadAssignmentSurfaceController = computed(() =>
   canOverrideAssignments.value ? leadAssignment : undefined,
 );
 const profileAccessDenied = ref(false);
-const canReadProfile = computed(
+const inspectorEventsAccessDenied = ref(false);
+const inspectorActivityAccessDenied = ref(false);
+const canReadInspectorProfile = computed(
   () =>
     !profileAccessDenied.value &&
     hasProjectPermission(
@@ -1052,21 +1056,51 @@ const canReadProfile = computed(
       "project.profiles.read",
     ),
 );
-const profile = createSupportUserProfileController(
+const canReadInspectorEvents = computed(
+  () =>
+    !inspectorEventsAccessDenied.value &&
+    Boolean(conversation.selection.value?.case) &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.cases.read",
+    ) &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.inspector_events.read",
+    ),
+);
+const canReadInspectorActivity = computed(
+  () =>
+    !inspectorActivityAccessDenied.value &&
+    Boolean(conversation.selection.value?.case) &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.activity.read",
+    ),
+);
+const inspector = createSupportInspectorController(
   {
     projectId: () => auth.project?.id,
     endUserId: () => conversation.selection.value?.endUser.id,
-    canRead: () => canReadProfile.value,
-    async onForbidden() {
-      profileAccessDenied.value = true;
+    caseId: () => conversation.selection.value?.case?.id,
+    operatorId: () => auth.user?.id,
+    permissions: () => ({
+      profile: canReadInspectorProfile.value,
+      events: canReadInspectorEvents.value,
+      activity: canReadInspectorActivity.value,
+    }),
+    async onForbidden(tab) {
+      if (tab === "DATA") profileAccessDenied.value = true;
+      if (tab === "EVENTS") inspectorEventsAccessDenied.value = true;
+      if (tab === "ACTIVITY") inspectorActivityAccessDenied.value = true;
       try {
         await auth.refreshContext();
       } catch {
-        // The sensitive projection is already purged; the next route guard owns recovery.
+        // The protected projection is already purged; route guards own recovery.
       }
     },
   },
-  supportUserProfileSource,
+  supportInspectorSource,
 );
 
 async function openInboxItem(item: SupportInboxItem): Promise<void> {
@@ -1795,7 +1829,7 @@ async function handleConversationForbidden(): Promise<void> {
   reply.reset();
   messageDelivery.reset();
   translation.reset();
-  profile.reset();
+  inspector.reset();
   internalNotes.reset();
   assignment.resetCase();
   try {
@@ -1913,6 +1947,8 @@ watch(
     lastInboxSelectionKey.value = "";
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
+    inspectorEventsAccessDenied.value = false;
+    inspectorActivityAccessDenied.value = false;
     availabilityAccessDenied.value = false;
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
@@ -1923,7 +1959,7 @@ watch(
     assignment.reset();
     leadAssignment.reset();
     availability.reset();
-    profile.reset();
+    inspector.reset();
     internalNotes.reset();
     caseDesk.reset();
     reply.reset();
@@ -2192,6 +2228,8 @@ watch(
     }
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
+    inspectorEventsAccessDenied.value = false;
+    inspectorActivityAccessDenied.value = false;
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
@@ -2199,7 +2237,7 @@ watch(
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
     assignment.resetCase();
-    profile.reset();
+    inspector.reset();
     internalNotes.reset();
     messageDelivery.reset();
     void conversation.load();
@@ -2293,10 +2331,6 @@ watch(
   { immediate: true },
 );
 
-watch(canReadProfile, (allowed) => {
-  if (!allowed) profile.reset();
-});
-
 onBeforeUnmount(() => {
   clearSupportSearchTimer();
   window.removeEventListener("keydown", handleWorkspaceKeydown);
@@ -2305,7 +2339,7 @@ onBeforeUnmount(() => {
   mobileWorkspaceMedia = null;
   compactWorkspaceMedia = null;
   stopInternalNotesReconciliation();
-  profile.reset();
+  inspector.reset();
   internalNotes.reset();
   reply.reset();
   replyTemplateGalleryVisible.value = false;
@@ -2756,11 +2790,7 @@ onBeforeUnmount(() => {
             :lead-assignment-controller="leadAssignmentSurfaceController"
             :availability-label="assignmentAvailabilityLabel"
             :can-read-internal-notes="canReadSelectedInternalNotes"
-            :can-read-profile="canReadProfile"
-            :profile="profile.profile.value"
-            :profile-loading="profile.loading.value"
-            :profile-error="profile.error.value"
-            @load-profile="profile.load"
+            :inspector="inspector"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
             @reconcile-operations="reconcileCaseOperations"

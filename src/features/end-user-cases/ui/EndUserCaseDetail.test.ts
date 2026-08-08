@@ -193,9 +193,9 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Открыть в диалоге");
     expect(wrapper.find(".message-row").exists()).toBe(false);
     expect(wrapper.findAll(".case-message-evidence")).toHaveLength(1);
-    expect(wrapper.get(".case-message-evidence a").attributes("data-to")).toContain(
-      '"conversationId":"thread-1"',
-    );
+    expect(
+      wrapper.get(".case-message-evidence a").attributes("data-to"),
+    ).toContain('"conversationId":"thread-1"');
     expect(wrapper.text()).toContain("Текст, Голос");
     expect(wrapper.text()).toContain("Обеспокоен → Спокоен");
     expect(wrapper.text()).not.toContain("check_deposit");
@@ -488,7 +488,9 @@ describe("EndUserCaseDetail", () => {
     expect(wrapper.text()).toContain("Анализ временно отстаёт");
     expect(wrapper.text()).toContain("Сводка ещё формируется");
     expect(wrapper.text()).toContain("Каналы: не определены");
-    expect(wrapper.text()).toContain("Инструменты Retenive ещё не использовались");
+    expect(wrapper.text()).toContain(
+      "Инструменты Retenive ещё не использовались",
+    );
     expect(wrapper.findAll(".case-message-evidence")).toHaveLength(3);
     expect(wrapper.find(".message-row").exists()).toBe(false);
     expect(wrapper.text()).toContain("Администратор");
@@ -536,7 +538,7 @@ describe("EndUserCaseDetail", () => {
         },
       },
     });
-    expect(wrapper.text()).toContain("customer-42");
+    expect(wrapper.text()).toContain("Внутренний профиль");
     expect(wrapper.html()).not.toContain('"users"');
     expect(wrapper.text()).not.toContain("Открыть в диалоге");
   });

@@ -298,7 +298,11 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
       valueType: "DECIMAL",
       classification: "SENSITIVE",
       purpose: "Персонализация ответа о балансе",
-      policies: { ...base.policies, adminRead: true, aiRead: true },
+      policies: {
+        ...base.policies,
+        cmsRead: { mode: "VISIBLE", access: "RESTRICTED" },
+        aiRead: true,
+      },
       position: 30,
     },
   ];
@@ -449,13 +453,13 @@ async function load() {
     } else {
       const [nextWorkspace, nextHealth, publicationHistory, contractHistory] =
         await Promise.all([
-        attributeContractRepository.workspace(projectId),
-        attributeContractRepository.health(projectId, {
-          window: healthWindow.value,
-        }),
-        attributeContractRepository.publications(projectId, { limit: 25 }),
-        attributeContractRepository.revisions(projectId, { limit: 25 }),
-      ]);
+          attributeContractRepository.workspace(projectId),
+          attributeContractRepository.health(projectId, {
+            window: healthWindow.value,
+          }),
+          attributeContractRepository.publications(projectId, { limit: 25 }),
+          attributeContractRepository.revisions(projectId, { limit: 25 }),
+        ]);
       workspace.value = nextWorkspace;
       validation.value = nextWorkspace.validation;
       health.value = nextHealth;
@@ -642,7 +646,12 @@ async function validateDraft() {
 
 async function publish(command: AttributePublicationFormCommand) {
   const projectId = auth.project?.id;
-  if (!projectId || !workspace.value || !validation.value || !publishReady.value)
+  if (
+    !projectId ||
+    !workspace.value ||
+    !validation.value ||
+    !publishReady.value
+  )
     return;
   publishing.value = true;
   error.value = "";
@@ -660,7 +669,8 @@ async function publish(command: AttributePublicationFormCommand) {
       return;
     }
     const result = await attributeContractRepository.publish(projectId, {
-      expectedCurrentPublicationId: workspace.value.currentPublication?.id ?? null,
+      expectedCurrentPublicationId:
+        workspace.value.currentPublication?.id ?? null,
       expectedDraftVersion: workspace.value.draft.draftVersion,
       validationHash: validation.value.validationHash,
       ...command,
@@ -691,7 +701,10 @@ async function selectPublication(publicationId: string) {
     selectedPublication.value =
       repository.mode === "mock"
         ? (workspace.value?.currentPublication ?? null)
-        : await attributeContractRepository.publication(projectId, publicationId);
+        : await attributeContractRepository.publication(
+            projectId,
+            publicationId,
+          );
   } catch (cause) {
     error.value =
       cause instanceof Error
@@ -918,8 +931,8 @@ function archiveImpactedField() {
         <div class="eyebrow">Данные пользователей</div>
         <h1>Поля профиля пользователей</h1>
         <p class="subtitle">
-          Задайте, какие данные о пользователе Retenive получает от вашего продукта
-          и где их можно использовать.
+          Задайте, какие данные о пользователе Retenive получает от вашего
+          продукта и где их можно использовать.
         </p>
       </div>
       <div class="header-actions">
@@ -1076,8 +1089,7 @@ function archiveImpactedField() {
               : "Ещё не создан"
           }}</strong
           ><small
-            >Версия меняется только вместе с producer-visible
-            структурой.</small
+            >Версия меняется только вместе с producer-visible структурой.</small
           >
         </article>
         <article class="metric card">
@@ -1377,7 +1389,8 @@ function archiveImpactedField() {
               <span v-if="field.requirement !== 'OPTIONAL'">{{
                 requirementLabel(field.requirement)
               }}</span
-              ><span v-if="field.policies.adminRead">Карточка пользователя</span
+              ><span v-if="field.policies.cmsRead.mode === 'VISIBLE'"
+                >Карточка пользователя</span
               ><span v-if="field.policies.audienceRead">Сегменты</span
               ><span v-if="field.policies.templateRead">Шаблоны</span
               ><span v-if="field.policies.aiRead">Функции с ИИ</span

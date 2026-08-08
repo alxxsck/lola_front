@@ -13,7 +13,6 @@ import type { CmsProfileSummaryResponseDtoSyncStatus } from "./cmsProfileSummary
 export interface CmsProfileSummaryResponseDto {
   conversationAiSuspensionSummary: CmsConversationAISuspensionSummaryResponseDto;
   endUserId: string;
-  externalUserId: string;
   fields: ProfileProjectionFieldResponseDto[];
   /** @nullable */
   lastRejectedSync?: CmsProfileSummaryResponseDtoLastRejectedSync;

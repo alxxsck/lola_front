@@ -5,13 +5,14 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AttributeConsumerPoliciesDtoCmsRead } from "./attributeConsumerPoliciesDtoCmsRead";
 import type { AttributeIndexPolicy } from "./attributeIndexPolicy";
 
 export interface AttributeConsumerPoliciesDto {
-  adminRead: boolean;
   aiRead: boolean;
   audienceRead: boolean;
   clientRead: boolean;
+  cmsRead: AttributeConsumerPoliciesDtoCmsRead;
   exportRead: boolean;
   indexPolicy: AttributeIndexPolicy;
   templateRead: boolean;

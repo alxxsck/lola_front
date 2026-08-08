@@ -19,7 +19,6 @@ export interface ProfileProjectionResponseDto {
   /** @nullable */
   contractRevision?: number | null;
   endUserId: string;
-  externalUserId: string;
   fields: ProfileProjectionFieldResponseDto[];
   lastRejectedSync?: ProfileProjectionResponseDtoLastRejectedSync;
   /** @nullable */

@@ -35,7 +35,7 @@ defineEmits<{ select: [] }>();
     <strong class="title">{{ item.title }}</strong>
     <span class="summary">{{ item.summary || item.goal }}</span>
     <span class="context">
-      <span><i class="pi pi-user" /> {{ item.endUser.externalId }}</span>
+      <span><i class="pi pi-user" /> Пользователь</span>
       <span><i class="pi pi-comments" /> {{ item.messageCount }}</span>
       <span v-if="item.endUserRecontactCount">
         <i class="pi pi-replay" /> Возвратов: {{ item.endUserRecontactCount }}

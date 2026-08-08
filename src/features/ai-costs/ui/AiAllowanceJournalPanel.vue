@@ -485,8 +485,8 @@ function provenance(item: AiAllowanceJournalPage["items"][number]): string {
         <i class="pi pi-user" aria-hidden="true" />
         <h3>Выберите пользователя</h3>
         <p>
-          Найдите пользователя по ID из вашего продукта или откройте историю из
-          таблицы пользователей.
+          Найдите пользователя по внутреннему ID или откройте историю из таблицы
+          пользователей.
         </p>
       </div>
       <footer v-if="visiblePage" class="journal-footer">

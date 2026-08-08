@@ -13,7 +13,6 @@ import { isMockMode } from "@/shared/config/data-mode";
 
 export interface ResolvedEndUserIdentity {
   endUserId: string;
-  externalUserId: string | null;
 }
 
 const uuidPattern =
@@ -46,7 +45,7 @@ export const endUserProfileRepository = {
     const normalized = identity.trim();
     if (!normalized) return null;
     if (uuidPattern.test(normalized)) {
-      return { endUserId: normalized, externalUserId: null };
+      return { endUserId: normalized };
     }
 
     if (isMockMode) {
@@ -54,22 +53,12 @@ export const endUserProfileRepository = {
       const user = page.items.find(
         (candidate) => candidate.externalId === normalized,
       );
-      return user
-        ? { endUserId: user.id, externalUserId: user.externalId }
-        : null;
+      return user ? { endUserId: user.id } : null;
     }
 
-    const response = await call(() =>
-      adminEndUserProfilesList(projectId, {
-        externalUserId: normalized,
-        limit: 2,
-      }),
-    );
-    const user = response.items.find(
-      (candidate) => candidate.externalUserId === normalized,
-    );
-    return user
-      ? { endUserId: user.endUserId, externalUserId: user.externalUserId }
-      : null;
+    // The permission-safe CMS contract intentionally does not expose or
+    // accept product-owned external identifiers. API mode resolves only the
+    // opaque End User id above instead of attempting an unsafe lookup.
+    return null;
   },
 };

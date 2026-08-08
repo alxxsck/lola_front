@@ -5801,9 +5801,6 @@
       "AttributeConsumerPoliciesDto": {
         "additionalProperties": false,
         "properties": {
-          "adminRead": {
-            "type": "boolean"
-          },
           "aiRead": {
             "type": "boolean"
           },
@@ -5812,6 +5809,48 @@
           },
           "clientRead": {
             "type": "boolean"
+          },
+          "cmsRead": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "HIDDEN"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "access": {
+                    "enum": [
+                      "BASE",
+                      "RESTRICTED"
+                    ],
+                    "type": "string"
+                  },
+                  "mode": {
+                    "enum": [
+                      "VISIBLE"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "access"
+                ],
+                "type": "object"
+              }
+            ]
           },
           "exportRead": {
             "type": "boolean"
@@ -5828,7 +5867,7 @@
           }
         },
         "required": [
-          "adminRead",
+          "cmsRead",
           "clientRead",
           "audienceRead",
           "templateRead",
@@ -11061,9 +11100,6 @@
             "format": "uuid",
             "type": "string"
           },
-          "externalUserId": {
-            "type": "string"
-          },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/ProfileProjectionFieldResponseDto"
@@ -11103,7 +11139,6 @@
         },
         "required": [
           "endUserId",
-          "externalUserId",
           "lastSeenAt",
           "profileVersion",
           "syncStatus",
@@ -16804,17 +16839,13 @@
       },
       "EndUserCaseEndUserResponseDto": {
         "properties": {
-          "externalId": {
-            "type": "string"
-          },
           "id": {
             "format": "uuid",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "externalId"
+          "id"
         ],
         "type": "object"
       },
@@ -27522,9 +27553,6 @@
             "format": "uuid",
             "type": "string"
           },
-          "externalUserId": {
-            "type": "string"
-          },
           "fields": {
             "items": {
               "$ref": "#/components/schemas/ProfileProjectionFieldResponseDto"
@@ -27586,7 +27614,6 @@
         },
         "required": [
           "endUserId",
-          "externalUserId",
           "profileVersion",
           "provenance",
           "syncStatus",
@@ -39362,6 +39389,95 @@
         ],
         "type": "object"
       },
+      "SupportInspectorEventPageResponseDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportInspectorEventResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          },
+          "recipeVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "snapshotAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipeVersion",
+          "caseId",
+          "snapshotAt",
+          "items"
+        ],
+        "type": "object"
+      },
+      "SupportInspectorEventResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "definitionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "SERVER",
+              "FRONTEND",
+              "INTERNAL",
+              "INTEGRATION"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "PROCESSED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "definitionVersion",
+          "source",
+          "status",
+          "occurredAt",
+          "receivedAt"
+        ],
+        "type": "object"
+      },
       "SupportInternalNotePageResponseDto": {
         "properties": {
           "items": {
@@ -47921,9 +48037,6 @@
             "format": "date-time",
             "type": "string"
           },
-          "externalId": {
-            "type": "string"
-          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -47942,7 +48055,6 @@
         },
         "required": [
           "id",
-          "externalId",
           "isGuest",
           "lastSeenAt",
           "createdAt"
@@ -63379,16 +63491,6 @@
             "required": false,
             "schema": {
               "maxLength": 2000,
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "externalUserId",
-            "required": false,
-            "schema": {
-              "maxLength": 200,
-              "minLength": 1,
               "type": "string"
             }
           },
@@ -80653,6 +80755,263 @@
           "code": "project.support.macros.read",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/events": {
+      "get": {
+        "operationId": "SupportInspectorEvents_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 4096,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportInspectorEventPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_INSPECTOR_EVENT_RANGE_INVALID",
+                            "SUPPORT_INSPECTOR_EVENT_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_CASE_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INSPECTOR_EVENT_RATE_LIMITED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_INSPECTOR_EVENT_CURSOR_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support inspector events"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.inspector_events.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/content-legal-holds": {

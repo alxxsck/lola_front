@@ -6,7 +6,6 @@ import UsersPage from "./UsersPage.vue";
 
 const profile = {
   endUserId: "user-1",
-  externalUserId: "customer-1",
   profileVersion: "8",
   syncStatus: "VALID" as const,
   lastSeenAt: "2026-07-16T10:00:00.000Z",
@@ -86,7 +85,6 @@ describe("страница профилей с единым рабочим пр�
       visible: true,
       projectId: "project-1",
       endUserId: "user-1",
-      externalUserId: "customer-1",
     });
     expect(mocks.replace).toHaveBeenCalledWith({
       name: "users",
@@ -143,26 +141,19 @@ describe("страница профилей с единым рабочим пр�
     });
   });
 
-  it("находит пользователя глубокой ссылки вне первой страницы точным запросом", async () => {
+  it("открывает пользователя глубокой ссылки по защищённой проекции", async () => {
     const offPage = {
       ...profile,
       endUserId: "user-off-page",
-      externalUserId: "customer-off-page",
     };
     mocks.routeParams.endUserId = offPage.endUserId;
-    mocks.list
-      .mockResolvedValueOnce({ items: [], nextCursor: "next" })
-      .mockResolvedValueOnce({ items: [offPage], nextCursor: null });
+    mocks.list.mockResolvedValueOnce({ items: [], nextCursor: "next" });
     mocks.profile.mockResolvedValue({ ...offPage, contractRevision: 3 });
 
     const wrapper = mountPage();
     await flushPromises();
 
     expect(mocks.profile).toHaveBeenCalledWith("project-1", offPage.endUserId);
-    expect(mocks.list).toHaveBeenLastCalledWith("project-1", {
-      limit: 50,
-      externalUserId: offPage.externalUserId,
-    });
     expect(wrapper.getComponent(UserWorkspaceDialog).props("endUserId")).toBe(
       offPage.endUserId,
     );
@@ -186,25 +177,50 @@ describe("страница профилей с единым рабочим пр�
     const oldRequest = new Promise((resolve) => {
       finishOld = resolve;
     });
-    mocks.list
-      .mockReturnValueOnce(oldRequest)
-      .mockResolvedValueOnce({
-        items: [{ ...profile, externalUserId: "new-result" }],
-        nextCursor: null,
-      });
+    mocks.list.mockReturnValueOnce(oldRequest).mockResolvedValueOnce({
+      items: [{ ...profile, endUserId: "new-result" }],
+      nextCursor: null,
+    });
     const wrapper = mountPage();
     const newer = (wrapper.vm as unknown as { load(): Promise<void> }).load();
     await newer;
     finishOld({
-      items: [{ ...profile, externalUserId: "stale-result" }],
+      items: [{ ...profile, endUserId: "stale-result" }],
       nextCursor: null,
     });
     await flushPromises();
 
     expect(
       (wrapper.vm as unknown as { items: (typeof profile)[] }).items[0]
-        ?.externalUserId,
+        ?.endUserId,
     ).toBe("new-result");
+  });
+
+  it("ищет пользователя по точному внутреннему ID через защищённую проекцию", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+    mocks.list.mockClear();
+    mocks.profile.mockResolvedValueOnce({
+      ...profile,
+      endUserId: "user-off-page",
+      contractRevision: 3,
+      ageSeconds: 60,
+      receivedAt: profile.lastSeenAt,
+      provenance: "PRODUCT_PROFILE",
+    });
+    const page = wrapper.vm as unknown as {
+      query: string;
+      search(): void;
+      items: (typeof profile)[];
+    };
+
+    page.query = "user-off-page";
+    page.search();
+    await flushPromises();
+
+    expect(mocks.profile).toHaveBeenCalledWith("project-1", "user-off-page");
+    expect(mocks.list).not.toHaveBeenCalled();
+    expect(page.items.map((item) => item.endUserId)).toEqual(["user-off-page"]);
   });
 
   it("сохраняет понятную продуктовую навигацию к настройке полей", async () => {
@@ -233,7 +249,7 @@ describe("страница профилей с единым рабочим пр�
     ]);
   });
 
-  it("показывает системное имя над external ID и не использует внутренний ID", async () => {
+  it("показывает разрешённое имя над коротким внутренним ID", async () => {
     const wrapper = mountPage();
     await flushPromises();
     const namedProfile = {
@@ -260,8 +276,8 @@ describe("страница профилей с единым рабочим пр�
     };
 
     expect(page.userDisplayName(namedProfile)).toBe("Анна Смирнова");
-    expect(page.userProductId(namedProfile)).toBe("customer-1");
-    expect(page.userDisplayName(profile)).toBe("customer-1");
-    expect(page.userProductId(profile)).toBe("customer-1");
+    expect(page.userProductId(namedProfile)).toBe("ID user-1");
+    expect(page.userDisplayName(profile)).toBe("Пользователь");
+    expect(page.userProductId(profile)).toBe("ID user-1");
   });
 });

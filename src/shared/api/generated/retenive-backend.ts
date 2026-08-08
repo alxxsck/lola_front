@@ -557,6 +557,8 @@ import type {
   SupportExternalWorkReadInboxTimelineParams,
   SupportExternalWorkReadItemsParams,
   SupportExternalWorkReadTimelineParams,
+  SupportInspectorEventPageResponseDto,
+  SupportInspectorEventsListParams,
   SupportInternalKnowledgeCreateFileDownloadParams,
   SupportInternalKnowledgeManagePageParams,
   SupportInternalKnowledgeOpenParams,
@@ -5876,6 +5878,24 @@ export const supportContentPanelRead = (
   return request<SupportContentPanelResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/content`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInspectorEventsList = (
+  projectId: string,
+  caseId: string,
+  params: SupportInspectorEventsListParams,
+  options?: SecondParameter<
+    typeof request<SupportInspectorEventPageResponseDto>
+  >,
+) => {
+  return request<SupportInspectorEventPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/cases/${caseId}/events`,
       method: "GET",
       params,
     },
@@ -12031,6 +12051,9 @@ export type SupportCaseAssignmentTransferWithOverrideResult = NonNullable<
 >;
 export type SupportContentPanelReadResult = NonNullable<
   Awaited<ReturnType<typeof supportContentPanelRead>>
+>;
+export type SupportInspectorEventsListResult = NonNullable<
+  Awaited<ReturnType<typeof supportInspectorEventsList>>
 >;
 export type SupportContentGovernanceListHoldsResult = NonNullable<
   Awaited<ReturnType<typeof supportContentGovernanceListHolds>>

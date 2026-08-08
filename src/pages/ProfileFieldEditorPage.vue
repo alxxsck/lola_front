@@ -49,6 +49,16 @@ const fieldErrors = ref<Record<string, string>>({});
 const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const editingIndex = ref<number | null>(null);
 const form = ref<AttributeContractDraftFieldDto>(createContractField());
+const cmsReadAccess = computed<"HIDDEN" | "BASE" | "RESTRICTED">({
+  get: () => {
+    const policy = form.value.policies.cmsRead;
+    return policy.mode === "HIDDEN" ? "HIDDEN" : policy.access;
+  },
+  set: (access) => {
+    form.value.policies.cmsRead =
+      access === "HIDDEN" ? { mode: "HIDDEN" } : { mode: "VISIBLE", access };
+  },
+});
 const allowedValuesInput = ref("");
 const localeInput = ref("");
 const selectedFieldKind = ref<ProfileFieldKind | null>(null);
@@ -108,6 +118,11 @@ const classificationOptions = [
   { value: "INTERNAL", label: "Служебные данные" },
   { value: "PERSONAL", label: "Персональные данные" },
   { value: "SENSITIVE", label: "Чувствительные данные" },
+];
+const cmsReadOptions = [
+  { value: "HIDDEN", label: "Скрыто" },
+  { value: "BASE", label: "Базовый доступ" },
+  { value: "RESTRICTED", label: "Только с расширенным доступом" },
 ];
 const lifecycleOptions = [
   { value: "ACTIVE", label: "Активно" },
@@ -440,7 +455,7 @@ function mockWorkspace(): AttributeContractWorkspaceResponseDto {
       purpose: "Персонализация ответа о балансе",
       policies: {
         ...createContractField().policies,
-        adminRead: true,
+        cmsRead: { mode: "VISIBLE", access: "RESTRICTED" },
         aiRead: true,
       },
     },
@@ -728,8 +743,8 @@ async function save() {
                 >Как Retenive должна понимать это поле?</span
               >
               <small>
-                Сначала выберите назначение. Для системного поля Retenive подставит
-                безопасную заготовку и сразу покажет нужные настройки.
+                Сначала выберите назначение. Для системного поля Retenive
+                подставит безопасную заготовку и сразу покажет нужные настройки.
               </small>
               <small class="preset-required">Выберите один вариант.</small>
             </span>
@@ -1066,13 +1081,21 @@ async function save() {
               </label>
             </div>
             <div class="usage-grid">
-              <label class="usage-option">
+              <label class="usage-option usage-option-select">
                 <span
-                  ><i class="pi pi-user-edit" /><strong
-                    >Показывать администраторам</strong
-                  ><small>Поле видно в карточке пользователя.</small></span
+                  ><i class="pi pi-user-edit" /><strong>Доступ в CMS</strong
+                  ><small
+                    >Выберите, скрыть поле или показывать его только сотрудникам
+                    с подходящим уровнем доступа.</small
+                  ></span
                 >
-                <ToggleSwitch v-model="form.policies.adminRead" />
+                <Select
+                  v-model="cmsReadAccess"
+                  :options="cmsReadOptions"
+                  option-label="label"
+                  option-value="value"
+                  aria-label="Доступ к полю в CMS"
+                />
               </label>
               <label class="usage-option">
                 <span
@@ -1632,6 +1655,9 @@ async function save() {
   flex: 0 0 auto;
   justify-self: end;
 }
+.usage-option-select :deep(.p-select) {
+  width: min(220px, 100%);
+}
 .usage-option i {
   grid-row: 1/3;
   display: grid;
@@ -1853,6 +1879,12 @@ async function save() {
   }
   .preset-option {
     min-height: auto;
+  }
+  .usage-option-select {
+    grid-template-columns: 1fr;
+  }
+  .usage-option-select :deep(.p-select) {
+    width: 100%;
   }
   .preset-dialog-actions {
     flex-direction: column-reverse;

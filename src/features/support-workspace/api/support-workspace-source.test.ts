@@ -296,7 +296,6 @@ describe("support workspace selection contract mapper", () => {
       classificationOptions: [],
       endUser: {
         id: "end-user-1",
-        externalId: "external-1",
         isGuest: false,
         createdAt: "2026-08-07T09:00:00.000Z",
         lastSeenAt: "2026-08-07T10:00:00.000Z",

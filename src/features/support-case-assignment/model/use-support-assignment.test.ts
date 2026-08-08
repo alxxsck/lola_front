@@ -30,7 +30,6 @@ function selection(
     },
     endUser: {
       id: "end-user-1",
-      externalId: "external-1",
       isGuest: false,
       createdAt: "2026-08-08T09:00:00.000Z",
       lastSeenAt: "2026-08-08T10:00:00.000Z",

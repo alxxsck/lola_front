@@ -39,15 +39,27 @@ watch(
 
 async function load(input: PagedSearchRequest): Promise<PagedSearchPage> {
   if (isMockMode) return loadMock(input);
+  const query = input.query.trim();
+  if (query) {
+    const user = await endUserProfileRepository.profile(props.projectId, query);
+    return {
+      items: [
+        {
+          value: user.endUserId,
+          label: `Пользователь · ${user.endUserId.slice(0, 8)}`,
+        },
+      ],
+      nextCursor: null,
+    };
+  }
   const response = await endUserProfileRepository.list(props.projectId, {
     limit: input.limit,
-    ...(input.query ? { externalUserId: input.query } : {}),
     ...(input.cursor ? { cursor: input.cursor } : {}),
   });
   return {
     items: response.items.map((user) => ({
       value: user.endUserId,
-      label: user.externalUserId,
+      label: `Пользователь · ${user.endUserId.slice(0, 8)}`,
       description: user.locale ?? undefined,
     })),
     nextCursor: response.nextCursor ?? null,
@@ -92,7 +104,7 @@ async function loadSelectedOption(
   const user = await endUserProfileRepository.profile(projectId, endUserId);
   return {
     value: endUserId,
-    label: user.externalUserId,
+    label: `Пользователь · ${user.endUserId.slice(0, 8)}`,
   };
 }
 </script>
@@ -104,9 +116,9 @@ async function loadSelectedOption(
     :load="load"
     :selected-option="selectedOption"
     :disabled="disabled"
-    label="ID пользователя в вашем продукте"
+    label="Пользователь"
     placeholder="Найдите и выберите пользователя"
-    search-placeholder="Введите ID пользователя"
+    search-placeholder="Введите точный внутренний ID"
     empty-text="Пользователи не найдены"
     @update:model-value="emit('update:modelValue', $event)"
   />

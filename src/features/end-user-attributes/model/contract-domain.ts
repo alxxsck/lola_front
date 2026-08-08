@@ -11,13 +11,19 @@ export interface ContractDraftIssue {
   severity: "error" | "warning";
 }
 
+export function isCmsReadVisible(
+  field: AttributeContractDraftFieldDto,
+): boolean {
+  return field.policies.cmsRead.mode === "VISIBLE";
+}
+
 export function fieldNeedsPurpose(
   field: AttributeContractDraftFieldDto,
 ): boolean {
   return (
     field.classification === "PERSONAL" ||
     field.classification === "SENSITIVE" ||
-    field.policies.adminRead ||
+    isCmsReadVisible(field) ||
     field.policies.aiRead ||
     field.policies.audienceRead ||
     field.policies.clientRead ||
@@ -42,7 +48,7 @@ export function createContractField(
     position,
     constraints: {},
     policies: {
-      adminRead: true,
+      cmsRead: { mode: "HIDDEN" },
       aiRead: false,
       audienceRead: false,
       clientRead: false,
@@ -131,14 +137,20 @@ export function validateContractDocument(
       const canonical = values.map((value) =>
         typeof value === "string" ? canonicalLocale(value) : null,
       );
-      if (!values.length || values.length > 20 || canonical.some((value) => !value))
+      if (
+        !values.length ||
+        values.length > 20 ||
+        canonical.some((value) => !value)
+      )
         issues.push({
           code: "LOCALE_VALUES_INVALID",
           path: `${path}.constraints.allowedValues`,
           message: "Добавьте от 1 до 20 корректных BCP 47 языков.",
           severity: "error",
         });
-      const normalized = canonical.filter((value): value is string => Boolean(value));
+      const normalized = canonical.filter((value): value is string =>
+        Boolean(value),
+      );
       if (new Set(normalized).size !== normalized.length)
         issues.push({
           code: "LOCALE_DUPLICATE",

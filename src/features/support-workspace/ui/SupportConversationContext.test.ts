@@ -1,12 +1,15 @@
-import { mount } from "@vue/test-utils";
-import { ref } from "vue";
-import { describe, expect, it } from "vitest";
+import { flushPromises, mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 import type { ProfileProjectionResponseDto } from "@/shared/api/generated/models";
 import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
-import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
+import {
+  createSupportInspectorController,
+  type SupportInspectorPermissions,
+  type SupportInspectorSource,
+} from "@/features/support-inspector/model/use-support-inspector";
 import SupportConversationContext from "./SupportConversationContext.vue";
 
 const conversation: SupportWorkspaceConversation = {
@@ -49,7 +52,6 @@ const selection: SupportWorkspaceSelection = {
   },
   endUser: {
     id: "end-user-1",
-    externalId: "raw-external-id-must-not-render",
     isGuest: false,
     createdAt: "2026-08-06T10:00:00.000Z",
     lastSeenAt: "2026-08-06T10:15:00.000Z",
@@ -89,404 +91,248 @@ const selection: SupportWorkspaceSelection = {
   },
 };
 
-function render(
-  profileProps: {
-    canReadProfile?: boolean;
-    canReadSlaContext?: boolean;
-    canReadRoutingContext?: boolean;
-    profile?: ProfileProjectionResponseDto | null;
-    selection?: SupportWorkspaceSelection;
-  } = {},
+function profile(): ProfileProjectionResponseDto {
+  return {
+    endUserId: "end-user-1",
+    profileVersion: "1",
+    syncStatus: "VALID_WITH_WARNINGS",
+    provenance: "PRODUCT_PROFILE",
+    fields: [
+      {
+        definitionId: "field-name",
+        definitionRevisionId: "field-name-r1",
+        key: "name",
+        label: "Имя",
+        valueType: "STRING",
+        lifecycle: "ACTIVE",
+        classification: "PERSONAL",
+        access: "ALLOWED",
+        availability: "AVAILABLE",
+        value: { type: "STRING", value: "Ирина" },
+      },
+      {
+        definitionId: "field-phone",
+        definitionRevisionId: "field-phone-r1",
+        key: "phone",
+        label: "Телефон",
+        valueType: "STRING",
+        lifecycle: "ACTIVE",
+        classification: "SENSITIVE",
+        access: "REDACTED",
+        availability: "DENIED",
+      },
+      {
+        definitionId: "field-secret",
+        definitionRevisionId: "field-secret-r1",
+        key: "secret",
+        label: "Секретное поле",
+        valueType: "STRING",
+        lifecycle: "ACTIVE",
+        classification: "SENSITIVE",
+        access: "FORBIDDEN",
+        availability: "DENIED",
+      },
+    ],
+  };
+}
+
+function createInspector(
+  current: SupportWorkspaceSelection,
+  permissions: SupportInspectorPermissions = {
+    profile: true,
+    events: true,
+    activity: true,
+  },
+  sourceOverrides: Partial<SupportInspectorSource> = {},
 ) {
-  const { selection: selectionOverride = selection, ...rest } = profileProps;
+  const source: SupportInspectorSource = {
+    readProfile: vi.fn().mockResolvedValue(profile()),
+    readEvents: vi.fn().mockResolvedValue({
+      recipeVersion: 1,
+      caseId: current.case?.id ?? "case-1",
+      snapshotAt: "2026-08-08T10:00:00.000Z",
+      nextCursor: null,
+      items: [
+        {
+          id: "event-1",
+          code: "deposit.failed",
+          name: "Попытка депозита отклонена",
+          definitionVersion: 1,
+          source: "SERVER",
+          status: "PROCESSED",
+          occurredAt: "2026-08-08T09:30:00.000Z",
+          receivedAt: "2026-08-08T09:30:01.000Z",
+        },
+      ],
+    }),
+    readActivity: vi.fn().mockResolvedValue({
+      kind: "SUPPORT_ACTIVITY",
+      projectionGeneration: 1,
+      computedAt: "2026-08-08T10:00:00.000Z",
+      freshnessState: "READY",
+      effectiveWindow: null,
+      sourceHighWater: "1",
+      checkpoint: "1",
+      nextCursor: null,
+      slaRolloutState: "SHADOW",
+      capabilities: {
+        noEligibleOperator: "UNAVAILABLE",
+        routingCapacityRisks: "UNAVAILABLE",
+        savedQueues: "UNAVAILABLE",
+        sla: "SHADOW",
+        teamSkillLanguageCapacity: "UNAVAILABLE",
+      },
+      data: {
+        facts: [
+          {
+            activityId: "activity-1",
+            activitySequence: "1",
+            actor: { type: "CMS_USER", cmsUserId: "cms-1", systemCode: null },
+            assignmentId: "assignment-1",
+            caseId: current.case?.id ?? null,
+            commandOutcome: "APPLIED",
+            conversationId: null,
+            deliveryId: null,
+            deliveryState: null,
+            eligibilityOverride: null,
+            eventCode: "SUPPORT_CASE_ASSIGNMENT_CLAIMED",
+            factKind: "ASSIGNMENT",
+            messageId: null,
+            occurredAt: "2026-08-08T09:45:00.000Z",
+            operatorCmsUserId: "cms-1",
+            ownerVersion: 1,
+            reasonCode: "SELF_CLAIM",
+            schemaVersion: 1,
+            targetTeamId: "team-1",
+          },
+        ],
+      },
+    }),
+    ...sourceOverrides,
+  };
+  return {
+    source,
+    controller: createSupportInspectorController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => current.endUser.id,
+        caseId: () => current.case?.id,
+        operatorId: () => "operator-1",
+        permissions: () => permissions,
+      },
+      source,
+      { now: () => new Date("2026-08-08T10:00:00.000Z") },
+    ),
+  };
+}
+
+function render(
+  props: Partial<
+    InstanceType<typeof SupportConversationContext>["$props"]
+  > = {},
+  current = selection,
+) {
+  const { controller } = createInspector(current);
   return mount(SupportConversationContext, {
     props: {
-      conversation,
-      selection: selectionOverride,
+      conversation: current.conversation,
+      selection: current,
+      inspector: controller,
       canReadSlaContext: true,
       canReadRoutingContext: true,
-      ...rest,
+      ...props,
     },
     global: {
       stubs: {
-        Button: { template: '<button type="button"><slot /></button>' },
-        Message: { template: "<div><slot /></div>" },
+        Button: {
+          props: ["label"],
+          emits: ["click"],
+          template:
+            '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+        },
+        SupportCaseOperationsContext: true,
         RouterLink: { template: "<a><slot /></a>" },
       },
     },
   });
 }
 
-describe("support conversation context", () => {
-  it("renders Case context without fabricating a linked Conversation", () => {
-    const wrapper = mount(SupportConversationContext, {
-      props: {
-        conversation: null,
-        selection: { ...selection, conversation: null },
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          RouterLink: { template: "<a><slot /></a>" },
-        },
-      },
-    });
-
-    expect(wrapper.text()).toContain("Нет связанного чата");
-  });
-
-  it("switches from user context to the server-provided Case projection", async () => {
-    const wrapper = render();
-
-    await wrapper.get('[role="tab"][aria-selected="false"]').trigger("click");
-
-    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
-      "Проверить возврат бонусов",
-    );
-    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain("Высокий");
-    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
-      "Оператор Алина",
-    );
-    expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
-  });
-
-  it("places SLA and routing context inside the Case inspector", async () => {
-    const wrapper = render({
-      selection: {
-        ...selection,
-        sla: {
-          rolloutState: "SHADOW",
-          occurrenceState: "ACTIVE",
-          clocks: [],
-        },
-        routing: {
-          state: "AVAILABLE",
-          reasonCode: "WINNER",
-          assignmentState: "UNASSIGNED",
-          mode: "LIVE_PROPOSAL",
-          outcome: "WINNER",
-          queue: { code: "BILLING", name: "Платежи" },
-          candidateCount: 2,
-          eligibleCandidateCount: 2,
-          exclusions: {},
-          evaluatedAt: "2026-08-08T10:00:00.000Z",
-          candidatesTruncated: false,
-          reservation: null,
-          fallback: null,
-        },
-      },
-    });
-
-    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
-
-    const caseInspector = wrapper.get('[aria-label="Кейс"]');
-    expect(caseInspector.text()).toContain("SLA и маршрутизация");
-    expect(caseInspector.text()).toContain("Платежи");
-    expect(caseInspector.text()).toContain("2 из 2 подходят");
-
-    await wrapper.setProps({
-      canReadSlaContext: false,
-      canReadRoutingContext: false,
-    });
-
-    expect(caseInspector.text()).toContain("SLA недоступен для этой роли");
-    expect(caseInspector.text()).toContain("Маршрутизация скрыта для этой роли");
-    expect(caseInspector.text()).not.toContain("Платежи");
-    expect(caseInspector.text()).not.toContain("2 из 2 подходят");
-  });
-
-  it("keeps the bounded Case projection for a conversation-only operator", async () => {
-    const wrapper = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection,
-        canReadCaseDesk: false,
-        caseDesk: { exactCase: ref(null) } as never,
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          SupportCaseDesk: {
-            template: '<div data-testid="exact-case-desk" />',
-          },
-        },
-      },
-    });
-
-    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
-    expect(wrapper.find('[data-testid="exact-case-desk"]').exists()).toBe(
-      false,
-    );
-    expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
-      "Проверить возврат бонусов",
-    );
-  });
-
-  it("exposes user, Case, causal history, and actions tabs", () => {
+describe("support conversation inspector", () => {
+  it("renders the five permission-aware tabs with Case as the default", () => {
     const wrapper = render();
 
     expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
+      "Обращение",
       "Пользователь",
-      "Кейс",
-      "История",
-      "Действия",
+      "Данные",
+      "События",
+      "Активность",
     ]);
+    expect(wrapper.get('[aria-label="Обращение"]').text()).toContain(
+      "Проверить возврат бонусов",
+    );
   });
 
-  it("only renders the internal-notes entry point with the dedicated read grant", async () => {
-    const denied = render();
-    const allowed = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection,
-        canReadInternalNotes: true,
-      },
-      global: {
-        stubs: {
-          Button: {
-            props: ["label"],
-            emits: ["click"],
-            template:
-              '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
-          },
-          Message: { template: "<div><slot /></div>" },
-          RouterLink: { template: "<a><slot /></a>" },
-        },
-      },
-    });
+  it("keeps user context useful without rendering a product external id", async () => {
+    const wrapper = render();
+    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
 
-    await allowed.findAll('[role="tab"]')[3]!.trigger("click");
-    expect(denied.text()).not.toContain("Внутренние заметки");
-    expect(allowed.text()).toContain("Внутренние заметки");
-    await allowed.get(".internal-notes-link").trigger("click");
-    expect(allowed.emitted("openInternalNotes")).toHaveLength(1);
+    const user = wrapper.get('[aria-label="Пользователь"]');
+    expect(user.text()).toContain("Активный");
+    expect(user.text()).toContain("RU");
+    expect(user.text()).not.toContain("external");
   });
 
-  it("mounts the unified assignment surface only when its controller is available", async () => {
-    const denied = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection,
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          RouterLink: { template: "<a><slot /></a>" },
-        },
-      },
-    });
-    const allowed = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection,
-        assignmentController: {
-          caseSnapshot: ref(null),
-          caseLoading: ref(false),
-          mutating: ref(false),
-          error: ref(""),
-          unknownOutcome: ref(false),
-          draft: ref(null),
-          canRetry: ref(false),
-          canClaim: ref(false),
-          canRelease: ref(false),
-          canTransfer: ref(false),
-          offers: ref([]),
-          offerLoading: ref(false),
-          offerChangingId: ref(null),
-          offerError: ref(""),
-          offerUnknownOutcome: ref(false),
-          offerCanRetry: ref(false),
-          loadCase: async () => undefined,
-          setDraft: () => undefined,
-          submit: async () => undefined,
-          retryUnknownOutcome: async () => undefined,
-          loadOffers: async () => undefined,
-          actOnOffer: async () => undefined,
-          retryUnknownOfferOutcome: async () => undefined,
-          resetCase: () => undefined,
-          resetOffers: () => undefined,
-          reset: () => undefined,
-        } as never,
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          RouterLink: { template: "<a><slot /></a>" },
-          Dialog: { template: '<div><slot /><slot name="footer" /></div>' },
-          Select: { props: ["modelValue", "options"], template: "<select />" },
-          Textarea: { template: "<textarea />" },
-        },
-      },
-    });
-
-    await denied.findAll('[role="tab"]')[3]!.trigger("click");
-    await allowed.findAll('[role="tab"]')[3]!.trigger("click");
-    expect(denied.findComponent(SupportAssignmentDesk).exists()).toBe(false);
-    expect(allowed.findComponent(SupportAssignmentDesk).exists()).toBe(true);
-  });
-
-  it("localizes every server Case state and priority instead of exposing enum values", async () => {
-    const cases = [
-      ["IN_PROGRESS", "В работе"],
-      ["WAITING_END_USER", "Ожидает пользователя"],
-      ["WAITING_SYSTEM", "Ожидает системы"],
-      ["WAITING_ADMIN", "Ожидает оператора"],
-      ["UNRESOLVED", "Не решён"],
-      ["CANCELLED", "Отменён"],
-    ] as const;
-
-    for (const [status, label] of cases) {
-      const wrapper = mount(SupportConversationContext, {
-        props: {
-          conversation,
-          selection: { ...selection, case: { ...selection.case!, status } },
-        },
-        global: {
-          stubs: {
-            Button: { template: '<button type="button"><slot /></button>' },
-            Message: { template: "<div><slot /></div>" },
-            RouterLink: { template: "<a><slot /></a>" },
-          },
-        },
-      });
-      await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
-      expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(label);
-    }
-    const critical = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection: {
-          ...selection,
-          case: { ...selection.case!, priority: "CRITICAL" },
-        },
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          RouterLink: { template: "<a><slot /></a>" },
-        },
-      },
-    });
-    await critical.findAll('[role="tab"]')[1]!.trigger("click");
-    expect(critical.get('[aria-label="Кейс"]').text()).toContain("Критический");
-  });
-
-  it("renders a causal activity diff without leaking raw enum payloads", async () => {
-    const caseDesk = {
-      detail: ref({
-        timeline: {
-          events: [
-            {
-              id: "event-1",
-              type: "CORRECTED",
-              caseVersion: 8,
-              actor: { type: "CMS_USER", cmsUserId: "cms-1" },
-              reason: "Проверено по данным провайдера",
-              previous: { groupCode: "BILLING", priority: "HIGH" },
-              next: { groupCode: "GENERAL", priority: "HIGH" },
-              createdAt: "2026-08-06T10:15:00.000Z",
-            },
-          ],
-          revisions: [],
-        },
-      }),
-      exactCase: ref(null),
-      loading: ref(false),
-      mutating: ref(false),
-      error: ref(null),
-      conflict: ref(null),
-    };
-    const wrapper = mount(SupportConversationContext, {
-      props: {
-        conversation,
-        selection: {
-          ...selection,
-          classificationOptions: [
-            ...selection.classificationOptions,
-            { code: "GENERAL", label: "Общие вопросы" },
-          ],
-        },
-        caseDesk: caseDesk as never,
-      },
-      global: {
-        stubs: {
-          Button: { template: '<button type="button"><slot /></button>' },
-          Message: { template: "<div><slot /></div>" },
-          SupportCaseDesk: true,
-        },
-      },
-    });
+  it("loads Product Profile only when Data is opened and removes forbidden fields", async () => {
+    const { controller, source } = createInspector(selection);
+    const wrapper = render({ inspector: controller });
+    expect(source.readProfile).not.toHaveBeenCalled();
 
     await wrapper.findAll('[role="tab"]')[2]!.trigger("click");
-    const activity = wrapper.get('[aria-label="История кейса"]');
-    expect(activity.text()).toContain("Платежи и расчёты");
-    expect(activity.text()).toContain("Общие вопросы");
-    expect(activity.text()).not.toContain("groupCode");
-    expect(activity.text()).not.toContain("HIGH");
+    await flushPromises();
+
+    expect(source.readProfile).toHaveBeenCalledOnce();
+    const data = wrapper.get('[aria-label="Данные пользователя"]');
+    expect(data.text()).toContain("Ирина");
+    expect(data.text()).toContain("Телефон");
+    expect(data.text()).toContain("Скрыто");
+    expect(data.text()).not.toContain("Секретное поле");
   });
 
-  it("renders allowed and redacted profile fields but removes forbidden fields", async () => {
-    const wrapper = render({
-      canReadProfile: true,
-      profile: {
-        endUserId: "end-user-1",
-        externalUserId: "raw-external-id-must-not-render",
-        profileVersion: "1",
-        syncStatus: "VALID_WITH_WARNINGS",
-        provenance: "PRODUCT_PROFILE",
-        fields: [
-          {
-            definitionId: "field-name",
-            definitionRevisionId: "field-name-r1",
-            key: "name",
-            label: "Имя",
-            valueType: "STRING",
-            lifecycle: "ACTIVE",
-            classification: "PERSONAL",
-            access: "ALLOWED",
-            availability: "AVAILABLE",
-            observedAt: "2026-08-06T10:00:00.000Z",
-            value: { type: "STRING", value: "Ирина" },
-          },
-          {
-            definitionId: "field-phone",
-            definitionRevisionId: "field-phone-r1",
-            key: "phone",
-            label: "Телефон",
-            valueType: "STRING",
-            lifecycle: "ACTIVE",
-            classification: "SENSITIVE",
-            access: "REDACTED",
-            availability: "DENIED",
-          },
-          {
-            definitionId: "field-secret",
-            definitionRevisionId: "field-secret-r1",
-            key: "secret",
-            label: "Секретное поле",
-            valueType: "STRING",
-            lifecycle: "ACTIVE",
-            classification: "SENSITIVE",
-            access: "FORBIDDEN",
-            availability: "DENIED",
-          },
-        ],
-      },
-    });
+  it("uses the server causal activity feed instead of a synthetic client log", async () => {
+    const wrapper = render();
+    await wrapper.findAll('[role="tab"]')[4]!.trigger("click");
+    await flushPromises();
 
-    const profile = wrapper.get('[aria-label="Пользователь"]');
-    expect(profile.text()).toContain("Ирина");
-    expect(profile.text()).toContain("Телефон");
-    expect(profile.text()).toContain("Скрыто");
-    expect(profile.text()).toContain("Снимок с предупреждениями");
-    expect(profile.text()).toContain("Профиль продукта");
-    expect(profile.text()).toContain("Персональное");
-    expect(profile.text()).not.toContain("Секретное поле");
-    expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
+    const activity = wrapper.get('[aria-label="Активность поддержки"]');
+    expect(activity.text()).toContain("Обращение принято оператором");
+    expect(activity.text()).toContain("Оператор взял обращение");
+  });
+
+  it("hides protected tabs before mount when their permission is absent", () => {
+    const { controller } = createInspector(selection, {
+      profile: false,
+      events: false,
+      activity: false,
+    });
+    const wrapper = render({ inspector: controller });
+
+    expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
+      "Обращение",
+      "Пользователь",
+    ]);
+    expect(wrapper.text()).not.toContain("Product Profile");
+  });
+
+  it("keeps conversation-only selections on the User tab", () => {
+    const conversationOnly = { ...selection, case: null };
+    const wrapper = render({}, conversationOnly);
+
+    expect(
+      wrapper.findAll('[role="tab"]').map((tab) => tab.text()),
+    ).not.toContain("Обращение");
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
+      "Пользователь",
+    );
   });
 });

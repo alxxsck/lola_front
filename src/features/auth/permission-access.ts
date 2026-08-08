@@ -32,6 +32,8 @@ export const PROJECT_PERMISSION_CODES = [
   "project.end_users.read",
   "project.end_users.write",
   "project.profiles.read",
+  "project.profiles.restricted.read",
+  "project.support.inspector_events.read",
   "project.profile_contract.read",
   "project.profile_contract.write",
   "project.profile_contract.publish",

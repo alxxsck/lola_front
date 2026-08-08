@@ -192,7 +192,6 @@ export interface SupportWorkspaceSelection {
   };
   endUser: {
     id: string;
-    externalId: string;
     isGuest: boolean;
     createdAt: string;
     lastSeenAt: string;
@@ -926,8 +925,6 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       capabilities: mockCapabilities(selectedCase),
       endUser: {
         id: endUserId,
-        externalId:
-          selected?.endUser.externalId ?? selectedCase!.externalEndUserId,
         isGuest: false,
         createdAt: selected?.createdAt ?? selectedCase!.updatedAt,
         lastSeenAt: selected?.updatedAt ?? selectedCase!.updatedAt,

@@ -57,7 +57,6 @@ function selection(
     },
     endUser: {
       id: `user-${conversationId}`,
-      externalId: `external-${conversationId}`,
       isGuest: false,
       createdAt: "2026-08-06T10:00:00.000Z",
       lastSeenAt: "2026-08-06T10:00:00.000Z",
@@ -712,8 +711,8 @@ describe("support conversation controller", () => {
     expect(source.readSelection).toHaveBeenCalledWith("project-1", {
       conversationId: "conversation-outside-first-page",
     });
-    expect(controller.selection.value?.endUser.externalId).toBe(
-      "external-conversation-outside-first-page",
+    expect(controller.selection.value?.endUser.id).toBe(
+      "user-conversation-outside-first-page",
     );
     expect(controller.messages.value.map((item) => item.id)).toEqual(["first"]);
   });

@@ -872,6 +872,17 @@ function requireSchemaProperties(schemaName, propertyNames) {
     );
 }
 
+function forbidSchemaProperties(schemaName, propertyNames) {
+  const properties = contractSchema(schemaName).properties ?? {};
+  const present = propertyNames.filter((propertyName) =>
+    Object.hasOwn(properties, propertyName),
+  );
+  if (present.length)
+    throw new Error(
+      `${schemaName} exposes forbidden contract properties: ${present.join(", ")}`,
+    );
+}
+
 function requireRequiredProperties(schemaName, propertyNames) {
   const required = new Set(contractSchema(schemaName).required ?? []);
   const missing = propertyNames.filter(
@@ -1628,7 +1639,6 @@ requireSchemaProperties("TranslationJobResponseDto", [
 ]);
 requireSchemaProperties("ProfileProjectionResponseDto", [
   "endUserId",
-  "externalUserId",
   "profileVersion",
   "contractRevision",
   "publicationId",
@@ -1641,6 +1651,7 @@ requireSchemaProperties("ProfileProjectionResponseDto", [
   "provenance",
   "lastRejectedSync",
 ]);
+forbidSchemaProperties("ProfileProjectionResponseDto", ["externalUserId"]);
 requireSchemaProperties("ProfileProjectionFieldResponseDto", [
   "definitionId",
   "definitionRevisionId",

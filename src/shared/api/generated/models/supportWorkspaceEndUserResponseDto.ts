@@ -8,7 +8,6 @@
 
 export interface SupportWorkspaceEndUserResponseDto {
   createdAt: string;
-  externalId: string;
   id: string;
   isGuest: boolean;
   lastSeenAt: string;

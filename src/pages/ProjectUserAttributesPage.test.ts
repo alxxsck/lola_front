@@ -56,7 +56,9 @@ vi.mock(
     },
   }),
 );
-vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: mocks.toast }) }));
+vi.mock("primevue/usetoast", () => ({
+  useToast: () => ({ add: mocks.toast }),
+}));
 
 const workspace = {
   currentPublication: null,
@@ -371,7 +373,7 @@ describe("ProjectUserAttributesPage", () => {
       position: 10,
       constraints: {},
       policies: {
-        adminRead: true,
+        cmsRead: { mode: "VISIBLE" as const, access: "BASE" as const },
         aiRead: false,
         audienceRead: false,
         clientRead: false,
@@ -450,9 +452,9 @@ describe("ProjectUserAttributesPage", () => {
     expect(wrapper.text()).toContain("Код: ATTRIBUTE_PURPOSE_REQUIRED");
     expect(wrapper.text()).toContain("Исправьте ошибки, чтобы опубликовать");
     expect(
-      wrapper.find('button-stub[label="3. Опубликовать"]').attributes(
-        "disabled",
-      ),
+      wrapper
+        .find('button-stub[label="3. Опубликовать"]')
+        .attributes("disabled"),
     ).toBeDefined();
     vm.fixIssue(vm.errors[0]);
     expect(mocks.routerPush).toHaveBeenCalledWith(
@@ -558,7 +560,7 @@ describe("ProjectUserAttributesPage", () => {
         clientRead: false,
         audienceRead: false,
         aiRead: false,
-        adminRead: true,
+        cmsRead: { mode: "VISIBLE" as const, access: "BASE" as const },
       },
     },
     {
@@ -566,69 +568,72 @@ describe("ProjectUserAttributesPage", () => {
       draftPurpose: "Показывать уровень лояльности в карточке пользователя ",
       publishedPolicies: undefined,
     },
-  ])("treats $scenario as published", async ({ draftPurpose, publishedPolicies }) => {
-    const publishedWorkspace = structuredClone(
-      workspace,
-    ) as AttributeContractWorkspaceResponseDto;
-    const draftField = {
-      definitionId: "definition-loyalty",
-      key: "loyaltyLevel",
-      label: "Уровень лояльности",
-      description: null,
-      purpose: draftPurpose,
-      valueType: "STRING" as const,
-      lifecycle: "ACTIVE" as const,
-      classification: "INTERNAL" as const,
-      requirement: "OPTIONAL" as const,
-      position: 10,
-      constraints: {},
-      policies: {
-        adminRead: true,
-        aiRead: false,
-        audienceRead: false,
-        clientRead: false,
-        exportRead: false,
-        indexPolicy: "NONE" as const,
-        templateRead: false,
-      },
-      replacementDefinitionId: null,
-      sunsetAt: null,
-      semanticRole: null,
-    };
-    publishedWorkspace.draft.document.fields = [draftField];
-    publishedWorkspace.draft.draftVersion = 14;
-    publishedWorkspace.validation.draftVersion = 14;
-    setPublishedWorkspace(publishedWorkspace, [
-      {
-        ...draftField,
-        purpose: "Показывать уровень лояльности в карточке пользователя",
-        policies: publishedPolicies ?? draftField.policies,
-      },
-    ]);
-    mocks.workspace.mockResolvedValue(publishedWorkspace);
+  ])(
+    "treats $scenario as published",
+    async ({ draftPurpose, publishedPolicies }) => {
+      const publishedWorkspace = structuredClone(
+        workspace,
+      ) as AttributeContractWorkspaceResponseDto;
+      const draftField = {
+        definitionId: "definition-loyalty",
+        key: "loyaltyLevel",
+        label: "Уровень лояльности",
+        description: null,
+        purpose: draftPurpose,
+        valueType: "STRING" as const,
+        lifecycle: "ACTIVE" as const,
+        classification: "INTERNAL" as const,
+        requirement: "OPTIONAL" as const,
+        position: 10,
+        constraints: {},
+        policies: {
+          cmsRead: { mode: "VISIBLE" as const, access: "BASE" as const },
+          aiRead: false,
+          audienceRead: false,
+          clientRead: false,
+          exportRead: false,
+          indexPolicy: "NONE" as const,
+          templateRead: false,
+        },
+        replacementDefinitionId: null,
+        sunsetAt: null,
+        semanticRole: null,
+      };
+      publishedWorkspace.draft.document.fields = [draftField];
+      publishedWorkspace.draft.draftVersion = 14;
+      publishedWorkspace.validation.draftVersion = 14;
+      setPublishedWorkspace(publishedWorkspace, [
+        {
+          ...draftField,
+          purpose: "Показывать уровень лояльности в карточке пользователя",
+          policies: publishedPolicies ?? draftField.policies,
+        },
+      ]);
+      mocks.workspace.mockResolvedValue(publishedWorkspace);
 
-    const wrapper = shallowMount(ProjectUserAttributesPage);
-    await flushPromises();
-    const vm = wrapper.vm as unknown as {
-      dirty: boolean;
-      publishReady: boolean;
-      fields: typeof publishedWorkspace.draft.document.fields;
-      fieldPublicationState: (
-        field: (typeof publishedWorkspace.draft.document.fields)[number],
-      ) => "draft" | "changed" | "published";
-    };
+      const wrapper = shallowMount(ProjectUserAttributesPage);
+      await flushPromises();
+      const vm = wrapper.vm as unknown as {
+        dirty: boolean;
+        publishReady: boolean;
+        fields: typeof publishedWorkspace.draft.document.fields;
+        fieldPublicationState: (
+          field: (typeof publishedWorkspace.draft.document.fields)[number],
+        ) => "draft" | "changed" | "published";
+      };
 
-    expect(vm.dirty).toBe(false);
-    expect(vm.fieldPublicationState(vm.fields[0])).toBe("published");
-    expect(vm.publishReady).toBe(false);
-    expect(wrapper.text()).toContain("Все изменения опубликованы");
-    expect(wrapper.text()).toContain("Совпадает с публикацией #3");
-    expect(wrapper.text()).not.toContain("Версия 14");
-    expect(wrapper.text()).not.toContain("Есть изменения");
-    expect(wrapper.text()).not.toContain(
-      "Черновик проверен — можно публиковать",
-    );
-  });
+      expect(vm.dirty).toBe(false);
+      expect(vm.fieldPublicationState(vm.fields[0])).toBe("published");
+      expect(vm.publishReady).toBe(false);
+      expect(wrapper.text()).toContain("Все изменения опубликованы");
+      expect(wrapper.text()).toContain("Совпадает с публикацией #3");
+      expect(wrapper.text()).not.toContain("Версия 14");
+      expect(wrapper.text()).not.toContain("Есть изменения");
+      expect(wrapper.text()).not.toContain(
+        "Черновик проверен — можно публиковать",
+      );
+    },
+  );
 
   it("allows removing a saved field that only exists in the draft", async () => {
     const draftOnlyWorkspace = structuredClone(
@@ -682,26 +687,26 @@ describe("ProjectUserAttributesPage", () => {
       workspace,
     ) as AttributeContractWorkspaceResponseDto;
     const publishedFields = [
-        {
-          ...createContractField(10),
-          definitionId: "definition-display-name",
-          key: "displayName",
-          label: "Отображаемое имя",
-          description: "Имя для интерфейса",
-          valueType: "STRING",
-          requirement: "OPTIONAL",
-          lifecycle: "ACTIVE",
-        },
-        {
-          ...createContractField(20),
-          definitionId: "definition-deposit-count",
-          key: "depositCount",
-          label: "Количество депозитов",
-          valueType: "INTEGER",
-          requirement: "REQUIRED_ENFORCED",
-          lifecycle: "ACTIVE",
-        },
-      ] satisfies AttributeContractDraftFieldDto[];
+      {
+        ...createContractField(10),
+        definitionId: "definition-display-name",
+        key: "displayName",
+        label: "Отображаемое имя",
+        description: "Имя для интерфейса",
+        valueType: "STRING",
+        requirement: "OPTIONAL",
+        lifecycle: "ACTIVE",
+      },
+      {
+        ...createContractField(20),
+        definitionId: "definition-deposit-count",
+        key: "depositCount",
+        label: "Количество депозитов",
+        valueType: "INTEGER",
+        requirement: "REQUIRED_ENFORCED",
+        lifecycle: "ACTIVE",
+      },
+    ] satisfies AttributeContractDraftFieldDto[];
     setPublishedWorkspace(publishedWorkspace, publishedFields, 5);
     publishedWorkspace.draft.document.fields = [
       {
@@ -726,16 +731,22 @@ describe("ProjectUserAttributesPage", () => {
     const wrapper = shallowMount(ProjectUserAttributesPage);
     await flushPromises();
 
-    await wrapper.get('button-stub[aria-label="Скопировать поля профиля"]').trigger("click");
+    await wrapper
+      .get('button-stub[aria-label="Скопировать поля профиля"]')
+      .trigger("click");
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("- Состояние: текущий черновик (ещё не опубликован)"),
+      expect.stringContaining(
+        "- Состояние: текущий черновик (ещё не опубликован)",
+      ),
     );
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringContaining("| `displayName` | `string` | необязательно |"),
     );
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("| `depositCount` | `integer` | обязательно (строго) |"),
+      expect.stringContaining(
+        "| `depositCount` | `integer` | обязательно (строго) |",
+      ),
     );
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringContaining("| `futureField` | `string` | необязательно |"),

@@ -635,11 +635,7 @@ const projectTimezone = computed(() => {
     : "UTC";
 });
 const displayName = computed(
-  () =>
-    props.externalUserId ||
-    detail.value?.externalUserId ||
-    props.endUserId ||
-    "Пользователь",
+  () => props.externalUserId || props.endUserId || "Пользователь",
 );
 const realtimeStatus = computed(() => {
   if (realtimeState.value === "CONNECTED") {
@@ -912,7 +908,6 @@ async function loadProfile(
   });
   return {
     endUserId: user.id,
-    externalUserId: user.externalId,
     profileVersion: "demo",
     syncStatus: "VALID",
     fields: [
@@ -1436,7 +1431,7 @@ function displayField(
             <span class="workspace-identity-meta">
               {{
                 workspaceMode === "CHAT"
-                  ? detail?.externalUserId || endUserId || "—"
+                  ? endUserId || "—"
                   : "Профиль пользователя"
               }}
               <i
@@ -1500,7 +1495,7 @@ function displayField(
               <span class="eyebrow">Профиль пользователя</span>
               <h2>{{ displayName }}</h2>
               <p>
-                {{ detail?.externalUserId || endUserId }}
+                {{ endUserId }}
                 <template v-if="detail?.observedAt">
                   · обновлён {{ relativeTime(detail.observedAt) }}
                 </template>
@@ -1551,8 +1546,8 @@ function displayField(
               <template v-else-if="detail">
                 <dl class="profile-facts">
                   <div>
-                    <dt>ID продукта</dt>
-                    <dd>{{ detail.externalUserId }}</dd>
+                    <dt>Внутренний ID пользователя</dt>
+                    <dd>{{ detail.endUserId }}</dd>
                   </div>
                   <div>
                     <dt>Версия профиля</dt>
@@ -1998,7 +1993,7 @@ function displayField(
           <ConversationTicketDrawer
             v-if="selectedConversation"
             :visible="ticketDrawerVisible"
-            :external-user-id="detail?.externalUserId || endUserId || '—'"
+            :external-user-id="endUserId || '—'"
             :conversation-title="selectedConversation.title"
             :message-count="messages.length"
             @close="ticketDrawerVisible = false"
@@ -2026,7 +2021,7 @@ function displayField(
         :visible="true"
         :project-id="projectId"
         :end-user-id="endUserId"
-        :identity="detail?.externalUserId || externalUserId || endUserId"
+        :identity="externalUserId || endUserId"
         :initial-mode="allowanceDialogMode"
         :can-read="canReadAllowance"
         :can-grant="canGrantAllowance"
@@ -2042,7 +2037,7 @@ function displayField(
         v-if="canReadAllowance && endUserId"
         v-model:visible="allowanceJournalVisible"
         modal
-        :header="`Журнал AI-квоты · ${detail?.externalUserId || externalUserId || endUserId}`"
+        :header="`Журнал AI-квоты · ${externalUserId || endUserId}`"
         :style="{ width: 'min(1180px, 96vw)' }"
       >
         <AiAllowanceJournalPanel

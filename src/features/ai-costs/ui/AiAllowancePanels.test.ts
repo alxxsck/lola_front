@@ -1398,7 +1398,7 @@ describe("allowance admin panels", () => {
     expect(wrapper.findComponent({ name: "EndUserSelect" }).exists()).toBe(
       true,
     );
-    expect(wrapper.text()).toContain("ID пользователя в вашем продукте");
+    expect(wrapper.text()).toContain("внутреннему ID");
     expect(wrapper.text()).not.toContain("End User");
     expect(wrapper.text()).not.toContain("Immutable");
     expect(wrapper.text()).not.toContain("attempts");
