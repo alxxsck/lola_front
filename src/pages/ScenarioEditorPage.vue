@@ -25,6 +25,10 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import ActionPicker from "@/features/actions/ActionPicker.vue";
+import ScenarioActionTargetPicker, {
+  type ScenarioActionTargetOption,
+} from "@/features/actions/ScenarioActionTargetPicker.vue";
 import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
 import {
   createRuleDraft,
@@ -247,13 +251,8 @@ const focusedLocale = ref("");
 const inspectorMode = ref<"node" | "settings">("settings");
 const compactActionLayout = ref(false);
 const graphExpanded = ref(false);
-const actionSearch = ref("");
 const graphCanvasElement = ref<HTMLElement | null>(null);
 const actionInspector = ref<{ focus?: () => void } | null>(null);
-const desktopActionLibrary = ref<HTMLDetailsElement | null>(null);
-const mobileActionLibrary = ref<HTMLDetailsElement | null>(null);
-const desktopActionSearchInput = ref<HTMLInputElement | null>(null);
-const mobileActionSearchInput = ref<HTMLInputElement | null>(null);
 let actionViewReturnFocus: HTMLElement | null = null;
 const publishPending = ref(false);
 const admissionSettings = ref<ScenarioAdmissionSettingsResponseDto | null>(
@@ -426,14 +425,22 @@ const firstActionDefinition = computed(() =>
     ? findScenarioActionCatalogItem(actionCatalog.value, firstAction.value.type)
     : undefined,
 );
-const firstActionOptions = computed(() =>
-  form.actions.map((action) => ({
-    label:
-      findScenarioActionCatalogItem(actionCatalog.value, action.type)?.name ??
+const firstActionOptions = computed<ScenarioActionTargetOption[]>(() =>
+  form.actions.map((action) => {
+    const definition = findScenarioActionCatalogItem(
+      actionCatalog.value,
       action.type,
-    meta: action.nodeKey ?? `Шаг ${action.position + 1}`,
-    value: action.nodeKey ?? "",
-  })),
+    );
+    return {
+      value: action.nodeKey ?? "",
+      name: definition?.name ?? action.type,
+      code: action.nodeKey ?? `Шаг ${action.position + 1}`,
+      description: definition?.description ?? nodeSummary(action),
+      kind: "existing",
+      executor: definition?.executor,
+      position: action.position,
+    };
+  }),
 );
 const canChooseFirstAction = computed(() => {
   const alternative = form.actions[1]?.nodeKey;
@@ -792,47 +799,6 @@ const conversationPolicyOptions: {
   { label: "Продолжить текущий чат", value: "reuse_active" },
 ];
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
-
-const actionGroups = computed(() => {
-  const enabled = scenarioPickerActions.value;
-  return [
-    {
-      label: "Логика",
-      items: enabled.filter((item) =>
-        ["ASK_CHOICE", "CONDITION"].includes(item.type),
-      ),
-    },
-    {
-      label: "Ожидания",
-      items: enabled.filter((item) =>
-        ["WAIT_FOR", "WAIT_FOR_GOAL"].includes(item.type),
-      ),
-    },
-    {
-      label: "Действия",
-      items: enabled.filter(
-        (item) =>
-          !["ASK_CHOICE", "CONDITION", "WAIT_FOR", "WAIT_FOR_GOAL"].includes(
-            item.type,
-          ),
-      ),
-    },
-  ].filter((group) => group.items.length);
-});
-const filteredActionGroups = computed(() => {
-  const needle = actionSearch.value.trim().toLocaleLowerCase();
-  if (!needle) return actionGroups.value;
-  return actionGroups.value
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) =>
-        `${item.name} ${item.description ?? ""} ${item.type}`
-          .toLocaleLowerCase()
-          .includes(needle),
-      ),
-    }))
-    .filter((group) => group.items.length);
-});
 
 const flowNodes = computed<Node[]>(() => {
   const transitions = graphTransitions(form.actions);
@@ -1458,9 +1424,6 @@ function appendNode(type: string, connectPrevious: boolean) {
 
 function addNode(type: string) {
   const node = appendNode(type, true);
-  actionSearch.value = "";
-  if (desktopActionLibrary.value) desktopActionLibrary.value.open = false;
-  if (mobileActionLibrary.value) mobileActionLibrary.value.open = false;
   void nextTick(() => {
     const candidates = Array.from(
       document.querySelectorAll<HTMLElement>(
@@ -1487,7 +1450,7 @@ function focusActionInspector() {
 function visibleActionFocusFallback() {
   const candidates = Array.from(
     document.querySelectorAll<HTMLElement>(
-      ".action-outline-item, .mobile-node-card, .action-library > summary, .mobile-library > summary, .mobile-graph-button",
+      ".action-outline-item, .mobile-node-card, [data-testid='action-picker-trigger'], .mobile-graph-button",
     ),
   );
   return (
@@ -1505,20 +1468,6 @@ function restoreActionViewFocus() {
       target?.isConnected && target.getClientRects().length > 0;
     (targetVisible ? target : visibleActionFocusFallback())?.focus();
   });
-}
-
-function handleActionLibraryToggle(
-  event: Event,
-  searchInput: HTMLInputElement | null,
-) {
-  if (!(event.currentTarget as HTMLDetailsElement).open) return;
-  void nextTick(() => searchInput?.focus());
-}
-
-function closeActionLibrary(library: HTMLDetailsElement | null) {
-  if (!library?.open) return;
-  library.open = false;
-  void nextTick(() => library.querySelector<HTMLElement>("summary")?.focus());
 }
 
 function toggleGraphExpanded() {
@@ -2076,9 +2025,7 @@ function leave() {
                     findScenarioActionCatalogItem(actionCatalog, action.type)
                       ?.name ?? action.type
                   }}</strong>
-                  <small
-                    >{{ action.nodeKey }} · {{ nodeSummary(action) }}</small
-                  >
+                  <small>{{ action.nodeKey }}</small>
                 </div>
                 <em
                   v-if="
@@ -2099,75 +2046,17 @@ function leave() {
               Здесь появятся добавленные действия.
             </p>
 
-            <details
+            <ActionPicker
               v-if="canEdit"
-              ref="desktopActionLibrary"
-              class="action-library"
-              @toggle="
-                handleActionLibraryToggle($event, desktopActionSearchInput)
-              "
-              @keydown.esc.stop.prevent="
-                closeActionLibrary(desktopActionLibrary)
-              "
-            >
-              <summary><i class="pi pi-plus" />Добавить действие</summary>
-              <div class="action-library-body">
-                <label class="action-library-search">
-                  <i class="pi pi-search" />
-                  <input
-                    ref="desktopActionSearchInput"
-                    v-model="actionSearch"
-                    type="search"
-                    placeholder="Найти действие"
-                    aria-label="Найти действие"
-                  />
-                </label>
-                <div
-                  v-for="group in filteredActionGroups"
-                  :key="group.label"
-                  class="library-group"
-                >
-                  <h3>{{ group.label }}</h3>
-                  <button
-                    v-for="definition in group.items"
-                    :key="definition.type"
-                    type="button"
-                    @click="addNode(definition.type)"
-                  >
-                    <span
-                      ><i
-                        :class="
-                          definition.type === 'CONDITION'
-                            ? 'pi pi-code'
-                            : definition.type === 'ASK_CHOICE'
-                              ? 'pi pi-question-circle'
-                              : definition.executor === 'FRONTEND'
-                                ? 'pi pi-desktop'
-                                : 'pi pi-server'
-                        "
-                    /></span>
-                    <div>
-                      <strong>{{ definition.name }}</strong>
-                      <small>{{
-                        definition.description || "Описание пока не добавлено"
-                      }}</small>
-                      <small class="library-executor">{{
-                        definition.executor === "FRONTEND"
-                          ? "В интерфейсе"
-                          : "На сервере"
-                      }}</small>
-                    </div>
-                    <i class="pi pi-plus" />
-                  </button>
-                </div>
-                <p
-                  v-if="!filteredActionGroups.length"
-                  class="action-library-empty"
-                >
-                  Ничего не найдено. Попробуйте другое название.
-                </p>
-              </div>
-            </details>
+              class="action-library-picker"
+              model-value=""
+              :catalog="scenarioPickerActions"
+              label="Добавить действие"
+              placeholder="Добавить действие"
+              hide-label
+              apply-label="Добавить действие"
+              @update:model-value="addNode"
+            />
           </section>
         </aside>
 
@@ -2319,52 +2208,17 @@ function leave() {
             <p v-if="!form.actions.length" class="mobile-empty">
               Добавьте первое действие из списка ниже.
             </p>
-            <details
+            <ActionPicker
               v-if="canEdit"
-              ref="mobileActionLibrary"
-              class="mobile-library"
-              @toggle="
-                handleActionLibraryToggle($event, mobileActionSearchInput)
-              "
-              @keydown.esc.stop.prevent="
-                closeActionLibrary(mobileActionLibrary)
-              "
-            >
-              <summary>Добавить действие</summary>
-              <label class="mobile-library-search">
-                <i class="pi pi-search" />
-                <input
-                  ref="mobileActionSearchInput"
-                  v-model="actionSearch"
-                  type="search"
-                  placeholder="Найти действие"
-                  aria-label="Найти действие на мобильном"
-                />
-              </label>
-              <div v-for="group in filteredActionGroups" :key="group.label">
-                <strong>{{ group.label }}</strong
-                ><button
-                  v-for="definition in group.items"
-                  :key="definition.type"
-                  type="button"
-                  @click="addNode(definition.type)"
-                >
-                  <i class="pi pi-plus" />
-                  <span>
-                    <strong>{{ definition.name }}</strong>
-                    <small>{{
-                      definition.description || "Описание пока не добавлено"
-                    }}</small>
-                  </span>
-                </button>
-              </div>
-              <p
-                v-if="!filteredActionGroups.length"
-                class="action-library-empty"
-              >
-                Ничего не найдено. Попробуйте другое название.
-              </p>
-            </details>
+              class="mobile-library-picker"
+              model-value=""
+              :catalog="scenarioPickerActions"
+              label="Добавить действие"
+              placeholder="Добавить действие"
+              hide-label
+              apply-label="Добавить действие"
+              @update:model-value="addNode"
+            />
           </section>
           <VueFlow
             v-if="
@@ -2395,21 +2249,17 @@ function leave() {
                 добавления откроется схема сценария.
               </p>
             </div>
-            <div
-              v-if="canEdit && actionGroups.length"
-              class="action-empty-options"
-            >
-              <template v-for="group in actionGroups" :key="group.label">
-                <button
-                  v-for="definition in group.items"
-                  :key="definition.type"
-                  type="button"
-                  @click="addNode(definition.type)"
-                >
-                  <i class="pi pi-plus" />{{ definition.name }}
-                </button>
-              </template>
-            </div>
+            <ActionPicker
+              v-if="canEdit && scenarioPickerActions.length"
+              class="action-empty-picker"
+              model-value=""
+              :catalog="scenarioPickerActions"
+              label="Первое действие"
+              placeholder="Выбрать первое действие"
+              hide-label
+              apply-label="Добавить действие"
+              @update:model-value="addNode"
+            />
           </section>
         </main>
 
@@ -2894,23 +2744,19 @@ function leave() {
                   }}</strong>
                   <small>{{ firstAction.nodeKey }}</small>
                 </div>
-                <Select
+                <ScenarioActionTargetPicker
                   v-if="canChooseFirstAction"
-                  input-id="scenario-first-action"
-                  :model-value="firstAction.nodeKey"
+                  :model-value="firstAction.nodeKey ?? ''"
                   :options="firstActionOptions"
-                  option-label="label"
-                  option-value="value"
-                  aria-label="Выбрать первое действие"
+                  label="Выбрать первое действие"
+                  placeholder="Выберите действие"
+                  hide-label
+                  apply-label="Сделать первым"
+                  eyebrow="Маршрут сценария"
+                  title="Выберите первое действие"
+                  description="Назначьте шаг, с которого начнётся выполнение сценария."
                   @update:model-value="changeFirstAction"
-                >
-                  <template #option="{ option }">
-                    <div class="first-action-option">
-                      <span>{{ option.label }}</span>
-                      <code>{{ option.meta }}</code>
-                    </div>
-                  </template>
-                </Select>
+                />
                 <Button
                   label="Настроить первое действие"
                   icon="pi pi-pencil"
@@ -3364,12 +3210,10 @@ function leave() {
 }
 .action-outline-item small {
   margin-top: 3px;
-  overflow: hidden;
   color: var(--text-small-muted);
   font-size: 0.58rem;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .action-outline-item em {
   display: grid;
@@ -3382,129 +3226,15 @@ function leave() {
   font-size: 0.6rem;
   font-style: normal;
 }
-.action-outline-empty,
-.action-library-empty {
+.action-outline-empty {
   margin: 4px 7px 12px;
   color: var(--text-small-muted);
   font-size: 0.66rem;
   line-height: 1.45;
 }
-.action-library {
+.action-library-picker {
   margin-top: 12px;
-}
-.action-library > summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 9px 11px;
-  border: 1px solid var(--status-accent);
-  border-radius: 11px;
-  background: var(--status-accent-soft);
-  color: var(--status-accent-text);
-  font-size: 0.7rem;
-  font-weight: 800;
-  list-style: none;
-  cursor: pointer;
-}
-.action-library > summary::-webkit-details-marker {
-  display: none;
-}
-.action-library[open] > summary {
-  margin-bottom: 10px;
-}
-.action-library-body {
-  display: grid;
-}
-.action-library-search {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0 0 12px;
-  padding: 8px 9px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  background: var(--surface-card);
-}
-.action-library-search i {
-  color: var(--text-small-muted);
-  font-size: 0.7rem;
-}
-.action-library-search input {
-  min-width: 0;
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 0.68rem;
-}
-.library-group {
-  margin-bottom: 19px;
-}
-.library-group h3 {
-  margin: 0 7px 7px;
-  color: var(--text-small-muted);
-  font-size: 0.61rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-.library-group button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-bottom: 5px;
-  padding: 9px;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-.library-group button:hover {
-  border-color: var(--border-default);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-raised);
-}
-.library-group button > span {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--status-accent-soft);
-  color: var(--status-accent-text);
-}
-.library-group button > div {
-  min-width: 0;
-  flex: 1;
-}
-.library-group button strong,
-.library-group button small {
-  display: block;
-}
-.library-group button strong {
-  font-size: 0.72rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-.library-group button small {
-  margin-top: 2px;
-  color: var(--text-small-muted);
-  font-size: 0.6rem;
-  line-height: 1.35;
-}
-.library-group button .library-executor {
-  color: var(--status-accent-text);
-  font-size: 0.58rem;
-  font-weight: 700;
-}
-.library-group button > .pi-plus {
-  color: var(--text-tertiary);
-  font-size: 0.65rem;
+  --catalog-picker-trigger-height: 42px;
 }
 .graph-canvas,
 .rule-canvas,
@@ -3777,29 +3507,8 @@ function leave() {
   color: var(--text-small-muted);
   font-size: var(--font-size-body);
 }
-.action-empty-options {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-width: 640px;
-}
-.action-empty-options button {
-  min-height: var(--control-height);
-  padding: 9px 13px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  background: var(--surface-card);
-  color: var(--text-primary);
-  font: 700 var(--font-size-button) var(--font-display);
-  cursor: pointer;
-}
-.action-empty-options button:hover {
-  border-color: var(--status-accent);
-  background: var(--status-accent-soft);
-}
-.action-empty-options i {
-  margin-right: 7px;
+.action-empty-picker {
+  width: min(380px, 100%);
 }
 .stage-overview {
   display: grid;
@@ -3888,17 +3597,6 @@ function leave() {
 .first-action-card > :deep(.p-button) {
   grid-column: 1 / -1;
   width: 100%;
-}
-.first-action-option {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-.first-action-option code {
-  color: var(--text-small-muted);
-  font-size: 0.67rem;
 }
 .stage-empty {
   display: flex;
@@ -4288,75 +3986,8 @@ function leave() {
   font-size: 0.62rem;
   font-style: normal;
 }
-.mobile-library {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-card);
-  padding: 11px;
-}
-.mobile-library summary {
-  cursor: pointer;
-  font-weight: 700;
-}
-.mobile-library-search {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 44px;
-  margin-top: 12px;
-  padding: 0 12px;
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-  color: var(--text-small-muted);
-}
-.mobile-library-search input {
-  min-width: 0;
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font: inherit;
-}
-.mobile-library > div {
-  display: grid;
-  gap: 6px;
-  margin-top: 10px;
-}
-.mobile-library > div > strong {
-  color: var(--text-small-muted);
-  font-size: 0.62rem;
-  text-transform: uppercase;
-}
-.mobile-library button {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 9px;
-  min-height: 40px;
-  border: 0;
-  border-radius: 9px;
-  background: var(--status-accent-soft);
-  color: var(--status-accent-text);
-  text-align: left;
-  padding: 9px;
-}
-.mobile-library button i {
-  margin-top: 2px;
-}
-.mobile-library button strong,
-.mobile-library button small {
-  display: block;
-}
-.mobile-library button strong {
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-.mobile-library button small {
-  margin-top: 3px;
-  color: var(--text-secondary);
-  font-size: 0.62rem;
-  line-height: 1.4;
+.mobile-library-picker {
+  --catalog-picker-trigger-height: 44px;
 }
 .mobile-graph-button {
   width: 100%;

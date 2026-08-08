@@ -64,6 +64,7 @@ const props = withDefaults(
     applyLabel: string;
     multipleApplyLabel?: string;
     icon?: string;
+    layout?: "list" | "grid";
     testIdPrefix: string;
     labelClass?: string;
   }>(),
@@ -82,6 +83,7 @@ const props = withDefaults(
     multipleTitle: undefined,
     multipleApplyLabel: undefined,
     icon: "pi pi-list",
+    layout: "list",
     labelClass: undefined,
   },
 );
@@ -418,7 +420,10 @@ watch(
         <Listbox
           v-if="options.length"
           v-model="draftModel"
-          class="catalog-picker__options"
+          :class="[
+            'catalog-picker__options',
+            `catalog-picker__options--${layout}`,
+          ]"
           :options="options"
           option-label="name"
           option-value="value"
@@ -759,6 +764,13 @@ watch(
   gap: 5px;
   padding: 2px 3px 6px;
 }
+.catalog-picker__options--grid :deep(.p-listbox-list) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.catalog-picker__options--grid :deep(.p-listbox-option) {
+  height: 100%;
+}
 .catalog-picker__options :deep(.p-listbox-option) {
   min-width: 0;
   min-height: 60px;
@@ -946,6 +958,9 @@ watch(
   .catalog-picker__options {
     max-height: none;
     min-height: 0;
+  }
+  .catalog-picker__options--grid :deep(.p-listbox-list) {
+    grid-template-columns: minmax(0, 1fr);
   }
   .catalog-picker__trigger-action {
     width: 32px;

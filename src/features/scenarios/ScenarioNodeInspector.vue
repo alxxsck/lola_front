@@ -3,8 +3,11 @@ import { computed, ref } from "vue";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
-import Select from "primevue/select";
 import ActionConfigFields from "@/features/actions/ActionConfigFields.vue";
+import ActionPicker from "@/features/actions/ActionPicker.vue";
+import ScenarioActionTargetPicker, {
+  type ScenarioActionTargetOption,
+} from "@/features/actions/ScenarioActionTargetPicker.vue";
 import {
   ScenarioGoalEditor,
   ScenarioGoalPreview,
@@ -84,41 +87,52 @@ defineExpose({
   focus: () => inspectorElement.value?.focus(),
 });
 
-const createTargetPrefix = "__create__:";
 const definition = computed(() =>
   findScenarioActionCatalogItem(props.actionCatalog, props.action.type),
 );
-const targets = computed(() =>
-  availableTargets(props.actions, props.action).map((target) => {
+const existingTargetOptions = computed<ScenarioActionTargetOption[]>(() =>
+  availableTargets(props.actions, props.action).flatMap((target) => {
     const action = props.actions.find((item) => item.nodeKey === target.value);
+    if (!action) return [];
     const targetDefinition = action
       ? findScenarioActionCatalogItem(props.actionCatalog, action.type)
       : undefined;
-    return {
-      ...target,
-      label: `${targetDefinition?.name ?? action?.type ?? target.label} · ${target.value}`,
-    };
+    return [{
+      value: target.value,
+      name: targetDefinition?.name ?? action.type,
+      code: action.nodeKey ?? target.value,
+      description:
+        targetDefinition?.description ?? "Уже добавленный шаг сценария",
+      kind: "existing",
+      executor: targetDefinition?.executor,
+      position: action.position,
+    }];
   }),
 );
-const actionOptions = computed(() =>
+const createTargetOptions = computed<ScenarioActionTargetOption[]>(() =>
   props.actionCatalog
     .filter((item) => item.enabled)
-    .map((item) => ({ label: item.name, value: item.type })),
+    .map((item) => ({
+      value: `catalog-action:${item.id}`,
+      name: item.name,
+      code: item.type,
+      description: item.description ?? "Описание пока не добавлено",
+      kind: "create",
+      actionType: item.type,
+      executor: item.executor,
+    })),
 );
-const targetOptions = computed(() => [
-  ...targets.value,
-  ...actionOptions.value.map((option) => ({
-    label: `＋ Создать: ${option.label}`,
-    value: `${createTargetPrefix}${option.value}`,
-  })),
+const targetOptions = computed<ScenarioActionTargetOption[]>(() => [
+  ...existingTargetOptions.value,
+  ...createTargetOptions.value,
 ]);
-const reminderActionOptions = computed(() =>
+const reminderActionTypes = computed(() =>
   props.actionCatalog
     .filter(
       (item) =>
         item.enabled && (item.type === "SAY" || item.executor === "FRONTEND"),
     )
-    .map((item) => ({ label: item.name, value: item.type })),
+    .map((item) => item.type),
 );
 const genericDefinition = computed(() => {
   if (props.action.type === "WAIT_FOR_GOAL") return undefined;
@@ -207,10 +221,6 @@ function selectTarget(
   index?: number,
 ) {
   const target = String(value ?? "");
-  if (target.startsWith(createTargetPrefix)) {
-    emit("createTarget", target.slice(createTargetPrefix.length), kind, index);
-    return;
-  }
   if (kind === "next") updateAction({ nextNodeKey: target || null });
   else if (kind === "choice" && index !== undefined)
     updateChoice(index, { nextNodeKey: target });
@@ -223,6 +233,15 @@ function selectTarget(
     );
   else if (kind === "fallback") setConfig("fallbackNodeKey", target);
 }
+function createSelectedTarget(
+  target: ScenarioActionTargetOption,
+  kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+  index?: number,
+) {
+  if (target.kind === "create" && target.actionType) {
+    emit("createTarget", target.actionType, kind, index);
+  }
+}
 function createGoalTarget(
   type: string,
   branch: "goal" | "timeout",
@@ -230,7 +249,7 @@ function createGoalTarget(
   emit("createTarget", type, branch);
 }
 function addReminder() {
-  const type = reminderActionOptions.value[0]?.value ?? "SAY";
+  const type = reminderActionTypes.value[0] ?? "SAY";
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   setReminders([
     ...choiceReminders(props.action),
@@ -247,7 +266,7 @@ function addReminder() {
 }
 function addReminderAction(reminderIndex: number) {
   const reminders = choiceReminders(props.action);
-  const type = reminderActionOptions.value[0]?.value ?? "SAY";
+  const type = reminderActionTypes.value[0] ?? "SAY";
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   reminders[reminderIndex].actions.push({
     type,
@@ -315,13 +334,12 @@ function updateNodeKey(value: string | undefined) {
     <section>
       <h3>Основное</h3>
       <div class="field">
-        <label :for="`${scenarioId}-${action.nodeKey}-type`">Тип действия</label
-        ><Select
-          :input-id="`${scenarioId}-${action.nodeKey}-type`"
+        <ActionPicker
           :model-value="action.type"
-          :options="actionOptions"
-          option-label="label"
-          option-value="value"
+          :catalog="actionCatalog"
+          label="Тип действия"
+          placeholder="Выберите действие"
+          apply-label="Заменить действие"
           @update:model-value="emit('changeType', $event)"
         />
       </div>
@@ -340,16 +358,14 @@ function updateNodeKey(value: string | undefined) {
         "
         class="field"
       >
-        <label :for="`${scenarioId}-${action.nodeKey}-next-action`">Следующее действие</label
-        ><Select
-          :input-id="`${scenarioId}-${action.nodeKey}-next-action`"
-          :model-value="action.nextNodeKey"
+        <ScenarioActionTargetPicker
+          :model-value="action.nextNodeKey ?? ''"
           :options="targetOptions"
-          option-label="label"
-          option-value="value"
-          show-clear
+          label="Следующее действие"
           placeholder="Завершить или выбрать действие"
+          allow-empty
           @update:model-value="selectTarget($event, 'next')"
+          @select="createSelectedTarget($event, 'next')"
         />
       </div>
     </section>
@@ -470,15 +486,15 @@ function updateNodeKey(value: string | undefined) {
         </div>
         <div class="choice-target">
           <i class="pi pi-arrow-right" />
-          <label class="sr-only" :for="`${scenarioId}-${action.nodeKey}-choice-${index}-target`">Следующее действие для варианта {{ index + 1 }}</label>
-          <Select
-            :input-id="`${scenarioId}-${action.nodeKey}-choice-${index}-target`"
+          <ScenarioActionTargetPicker
             :model-value="option.nextNodeKey"
             :options="targetOptions"
-            option-label="label"
-            option-value="value"
+            :label="`Следующее действие для варианта ${index + 1}`"
             placeholder="Следующее действие"
+            hide-label
+            allow-empty
             @update:model-value="selectTarget($event, 'choice', index)"
+            @select="createSelectedTarget($event, 'choice', index)"
           /><Button
             icon="pi pi-trash"
             text
@@ -496,15 +512,14 @@ function updateNodeKey(value: string | undefined) {
         </div>
       </div>
       <div class="field timeout-field">
-        <label :for="`${scenarioId}-${action.nodeKey}-timeout-target`">Действие по тайм-ауту</label
-        ><Select
-          :input-id="`${scenarioId}-${action.nodeKey}-timeout-target`"
+        <ScenarioActionTargetPicker
           :model-value="action.config.onTimeout"
           :options="targetOptions"
-          option-label="label"
-          option-value="value"
+          label="Действие по тайм-ауту"
           placeholder="Что выполнить без ответа"
+          allow-empty
           @update:model-value="selectTarget($event, 'timeout')"
+          @select="createSelectedTarget($event, 'timeout')"
         />
       </div>
     </section>
@@ -557,28 +572,27 @@ function updateNodeKey(value: string | undefined) {
           "
         />
         <div class="branch-target">
-          <label :for="`${scenarioId}-${action.nodeKey}-branch-${index}-target`">Тогда</label
-          ><Select
-            :input-id="`${scenarioId}-${action.nodeKey}-branch-${index}-target`"
+          <ScenarioActionTargetPicker
             :model-value="branch.nextNodeKey"
             :options="targetOptions"
-            option-label="label"
-            option-value="value"
+            :label="`Тогда — действие для ветки ${index + 1}`"
             placeholder="Следующее действие"
+            hide-label
+            allow-empty
             @update:model-value="selectTarget($event, 'condition', index)"
+            @select="createSelectedTarget($event, 'condition', index)"
           />
         </div>
       </div>
       <div class="field">
-        <label :for="`${scenarioId}-${action.nodeKey}-fallback-target`">Иначе</label
-        ><Select
-          :input-id="`${scenarioId}-${action.nodeKey}-fallback-target`"
+        <ScenarioActionTargetPicker
           :model-value="action.config.fallbackNodeKey"
           :options="targetOptions"
-          option-label="label"
-          option-value="value"
+          label="Иначе"
           placeholder="Следующее действие"
+          allow-empty
           @update:model-value="selectTarget($event, 'fallback')"
+          @select="createSelectedTarget($event, 'fallback')"
         />
       </div>
     </section>
@@ -642,13 +656,14 @@ function updateNodeKey(value: string | undefined) {
           v-for="(reminderAction, actionIndex) in reminder.actions"
           :key="actionIndex"
         >
-          <label class="sr-only" :for="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-action-${actionIndex}-type`">Тип действия в напоминании {{ reminderIndex + 1 }}</label>
-          <Select
-            :input-id="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-action-${actionIndex}-type`"
+          <ActionPicker
             :model-value="reminderAction.type"
-            :options="reminderActionOptions"
-            option-label="label"
-            option-value="value"
+            :catalog="actionCatalog"
+            :allowed-types="reminderActionTypes"
+            :label="`Тип действия в напоминании ${reminderIndex + 1}`"
+            placeholder="Выберите действие"
+            hide-label
+            apply-label="Заменить действие"
             @update:model-value="
               changeReminderType(reminderIndex, actionIndex, $event)
             "
@@ -854,9 +869,10 @@ h3 {
   color: var(--status-accent-text);
   font-size: 0.72rem;
 }
-.choice-target .p-select,
-.branch-target .p-select {
+.choice-target :deep(.scenario-action-target-picker),
+.branch-target :deep(.scenario-action-target-picker) {
   flex: 1;
+  min-width: 0;
 }
 .branch-head,
 .reminder-head {

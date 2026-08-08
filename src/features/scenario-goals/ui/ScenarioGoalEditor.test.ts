@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import EventPicker from '@/features/events/EventPicker.vue'
+import ScenarioActionTargetPicker, {
+  type ScenarioActionTargetOption,
+} from '@/features/actions/ScenarioActionTargetPicker.vue'
 
 import ScenarioGoalEditor from './ScenarioGoalEditor.vue'
 
@@ -27,12 +30,19 @@ const contract: ScenarioAuthoringContract = {
   }],
 }
 
+const target = (value: string, name: string): ScenarioActionTargetOption => ({
+  value,
+  name,
+  code: value,
+  kind: 'existing',
+})
+
 describe('ScenarioGoalEditor', () => {
   it('authors a finite Goal/Timeout config without exposing JSON', async () => {
     const wrapper = mount(ScenarioGoalEditor, {
       props: {
         modelValue: {}, contract,
-        targets: [{ label: 'Спасибо · deposit_done', value: 'deposit_done' }, { label: 'Напоминание · deposit_missing', value: 'deposit_missing' }],
+        targets: [target('deposit_done', 'Спасибо'), target('deposit_missing', 'Напоминание')],
       },
     })
 
@@ -47,8 +57,10 @@ describe('ScenarioGoalEditor', () => {
     await wrapper.get('input[aria-label="Порог цели"]').setValue('500.25')
     await wrapper.get('input[aria-label="Срок цели"]').setValue('2')
     await wrapper.get('select[aria-label="Единица срока цели"]').setValue('day')
-    await wrapper.get('select[aria-label="Ветка при достижении цели"]').setValue('deposit_done')
-    await wrapper.get('select[aria-label="Ветка по истечении срока"]').setValue('deposit_missing')
+    const branches = wrapper.findAllComponents(ScenarioActionTargetPicker)
+    branches[0]!.vm.$emit('update:modelValue', 'deposit_done')
+    branches[1]!.vm.$emit('update:modelValue', 'deposit_missing')
+    await wrapper.vm.$nextTick()
 
     const config = wrapper.emitted('update:modelValue')?.at(-1)?.[0]
     expect(config).toEqual({
@@ -68,7 +80,7 @@ describe('ScenarioGoalEditor', () => {
     const wrapper = mount(ScenarioGoalEditor, {
       props: {
         modelValue: {}, contract,
-        targets: [{ label: 'Готово', value: 'done' }, { label: 'Срок истёк', value: 'timeout' }],
+        targets: [target('done', 'Готово'), target('timeout', 'Срок истёк')],
       },
     })
 
@@ -77,8 +89,10 @@ describe('ScenarioGoalEditor', () => {
     await wrapper.get('button[aria-label="Добавить фильтр цели"]').trigger('click')
     await wrapper.get('select[aria-label="Поле фильтра цели 1"]').setValue('deposit.amount')
     await wrapper.get('input[aria-label="Значение фильтра цели 1"]').setValue('12.5')
-    await wrapper.get('select[aria-label="Ветка при достижении цели"]').setValue('done')
-    await wrapper.get('select[aria-label="Ветка по истечении срока"]').setValue('timeout')
+    const branches = wrapper.findAllComponents(ScenarioActionTargetPicker)
+    branches[0]!.vm.$emit('update:modelValue', 'done')
+    branches[1]!.vm.$emit('update:modelValue', 'timeout')
+    await wrapper.vm.$nextTick()
 
     const config = wrapper.emitted('update:modelValue')?.at(-1)?.[0] as { goal: { filters: Array<{ value: unknown }> } }
     expect(config.goal.filters[0]?.value).toBe(12.5)
@@ -88,7 +102,7 @@ describe('ScenarioGoalEditor', () => {
     const wrapper = mount(ScenarioGoalEditor, {
       props: {
         modelValue: {}, contract,
-        targets: [{ label: 'Готово', value: 'done' }, { label: 'Срок истёк', value: 'timeout' }],
+        targets: [target('done', 'Готово'), target('timeout', 'Срок истёк')],
       },
     })
 
@@ -99,8 +113,10 @@ describe('ScenarioGoalEditor', () => {
     await wrapper.get('select[aria-label="Оператор фильтра цели 1"]').setValue('in')
     expect(wrapper.get('select[aria-label="Оператор фильтра цели 1"]').findAll('option').map((option) => option.text())).toEqual(['равно', 'одно из'])
     await wrapper.get('select[aria-label="Значения фильтра цели 1"]').setValue(['EUR', 'USD'])
-    await wrapper.get('select[aria-label="Ветка при достижении цели"]').setValue('done')
-    await wrapper.get('select[aria-label="Ветка по истечении срока"]').setValue('timeout')
+    const branches = wrapper.findAllComponents(ScenarioActionTargetPicker)
+    branches[0]!.vm.$emit('update:modelValue', 'done')
+    branches[1]!.vm.$emit('update:modelValue', 'timeout')
+    await wrapper.vm.$nextTick()
 
     const config = wrapper.emitted('update:modelValue')?.at(-1)?.[0] as { goal: { filters: Array<{ value: unknown }> } }
     expect(config.goal.filters[0]?.value).toEqual(['EUR', 'USD'])
@@ -117,7 +133,7 @@ describe('ScenarioGoalEditor', () => {
       }],
     }
     const wrapper = mount(ScenarioGoalEditor, {
-      props: { modelValue: {}, contract: typedContract, targets: [{ label: 'Готово', value: 'done' }, { label: 'Срок', value: 'timeout' }] },
+      props: { modelValue: {}, contract: typedContract, targets: [target('done', 'Готово'), target('timeout', 'Срок')] },
     })
     wrapper.getComponent(EventPicker).vm.$emit('update:modelValue', 'deposit.succeeded')
     await wrapper.vm.$nextTick()
@@ -128,8 +144,10 @@ describe('ScenarioGoalEditor', () => {
     await wrapper.get('select[aria-label="Поле фильтра цели 2"]').setValue('deposit.amount')
     await wrapper.get('select[aria-label="Оператор фильтра цели 2"]').setValue('in')
     await wrapper.get('input[aria-label="Значения фильтра цели 2"]').setValue('10.5, 20')
-    await wrapper.get('select[aria-label="Ветка при достижении цели"]').setValue('done')
-    await wrapper.get('select[aria-label="Ветка по истечении срока"]').setValue('timeout')
+    const branches = wrapper.findAllComponents(ScenarioActionTargetPicker)
+    branches[0]!.vm.$emit('update:modelValue', 'done')
+    branches[1]!.vm.$emit('update:modelValue', 'timeout')
+    await wrapper.vm.$nextTick()
 
     const config = wrapper.emitted('update:modelValue')?.at(-1)?.[0] as { goal: { filters: Array<{ value: unknown }> } }
     expect(config.goal.filters.map((filter) => filter.value)).toEqual([true, [10.5, 20]])

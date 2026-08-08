@@ -1,6 +1,7 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import UiElementPicker from "@/features/interface/UiElementPicker.vue";
+import ActionPicker from "@/features/actions/ActionPicker.vue";
 import SendActionDialog from "./SendActionDialog.vue";
 
 const mocks = vi.hoisted(() => ({
@@ -73,7 +74,7 @@ describe("SendActionDialog", () => {
 
     await wrapper.setProps({ visible: true });
     await flushPromises();
-    await wrapper.findAllComponents({ name: "Select" })[0]?.vm.$emit(
+    await wrapper.getComponent(ActionPicker).vm.$emit(
       "update:modelValue",
       "COMMAND",
     );

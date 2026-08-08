@@ -15,6 +15,8 @@ import { buildDirectActions, resolveIdempotencyAttempt } from './direct-action'
 import { relativeTime } from '@/shared/lib/format'
 import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
 import UiElementPicker from '@/features/interface/UiElementPicker.vue'
+import ActionPicker from '@/features/actions/ActionPicker.vue'
+import type { ActionPickerItem } from '@/features/actions/action-picker-loader'
 
 const props = defineProps<{
   visible: boolean
@@ -55,12 +57,36 @@ const mockTypes = computed(() => [
   { label: 'Выдать бонус · demo', value: 'BONUS' },
 ])
 const types = computed(() => repository.mode === 'api' ? apiTypes.value : mockTypes.value)
+const actionTypeDescriptions: Record<string, string> = {
+  TEXT: 'Отправляет текст от Retenive в текущий или новый диалог.',
+  BUTTON: 'Отправляет CTA-кнопку с переходом к элементу интерфейса.',
+  ANIMATION: 'Запускает анимацию в активной пользовательской сессии.',
+  COMMAND: 'Выполняет frontend-команду в выбранной сессии.',
+  VOICE: 'Озвучивает текст выбранным голосом в demo-режиме.',
+  BONUS: 'Выдаёт тестовый бонус через demo-интеграцию.',
+}
+const typeCatalog = computed<ActionPickerItem[]>(() => types.value.map((type) => ({
+  id: `manual-${type.value.toLocaleLowerCase()}`,
+  type: type.value,
+  name: type.label,
+  description: actionTypeDescriptions[type.value] ?? null,
+  executor: ['BUTTON', 'ANIMATION', 'COMMAND'].includes(type.value) ? 'FRONTEND' : 'SERVER',
+  enabled: true,
+})))
 const commandActions = [
-  { label: 'Открыть страницу', value: 'OPEN_PAGE' },
-  { label: 'Открыть модалку', value: 'OPEN_MODAL' },
-  { label: 'Подсветить элемент', value: 'HIGHLIGHT_ELEMENT' },
+  { label: 'Открыть страницу', value: 'OPEN_PAGE', description: 'Переходит на опубликованную страницу продукта.' },
+  { label: 'Открыть модалку', value: 'OPEN_MODAL', description: 'Открывает опубликованное модальное окно.' },
+  { label: 'Подсветить элемент', value: 'HIGHLIGHT_ELEMENT', description: 'Привлекает внимание к элементу или кнопке.' },
 ]
 const buttonActions = computed(() => form.type === 'BUTTON' ? commandActions.slice(0, 2) : commandActions)
+const commandActionCatalog = computed<ActionPickerItem[]>(() => buttonActions.value.map((action) => ({
+  id: `command-${action.value.toLocaleLowerCase()}`,
+  type: action.value,
+  name: action.label,
+  description: action.description,
+  executor: 'FRONTEND',
+  enabled: true,
+})))
 const policies = [
   { label: 'Продолжить активный диалог', value: 'reuse_active' },
   { label: 'Создать новый диалог', value: 'create_new' },
@@ -171,7 +197,13 @@ async function send() {
         <span :class="availableSessions.length ? 'status-dot' : 'offline-dot'" />
         <div><strong>{{ recipient }}</strong><small>{{ availableSessions.length ? `${availableSessions.length} активных сессий` : 'Пользователь сейчас offline' }}</small></div>
       </div>
-      <div class="field"><label>Тип действия</label><Select v-model="form.type" :options="types" option-label="label" option-value="value" /></div>
+      <ActionPicker
+        v-model="form.type"
+        class="send-action-type-picker"
+        :catalog="typeCatalog"
+        label="Тип действия"
+        placeholder="Выберите действие"
+      />
       <div class="field"><label>Диалог</label><Select v-model="form.policy" :options="policies" option-label="label" option-value="value" /></div>
       <div v-if="availableSessions.length" class="field"><label>Активная сессия</label><Select v-model="selectedSessionId" :options="sessionOptions" option-label="label" option-value="value" /><small>Для текста backend может выбрать сессию автоматически. Кнопка или frontend-команда будет отправлена строго в выбранную сессию.</small></div>
       <template v-if="form.type === 'TEXT' || form.type === 'VOICE'">
@@ -179,7 +211,7 @@ async function send() {
         <div class="field"><label>{{ form.type === 'VOICE' ? 'Текст для озвучивания' : 'Сообщение' }}</label><Textarea v-model="form.text" rows="5" maxlength="10000" placeholder="Что Retenive должна сказать пользователю?" /></div>
       </template>
       <template v-else-if="form.type === 'BUTTON' || form.type === 'COMMAND'">
-        <div class="grid grid-2"><div v-if="form.type === 'BUTTON'" class="field"><label>Текст кнопки</label><InputText v-model="form.label" placeholder="Открыть бонусы" /></div><div class="field"><label>Действие</label><Select v-model="form.action" :options="buttonActions" option-label="label" option-value="value" /></div></div>
+        <div class="grid grid-2"><div v-if="form.type === 'BUTTON'" class="field"><label>Текст кнопки</label><InputText v-model="form.label" placeholder="Открыть бонусы" /></div><ActionPicker v-model="form.action" class="send-action-type-picker" :catalog="commandActionCatalog" label="Действие" placeholder="Выберите команду" /></div>
         <div class="field">
           <UiElementPicker
             v-model="form.target"
@@ -210,6 +242,11 @@ async function send() {
 <style scoped>
 .recipient{display:flex;align-items:center;gap:12px;padding:13px}.recipient strong,.recipient small{display:block}.recipient strong{font-size:.82rem}.recipient small{color:var(--muted);font-size:.72rem;margin-top:3px}.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);box-shadow:0 0 0 5px var(--surface-subtle)}
 .send-action-target-picker {
+  --catalog-picker-trigger-height: calc(
+    1.5em + 2 * var(--p-form-field-padding-y) + 2px
+  );
+}
+.send-action-type-picker {
   --catalog-picker-trigger-height: calc(
     1.5em + 2 * var(--p-form-field-padding-y) + 2px
   );

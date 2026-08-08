@@ -1,5 +1,4 @@
 import { flushPromises, shallowMount } from "@vue/test-utils";
-import Select from "primevue/select";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScenarioRuleBuilder } from "@/features/scenario-rules/ui";
@@ -14,6 +13,8 @@ import {
 import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import ActionPicker from "@/features/actions/ActionPicker.vue";
+import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
 import type { ProjectAction } from "@/features/project-actions/model/project-action";
 import type { ScenarioActionCatalogItem } from "@/shared/types/domain";
 import ScenarioEditorPage from "./ScenarioEditorPage.vue";
@@ -879,13 +880,12 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    const firstActionSelect = wrapper
-      .findAllComponents(Select)
-      .find(
-        (component) =>
-          component.attributes("input-id") === "scenario-first-action",
-      )!;
-    firstActionSelect.vm.$emit("update:modelValue", "open_chat");
+    const firstActionPicker = wrapper.getComponent(ScenarioActionTargetPicker);
+    expect(firstActionPicker.props("title")).toBe("Выберите первое действие");
+    expect(firstActionPicker.props("description")).toContain(
+      "начнётся выполнение сценария",
+    );
+    firstActionPicker.vm.$emit("update:modelValue", "open_chat");
     await wrapper.vm.$nextTick();
 
     const page = wrapper.vm as unknown as {
@@ -1369,9 +1369,11 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await stageButton(wrapper, "Действия").trigger("click");
 
     expect(mocks.ensureProjectActionsLoaded).toHaveBeenCalledWith("project-1");
-    expect(wrapper.get(".action-library").text()).toContain("Открыть страницу");
-    expect(wrapper.get(".action-library").text()).not.toContain("Только для AI");
-    expect(wrapper.get(".action-library").text()).not.toContain("Выключено");
+    const addPicker = wrapper
+      .findAllComponents(ActionPicker)
+      .find((picker) => picker.classes().includes("action-library-picker"))!;
+    expect(addPicker.props("catalog").map((action) => action.name))
+      .toEqual(["Открыть страницу"]);
   });
 
   it("uses the pinned Project Action revision as the editor definition catalog", async () => {
@@ -1392,7 +1394,11 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.text()).not.toContain(
       "Действие SHOW_ASSISTANT отсутствует в каталоге проекта",
     );
-    expect(wrapper.get(".action-library").text()).toContain("SHOW_ASSISTANT");
+    const addPicker = wrapper
+      .findAllComponents(ActionPicker)
+      .find((picker) => picker.classes().includes("action-library-picker"))!;
+    expect(addPicker.props("catalog").map((action) => action.type))
+      .toContain("SHOW_ASSISTANT");
     await wrapper.get(".action-outline-item").trigger("click");
     expect(
       wrapper
@@ -1442,12 +1448,11 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.get(".mobile-action-outline").text()).toContain(
       "welcome_message",
     );
-    expect(wrapper.get(".mobile-library summary").text()).toContain(
-      "Добавить действие",
-    );
-    expect(
-      wrapper.find('input[aria-label="Найти действие на мобильном"]').exists(),
-    ).toBe(true);
+    const mobilePicker = wrapper
+      .findAllComponents(ActionPicker)
+      .find((picker) => picker.classes().includes("mobile-library-picker"));
+    expect(mobilePicker?.props("label")).toBe("Добавить действие");
+    expect(mobilePicker?.props("placeholder")).toBe("Добавить действие");
     await wrapper
       .get('button[aria-label="Открыть узел welcome_message"]')
       .trigger("click");
@@ -1582,10 +1587,11 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(actionButton.text()).toContain(
       "Отправить пользователю приветственное сообщение",
     );
-    expect(wrapper.get(".action-library summary").text()).toContain(
-      "Добавить действие",
-    );
-    expect(wrapper.get(".action-library").text()).toContain(
+    const addPicker = wrapper
+      .findAllComponents(ActionPicker)
+      .find((picker) => picker.classes().includes("action-library-picker"))!;
+    expect(addPicker.props("label")).toBe("Добавить действие");
+    expect(addPicker.props("catalog")[0].description).toBe(
       "Показывает полный приветственный текст пользователю.",
     );
     await wrapper.get(".graph-toolbar button").trigger("click");

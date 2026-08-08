@@ -3,6 +3,9 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import EventPicker, { type EventPickerOption } from '@/features/events/EventPicker.vue'
 import { createLocalEventPickerLoader } from '@/features/events/event-picker-loader'
+import ScenarioActionTargetPicker, {
+  type ScenarioActionTargetOption,
+} from '@/features/actions/ScenarioActionTargetPicker.vue'
 import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring'
 import {
   createGoalDraft,
@@ -21,7 +24,7 @@ type DurationUnit = 'second' | 'minute' | 'hour' | 'day'
 const props = defineProps<{
   modelValue: Record<string, unknown>
   contract: ScenarioAuthoringContract
-  targets: Array<{ label: string; value: string }>
+  targets: ScenarioActionTargetOption[]
 }>()
 
 const emit = defineEmits<{
@@ -30,7 +33,6 @@ const emit = defineEmits<{
   'create-target': [type: string, branch: 'goal' | 'timeout']
 }>()
 
-const createTargetPrefix = '__create__:'
 const draft = reactive<GoalDraft>(createGoalDraft())
 const duration = ref(1)
 const durationUnit = ref<DurationUnit>('day')
@@ -120,16 +122,13 @@ function changeDuration() {
   commit()
 }
 
-function changeBranch(branch: 'goal' | 'timeout') {
-  const value = branch === 'goal' ? draft.onGoal : draft.onTimeout
-  if (!value.startsWith(createTargetPrefix)) {
-    commit()
-    return
+function createBranchTarget(
+  target: ScenarioActionTargetOption,
+  branch: 'goal' | 'timeout',
+) {
+  if (target.kind === 'create' && target.actionType) {
+    emit('create-target', target.actionType, branch)
   }
-
-  if (branch === 'goal') draft.onGoal = ''
-  else draft.onTimeout = ''
-  emit('create-target', value.slice(createTargetPrefix.length), branch)
 }
 
 function addFilter() {
@@ -245,8 +244,24 @@ function typedFilterValue(value: string, valueType?: string): string | number | 
       <div class="duration-grid"><input v-model.number="duration" type="number" min="1" aria-label="Срок цели" @input="changeDuration"><select v-model="durationUnit" aria-label="Единица срока цели" @change="changeDuration"><option v-for="unit in unitOptions" :key="unit.value" :value="unit.value">{{ unit.label }}</option></select></div>
     </div>
 
-    <div class="field"><label for="goal-branch">При достижении цели</label><select id="goal-branch" v-model="draft.onGoal" aria-label="Ветка при достижении цели" @change="changeBranch('goal')"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
-    <div class="field"><label for="timeout-branch">По истечении срока</label><select id="timeout-branch" v-model="draft.onTimeout" aria-label="Ветка по истечении срока" @change="changeBranch('timeout')"><option value="">Выберите действие</option><option v-for="target in targets" :key="target.value" :value="target.value">{{ target.label }}</option></select></div>
+    <ScenarioActionTargetPicker
+      :model-value="draft.onGoal"
+      :options="targets"
+      label="При достижении цели"
+      placeholder="Выберите действие"
+      allow-empty
+      @update:model-value="draft.onGoal = $event; commit()"
+      @select="createBranchTarget($event, 'goal')"
+    />
+    <ScenarioActionTargetPicker
+      :model-value="draft.onTimeout"
+      :options="targets"
+      label="По истечении срока"
+      placeholder="Выберите действие"
+      allow-empty
+      @update:model-value="draft.onTimeout = $event; commit()"
+      @select="createBranchTarget($event, 'timeout')"
+    />
 
     <div class="goal-summary"><strong>Как это работает</strong><span>{{ summary }}</span></div>
     <ul v-if="issues.length" class="goal-issues"><li v-for="item in issues" :key="`${item.code}:${item.field}`">{{ item.message }}</li></ul>
@@ -254,5 +269,5 @@ function typedFilterValue(value: string, valueType?: string): string | number | 
 </template>
 
 <style scoped>
-.goal-editor{--event-picker-trigger-height:38px;display:grid;gap:13px}.field{display:grid;gap:5px}.field label,.filters-head strong,.deadline-card strong,.goal-summary strong{font-size:.72rem}.field select,.field input,.filter-card select,.filter-card input,.duration-grid select,.duration-grid input{width:100%;min-height:38px;border:1px solid var(--border-default);border-radius:9px;background:var(--surface-card);padding:7px 9px;color:var(--ink)}.filters-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:5px}.filters-head small{display:block;margin-top:2px;color:var(--text-small-muted);font-size:.63rem}.filters-head button,.filter-card button{border:0;border-radius:8px;background:var(--status-accent-soft);color:var(--status-accent-text);padding:7px;cursor:pointer}.filter-card{display:grid;grid-template-columns:1.1fr .75fr 1fr auto;gap:6px;padding:9px;border:1px solid var(--border-default);border-radius:11px;background:var(--surface-subtle)}.compare-grid,.duration-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.deadline-card{padding:12px;border-radius:12px;background:var(--status-accent-soft)}.deadline-card p{margin:4px 0 10px;color:var(--text-small-muted);font-size:.66rem;line-height:1.5}.goal-summary{display:grid;gap:4px;padding:11px;border-radius:11px;background:var(--status-success-soft)}.goal-summary span{font-size:.68rem;line-height:1.45}.goal-issues{margin:0;padding:10px 10px 10px 28px;border-radius:11px;background:var(--status-danger-soft);color:var(--status-danger-text);font-size:.67rem}@media(max-width:460px){.filter-card{grid-template-columns:1fr}.filter-card button{justify-self:end}.compare-grid{grid-template-columns:1fr}}
+.goal-editor{--event-picker-trigger-height:38px;--catalog-picker-trigger-height:38px;display:grid;gap:13px}.field{display:grid;gap:5px}.field label,.filters-head strong,.deadline-card strong,.goal-summary strong{font-size:.72rem}.field select,.field input,.filter-card select,.filter-card input,.duration-grid select,.duration-grid input{width:100%;min-height:38px;border:1px solid var(--border-default);border-radius:9px;background:var(--surface-card);padding:7px 9px;color:var(--ink)}.filters-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:5px}.filters-head small{display:block;margin-top:2px;color:var(--text-small-muted);font-size:.63rem}.filters-head button,.filter-card button{border:0;border-radius:8px;background:var(--status-accent-soft);color:var(--status-accent-text);padding:7px;cursor:pointer}.filter-card{display:grid;grid-template-columns:1.1fr .75fr 1fr auto;gap:6px;padding:9px;border:1px solid var(--border-default);border-radius:11px;background:var(--surface-subtle)}.compare-grid,.duration-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.deadline-card{padding:12px;border-radius:12px;background:var(--status-accent-soft)}.deadline-card p{margin:4px 0 10px;color:var(--text-small-muted);font-size:.66rem;line-height:1.5}.goal-summary{display:grid;gap:4px;padding:11px;border-radius:11px;background:var(--status-success-soft)}.goal-summary span{font-size:.68rem;line-height:1.45}.goal-issues{margin:0;padding:10px 10px 10px 28px;border-radius:11px;background:var(--status-danger-soft);color:var(--status-danger-text);font-size:.67rem}@media(max-width:460px){.filter-card{grid-template-columns:1fr}.filter-card button{justify-self:end}.compare-grid{grid-template-columns:1fr}}
 </style>

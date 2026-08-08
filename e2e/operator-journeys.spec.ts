@@ -786,8 +786,13 @@ test("action editor gives configuration the primary desktop area and keeps the g
   await page.goto("/scenarios/new");
   await page.getByRole("button", { name: /Действия/ }).click();
   await page
-    .locator(".action-empty-options button", { hasText: "Озвучить текст" })
+    .locator('.action-empty-picker [data-testid="action-picker-trigger"]')
     .click();
+  await page.getByRole("option", { name: /Озвучить текст/ }).click();
+  await page
+    .locator('[data-testid="action-picker-apply"]')
+    .click();
+  await page.waitForTimeout(350);
 
   const inspector = page.locator(".inspector");
   const graph = page.locator(".graph-canvas");
@@ -814,18 +819,33 @@ test("action editor gives configuration the primary desktop area and keeps the g
   });
   await expectNoSeriousAccessibilityViolations(page);
 
-  const desktopLibrary = page.locator(".action-library");
-  await desktopLibrary.locator("summary").click();
-  await expect(desktopLibrary.getByRole("searchbox")).toBeFocused();
-  await page.keyboard.press("Escape");
-  await expect(desktopLibrary).not.toHaveAttribute("open", "");
-  await desktopLibrary.locator("summary").click();
-  await expect(desktopLibrary.getByRole("searchbox")).toBeFocused();
-  await page
-    .locator(".action-library button", {
-      hasText: "Задать вопрос с вариантами",
-    })
+  const nextActionPicker = inspector.locator(
+    ".scenario-action-target-picker",
+  );
+  await nextActionPicker
+    .locator('[data-testid="action-target-picker-trigger"]')
     .click();
+  await expect(
+    page.getByRole("searchbox", {
+      name: "Название, ключ шага, тип или описание",
+    }),
+  ).toBeFocused();
+  await page.waitForTimeout(350);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-next-action-picker-desktop.png"),
+  });
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("dialog", { name: /Выберите следующее действие/ }),
+  ).toBeHidden();
+  await nextActionPicker
+    .locator('[data-testid="action-target-picker-trigger"]')
+    .click();
+  await page
+    .getByRole("option", { name: /Задать вопрос с вариантами/ })
+    .click();
+  await page.locator('[data-testid="action-target-picker-apply"]').click();
+  await page.waitForTimeout(350);
   await expect(
     inspector.getByRole("heading", { name: "Задать вопрос с вариантами" }),
   ).toBeVisible();
@@ -852,10 +872,18 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
   await installScenarioAuthoringFixtures(page);
   await page.goto("/scenarios/new");
   await page.getByRole("button", { name: /Действия/ }).click();
-  const mobileLibrary = page.locator(".mobile-library");
-  await mobileLibrary.locator("summary").click();
-  await expect(mobileLibrary.getByRole("searchbox")).toBeFocused();
-  await mobileLibrary.locator("button", { hasText: "Озвучить текст" }).click();
+  const mobileLibrary = page.locator(".mobile-library-picker");
+  await mobileLibrary
+    .locator('[data-testid="action-picker-trigger"]')
+    .click();
+  await expect(page.getByRole("searchbox", { name: "Название, тип или описание" })).toBeFocused();
+  await page.waitForTimeout(350);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-action-picker-mobile.png"),
+  });
+  await page.getByRole("option", { name: /Озвучить текст/ }).click();
+  await page.locator('[data-testid="action-picker-apply"]').click();
+  await page.waitForTimeout(350);
 
   const inspector = page.locator(".inspector");
   await expect(inspector).toBeVisible();
@@ -911,7 +939,9 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
   await expect(
     outline.getByRole("button", { name: "Открыть узел step_1" }),
   ).toHaveCount(0);
-  await expect(mobileLibrary.locator("summary")).toBeFocused();
+  await expect(
+    mobileLibrary.locator('[data-testid="action-picker-trigger"]'),
+  ).toBeFocused();
 });
 
 test("scenario author can save, validate, preview, publish and safely roll back a durable draft", async ({
@@ -927,8 +957,14 @@ test("scenario author can save, validate, preview, publish and safely roll back 
   await page.locator("#scenario-name").fill("E2E сценарий");
   await page.getByRole("button", { name: /Действия/ }).click();
   await page
-    .locator(".action-empty-options button", { hasText: "Показать Retenive" })
+    .locator('.action-empty-picker [data-testid="action-picker-trigger"]')
     .click();
+  await page
+    .locator('[data-testid="action-picker-option"]', {
+      hasText: "Показать Retenive",
+    })
+    .click();
+  await page.locator('[data-testid="action-picker-apply"]').click();
   await page.getByRole("button", { name: /Условия/ }).click();
   await page.locator(".recipe-panel > summary").click();
   await page.getByRole("button", { name: /Активен 3 дня подряд/ }).click();
