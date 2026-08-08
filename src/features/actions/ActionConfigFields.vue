@@ -10,6 +10,7 @@ import EventPicker, {
   type EventPickerOption,
 } from "@/features/events/EventPicker.vue";
 import { createLocalEventPickerLoader } from "@/features/events/event-picker-loader";
+import UiElementPicker from "@/features/interface/UiElementPicker.vue";
 import {
   LocalizedField,
   type TranslationUiState,
@@ -167,19 +168,6 @@ function isRequired(field: ActionUiField) {
 }
 
 function selectOptions(field: ActionUiField) {
-  if (field.control === "target") {
-    const kinds = field.targetKinds ?? [];
-    return props.elements
-      .filter(
-        (element) =>
-          element.enabled && (!kinds.length || kinds.includes(element.kind)),
-      )
-      .map((element) => ({
-        label: element.name,
-        value: element.code,
-        meta: element.kind,
-      }));
-  }
   return actionFieldOptions(field, propertyFor(field)).map((option) =>
     option && typeof option === "object"
       ? option
@@ -294,7 +282,11 @@ function fieldHint(field: ActionUiField) {
       }"
     >
       <label
-        v-if="!localizedDescriptor(field) && field.control !== 'event'"
+        v-if="
+          !localizedDescriptor(field) &&
+          field.control !== 'event' &&
+          field.control !== 'target'
+        "
         :for="fieldId(field)"
       >
         {{ field.label }}
@@ -392,8 +384,20 @@ function fieldHint(field: ActionUiField) {
           !Array.isArray($event) && updateField(field.key, $event)
         "
       />
+      <UiElementPicker
+        v-else-if="field.control === 'target'"
+        :model-value="String(modelValue[field.key] ?? '')"
+        :elements="elements"
+        :allowed-kinds="field.targetKinds"
+        :label="`${field.label}${isRequired(field) ? ' *' : ''}`"
+        :required="isRequired(field)"
+        :allow-empty="!isRequired(field)"
+        :disabled="readonly"
+        placeholder="Выберите объект интерфейса"
+        @update:model-value="updateField(field.key, $event)"
+      />
       <Select
-        v-else-if="field.control === 'select' || field.control === 'target'"
+        v-else-if="field.control === 'select'"
         :input-id="fieldId(field)"
         :model-value="modelValue[field.key]"
         :options="selectOptions(field)"
@@ -401,11 +405,7 @@ function fieldHint(field: ActionUiField) {
         option-value="value"
         :editable="Boolean(field.allowCustom)"
         :disabled="readonly"
-        :placeholder="
-          field.control === 'target'
-            ? 'Выберите объект интерфейса'
-            : 'Выберите значение'
-        "
+        placeholder="Выберите значение"
         @update:model-value="updateField(field.key, $event)"
       >
         <template #option="slotProps">

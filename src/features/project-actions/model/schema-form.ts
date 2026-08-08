@@ -1,7 +1,13 @@
-import type { JsonValue } from "@/shared/types/domain";
+import type { EntityKind, JsonValue } from "@/shared/types/domain";
 
 export type ProjectActionFormFieldKind =
-  "text" | "textarea" | "number" | "boolean" | "select" | "multi-select";
+  | "text"
+  | "textarea"
+  | "number"
+  | "boolean"
+  | "select"
+  | "multi-select"
+  | "target";
 
 export interface ProjectActionFormField {
   key: string;
@@ -17,6 +23,7 @@ export interface ProjectActionFormField {
   minItems?: number;
   maxItems?: number;
   integer?: boolean;
+  targetKinds?: EntityKind[];
 }
 
 export interface ProjectActionFormIssue {
@@ -143,6 +150,18 @@ function toFormField(
   if (value.type === "string") {
     if (value.enum !== undefined && !options) return null;
     if (options) return { ...common, kind: "select", options };
+    if (ui?.control === "target") {
+      const targetKinds = Array.isArray(ui.targetKinds)
+        ? ui.targetKinds.filter(isEntityKind)
+        : [];
+      if (!targetKinds.length) return null;
+      return {
+        ...common,
+        kind: "target",
+        targetKinds,
+        ...numberBounds(value, ["minLength", "maxLength"]),
+      };
+    }
     return {
       ...common,
       kind: ui?.control === "textarea" ? "textarea" : "text",
@@ -200,7 +219,8 @@ export function validateProjectActionConfiguration(
     if (
       field.kind === "text" ||
       field.kind === "textarea" ||
-      field.kind === "select"
+      field.kind === "select" ||
+      field.kind === "target"
     ) {
       if (typeof value !== "string") {
         issues.push(
@@ -387,4 +407,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isString(value: unknown): value is string {
   return typeof value === "string";
+}
+
+function isEntityKind(value: unknown): value is EntityKind {
+  return (
+    value === "BUTTON" ||
+    value === "MODAL" ||
+    value === "PAGE" ||
+    value === "ELEMENT" ||
+    value === "HANDLER"
+  );
 }

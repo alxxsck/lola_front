@@ -258,4 +258,50 @@ describe('ActionConfigFields', () => {
 
     expect(wrapper.get('[data-testid="localization-unavailable"]').text()).toContain('Переводы появятся после публикации языков проекта')
   })
+
+  it('uses the searchable interface catalog for target fields and saves its code', async () => {
+    const targetDefinition: ScenarioActionCatalogItem = {
+      ...definition,
+      type: 'OPEN_PAGE',
+      configSchema: {
+        type: 'object',
+        properties: { pageCode: { type: 'string' } },
+        required: ['pageCode'],
+      },
+      uiSchema: {
+        fields: [{
+          key: 'pageCode',
+          label: 'Страница',
+          control: 'target',
+          targetKinds: ['PAGE'],
+        }],
+      },
+    }
+    const wrapper = shallowMount(ActionConfigFields, {
+      props: {
+        definition: targetDefinition,
+        modelValue: {},
+        elements: [{
+          id: 'page-home',
+          projectId: 'project-1',
+          code: 'home',
+          name: 'Главная',
+          kind: 'PAGE',
+          route: '/home',
+          config: {},
+          enabled: true,
+          aiEnabled: true,
+          aiDescription: 'Главный экран',
+          aiAliases: [],
+        }],
+      },
+    })
+
+    const picker = wrapper.getComponent({ name: 'UiElementPicker' })
+    expect(picker.props('allowedKinds')).toEqual(['PAGE'])
+    expect(wrapper.find('select-stub').exists()).toBe(false)
+
+    await picker.vm.$emit('update:modelValue', 'home')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toEqual({ pageCode: 'home' })
+  })
 })

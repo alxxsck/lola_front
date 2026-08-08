@@ -7,6 +7,7 @@ import InputText from "primevue/inputtext";
 import Message from "primevue/message";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
+import type { UiElement } from "@/shared/types/domain";
 import {
   canManageProjectActionAiExposure,
   canConfigureProjectActions,
@@ -38,6 +39,7 @@ import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
 
 const props = defineProps<{
   action: ProjectAction;
+  elements?: UiElement[];
   effectivePermissionCodes: readonly string[];
   preview?: AiCapabilityPreview;
   previewLoading?: boolean;
@@ -346,6 +348,7 @@ function confirmArchive() {
         v-model="draft.configuration"
         :schema="action.actionTypeRevision.projectConfigSchema"
         :ui-schema="action.actionTypeRevision.uiSchema"
+        :elements="elements"
         :disabled="!canEditConfiguration"
       />
     </section>

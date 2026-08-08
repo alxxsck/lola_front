@@ -9,11 +9,12 @@ import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { repository } from '@/shared/api/repository'
-import type { ActiveSession, ManualAction, UiElement } from '@/shared/types/domain'
+import type { ActiveSession, EntityKind, ManualAction, UiElement } from '@/shared/types/domain'
 import { adminMessageError } from './admin-message'
 import { buildDirectActions, resolveIdempotencyAttempt } from './direct-action'
 import { relativeTime } from '@/shared/lib/format'
 import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
+import UiElementPicker from '@/features/interface/UiElementPicker.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -67,10 +68,17 @@ const policies = [
 const animations = ASSISTANT_ANIMATIONS.map((value) => ({ label: value, value }))
 const recipient = computed(() => props.recipientName ?? props.session?.userName ?? '')
 const internalUserId = computed(() => props.userId ?? props.session?.userId)
-const targetKind = computed(() => form.action === 'OPEN_MODAL' ? 'MODAL' : form.action === 'HIGHLIGHT_ELEMENT' ? 'ELEMENT' : 'PAGE')
-const targetOptions = computed(() => elements.value
-  .filter((item) => item.enabled && (targetKind.value === 'ELEMENT' ? ['ELEMENT', 'BUTTON'].includes(item.kind) : item.kind === targetKind.value))
-  .map((item) => ({ label: `${item.name} · ${item.code}`, value: item.code })))
+const targetKinds = computed<EntityKind[]>(() =>
+  form.action === 'OPEN_MODAL'
+    ? ['MODAL']
+    : form.action === 'HIGHLIGHT_ELEMENT'
+      ? ['ELEMENT', 'BUTTON']
+      : ['PAGE'],
+)
+const compatibleTargets = computed(() => {
+  const kinds = new Set(targetKinds.value)
+  return elements.value.filter((item) => item.enabled && kinds.has(item.kind))
+})
 const valid = computed(() => {
   if (!internalUserId.value || !props.projectId) return false
   if (form.type === 'ANIMATION') return Boolean(form.animation && selectedSession.value)
@@ -172,7 +180,19 @@ async function send() {
       </template>
       <template v-else-if="form.type === 'BUTTON' || form.type === 'COMMAND'">
         <div class="grid grid-2"><div v-if="form.type === 'BUTTON'" class="field"><label>Текст кнопки</label><InputText v-model="form.label" placeholder="Открыть бонусы" /></div><div class="field"><label>Действие</label><Select v-model="form.action" :options="buttonActions" option-label="label" option-value="value" /></div></div>
-        <div class="field"><label>Опубликованная цель</label><Select v-model="form.target" :options="targetOptions" option-label="label" option-value="value" :loading="targetsLoading" :disabled="targetsLoading || !targetOptions.length" placeholder="Выберите активный элемент" /><small v-if="!targetsLoading && !targetOptions.length">Нет активных целей совместимого типа.</small></div>
+        <div class="field">
+          <UiElementPicker
+            v-model="form.target"
+            class="send-action-target-picker"
+            :elements="elements"
+            :allowed-kinds="targetKinds"
+            label="Опубликованная цель"
+            :placeholder="targetsLoading ? 'Загружаем цели…' : 'Выберите активный элемент'"
+            required
+            :disabled="targetsLoading || !compatibleTargets.length"
+          />
+          <small v-if="!targetsLoading && !compatibleTargets.length">Нет активных целей совместимого типа.</small>
+        </div>
       </template>
       <div v-else-if="form.type === 'ANIMATION'" class="field"><label>Анимация</label><Select v-model="form.animation" :options="animations" option-label="label" option-value="value" /></div>
       <template v-else-if="form.type === 'BONUS'">
@@ -189,4 +209,12 @@ async function send() {
 
 <style scoped>
 .recipient{display:flex;align-items:center;gap:12px;padding:13px}.recipient strong,.recipient small{display:block}.recipient strong{font-size:.82rem}.recipient small{color:var(--muted);font-size:.72rem;margin-top:3px}.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);box-shadow:0 0 0 5px var(--surface-subtle)}
+.send-action-target-picker {
+  --catalog-picker-trigger-height: calc(
+    1.5em + 2 * var(--p-form-field-padding-y) + 2px
+  );
+}
+.send-action-target-picker :deep(.catalog-picker__trigger) {
+  padding-block: 3px;
+}
 </style>

@@ -7,14 +7,20 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
+import UiElementPicker from "@/features/interface/UiElementPicker.vue";
+import type { UiElement } from "@/shared/types/domain";
 import { buildProjectActionForm } from "../model/schema-form";
 
-const props = defineProps<{
-  schema: Record<string, unknown>;
-  uiSchema: Record<string, unknown>;
-  modelValue: Record<string, unknown>;
-  disabled?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    schema: Record<string, unknown>;
+    uiSchema: Record<string, unknown>;
+    modelValue: Record<string, unknown>;
+    elements?: UiElement[];
+    disabled?: boolean;
+  }>(),
+  { elements: () => [] },
+);
 const emit = defineEmits<{
   "update:modelValue": [value: Record<string, unknown>];
 }>();
@@ -52,18 +58,33 @@ function stringValue(key: string): string | undefined {
       </ul>
     </Message>
     <div v-else-if="form.fields.length" class="schema-fields">
-      <label
+      <div
         v-for="field in form.fields"
         :key="field.key"
         class="schema-field"
-        :for="`project-action-${field.key}`"
       >
-        <span class="field-label"
-          >{{ field.label }} <em v-if="field.required">обязательно</em></span
+        <label
+          v-if="field.kind !== 'target'"
+          class="field-label"
+          :for="`project-action-${field.key}`"
         >
+          {{ field.label }} <em v-if="field.required">обязательно</em>
+        </label>
         <small v-if="field.description">{{ field.description }}</small>
+        <UiElementPicker
+          v-if="field.kind === 'target'"
+          :model-value="stringValue(field.key) ?? ''"
+          :elements="elements"
+          :allowed-kinds="field.targetKinds"
+          :label="`${field.label}${field.required ? ' *' : ''}`"
+          :required="field.required"
+          :allow-empty="!field.required"
+          :disabled="disabled"
+          placeholder="Выберите объект интерфейса"
+          @update:model-value="update(field.key, $event)"
+        />
         <Select
-          v-if="field.kind === 'select'"
+          v-else-if="field.kind === 'select'"
           :id="`project-action-${field.key}`"
           :model-value="modelValue[field.key]"
           :options="field.options"
@@ -114,7 +135,7 @@ function stringValue(key: string): string | undefined {
           :disabled="disabled"
           @update:model-value="update(field.key, $event)"
         />
-      </label>
+      </div>
     </div>
     <div v-else class="empty-config">
       <i class="pi pi-lock" /><span

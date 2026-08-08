@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("AI Review keeps selected events and its dropdown inside the dialog", async ({
+test("AI Review keeps selected events in a contained catalog dialog", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -17,36 +17,31 @@ test("AI Review keeps selected events and its dropdown inside the dialog", async
 
   const dialog = page.getByRole("dialog", { name: "AI Review событий" });
   await expect(dialog).toBeVisible();
-  const events = dialog.locator(".p-multiselect");
+  const events = dialog.getByTestId("event-picker-trigger");
   await events.click();
 
-  const dropdown = page.locator(".p-multiselect-overlay");
-  await expect(dropdown).toBeVisible();
-  for (const eventCode of [
-    "registration_completed",
-    "deposit_failed",
-    "email_confirmation_required",
+  const catalog = page.getByRole("listbox");
+  await expect(catalog).toBeVisible();
+  for (const eventName of [
+    "Подтверждает завершение регистрации",
+    "Показывает неуспешную попытку пополнения",
+    "Показывает необходимость подтвердить почту",
   ]) {
-    await dropdown
-      .getByRole("option", { name: new RegExp(`· ${eventCode}$`) })
+    await catalog
+      .getByRole("option", { name: eventName })
       .click();
   }
+  await page.getByTestId("event-picker-apply").click();
+  await expect(events).toContainText("3 выбрано");
 
-  const [dialogBox, eventsBox, dropdownBox] = await Promise.all([
+  const [dialogBox, eventsBox] = await Promise.all([
     dialog.boundingBox(),
     events.boundingBox(),
-    dropdown.boundingBox(),
   ]);
   expect(dialogBox).not.toBeNull();
   expect(eventsBox).not.toBeNull();
-  expect(dropdownBox).not.toBeNull();
 
   expect(eventsBox!.width).toBeLessThanOrEqual(dialogBox!.width);
-  expect(dropdownBox!.width).toBeLessThanOrEqual(dialogBox!.width);
-  expect(dropdownBox!.x).toBeGreaterThanOrEqual(dialogBox!.x);
-  expect(dropdownBox!.x + dropdownBox!.width).toBeLessThanOrEqual(
-    dialogBox!.x + dialogBox!.width,
-  );
   expect(
     await page.evaluate(
       () =>

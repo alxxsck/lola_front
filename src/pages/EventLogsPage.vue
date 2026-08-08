@@ -1131,7 +1131,7 @@ function json(value: unknown) {
 .filter-panel .field :deep(.event-picker) {
   gap: 5px;
 }
-.filter-panel .field :deep(.event-picker__label) {
+.filter-panel .field :deep(.event-picker .catalog-picker__label) {
   color: var(--text-secondary);
   font-size: 0.66rem;
   letter-spacing: 0.07em;

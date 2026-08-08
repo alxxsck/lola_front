@@ -16,10 +16,10 @@ describe("EventPicker", () => {
       global: { plugins: [PrimeVue] },
     });
 
-    const label = wrapper.get(".event-picker__label");
+    const label = wrapper.get(".catalog-picker__label");
     const trigger = wrapper.get('[data-testid="event-picker-trigger"]');
 
-    expect(label.classes()).toContain("event-picker__label--visually-hidden");
+    expect(label.classes()).toContain("catalog-picker__label--visually-hidden");
     expect(trigger.attributes("aria-labelledby")).toContain(
       label.attributes("id"),
     );
@@ -51,15 +51,18 @@ describe("EventPicker", () => {
     await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
     const option = wrapper.get('[data-testid="event-picker-option"]');
+    const accessibleOption = wrapper.get('[role="option"]');
 
-    expect(option.attributes("role")).toBe("radio");
-    expect(option.attributes("aria-checked")).toBe("false");
-    expect(option.find(".event-picker__selection-mark").exists()).toBe(false);
+    expect(wrapper.get('[role="listbox"]').attributes("aria-label")).toBe(
+      "Выберите событие",
+    );
+    expect(accessibleOption.attributes("aria-selected")).toBe("false");
+    expect(option.find(".catalog-picker__selection-mark").exists()).toBe(false);
 
     await option.trigger("click");
 
     expect(wrapper.emitted("update:modelValue")).toBeUndefined();
-    expect(option.attributes("aria-checked")).toBe("true");
+    expect(accessibleOption.attributes("aria-selected")).toBe("true");
 
     await wrapper.get('[data-testid="event-picker-apply"]').trigger("click");
 
@@ -179,7 +182,7 @@ describe("EventPicker", () => {
     await wrapper.get('[data-testid="event-picker-trigger"]').trigger("click");
     await flushPromises();
     const options = wrapper.findAll('[data-testid="event-picker-option"]');
-    expect(options[0]?.find(".event-picker__selection-mark").exists()).toBe(
+    expect(options[0]?.find(".catalog-picker__selection-mark").exists()).toBe(
       true,
     );
     for (const option of options) {

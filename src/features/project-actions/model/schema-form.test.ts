@@ -64,6 +64,32 @@ describe('Project Action schema form adapter', () => {
     ])
   })
 
+  it('preserves interface target metadata for a catalog picker', () => {
+    const form = buildProjectActionForm({
+      type: 'object',
+      properties: { modalCode: { type: 'string' } },
+      required: ['modalCode'],
+      additionalProperties: false,
+    }, {
+      fields: [{
+        key: 'modalCode',
+        label: 'Модальное окно',
+        control: 'target',
+        targetKinds: ['MODAL'],
+      }],
+    })
+
+    expect(form.blocked).toBe(false)
+    expect(form.fields).toEqual([
+      expect.objectContaining({
+        key: 'modalCode',
+        kind: 'target',
+        targetKinds: ['MODAL'],
+        required: true,
+      }),
+    ])
+  })
+
   it('validates required fields, bounds, enum membership and unknown configuration keys', () => {
     const form = buildProjectActionForm({
       type: 'object',

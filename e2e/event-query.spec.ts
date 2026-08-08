@@ -69,7 +69,11 @@ test("policy lifecycle and preview expose only typed safe event data", async ({
   await expect(policy.getByText("Доступ AI к событиям включён.")).toBeVisible();
 
   await page.getByLabel("Пользователь", { exact: true }).fill("user_89421");
-  await page.getByLabel("Тип события").selectOption("registration_completed");
+  await page.getByTestId("event-picker-trigger").click();
+  await page
+    .getByRole("option", { name: "Подтверждает завершение регистрации" })
+    .click();
+  await page.getByTestId("event-picker-apply").click();
   await page.getByRole("button", { name: "Выполнить preview" }).click();
 
   await expect(

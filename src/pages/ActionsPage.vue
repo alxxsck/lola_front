@@ -8,7 +8,9 @@ import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import { useToast } from "primevue/usetoast";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { repository } from "@/shared/api/repository";
 import type { ActionExecutorAdapter } from "@/shared/api/generated/models";
+import type { UiElement } from "@/shared/types/domain";
 import type {
   ConfigureProjectActionInput,
   ProjectAction,
@@ -47,6 +49,7 @@ const status = ref<StatusFilter>("ALL");
 const executor = ref<ExecutorFilter>("ALL");
 const origin = ref<OriginFilter>("ALL");
 const selected = shallowRef<ProjectAction | null>(null);
+const elements = ref<UiElement[]>([]);
 
 const projectId = computed(() => auth.project?.id ?? "");
 const effectivePermissionCodes = computed(
@@ -165,6 +168,7 @@ onMounted(load);
 
 async function load() {
   if (!projectId.value) return;
+  void loadElements();
   try {
     await store.ensureLoaded(projectId.value);
     await loadAiPreviews();
@@ -175,11 +179,21 @@ async function load() {
 
 async function refresh() {
   if (!projectId.value) return;
+  void loadElements(true);
   try {
     await store.refresh(projectId.value);
     await loadAiPreviews(true);
   } catch {
     // Typed load error is rendered from the store.
+  }
+}
+
+async function loadElements(preserveOnError = false): Promise<void> {
+  if (!projectId.value) return;
+  try {
+    elements.value = await repository.getElements(projectId.value);
+  } catch {
+    if (!preserveOnError) elements.value = [];
   }
 }
 
@@ -628,6 +642,7 @@ function surfaceLabel(value: string): string {
       <ProjectActionEditor
         v-if="selected"
         :action="selected"
+        :elements="elements"
         :effective-permission-codes="effectivePermissionCodes"
         :preview="store.previewByAction[selected.id]"
         :preview-loading="store.previewLoadingByAction[selected.id]"
