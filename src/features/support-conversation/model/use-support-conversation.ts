@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { ApiError } from "@/shared/api/http/api-error";
+import { mergeConversationMessageDelivery } from "@/features/conversation-delivery/model/conversation-delivery-receipt";
 import type {
   SupportConversationReadState,
   SupportWorkspaceSelection,
@@ -181,7 +182,15 @@ export function createSupportConversationController(
     )
       return null;
     const byId = new Map(current.map((message) => [message.id, message]));
-    for (const message of incoming) byId.set(message.id, message);
+    for (const message of incoming) {
+      const currentMessage = byId.get(message.id);
+      byId.set(
+        message.id,
+        currentMessage
+          ? mergeConversationMessageDelivery(currentMessage, message)
+          : message,
+      );
+    }
     return authoritativeOrder([...byId.values()]);
   }
 
@@ -383,11 +392,7 @@ export function createSupportConversationController(
     const markConversationRead = source.markConversationRead;
     if (!markConversationRead) return;
     while (
-      isCurrent(
-        projectId,
-        target,
-        requestGeneration,
-      ) &&
+      isCurrent(projectId, target, requestGeneration) &&
       desiredReadOrdinal > (readState.value?.lastReadOrdinal ?? 0)
     ) {
       const requestedOrdinal = desiredReadOrdinal;
@@ -397,14 +402,7 @@ export function createSupportConversationController(
           conversationId,
           requestedOrdinal,
         );
-        if (
-          !isCurrent(
-            projectId,
-            target,
-            requestGeneration,
-          )
-        )
-          return;
+        if (!isCurrent(projectId, target, requestGeneration)) return;
         readError.value = "";
         commitReadState(authoritative, requestGeneration);
       } catch (cause) {
@@ -514,6 +512,23 @@ export function createSupportConversationController(
     }
   }
 
+  function applyDeliveryReceipt(
+    messageId: string,
+    delivery: NonNullable<ConversationMessage["delivery"]>,
+  ): void {
+    const index = messages.value.findIndex((message) => message.id === messageId);
+    if (index < 0) return;
+    const current = messages.value[index]!;
+    const merged = mergeConversationMessageDelivery(current, {
+      ...current,
+      delivery,
+    });
+    if (merged.delivery === current.delivery) return;
+    const next = [...messages.value];
+    next[index] = merged;
+    messages.value = next;
+  }
+
   return {
     messages,
     selection,
@@ -530,6 +545,7 @@ export function createSupportConversationController(
     loadOlder,
     loadNewer,
     markVisible,
+    applyDeliveryReceipt,
     reconcile,
     reset,
   };

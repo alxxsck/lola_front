@@ -195,6 +195,7 @@ describe("SupportConversationPane", () => {
     surface.vm.$emit("start-ai-suspension");
     surface.vm.$emit("show-ai-suspension-history");
     surface.vm.$emit("retry-ai-suspension");
+    surface.vm.$emit("retry-delivery", "support-admin-message");
     surface.vm.$emit("reconcile-required", [
       { kind: "ORDINAL_GAP", afterOrdinal: 1, beforeOrdinal: 3 },
     ]);
@@ -219,6 +220,9 @@ describe("SupportConversationPane", () => {
     expect(wrapper.emitted("start-ai-suspension")).toHaveLength(1);
     expect(wrapper.emitted("show-ai-suspension-history")).toHaveLength(1);
     expect(wrapper.emitted("retry-ai-suspension")).toHaveLength(1);
+    expect(wrapper.emitted("retry-delivery")?.[0]).toEqual([
+      "support-admin-message",
+    ]);
     expect(wrapper.emitted("reconcile-required")?.[0]?.[0]).toEqual([
       { kind: "ORDINAL_GAP", afterOrdinal: 1, beforeOrdinal: 3 },
     ]);

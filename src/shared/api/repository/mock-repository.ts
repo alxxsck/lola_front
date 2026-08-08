@@ -197,6 +197,48 @@ const writeDemo = (data: DemoData) =>
   localStorage.setItem(DATA_KEY, JSON.stringify(data));
 const pause = () => new Promise((resolve) => setTimeout(resolve, 180));
 
+export async function retryMockAdminMessageDelivery(
+  _projectId: string,
+  userId: string,
+  messageId: string,
+  command: { expectedGeneration: number; expectedVersion: number },
+): Promise<NonNullable<ConversationMessage["delivery"]>> {
+  const data = readDemo();
+  const conversationIds = new Set(
+    data.conversations
+      .filter((conversation) => conversation.userId === userId)
+      .map((conversation) => conversation.id),
+  );
+  const message = data.messages.find(
+    (item) => item.id === messageId && conversationIds.has(item.conversationId),
+  );
+  const delivery = message?.delivery;
+  if (!message || !delivery)
+    throw new ApiError(404, "Состояние доставки недоступно");
+  if (
+    delivery.generation !== command.expectedGeneration ||
+    delivery.version !== command.expectedVersion
+  )
+    throw new ApiError(409, "Состояние доставки уже изменилось");
+  if (
+    !delivery.retryEligible ||
+    !delivery.allowedActions.includes("RETRY_FAILED_DELIVERY")
+  )
+    throw new ApiError(422, "Повтор доставки недоступен");
+  message.delivery = {
+    ...delivery,
+    status: "PENDING",
+    generation: delivery.generation + 1,
+    version: 0,
+    errorCode: null,
+    retryEligible: false,
+    allowedActions: [],
+  };
+  writeDemo(data);
+  await pause();
+  return message.delivery;
+}
+
 function suspensionDetail(
   data: DemoData,
   conversation: Conversation,

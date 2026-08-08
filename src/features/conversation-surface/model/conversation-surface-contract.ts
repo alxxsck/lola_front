@@ -14,6 +14,15 @@ export interface ConversationSurfaceStatus {
   tone: "NEUTRAL" | "SUCCESS" | "WARNING" | "DANGER";
 }
 
+export interface ConversationSurfaceDeliveryStatus extends ConversationSurfaceStatus {
+  detail?: string;
+  action?: {
+    label: string;
+    busy: boolean;
+    disabled: boolean;
+  };
+}
+
 export interface ConversationSurfaceMessage {
   id: string;
   ordinal: number;
@@ -28,7 +37,7 @@ export interface ConversationSurfaceMessage {
   content: TranslatedMessageContent;
   requestedTranslation?: RequestedMessageTranslation;
   status?: ConversationSurfaceStatus;
-  delivery?: ConversationSurfaceStatus;
+  delivery?: ConversationSurfaceDeliveryStatus;
 }
 
 export interface ConversationSurfaceHistory {

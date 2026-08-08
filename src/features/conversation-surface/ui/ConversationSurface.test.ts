@@ -186,6 +186,35 @@ runConversationSurfaceBehaviorSuite({
 });
 
 describe("ConversationSurface", () => {
+  it("keeps a server-authorized delivery retry beside the failed outbound message", async () => {
+    const failedMessages: ConversationSurfaceMessage[] = messages.map(
+      (message) =>
+        message.id === "message-2"
+          ? {
+              ...message,
+              delivery: {
+                label: "Ошибка доставки",
+                tone: "DANGER",
+                action: {
+                  label: "Повторить",
+                  busy: false,
+                  disabled: false,
+                },
+                detail: "Сообщение точно не доставлено.",
+              },
+            }
+          : message,
+    );
+    const wrapper = mountSurface({ messages: failedMessages });
+
+    const message = wrapper.get('[data-message-id="message-2"]');
+    expect(message.get('[role="status"]').text()).toContain("Ошибка доставки");
+    expect(message.text()).toContain("Сообщение точно не доставлено.");
+    await message.get('[data-action="retry-delivery"]').trigger("click");
+
+    expect(wrapper.emitted("retry-delivery")).toEqual([["message-2"]]);
+  });
+
   it("marks the first unread boundary and reports only the visibly read high-water", async () => {
     vi.useFakeTimers();
     const wrapper = mountSurface({
@@ -313,6 +342,18 @@ describe("ConversationSurface", () => {
     window.dispatchEvent(new Event("focus"));
     await vi.advanceTimersByTimeAsync(75);
     expect(wrapper.emitted("visible-high-water")?.at(-1)).toEqual([2]);
+  });
+
+  it("ignores a queued visibility report after the document environment is torn down", async () => {
+    vi.useFakeTimers();
+    const wrapper = mountSurface();
+    await flushPromises();
+
+    await wrapper.get('[role="log"]').trigger("scroll");
+    vi.stubGlobal("document", undefined);
+
+    await vi.advanceTimersByTimeAsync(75);
+    expect(wrapper.emitted("visible-high-water")).toBeUndefined();
   });
 
   it("prefers the authoritative first unread over a saved latest anchor", async () => {

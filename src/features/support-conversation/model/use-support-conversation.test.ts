@@ -97,6 +97,85 @@ function deferred<T>() {
 }
 
 describe("support conversation controller", () => {
+  it("does not let an older delivery receipt overwrite a newer server receipt", async () => {
+    const delivered = message("operator-reply", 1);
+    delivered.author = "ADMIN";
+    delivered.delivery = {
+      status: "READ",
+      generation: 2,
+      version: 7,
+      errorCode: null,
+      retryEligible: false,
+      allowedActions: [],
+      commandIds: [],
+    };
+    const stale = structuredClone(delivered);
+    stale.delivery = {
+      ...stale.delivery!,
+      status: "FAILED",
+      generation: 1,
+      version: 12,
+      retryEligible: true,
+      allowedActions: ["RETRY_FAILED_DELIVERY"],
+    };
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(selection("conversation-1", [delivered]))
+        .mockResolvedValueOnce(selection("conversation-1", [stale])),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+
+    await controller.load();
+    await controller.reconcile();
+
+    expect(controller.messages.value[0]?.delivery).toMatchObject({
+      status: "READ",
+      generation: 2,
+      version: 7,
+      retryEligible: false,
+      allowedActions: [],
+    });
+  });
+
+  it("applies an exact retry receipt even when the message is outside the bounded reconcile page", async () => {
+    const failed = message("older-operator-reply", 1);
+    failed.author = "ADMIN";
+    failed.delivery = {
+      status: "FAILED",
+      generation: 3,
+      version: 9,
+      errorCode: "CLIENT_DISCONNECTED",
+      retryEligible: true,
+      allowedActions: ["RETRY_FAILED_DELIVERY"],
+      commandIds: [],
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      { readSelection: vi.fn().mockResolvedValue(selection("conversation-1", [failed])) },
+    );
+    await controller.load();
+
+    controller.applyDeliveryReceipt(failed.id, {
+      ...failed.delivery,
+      status: "PENDING",
+      generation: 4,
+      version: 0,
+      errorCode: null,
+      retryEligible: false,
+      allowedActions: [],
+    });
+
+    expect(controller.messages.value[0]?.delivery).toMatchObject({
+      status: "PENDING",
+      generation: 4,
+      version: 0,
+    });
+  });
+
   it("keeps the initial first-unread anchor and follows the signed newer cursor", async () => {
     const source = {
       readSelection: vi
@@ -465,9 +544,7 @@ describe("support conversation controller", () => {
     await pendingOlder;
 
     expect(controller.loadingOlder.value).toBe(false);
-    expect(controller.selection.value?.conversation?.id).toBe(
-      "conversation-2",
-    );
+    expect(controller.selection.value?.conversation?.id).toBe("conversation-2");
   });
 
   it("clears an invalidated newer loading state when selection changes", async () => {
@@ -509,9 +586,7 @@ describe("support conversation controller", () => {
     await pendingNewer;
 
     expect(controller.loadingNewer.value).toBe(false);
-    expect(controller.selection.value?.conversation?.id).toBe(
-      "conversation-2",
-    );
+    expect(controller.selection.value?.conversation?.id).toBe("conversation-2");
   });
   it("does not commit a stale history response after selection changes", async () => {
     let selectedConversationId = "conversation-1";

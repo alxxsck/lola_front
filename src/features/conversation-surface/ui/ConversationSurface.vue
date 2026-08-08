@@ -59,6 +59,7 @@ const emit = defineEmits<{
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
   "retry-ai-suspension": [];
+  "retry-delivery": [messageId: string];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -249,7 +250,11 @@ function scrollToOrdinal(ordinal: number): boolean {
 }
 
 function readingSurfaceIsAttended(): boolean {
-  return document.visibilityState === "visible" && document.hasFocus();
+  return (
+    typeof document !== "undefined" &&
+    document.visibilityState === "visible" &&
+    document.hasFocus()
+  );
 }
 
 function reportVisibleHighWater(): void {
@@ -688,22 +693,44 @@ onBeforeUnmount(() => {
           :class="`is-${message.status.tone.toLowerCase()}`"
           >{{ message.status.label }}</span
         >
-        <span
+        <div
           v-if="message.delivery"
-          class="conversation-surface__message-status"
+          class="conversation-surface__delivery"
           :class="`is-${message.delivery.tone.toLowerCase()}`"
-          role="status"
         >
-          <i
-            :class="
-              message.delivery.tone === 'SUCCESS'
-                ? 'pi pi-check-circle'
-                : 'pi pi-clock'
-            "
-            aria-hidden="true"
-          />
-          {{ message.delivery.label }}
-        </span>
+          <span class="conversation-surface__message-status" role="status">
+            <i
+              :class="
+                message.delivery.tone === 'SUCCESS'
+                  ? 'pi pi-check-circle'
+                  : message.delivery.tone === 'DANGER'
+                    ? 'pi pi-exclamation-circle'
+                    : 'pi pi-clock'
+              "
+              aria-hidden="true"
+            />
+            {{ message.delivery.label }}
+          </span>
+          <span
+            v-if="message.delivery.detail"
+            class="conversation-surface__delivery-detail"
+          >{{ message.delivery.detail }}</span>
+          <button
+            v-if="message.delivery.action"
+            type="button"
+            class="conversation-surface__delivery-action"
+            data-action="retry-delivery"
+            :disabled="message.delivery.action.disabled || message.delivery.action.busy"
+            :aria-busy="message.delivery.action.busy"
+            @click="emit('retry-delivery', message.id)"
+          >
+            <i
+              :class="message.delivery.action.busy ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"
+              aria-hidden="true"
+            />
+            {{ message.delivery.action.busy ? 'Повторяем…' : message.delivery.action.label }}
+          </button>
+        </div>
         </article>
       </template>
 
@@ -1059,6 +1086,65 @@ onBeforeUnmount(() => {
 .conversation-surface__message-status.is-danger {
   color: var(--status-danger-text);
 }
+.conversation-surface__delivery {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+.conversation-surface__delivery .conversation-surface__message-status {
+  margin-top: 0;
+}
+.conversation-surface__delivery.is-success {
+  color: var(--status-success-text);
+}
+.conversation-surface__delivery.is-warning {
+  color: var(--status-warning-text);
+}
+.conversation-surface__delivery.is-danger {
+  color: var(--status-danger-text);
+}
+.conversation-surface__delivery-detail {
+  color: var(--text-secondary);
+}
+.conversation-surface__delivery-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  margin: -8px 0 -8px auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control, 8px);
+  color: var(--status-danger-text);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.conversation-surface__delivery-action:hover:not(:disabled),
+.conversation-surface__delivery-action:focus-visible {
+  background: color-mix(in srgb, var(--status-danger-text) 9%, transparent);
+}
+.conversation-surface__delivery-action:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--status-accent-text));
+  outline-offset: 2px;
+}
+.conversation-surface__delivery-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.conversation-surface__delivery-action:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
 .conversation-surface__skeletons {
   display: grid;
   gap: 14px;
@@ -1150,12 +1236,21 @@ onBeforeUnmount(() => {
   .conversation-surface__message {
     max-width: 88%;
   }
+  .conversation-surface__delivery-action {
+    min-height: 44px;
+  }
   .conversation-surface__new-messages {
     right: 14px;
     bottom: 138px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .conversation-surface__delivery-action {
+    transition: none;
+  }
+  .conversation-surface__delivery-action:active:not(:disabled) {
+    transform: none;
+  }
   .conversation-surface__translation-progress > span i {
     transition: none;
   }

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Синхронизировать workspace и messaging-контракты; 13 — Добавить durable send и idempotency recovery.
 
-**Status:** ready-for-frontend
+**Status:** completed
 
 **Backend gate (проверено 2026-08-08):** снят backend `main` `0f5404f`. Опубликованы
 authoritative delivery receipt, безопасный lookup/retry, полный typed realtime contract и bounded
@@ -16,3 +16,9 @@ REST reconciliation contract. См. [аудит 01–33](../../../docs/research/
 - [x] Realtime остаётся hint, а REST projection побеждает конфликтующее событие.
 - [x] Selection/project generation guards игнорируют устаревший response.
 - [x] Ошибка доставки остаётся рядом с Message и предлагает безопасный lookup/retry path.
+
+**Frontend proof (2026-08-08):** общий Conversation Surface показывает только
+authoritative receipt; REST merge монотонен по `generation/version`; delivery
+upsert/revoke и reconnect запускают bounded reconcile; retry использует точный
+server fence и отдельный `Idempotency-Key`. Desktop/mobile e2e проверяет retry,
+reload, отсутствие duplicate/overflow, scroll lock и axe.

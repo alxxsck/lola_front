@@ -56,6 +56,8 @@ import { createSavedViewCommand } from "@/features/support-views/model/support-v
 import { isCustomSupportViewRoute, readSupportViewSelection, shouldLoadCustomSupportView, supportViewRouteKeys, writeSupportViewSelection } from "@/features/support-views/model/support-view-route";
 import { createSupportViewsController } from "@/features/support-views/model/use-support-views";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
+import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
+import { createSupportMessageDeliveryController } from "@/features/conversation-delivery/model/use-support-message-delivery";
 import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
 import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
@@ -296,6 +298,18 @@ const reply = createSupportReplyController(
     },
   },
   repository,
+);
+const messageDelivery = createSupportMessageDeliveryController(
+  {
+    projectId: () => auth.project?.id,
+    selection: () => conversation.selection.value,
+    messages: () => conversation.messages.value,
+    applyDeliveryReceipt: conversation.applyDeliveryReceipt,
+    async reconcile() {
+      await Promise.all([inbox.load(), conversation.reconcile()]);
+    },
+  },
+  supportMessageDeliverySource,
 );
 const canManageTranslation = computed(() =>
   hasProjectPermission(
@@ -1499,6 +1513,7 @@ async function handleConversationForbidden(): Promise<void> {
   aiSuspensionHistoryVisible.value = false;
   setSendWithoutTranslationVisible(false);
   reply.reset();
+  messageDelivery.reset();
   translation.reset();
   profile.reset();
   internalNotes.reset();
@@ -1623,6 +1638,7 @@ watch(
     profile.reset();
     internalNotes.reset();
     reply.reset();
+    messageDelivery.reset();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
@@ -1820,6 +1836,7 @@ watch(
     assignmentRelease.reset();
     profile.reset();
     internalNotes.reset();
+    messageDelivery.reset();
     void conversation.load();
   },
   { immediate: true },
@@ -2147,6 +2164,7 @@ onBeforeUnmount(() => {
               :translation="supportConversationTranslation"
               :composer="supportConversationComposer"
               :ai-suspension="supportConversationAiSuspension"
+              :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"
               @visible-high-water="conversation.markVisible"
@@ -2166,6 +2184,7 @@ onBeforeUnmount(() => {
               @start-ai-suspension="openAiSuspensionDialog('START')"
               @show-ai-suspension-history="aiSuspensionHistoryVisible = true"
               @retry-ai-suspension="reloadSelectedAiSuspension"
+              @retry-delivery="messageDelivery.retry"
             />
             <p v-else class="empty-pane support-conversation-unavailable">
               Выбранный диалог недоступен.

@@ -40,6 +40,8 @@ function messageStatus(
 function deliveryStatus(
   message: ConversationMessage,
 ): ConversationSurfaceStatus | undefined {
+  if (message.author === "USER" || message.author === "SYSTEM")
+    return undefined;
   const status = message.delivery?.status;
   if (!status) return undefined;
   if (status === "READ") return { label: "Прочитано", tone: "SUCCESS" };
@@ -50,7 +52,7 @@ function deliveryStatus(
   if (status === "NOT_REDELIVERED")
     return { label: "Повторная доставка не подтверждена", tone: "WARNING" };
   return {
-    label: status === "DELIVERING" ? "Доставляется…" : "Ожидает доставки",
+    label: status === "DELIVERING" ? "Доставляется…" : "Принято",
     tone: "WARNING",
   };
 }

@@ -12,6 +12,7 @@ import type {
 } from "@/features/conversation-surface/model/conversation-surface-contract";
 import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
 import type { ConversationMessage } from "@/shared/types/domain";
+import type { SupportMessageDeliveryAction } from "@/features/conversation-delivery/model/use-support-message-delivery";
 import { adaptSupportConversationMessages } from "../model/support-conversation-surface-adapter";
 
 const props = defineProps<{
@@ -23,6 +24,7 @@ const props = defineProps<{
   translation: ConversationSurfaceTranslation;
   composer: ConversationSurfaceComposer;
   aiSuspension?: ConversationSurfaceAISuspensionCapability;
+  deliveryActions?: ReadonlyMap<string, SupportMessageDeliveryAction>;
 }>();
 
 const emit = defineEmits<{
@@ -45,11 +47,13 @@ const emit = defineEmits<{
   "start-ai-suspension": [];
   "show-ai-suspension-history": [];
   "retry-ai-suspension": [];
+  "retry-delivery": [messageId: string];
 }>();
 
 const surfaceMessages = computed(() =>
   adaptSupportConversationMessages(props.messages, props.translations, {
     assistantLabel: props.assistantLabel,
+    deliveryActions: props.deliveryActions,
   }),
 );
 </script>
@@ -82,5 +86,6 @@ const surfaceMessages = computed(() =>
     @start-ai-suspension="emit('start-ai-suspension')"
     @show-ai-suspension-history="emit('show-ai-suspension-history')"
     @retry-ai-suspension="emit('retry-ai-suspension')"
+    @retry-delivery="emit('retry-delivery', $event)"
   />
 </template>
