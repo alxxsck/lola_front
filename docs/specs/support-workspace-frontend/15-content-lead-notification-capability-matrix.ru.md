@@ -107,6 +107,14 @@ preference не являются заменой. В проверенном backe
 notification controllers нет. До их публикации Task 27 не показывает enabled
 toggle, devices или fake deep link.
 
+### Planned New Case policy
+
+Уведомление о каждом новом обычном Case — отдельный backend/frontend contract,
+а не переименование `SUPPORT_CASE_ATTENTION`. Backend Ticket 35 должен
+опубликовать Project policy и topic `SUPPORT_CASE_CREATED`; frontend Task 38
+добавляет Lead-managed scope/effective window и personal preference. До этого
+UI не показывает toggle «Все новые обращения».
+
 ## 6. Flags, owners и blockers
 
 | Slice                      | Published rollout / deployment control                                                | Owner / next task                              |
@@ -116,6 +124,7 @@ toggle, devices или fake deep link.
 | Lead Control               | typed disabled/not-ready errors; отдельный project rollout contract отсутствует       | Lead projection/rollout → Task 26              |
 | Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
 | Browser notifications      | в pin ничего нет; source flags `PERSONAL_SUPPORT_BROWSER_PUSH_*` не frontend contract | Notifications/Auth/deep-link backend → Task 27 |
+| New Case notification      | нет Project policy/topic `SUPPORT_CASE_CREATED`                                       | Backend 35 → Frontend 38                       |
 | Whole Support shell        | временный `VITE_SUPPORT_WORKSPACE_ENABLED`                                            | backend rollout → cutover tasks                |
 
 Backend environment flag не равен frontend feature flag. UI читает только

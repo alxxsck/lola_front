@@ -366,8 +366,15 @@ Inspector сохраняет выбранный tab per operator, но permissio
 
 - Personal settings показывают браузерное permission, project preferences и
   список устройств отдельно.
+- Project section `Уведомления о новых обращениях` виден только с manage
+  permission: `Выключено / Сразу / Дайджест`, create/reopen, classes/topics,
+  eligible subscribers/Teams и optional `Действует до` для launch watch.
+- Рядом показывается estimated volume/recipients impact; включение Project
+  policy не изображается как личный push без personal subscription и device.
 - `Назначено мне` по умолчанию включено, `Требует внимания` — выключено, пока
   backend policy не задаёт другое опубликованное значение.
+- `Новые обращения`, `Требует человека` и `Назначено мне` — разные topics;
+  последующая эскалация создаёт отдельную delivery, а не заменяет первую.
 - Запрещено показывать toggle enabled, если browser permission denied или push
   subscription не подтверждена backend.
 - Notification содержит generic безопасный текст и deep link; после login/
@@ -398,7 +405,8 @@ Desktop использует section navigation и один content canvas. На
 navigation становится drawer, на mobile editor list/detail/preview идут route
 stack с сохранением draft. Publish недоступен без schema/overlap/quality gate и
 понятного impact; rollback создаёт новую immutable revision. Ordinary Case не
-показывает notification control: attention появляется только после committed
+становится attention: optional New Case notification настраивается отдельно в
+Notifications, а Human Attention появляется только после committed
 Escalation/Assignment/Operational Alert.
 
 ## 9. Public End User chat — отдельный UI-трек

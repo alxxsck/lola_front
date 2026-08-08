@@ -331,9 +331,18 @@ candidate label только после review policy. Простая правк
 модель автоматически.
 
 Обычный `PRODUCT_INQUIRY` появляется в Case inbox, quality sampling и
-analytics, но сам по себе не создаёт personal/browser notification. Push и
-attention badge создаются только committed Case Escalation, Assignment или
-отдельным Operational Alert policy.
+analytics и по умолчанию не создаёт personal/browser notification. Отдельная
+published New Case Notification Policy может создать topic
+`SUPPORT_CASE_CREATED` на committed `CREATE/REOPEN`; это не attention и не
+Human Escalation. Push «Требует человека» создаётся только committed Case
+Escalation, Assignment или отдельным Operational Alert policy.
+
+Support Lead с `project.support.notification_policy.manage` настраивает
+Project policy: `OFF | IMMEDIATE | DIGEST`, create/reopen, product class/topic/
+priority scope, eligible subscribers/Teams и optional effective window. Он не
+может включить чужой browser permission, подписать другого CMS User или
+управлять его devices. Project policy, personal preference и browser/device
+state показываются раздельно.
 
 После committed Escalation UI отдельно показывает routing admission
 `ROUTABLE | OUT_OF_HOURS | NO_ELIGIBLE_TEAM | DELIVERY_DEGRADED`. Escalation
@@ -423,9 +432,11 @@ policy API. Нужны pinned OpenAPI contracts для:
 - decision log и Case-scoped explain;
 - exact permissions, target authority, allowedActions, ETag/expected version,
   idempotency lookup и safe errors;
-- fixtures всех status/conflict/degraded/unknown enum states.
+- fixtures всех status/conflict/degraded/unknown enum states;
 - separate stage/safety failure states, assistant release gate и routing
-  admission fixtures.
+  admission fixtures;
+- Project New Case Notification Policy, personal topic/preference и independent
+  delivery fixtures из backend Ticket 35.
 
 Legacy `/cases/settings` остаётся compatibility route только до cutover. Raw
 JSON не получает новые скрытые поля и не становится вторым source of truth.
@@ -433,7 +444,8 @@ JSON не получает новые скрытые поля и не стано
 ## 12. Acceptance criteria
 
 - обычный social turn не создаёт Case при достаточной уверенности;
-- вопрос о продукте создаёт/привязывает monitored Case без push notification;
+- вопрос о продукте создаёт/привязывает monitored Case без push по умолчанию;
+  published New Case policy может отдельно уведомить о CREATE/REOPEN;
 - новая тема внутри активной Conversation не прикрепляется молча к старому Case;
 - явная просьба человека создаёт Case Escalation независимо от semantic model;
 - неоднозначный human term может offer/ask, но confirmed explicit request нельзя
@@ -453,7 +465,8 @@ JSON не получает новые скрытые поля и не стано
 - rollback проверен и не переписывает historical revisions;
 - committed Escalation переживает отсутствие eligible route, а UI не обещает
   соединение до `ROUTABLE`;
-- обычные Cases не отправляют attention notification без отдельного policy;
+- обычные Cases не отправляют Human Attention; отдельная New Case policy может
+  отправить независимый `SUPPORT_CASE_CREATED` на CREATE/REOPEN;
 - desktop/tablet/mobile, keyboard, 200% zoom и axe проходят для основных flows.
 
 ## 13. Отраслевые основания

@@ -237,6 +237,9 @@ backend contracts из
   version diff, audit и rollback;
 - дать permissioned Decision log и Case-scoped explain без raw prompt/PII;
 - добавить server-owned funnel от USER activity до Case, Escalation и outcome;
+- после backend Ticket 35 добавить отдельную New Case Notification Policy:
+  OFF/immediate/digest, create/reopen scope, temporary effective window и
+  personal opt-in без смешивания с Human Attention;
 - не вычислять decisions, quality или cost из Messages в браузере.
 
 Exit: продуктовый вопрос наблюдаем как Case без ложного push, явный handoff и

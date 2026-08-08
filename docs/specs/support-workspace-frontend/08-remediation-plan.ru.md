@@ -93,23 +93,24 @@ FAILED`, author snapshot, viewers/typing, version-conflict recovery,
 
 ## 3. Матрица разрыва
 
-| Контур                | Требуемый результат                                                      | Состояние фронтенда                                      | Блокер/следующий ход                                                             |
-| --------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Рабочее место         | Три панели, route state, Cases + все Conversations                       | Раздельные `/cases` и profile modal                      | Построить shell и переносить извлечённые модули                                  |
-| Project inbox         | system views, cursor, filters, search, saved views                       | Endpoint Conversations есть, UI нет; Case list отдельный | F1 после review DTO; остальное после Tickets 11–12 в pinned OpenAPI              |
-| Лента/отправка        | ordinal, unread, delivery, offline, draft recovery                       | timestamp order, online gate, нет delivery/read          | Сначала Chat/Durable Delivery contract и F2                                      |
-| Case работа           | lifecycle, category/priority, assignment, SLA, inspector                 | Старые Case commands есть, нет общей рабочей поверхности | Скомпоновать только после allowedActions/revision contract                       |
-| Workforce             | availability, capacity, teams, skills, offers/reservation                | Нет UI                                                   | Принять Tickets 05–07, 13–14 через OpenAPI и F3                                  |
-| Коллаборация          | viewers, typing, conflict notice, public/note modes                      | Presence смешан с online session; note нет               | Новые realtime/read contracts, F4                                                |
-| Вложения              | upload/scan/grants, public/note isolation                                | Нет support contract/UI                                  | Attachment contract и F4                                                         |
-| Контент               | macros, internal notes, Internal Knowledge в inspector                   | hardcoded templates; AI knowledge отдельно               | Tickets 15–16 OpenAPI и F5; не переиспользовать `/knowledge` как внутреннюю базу |
-| Настройки             | teams, queues, routing, SLA, detection/classification, macros, knowledge | Только raw JSON category/priority policy                 | Заменить по разделам после publishable revision contracts                        |
-| Управление            | control center, alerts, causal timeline                                  | Нет route/UI                                             | Tickets 09–10 OpenAPI и F6                                                       |
-| QA/аналитика          | versioned review, scorecard, reports/drill-down                          | Нет contracts; старые Case counts не эквивалентны        | Отдельный backend/IAM discovery и F7; не считать в браузере                      |
-| Public End User chat  | claimant identity, readBy, typing, attachments, offline delivery         | SDK не является зависимостью/модулем этого repo          | Параллельный SDK track и version gate до delivery rollout                        |
-| Browser notifications | личные preferences, devices, permission recovery, secure deep link       | Нет Support UI                                           | Ticket 20 contract; не показывать ложный enabled state                           |
-| External work         | connection/mapping, Case actions, compatibility inbox, recovery          | Нет UI                                                   | Отдельный adapter/OpenAPI vertical; core Case не зависит от vendor               |
-| Retention/legal hold  | tombstone/purge/hold и propagation                                       | Нет пользовательских/операционных состояний              | Backend policy + permissioned settings/audit до F4–F6                            |
+| Контур                 | Требуемый результат                                                      | Состояние фронтенда                                      | Блокер/следующий ход                                                             |
+| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Рабочее место          | Три панели, route state, Cases + все Conversations                       | Раздельные `/cases` и profile modal                      | Построить shell и переносить извлечённые модули                                  |
+| Project inbox          | system views, cursor, filters, search, saved views                       | Endpoint Conversations есть, UI нет; Case list отдельный | F1 после review DTO; остальное после Tickets 11–12 в pinned OpenAPI              |
+| Лента/отправка         | ordinal, unread, delivery, offline, draft recovery                       | timestamp order, online gate, нет delivery/read          | Сначала Chat/Durable Delivery contract и F2                                      |
+| Case работа            | lifecycle, category/priority, assignment, SLA, inspector                 | Старые Case commands есть, нет общей рабочей поверхности | Скомпоновать только после allowedActions/revision contract                       |
+| Workforce              | availability, capacity, teams, skills, offers/reservation                | Нет UI                                                   | Принять Tickets 05–07, 13–14 через OpenAPI и F3                                  |
+| Коллаборация           | viewers, typing, conflict notice, public/note modes                      | Presence смешан с online session; note нет               | Новые realtime/read contracts, F4                                                |
+| Вложения               | upload/scan/grants, public/note isolation                                | Нет support contract/UI                                  | Attachment contract и F4                                                         |
+| Контент                | macros, internal notes, Internal Knowledge в inspector                   | hardcoded templates; AI knowledge отдельно               | Tickets 15–16 OpenAPI и F5; не переиспользовать `/knowledge` как внутреннюю базу |
+| Настройки              | teams, queues, routing, SLA, detection/classification, macros, knowledge | Только raw JSON category/priority policy                 | Заменить по разделам после publishable revision contracts                        |
+| Управление             | control center, alerts, causal timeline                                  | Нет route/UI                                             | Tickets 09–10 OpenAPI и F6                                                       |
+| QA/аналитика           | versioned review, scorecard, reports/drill-down                          | Нет contracts; старые Case counts не эквивалентны        | Отдельный backend/IAM discovery и F7; не считать в браузере                      |
+| Public End User chat   | claimant identity, readBy, typing, attachments, offline delivery         | SDK не является зависимостью/модулем этого repo          | Параллельный SDK track и version gate до delivery rollout                        |
+| Browser notifications  | личные preferences, devices, permission recovery, secure deep link       | Нет Support UI                                           | Ticket 20 contract; не показывать ложный enabled state                           |
+| New Case notifications | Project policy, CREATE/REOPEN scope, immediate/digest, effective window  | Нет отдельного topic/policy                              | Backend 35 + Frontend 38; не подменять Attention topic                           |
+| External work          | connection/mapping, Case actions, compatibility inbox, recovery          | Нет UI                                                   | Отдельный adapter/OpenAPI vertical; core Case не зависит от vendor               |
+| Retention/legal hold   | tombstone/purge/hold и propagation                                       | Нет пользовательских/операционных состояний              | Backend policy + permissioned settings/audit до F4–F6                            |
 
 ## 4. Обязательные правила до начала реализации
 
@@ -377,6 +378,10 @@ evaluation и rollout выполняются отдельной F8 по
   registered device. `Assigned to me` по умолчанию включено, `Attention` —
   выключено; denied permission не маскируется включённым toggle. Deep link
   проходит login/project restoration, push body остаётся generic.
+- После backend 35 Lead-managed New Case policy отдельно задаёт
+  OFF/immediate/digest, CREATE/REOPEN scope и effective window. Project enable
+  не включает чужие devices/preferences; New Case и Attention deliveries не
+  склеиваются.
 - Settings → Integrations покрывает OAuth/site selection, connection health,
   test connection/last sync, explicit multi-site choice, mapping
   draft/preview/publish/rollback и compatibility inbox. Отдельный

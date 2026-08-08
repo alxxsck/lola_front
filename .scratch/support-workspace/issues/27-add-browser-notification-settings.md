@@ -12,6 +12,8 @@ subscriptions/devices и safe Support deep-link API отсутствуют в ba
 - [ ] Browser permission, backend preference и registered subscription/device показываются как разные состояния.
 - [ ] UI не показывает enabled, когда permission denied/revoked или subscription не подтверждена backend.
 - [ ] Operator управляет notification types и удаляет потерянное устройство по permissions.
+- [ ] Personal API допускает independent future topic `SUPPORT_CASE_CREATED`,
+      но Project-wide scope/editor реализуется только в Task 38/backend 35.
 - [ ] Payload содержит generic безопасный текст без PII/message body/internal note.
 - [ ] Click после login/project restore открывает exact permitted Case/view deep link.
 - [ ] Expired/revoked subscription имеет понятный recovery flow и audit-safe error.

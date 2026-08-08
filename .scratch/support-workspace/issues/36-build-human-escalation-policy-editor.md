@@ -26,8 +26,8 @@ Case detection, routing или неизменяемыми platform safety rules.
       блокирует ordinary reply и показывает retry/safe fallback/alert state.
 - [ ] Simulator показывает последовательность turns, counters, review/handoff/
       Safety results и момент committed Escalation, включая direct request.
-- [ ] Ordinary monitored Case не включает notification; только committed
-      Escalation/Assignment/Operational Alert создаёт attention delivery.
+- [ ] Ordinary monitored Case не создаёт Human Attention. Optional New Case
+      topic остаётся отдельной policy/задачей и не меняет handoff semantics.
 - [ ] После Escalation UI различает routing admission и не обещает подключение
       до `ROUTABLE`; out-of-hours/no-team/degraded имеют approved copy.
 - [ ] Permission/revoke, conflict, unknown outcome, keyboard/axe и responsive

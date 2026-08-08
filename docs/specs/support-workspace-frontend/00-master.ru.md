@@ -73,7 +73,7 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                                                     | целевой UI/UX, responsive и visual acceptance                             |
 | [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)                               | full-tab shell, кнопка, motion, scroll/focus contract                     |
 | [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F8, cutover и отдельный integration track             |
-| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 37 локальных задач и их blocking edges                     |
+| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 38 локальных задач и их blocking edges                     |
 | [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)             | W0 contract matrix workspace, history, send, delivery и blockers          |
 | [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md)           | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers     |
 | [15-content-lead-notification-capability-matrix.ru.md](./15-content-lead-notification-capability-matrix.ru.md) | W0 matrix notes, macros, Internal Knowledge, Lead Control и notifications |
