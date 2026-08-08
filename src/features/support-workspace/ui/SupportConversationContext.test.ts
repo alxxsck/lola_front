@@ -264,7 +264,7 @@ describe("support conversation inspector", () => {
     expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
       "Обращение",
       "Пользователь",
-      "Данные",
+      "Профиль",
       "События",
       "Активность",
     ]);
@@ -280,6 +280,7 @@ describe("support conversation inspector", () => {
     const user = wrapper.get('[aria-label="Пользователь"]');
     expect(user.text()).toContain("Активный");
     expect(user.text()).toContain("RU");
+    expect(user.text()).toContain("В диалоге и проекте");
     expect(user.text()).not.toContain("external");
   });
 

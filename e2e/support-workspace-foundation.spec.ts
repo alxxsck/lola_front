@@ -537,7 +537,7 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
     context.getByRole("tab", { name: "Пользователь" }),
   ).toBeVisible();
   await expect(context.getByRole("tab", { name: "Обращение" })).toBeVisible();
-  await expect(context.getByRole("tab", { name: "Данные" })).toBeVisible();
+  await expect(context.getByRole("tab", { name: "Профиль" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "События" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Активность" })).toBeVisible();
 });
@@ -1526,7 +1526,7 @@ test("opens the selected conversation context as a mobile route", async ({
   await expect(inspector.locator(".user-card h3")).toHaveText("Пользователь");
   await expect(inspector.getByRole("tab")).toHaveText([
     "Пользователь",
-    "Данные",
+    "Профиль",
   ]);
   await expect(inspector.getByText("user_11603", { exact: true })).toHaveCount(
     0,
@@ -1544,7 +1544,7 @@ test("loads the profile only from the permission-gated inspector", async ({
   await expect(inspector.getByText("Marco Silva", { exact: true })).toHaveCount(
     0,
   );
-  await inspector.getByRole("tab", { name: "Данные" }).click();
+  await inspector.getByRole("tab", { name: "Профиль" }).click();
   await expect(
     inspector.getByText("Marco Silva", { exact: true }),
   ).toBeVisible();
@@ -1566,7 +1566,7 @@ test("keeps all Case Inspector tabs usable on the mobile route", async ({
   await expect(inspector.getByRole("tab")).toHaveText([
     "Обращение",
     "Пользователь",
-    "Данные",
+    "Профиль",
     "События",
     "Активность",
   ]);

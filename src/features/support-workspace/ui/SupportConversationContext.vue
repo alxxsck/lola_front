@@ -474,14 +474,20 @@ defineExpose({ requestClassification });
               <p>Активность {{ relativeTime(selection.endUser.lastSeenAt) }}</p>
             </div>
           </header>
-          <dl class="context-grid">
-            <div class="context-field">
+          <div class="section-heading user-context-heading">
+            <div>
+              <span class="section-kicker">Контекст</span>
+              <h3>В диалоге и проекте</h3>
+            </div>
+          </div>
+          <dl class="user-facts">
+            <div>
               <dt>Язык</dt>
               <dd>
                 {{ selection.endUser.locale?.toUpperCase() ?? "Не указан" }}
               </dd>
             </div>
-            <div class="context-field">
+            <div>
               <dt>Диалог</dt>
               <dd>
                 {{
@@ -493,11 +499,11 @@ defineExpose({ requestClassification });
                 }}
               </dd>
             </div>
-            <div class="context-field">
+            <div>
               <dt>Сообщений</dt>
               <dd>{{ conversation?.messageCount ?? "—" }}</dd>
             </div>
-            <div class="context-field">
+            <div>
               <dt>В проекте с</dt>
               <dd>{{ relativeTime(selection.endUser.createdAt) }}</dd>
             </div>
@@ -515,8 +521,12 @@ defineExpose({ requestClassification });
         >
           <div class="section-heading">
             <div>
-              <span class="section-kicker">Профиль продукта</span>
-              <h3>Актуальные данные продукта</h3>
+              <span class="section-kicker">Данные из продукта</span>
+              <h3>Профиль пользователя</h3>
+              <p class="section-description">
+                Поля, переданные проектом. Доступ и свежесть проверяются для
+                каждого значения.
+              </p>
             </div>
             <Button
               label="Обновить данные"
@@ -817,7 +827,7 @@ defineExpose({ requestClassification });
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .user-avatar {
   width: 42px;
@@ -884,6 +894,43 @@ defineExpose({ requestClassification });
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
+}
+.user-context-heading {
+  margin-bottom: 4px;
+}
+.section-description {
+  max-width: 30rem;
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.user-facts {
+  display: grid;
+  margin: 0;
+}
+.user-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+.user-facts dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.user-facts dd {
+  max-width: 13rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
 }
 .profile-heading {
   margin-top: 24px;

@@ -70,7 +70,7 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
 const tabCatalog: readonly SupportInspectorTabItem[] = [
   { id: "CASE", label: "Обращение", icon: "pi pi-briefcase" },
   { id: "USER", label: "Пользователь", icon: "pi pi-user" },
-  { id: "DATA", label: "Данные", icon: "pi pi-database" },
+  { id: "DATA", label: "Профиль", icon: "pi pi-id-card" },
   { id: "EVENTS", label: "События", icon: "pi pi-bolt" },
   { id: "ACTIVITY", label: "Активность", icon: "pi pi-history" },
 ];
