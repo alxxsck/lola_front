@@ -916,6 +916,32 @@ function runOutcomeAction(): void {
     padding-top: 5px;
   }
 }
+@media (min-width: 768px) and (max-height: 760px) {
+  .conversation-composer {
+    gap: 5px;
+    margin: 0 12px 8px;
+    padding: 7px 10px 6px;
+  }
+  .conversation-composer__mode-switch button {
+    min-height: 28px;
+    padding-inline: 8px;
+  }
+  .conversation-composer.is-note :deep(textarea) {
+    min-height: 34px;
+    max-height: 48px;
+    padding-block: 3px;
+  }
+  .conversation-composer__private-hint {
+    margin-top: -3px;
+  }
+  .conversation-composer.is-note .conversation-composer__footer {
+    min-height: 32px;
+    padding-top: 4px;
+  }
+  .conversation-composer__footer :deep(.p-button) {
+    min-height: 32px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .conversation-composer__mode-switch button {
     transition: none;

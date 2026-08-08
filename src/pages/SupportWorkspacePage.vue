@@ -3506,6 +3506,16 @@ onBeforeUnmount(() => {
     display: inline-flex;
   }
 }
+@media (min-width: 768px) and (max-height: 760px) {
+  .conversation-header {
+    gap: 12px;
+    padding: 8px 14px;
+  }
+  .conversation-header p {
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
+}
 @media (max-width: 767px) {
   .support-workspace-page--full-tab {
     padding: 0;

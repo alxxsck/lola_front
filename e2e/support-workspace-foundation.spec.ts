@@ -179,6 +179,46 @@ test("keeps public replies and internal notes isolated in the shared composer", 
     conversation.getByRole("textbox", { name: "Ответ пользователю" }),
   ).toHaveValue("Публичный ответ остаётся отдельным");
 
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await conversation
+    .getByRole("button", { name: "Внутренняя заметка" })
+    .click();
+  await expect
+    .poll(() =>
+      conversation
+        .getByRole("region", { name: "Последние внутренние заметки" })
+        .evaluate((element) => element.getBoundingClientRect().height),
+    )
+    .toBeGreaterThanOrEqual(40);
+  const shortDesktopGeometry = await conversation.evaluate((element) => {
+    const log = element.querySelector<HTMLElement>(
+      ".conversation-surface__log",
+    );
+    const toolbar = element.querySelector<HTMLElement>(
+      ".conversation-surface__toolbar",
+    );
+    const footer = element.querySelector<HTMLElement>(
+      ".conversation-surface__footer",
+    );
+    return {
+      logHeight: log?.getBoundingClientRect().height ?? 0,
+      toolbarHeight: toolbar?.getBoundingClientRect().height ?? 0,
+      footerHeight: footer?.getBoundingClientRect().height ?? 0,
+      surfaceHeight: element.getBoundingClientRect().height,
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    };
+  });
+  expect(shortDesktopGeometry.logHeight).toBeGreaterThanOrEqual(160);
+  expect(shortDesktopGeometry.toolbarHeight).toBeLessThanOrEqual(72);
+  expect(shortDesktopGeometry.footerHeight).toBeLessThanOrEqual(290);
+  expect(shortDesktopGeometry.logHeight).toBeGreaterThanOrEqual(
+    shortDesktopGeometry.surfaceHeight * 0.3,
+  );
+  expect(shortDesktopGeometry.scrollWidth).toBeLessThanOrEqual(
+    shortDesktopGeometry.clientWidth + 1,
+  );
+
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await conversation
