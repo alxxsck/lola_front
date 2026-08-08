@@ -1,6 +1,6 @@
 import { isProxy, reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
-import { availableTargets, graphTransitions, normalizeScenarioActions, renameScenarioNode, rotateLinearScenarioStart, sortScenarioActions, toPlainScenarioAction, usesExplicitTransitions, validateScenarioGraph } from './scenario-graph'
+import { availableTargets, graphTransitionId, graphTransitions, normalizeScenarioActions, renameScenarioNode, rotateLinearScenarioStart, sortScenarioActions, toPlainScenarioAction, usesExplicitTransitions, validateScenarioGraph } from './scenario-graph'
 
 describe('scenario graph model', () => {
   it('identifies actions whose transitions live outside nextNodeKey', () => {
@@ -63,10 +63,134 @@ describe('scenario graph model', () => {
       { position: 3, nodeKey: 'finish', type: 'COMPLETE_SCENARIO', config: {} },
     ])
     expect(graphTransitions(actions).map(({ target, label }) => ({ target, label }))).toEqual([
-      { target: 'yes', label: 'Да' }, { target: 'no', label: 'Нет' }, { target: 'no', label: 'Timeout' },
+      { target: 'yes', label: 'Да' }, { target: 'no', label: 'Нет' }, { target: 'no', label: 'Тайм-аут' },
       { target: 'finish', label: undefined }, { target: 'finish', label: undefined },
     ])
     expect(validateScenarioGraph(actions)).toEqual([])
+  })
+
+  it('resolves branch labels for the requested locale and keeps stable branch identities', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'question', type: 'ASK_CHOICE', config: {
+        message: { ru: 'Продолжить?', zh: '继续？' },
+        timeoutMs: 30_000,
+        onTimeout: 'finish',
+        options: [
+          { id: 'yes', label: { zh: '是', ru: 'Да' }, nextNodeKey: 'finish' },
+          { id: 'no', label: { zh: '否' }, nextNodeKey: 'finish' },
+        ],
+      } },
+      { position: 1, nodeKey: 'finish', type: 'COMPLETE_SCENARIO', config: {} },
+    ])
+    const before = JSON.stringify(actions)
+
+    expect(graphTransitions(actions, {
+      requestedLocale: 'ru',
+      defaultLocale: 'ru',
+    })).toEqual([
+      expect.objectContaining({
+        branchId: 'choice:yes',
+        target: 'finish',
+        label: 'Да',
+        kind: 'choice',
+      }),
+      expect.objectContaining({
+        branchId: 'choice:no',
+        target: 'finish',
+        label: 'no',
+        kind: 'choice',
+      }),
+      expect.objectContaining({
+        branchId: 'timeout',
+        target: 'finish',
+        label: 'Тайм-аут',
+        kind: 'timeout',
+      }),
+    ])
+    expect(JSON.stringify(actions)).toBe(before)
+  })
+
+  it('keeps system branch identities independent from their localized labels', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'goal', type: 'WAIT_FOR_GOAL', config: {
+        onGoal: 'done',
+        onTimeout: 'done',
+      } },
+      { position: 1, nodeKey: 'done', type: 'COMPLETE_SCENARIO', config: {} },
+    ])
+
+    expect(graphTransitions(actions)).toEqual([
+      expect.objectContaining({ branchId: 'goal', label: 'Цель достигнута' }),
+      expect.objectContaining({ branchId: 'goal-timeout', label: 'Срок истёк' }),
+    ])
+  })
+
+  it('falls back from the requested locale to the default and keeps ids while labels change', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'question', type: 'ASK_CHOICE', config: {
+        message: { ru: 'Продолжить?' }, timeoutMs: 30_000, onTimeout: 'done',
+        options: [
+          { id: 'yes', label: { ru: 'Да' }, nextNodeKey: 'done' },
+        ],
+      } },
+      { position: 1, nodeKey: 'done', type: 'COMPLETE_SCENARIO', config: {} },
+    ])
+    const before = graphTransitions(actions, {
+      requestedLocale: 'es',
+      defaultLocale: 'ru',
+    })
+    expect(before.map(({ branchId, label }) => ({ branchId, label }))).toEqual([
+      { branchId: 'choice:yes', label: 'Да' },
+      { branchId: 'timeout', label: 'Тайм-аут' },
+    ])
+
+    actions[0]!.config.options = [
+      { id: 'yes', label: { ru: 'Конечно', es: 'Sí' }, nextNodeKey: 'done' },
+    ]
+    const after = graphTransitions(actions, {
+      requestedLocale: 'es',
+      defaultLocale: 'ru',
+    })
+    expect(after.map(({ branchId }) => branchId)).toEqual(
+      before.map(({ branchId }) => branchId),
+    )
+    expect(after[0]?.label).toBe('Sí')
+  })
+
+  it('keeps the rendered edge id when a branch is retargeted', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'question', type: 'ASK_CHOICE', config: {
+        message: 'Продолжить?', timeoutMs: 30_000, onTimeout: 'first',
+        options: [{ id: 'yes', label: 'Да', nextNodeKey: 'first' }],
+      } },
+      { position: 1, nodeKey: 'first', type: 'COMPLETE_SCENARIO', config: {} },
+      { position: 2, nodeKey: 'second', type: 'COMPLETE_SCENARIO', config: {} },
+    ])
+    const before = graphTransitions(actions)[0]!
+    actions[0]!.config.options[0].nextNodeKey = 'second'
+    const after = graphTransitions(actions)[0]!
+
+    expect(graphTransitionId(before)).toBe('question-choice:yes')
+    expect(graphTransitionId(after)).toBe(graphTransitionId(before))
+  })
+
+  it('assigns presentation port identities to ordered condition slots', () => {
+    const actions = normalizeScenarioActions([
+      { position: 0, nodeKey: 'condition', type: 'CONDITION', config: {
+        branches: [
+          { conditions: [{ path: 'user.country', operator: 'eq', value: 'ES' }], nextNodeKey: 'done' },
+          { conditions: [{ path: 'user.country', operator: 'eq', value: 'PT' }], nextNodeKey: 'done' },
+        ],
+        fallbackNodeKey: 'done',
+      } },
+      { position: 1, nodeKey: 'done', type: 'COMPLETE_SCENARIO', config: {} },
+    ])
+
+    expect(graphTransitions(actions).map(({ branchId }) => branchId)).toEqual([
+      'condition:0',
+      'condition:1',
+      'fallback',
+    ])
   })
 
   it('derives both durable WAIT_FOR_GOAL branches and validates their references', () => {
@@ -80,8 +204,8 @@ describe('scenario graph model', () => {
     ])
 
     expect(graphTransitions(actions)).toEqual([
-      { source: 'wait_for_deposit', target: 'deposit_done', label: 'Цель достигнута', kind: 'goal' },
-      { source: 'wait_for_deposit', target: 'deposit_missing', label: 'Срок истёк', kind: 'goal-timeout' },
+      { source: 'wait_for_deposit', target: 'deposit_done', branchId: 'goal', label: 'Цель достигнута', kind: 'goal' },
+      { source: 'wait_for_deposit', target: 'deposit_missing', branchId: 'goal-timeout', label: 'Срок истёк', kind: 'goal-timeout' },
     ])
     expect(validateScenarioGraph(actions)).toEqual([])
 

@@ -1,8 +1,34 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
+import type { ScenarioLocalizationCatalogResponseDto } from "../src/shared/api/generated/models";
 
 const catalogRevision = "catalog-e2e-1";
 const publishedAt = "2026-07-18T10:00:00.000Z";
+const bilingualScenarioLocalization: ScenarioLocalizationCatalogResponseDto = {
+  version: 1,
+  enabled: true,
+  attributeKey: "language",
+  attributeContractRevision: 1,
+  defaultLocale: "ru",
+  localizedValueSchemaVersion: 1,
+  policyModes: ["ALL_PROJECT_LOCALES", "SELECTED_LOCALES"],
+  locales: [
+    { code: "ru", language: "ru", default: true },
+    { code: "zh", language: "zh", default: false },
+  ],
+  paths: [
+    {
+      actionType: "ASK_CHOICE",
+      path: "config.message",
+      maxLength: 10_000,
+    },
+    {
+      actionType: "ASK_CHOICE",
+      path: "config.options[].label",
+      maxLength: 120,
+    },
+  ],
+};
 
 type AuthoringFixtureState = {
   currentRevisionId: string | null;
@@ -28,6 +54,7 @@ function json(route: Route, body: unknown, status = 200) {
 
 async function installScenarioAuthoringFixtures(
   page: Page,
+  options: { localization?: ScenarioLocalizationCatalogResponseDto } = {},
 ): Promise<AuthoringFixtureState> {
   const state: AuthoringFixtureState = {
     currentRevisionId: null,
@@ -66,6 +93,9 @@ async function installScenarioAuthoringFixtures(
           projectId: "prj_retenive_demo",
           revision: catalogRevision,
           version: 1,
+          ...(options.localization
+            ? { localization: options.localization }
+            : {}),
           events: [
             {
               code: "registration_completed",
@@ -834,7 +864,7 @@ test("action editor gives configuration the primary desktop area and keeps the g
   await page.screenshot({
     path: testInfo.outputPath("scenario-next-action-picker-desktop.png"),
   });
-  await page.keyboard.press("Escape");
+  await page.getByText("Схема сценария", { exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: /Выберите следующее действие/ }),
   ).toBeHidden();
@@ -862,6 +892,73 @@ test("action editor gives configuration the primary desktop area and keeps the g
   ).toBe(true);
 });
 
+test("scenario graph labels use the project default locale and stable branch identity", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Graph localization is covered on the desktop canvas",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page, {
+    localization: bilingualScenarioLocalization,
+  });
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: [
+        {
+          position: 0,
+          nodeKey: "question",
+          type: "ASK_CHOICE",
+          config: {
+            message: { ru: "Продолжить?", zh: "继续？" },
+            timeoutMs: 30_000,
+            onTimeout: "finish",
+            options: [
+              {
+                id: "yes",
+                label: { zh: "是", ru: "Да" },
+                nextNodeKey: "finish",
+              },
+            ],
+          },
+        },
+        {
+          position: 1,
+          nodeKey: "finish",
+          type: "COMPLETE_SCENARIO",
+          nextNodeKey: null,
+          config: {},
+        },
+      ],
+    },
+  };
+
+  await page.goto("/scenarios/scn_1");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
+  const graph = page.locator(".graph-canvas.graph-expanded .vue-flow");
+  await expect(graph).toBeVisible();
+  await expect(graph.getByText("Да", { exact: true })).toBeVisible();
+  await expect(graph.getByText("Тайм-аут", { exact: true })).toBeVisible();
+  await expect(graph.getByText("是", { exact: true })).toHaveCount(0);
+  await expect(graph.getByText("Timeout", { exact: true })).toHaveCount(0);
+  const edgeIdsBefore = await graph
+    .locator(".vue-flow__edge")
+    .evaluateAll((edges) => edges.map((edge) => edge.getAttribute("data-id")));
+  await page.getByLabel("Язык подписей графа").click();
+  await page.getByRole("option", { name: "китайский", exact: true }).click();
+  await expect(graph.getByText("是", { exact: true })).toBeVisible();
+  const edgeIdsAfter = await graph
+    .locator(".vue-flow__edge")
+    .evaluateAll((edges) => edges.map((edge) => edge.getAttribute("data-id")));
+  expect(edgeIdsAfter).toEqual(edgeIdsBefore);
+  await expect(page.locator(".p-select-overlay")).toBeHidden();
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-graph-localized-branches.png"),
+  });
+});
+
 test("action editor uses list, full-width detail and graph views on mobile", async ({
   page,
 }, testInfo) => {
@@ -869,7 +966,9 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
     testInfo.project.name !== "mobile-chromium",
     "Mobile composition is covered on the mobile project",
   );
-  await installScenarioAuthoringFixtures(page);
+  await installScenarioAuthoringFixtures(page, {
+    localization: bilingualScenarioLocalization,
+  });
   await page.goto("/scenarios/new");
   await page.getByRole("button", { name: /Действия/ }).click();
   const mobileLibrary = page.locator(".mobile-library-picker");
@@ -918,6 +1017,12 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
   await expect(
     page.getByRole("button", { name: "Вернуться к настройке действия" }),
   ).toBeVisible();
+  await expect(page.getByLabel("Язык подписей графа")).toBeVisible();
+  expect(
+    await expandedGraph.locator(".graph-toolbar").evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
   expect(
     await page.evaluate(
       () =>

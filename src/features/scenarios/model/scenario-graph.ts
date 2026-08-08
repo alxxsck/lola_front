@@ -1,4 +1,5 @@
 import type { ScenarioAction, ScenarioCondition } from '@/shared/types/domain'
+import { resolveLocalizedContent } from '@/features/scenario-localization/model'
 
 export const NODE_KEY_PATTERN = /^[a-z][a-z0-9_-]{0,63}$/
 
@@ -26,9 +27,27 @@ export interface ConditionBranch {
 export interface GraphTransition {
   source: string
   target: string
+  branchId: string
   label?: string
   kind: 'default' | 'choice' | 'timeout' | 'condition' | 'fallback' | 'goal' | 'goal-timeout'
 }
+
+export interface GraphTransitionDisplayOptions {
+  requestedLocale?: string
+  defaultLocale?: string
+}
+
+export function graphTransitionId(transition: GraphTransition): string {
+  return `${transition.source}-${transition.branchId}`
+}
+
+const GRAPH_SYSTEM_LABELS = {
+  timeout: 'Тайм-аут',
+  fallback: 'Иначе',
+  goal: 'Цель достигнута',
+  goalTimeout: 'Срок истёк',
+  condition: 'Условие',
+} as const
 
 export interface GraphValidationIssue {
   nodeKey?: string
@@ -38,10 +57,22 @@ export interface GraphValidationIssue {
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 
-function localizedText(value: unknown): string {
+function localizedText(
+  value: unknown,
+  options: GraphTransitionDisplayOptions,
+): string {
   if (typeof value === 'string') return value
-  const values = Object.values(record(value))
-  return typeof values[0] === 'string' ? values[0] : ''
+  const requestedLocale = options.requestedLocale ?? options.defaultLocale
+  const defaultLocale = options.defaultLocale ?? requestedLocale
+  if (!requestedLocale || !defaultLocale) return ''
+  return resolveLocalizedContent(value, requestedLocale, defaultLocale).text.trim()
+}
+
+function hasLocalizedText(value: unknown): boolean {
+  if (typeof value === 'string') return Boolean(value.trim())
+  return Object.values(record(value)).some(
+    (candidate) => typeof candidate === 'string' && Boolean(candidate.trim()),
+  )
 }
 
 export function toPlainScenarioAction(action: ScenarioAction): ScenarioAction {
@@ -132,41 +163,44 @@ export function conditionBranches(action: ScenarioAction): ConditionBranch[] {
   }))
 }
 
-export function graphTransitions(actions: ScenarioAction[]): GraphTransition[] {
+export function graphTransitions(
+  actions: ScenarioAction[],
+  display: GraphTransitionDisplayOptions = {},
+): GraphTransition[] {
   const transitions: GraphTransition[] = []
   actions.forEach((action) => {
     const source = action.nodeKey ?? ''
     if (action.type === 'WAIT_FOR_GOAL') {
       const config = record(action.config)
       if (typeof config.onGoal === 'string' && config.onGoal) {
-        transitions.push({ source, target: config.onGoal, label: 'Цель достигнута', kind: 'goal' })
+        transitions.push({ source, target: config.onGoal, branchId: 'goal', label: GRAPH_SYSTEM_LABELS.goal, kind: 'goal' })
       }
       if (typeof config.onTimeout === 'string' && config.onTimeout) {
-        transitions.push({ source, target: config.onTimeout, label: 'Срок истёк', kind: 'goal-timeout' })
+        transitions.push({ source, target: config.onTimeout, branchId: 'goal-timeout', label: GRAPH_SYSTEM_LABELS.goalTimeout, kind: 'goal-timeout' })
       }
       return
     }
     if (action.type === 'ASK_CHOICE') {
       const options = choiceOptions(action).filter((option) => option.nextNodeKey).map((option) => ({
-        source, target: option.nextNodeKey, label: localizedText(option.label) || option.id, kind: 'choice' as const,
+        source, target: option.nextNodeKey, branchId: `choice:${option.id}`, label: localizedText(option.label, display) || option.id, kind: 'choice' as const,
       }))
       const timeout = record(action.config).onTimeout
       transitions.push(...(typeof timeout === 'string' && timeout
-        ? [...options, { source, target: timeout, label: 'Timeout', kind: 'timeout' as const }]
+        ? [...options, { source, target: timeout, branchId: 'timeout', label: GRAPH_SYSTEM_LABELS.timeout, kind: 'timeout' as const }]
         : options))
       return
     }
     if (action.type === 'CONDITION') {
       const branches = conditionBranches(action).filter((branch) => branch.nextNodeKey).map((branch, index) => ({
-        source, target: branch.nextNodeKey, label: `Условие ${index + 1}`, kind: 'condition' as const,
+        source, target: branch.nextNodeKey, branchId: `condition:${index}`, label: `${GRAPH_SYSTEM_LABELS.condition} ${index + 1}`, kind: 'condition' as const,
       }))
       const fallback = record(action.config).fallbackNodeKey
       transitions.push(...(typeof fallback === 'string' && fallback
-        ? [...branches, { source, target: fallback, label: 'Иначе', kind: 'fallback' as const }]
+        ? [...branches, { source, target: fallback, branchId: 'fallback', label: GRAPH_SYSTEM_LABELS.fallback, kind: 'fallback' as const }]
         : branches))
       return
     }
-    if (action.nextNodeKey) transitions.push({ source, target: action.nextNodeKey, kind: 'default' })
+    if (action.nextNodeKey) transitions.push({ source, target: action.nextNodeKey, branchId: 'default', kind: 'default' })
   })
   return transitions
 }
@@ -273,7 +307,7 @@ export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidatio
       if (new Set(optionIds).size !== optionIds.length) issues.push({ nodeKey: key, message: 'ID вариантов ответа должны быть уникальны' })
       if (options.some((option) => !NODE_KEY_PATTERN.test(option.id))) issues.push({ nodeKey: key, message: 'ID варианта должен соответствовать формату ключа узла' })
       const config = record(action.config)
-      if (!localizedText(config.message).trim()) issues.push({ nodeKey: key, message: 'Заполните текст вопроса' })
+      if (!hasLocalizedText(config.message)) issues.push({ nodeKey: key, message: 'Заполните текст вопроса' })
       if (typeof config.timeoutMs !== 'number' || config.timeoutMs < 1_000) issues.push({ nodeKey: key, message: 'Timeout должен быть не меньше 1000 мс' })
       if (typeof config.onTimeout !== 'string' || !config.onTimeout) issues.push({ nodeKey: key, message: 'Выберите переход по timeout' })
     }

@@ -116,11 +116,13 @@ import {
   validateScenarioActionConfig,
 } from "@/shared/lib/scenario-action-catalog";
 import { slugify } from "@/shared/lib/format";
+import { localeDisplayName } from "@/shared/lib/locale";
 import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
 import {
   choiceOptions,
   conditionBranches,
   createScenarioNode,
+  graphTransitionId,
   graphTransitions,
   normalizePositions,
   renameScenarioNode,
@@ -251,6 +253,7 @@ const focusedLocale = ref("");
 const inspectorMode = ref<"node" | "settings">("settings");
 const compactActionLayout = ref(false);
 const graphExpanded = ref(false);
+const graphLocale = ref("");
 const graphCanvasElement = ref<HTMLElement | null>(null);
 const actionInspector = ref<{ focus?: () => void } | null>(null);
 let actionViewReturnFocus: HTMLElement | null = null;
@@ -800,8 +803,37 @@ const conversationPolicyOptions: {
 ];
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
 
+const graphLocaleOptions = computed(
+  () => (authoringContract.value?.localization?.locales ?? []).map((locale) => ({
+    ...locale,
+    label: localeDisplayName(locale.code),
+  })),
+);
+
+watch(
+  () => authoringContract.value?.localization,
+  (catalog) => {
+    if (!catalog) {
+      graphLocale.value = "";
+      return;
+    }
+    if (!catalog.locales.some(({ code }) => code === graphLocale.value)) {
+      graphLocale.value = catalog.defaultLocale;
+    }
+  },
+  { immediate: true },
+);
+
+const flowTransitions = computed(() => {
+  const defaultLocale = authoringContract.value?.localization?.defaultLocale;
+  return graphTransitions(form.actions, {
+    requestedLocale: graphLocale.value || defaultLocale,
+    defaultLocale,
+  });
+});
+
 const flowNodes = computed<Node[]>(() => {
-  const transitions = graphTransitions(form.actions);
+  const transitions = flowTransitions.value;
   const depth = new Map<string, number>();
   form.actions.forEach((action, index) =>
     depth.set(action.nodeKey ?? "", index ? 1 : 0),
@@ -886,9 +918,9 @@ const flowEdges = computed<Edge[]>(() => {
         },
       ]
     : [];
-  graphTransitions(form.actions).forEach((transition, index) =>
+  flowTransitions.value.forEach((transition) =>
     edges.push({
-      id: `${transition.source}-${transition.target}-${transition.kind}-${index}`,
+      id: graphTransitionId(transition),
       source: transition.source,
       target: transition.target,
       label: transition.label,
@@ -2076,18 +2108,34 @@ function leave() {
                 graphExpanded ? "Полный обзор" : "Обзор связей между действиями"
               }}</small>
             </div>
-            <button
-              type="button"
-              :aria-label="
-                graphExpanded
-                  ? 'Вернуться к настройке действия'
-                  : 'Развернуть схему сценария'
-              "
-              @click="toggleGraphExpanded"
-            >
-              <i :class="graphExpanded ? 'pi pi-compress' : 'pi pi-expand'" />
-              {{ graphExpanded ? "К настройке" : "Развернуть" }}
-            </button>
+            <div class="graph-toolbar-actions">
+              <div
+                v-if="graphLocaleOptions.length > 1"
+                class="graph-locale-control"
+              >
+                <i class="pi pi-language" aria-hidden="true" />
+                <Select
+                  v-model="graphLocale"
+                  class="graph-locale-select"
+                  :options="graphLocaleOptions"
+                  option-label="label"
+                  option-value="code"
+                  aria-label="Язык подписей графа"
+                />
+              </div>
+              <button
+                type="button"
+                :aria-label="
+                  graphExpanded
+                    ? 'Вернуться к настройке действия'
+                    : 'Развернуть схему сценария'
+                "
+                @click="toggleGraphExpanded"
+              >
+                <i :class="graphExpanded ? 'pi pi-compress' : 'pi pi-expand'" />
+                {{ graphExpanded ? "К настройке" : "Развернуть" }}
+              </button>
+            </div>
           </header>
           <details
             v-if="authoringContract?.localization"
@@ -3312,6 +3360,35 @@ function leave() {
   font: 750 0.66rem var(--font-display);
   cursor: pointer;
 }
+.graph-toolbar-actions,
+.graph-locale-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.graph-locale-control {
+  min-height: 40px;
+  padding-left: 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+.graph-locale-control :deep(.graph-locale-select) {
+  min-width: 126px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.graph-locale-control :deep(.p-select-label) {
+  padding-block: 8px;
+  padding-left: 8px;
+  font: 700 0.66rem var(--font-display);
+}
+.graph-locale-control:focus-within {
+  border-color: var(--status-accent-text);
+  box-shadow: 0 0 0 2px var(--status-accent-soft);
+}
 .graph-toolbar button:hover,
 .mobile-graph-button:hover {
   border-color: var(--status-accent);
@@ -4100,7 +4177,29 @@ function leave() {
     border: 0;
   }
   .graph-canvas.graph-expanded .graph-toolbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: calc(100% - 24px);
+  }
+  .graph-canvas:not(.graph-expanded) .localization-policy-card {
+    position: static;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .graph-toolbar-actions {
+    width: 100%;
+  }
+  .graph-locale-control {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+  }
+  .graph-locale-control :deep(.graph-locale-select) {
+    flex: 1;
+    min-width: 0;
+  }
+  .graph-toolbar button {
+    min-height: 44px;
   }
   .graph-canvas.graph-expanded .mobile-action-outline,
   .graph-canvas.graph-expanded .localization-policy-card,
