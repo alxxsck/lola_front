@@ -49,9 +49,10 @@ describe("ScenarioActionTargetPicker", () => {
         .findAll('[data-testid="action-target-picker-option"]')
         .map((option) => option.text()),
     ).toEqual([
-      expect.stringContaining("Сказать текст"),
-      expect.stringContaining("Открыть страницу"),
+      expect.stringMatching(/В сценарии.*Сказать текст/),
+      expect.stringMatching(/Добавить в сценарий.*Открыть страницу/),
     ]);
+    expect(wrapper.text()).not.toContain("Создать новый шаг");
     const options = wrapper.findAll('[role="option"]');
     expect(options[0]?.find('input[type="checkbox"]').exists()).toBe(false);
 

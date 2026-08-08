@@ -83,17 +83,14 @@ function toCatalogOption(option: ScenarioActionTargetOption): CatalogPickerOptio
     value: option.value,
     name: option.name,
     code: option.code,
+    context:
+      option.kind === "existing"
+        ? option.position !== undefined
+          ? `В сценарии · шаг ${option.position + 1}`
+          : "В сценарии"
+        : "Добавить в сценарий",
     description: option.description,
     meta: [
-      {
-        label:
-          option.kind === "existing"
-            ? option.position !== undefined
-              ? `Шаг ${option.position + 1}`
-              : "В сценарии"
-            : "Создать новый шаг",
-        icon: option.kind === "existing" ? "pi pi-sitemap" : "pi pi-plus",
-      },
       ...(option.executor
         ? [
             {

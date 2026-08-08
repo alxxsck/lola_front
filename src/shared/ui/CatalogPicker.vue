@@ -13,6 +13,7 @@ export interface CatalogPickerOption {
   value: string;
   name: string;
   code: string;
+  context?: string;
   description?: string;
   meta?: CatalogPickerMeta[];
   data?: unknown;
@@ -443,6 +444,9 @@ watch(
                 <i v-if="optionSelected" class="pi pi-check" />
               </span>
               <span class="catalog-picker__option-copy">
+                <span v-if="option.context" class="catalog-picker__option-context">
+                  {{ option.context }}
+                </span>
                 <span class="catalog-picker__option-title">
                   <strong>{{ option.name }}</strong>
                   <code>{{ option.code }}</code>
@@ -834,8 +838,15 @@ watch(
 }
 .catalog-picker__option-copy {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
+}
+.catalog-picker__option-context {
+  color: var(--text-small-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.015em;
 }
 .catalog-picker__option-title {
   display: flex;
@@ -875,13 +886,19 @@ watch(
 .catalog-picker__meta > span {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
+  gap: 3px;
+  padding: 2px 5px;
   border-radius: 999px;
   background: var(--surface-hover);
   color: var(--text-secondary);
   font-size: 0.62rem;
   font-weight: 650;
+  line-height: 1.15;
+}
+.catalog-picker__meta i {
+  flex: 0 0 auto;
+  font-size: 0.6rem;
+  line-height: 1;
 }
 .catalog-picker__loading,
 .catalog-picker__error {
