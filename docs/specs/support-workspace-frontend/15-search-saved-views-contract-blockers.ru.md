@@ -213,3 +213,27 @@ HTTP/DB smoke. PostgreSQL load: 100 разных операторов с отд�
 100 authoritative reads при concurrency 10 — p95 99,4 мс. Failed-switch rollback, stale typing,
 rate reject/no-op stop и stale-revoke CAS races доказаны real-PG regressions. Финальные независимые
 spec/standards/architecture/security/scalability review — CLEAN.
+
+### Ticket 22 — Internal Note composer
+
+**Готово, проверено, можно брать в frontend-разработку.**
+
+Backend `main` `4a33805` публикует Case-scoped `capabilities.internalNotes`, вычисленный владельцем
+Internal Note из current Case, Assignment/active Team, current IAM и Support Content rollout.
+Готовы отдельные typed операции list/create/history/correct/tombstone с idempotency, `If-Match`,
+closed correction/tombstone reason catalogs и fail-closed DB constraints; rollout блокирует новые
+mutation, но не скрывает уже сохранённые Notes от авторизованного reader.
+
+Realtime contract V1 публикует watch/renew/unwatch schema refs, 60-секундную lease и только
+content-free `support.internal_note.changed.v1`; reconcile всегда выполняется через
+`SupportInternalNote_list`. Dispatch повторно проверяет session/IAM/Case/active-Team scope и
+удаляет только exact observed Case lease. Admission ограничен одним pending command на socket,
+16 на CMS Session, 512 на Project и authoritative 500 watchers на Case; overflow/timeout возвращает
+typed `BUSY`, а cross-replica cap сохраняется PostgreSQL advisory locks.
+
+Проверено: 542 clean migrations, 106/106 targeted tests, build/TypeScript/Prisma/lint и live
+HTTP/DB smoke. Actual gateway PostgreSQL gate: one-socket и cross-Project one-Session flood не
+блокируют legitimate peer; 32 Sessions/513 reconnect commands дают ровно 500 success,
+12 `CASE_SOCKET_LIMIT_EXCEEDED` и 1 `BUSY`, concurrent ordinary read 1,0 мс. Realtime read p95
+29,9 мс; 20k Notes/100 reads/concurrency 10 — p95 98,2 мс. Финальные независимые
+spec/standards/architecture/security/scalability review — CLEAN.
