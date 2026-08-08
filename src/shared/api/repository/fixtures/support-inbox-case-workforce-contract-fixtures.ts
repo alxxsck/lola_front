@@ -1,9 +1,11 @@
 import type {
   EndUserCaseCommandResponseDto,
   SupportCaseAssignmentAssign409,
+  SupportCaseAssignmentCandidatesResponseDto,
   SupportOperatorAvailabilityResponseDto,
   SupportQueueCasesPageResponseDto,
   SupportRoutingOwnOfferCatalogDto,
+  SupportRoutingOfferAccept409,
   SupportWorkforceSettingsResponseDto,
   SupportWorkspaceCasesPageResponseDto,
   SupportWorkspaceConversationsPageResponseDto,
@@ -28,9 +30,46 @@ const caseWorkflowSuccess = {
 } satisfies EndUserCaseCommandResponseDto;
 
 const assignmentConflict = {
-  code: "CASE_VERSION_CONFLICT",
-  currentVersion: 8,
+  error: {
+    code: "CASE_VERSION_CONFLICT",
+    message: "Case version no longer matches the submitted command",
+    details: { currentVersion: 8 },
+    requestId: "request-assignment-conflict-1",
+  },
 } satisfies SupportCaseAssignmentAssign409;
+
+const assignmentCandidates = {
+  caseId: "10000000-0000-4000-8000-000000000001",
+  caseVersion: 8,
+  caseReadToken: '"sc1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
+  assignmentState: "ASSIGNED",
+  currentAssignment: {
+    id: "30000000-0000-4000-8000-000000000001",
+    version: 3,
+    actionEtag: '"sa1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
+  },
+  workforceRevision: {
+    id: "30000000-0000-4000-8000-000000000004",
+    number: 5,
+  },
+  actions: { claim: false, assign: false, release: true, transfer: true },
+  teams: [
+    {
+      id: "30000000-0000-4000-8000-000000000002",
+      code: "PAYMENTS",
+      name: "Payments",
+      actions: { claim: false, assign: false, transfer: true },
+      operators: [
+        {
+          id: "30000000-0000-4000-8000-000000000003",
+          displayName: "Operator Anna",
+          availableCapacityUnits: 300,
+          actions: { claim: false, assign: false, transfer: true },
+        },
+      ],
+    },
+  ],
+} satisfies SupportCaseAssignmentCandidatesResponseDto;
 
 const degradedQueue = {
   queueId: "20000000-0000-4000-8000-000000000001",
@@ -64,6 +103,14 @@ const ownOffers = {
   ],
 } satisfies SupportRoutingOwnOfferCatalogDto;
 
+const expiredOfferConflict = {
+  error: {
+    code: "SUPPORT_OFFER_EXPIRED",
+    message: "The private routing offer has expired",
+    requestId: "request-offer-expired-1",
+  },
+} satisfies SupportRoutingOfferAccept409;
+
 const availabilityLeaseExpired = {
   projectId: "40000000-0000-4000-8000-000000000001",
   operatorId: "40000000-0000-4000-8000-000000000002",
@@ -92,8 +139,10 @@ export const supportInboxCaseWorkforceContractFixtures = {
   emptyConversationsInbox,
   caseWorkflowSuccess,
   assignmentConflict,
+  assignmentCandidates,
   degradedQueue,
   ownOffers,
+  expiredOfferConflict,
   availabilityLeaseExpired,
   emptyWorkforce,
   forbiddenInbox: {
@@ -104,12 +153,6 @@ export const supportInboxCaseWorkforceContractFixtures = {
   staleCaseWorkflow: {
     kind: "HTTP_ERROR",
     status: 409,
-    publication: "NOT_PUBLISHED",
-  },
-  expiredOfferConflict: {
-    kind: "HTTP_ERROR",
-    status: 409,
-    code: "SUPPORT_OFFER_EXPIRED",
     publication: "NOT_PUBLISHED",
   },
   partialBulkOutcome: {

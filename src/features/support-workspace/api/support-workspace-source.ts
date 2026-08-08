@@ -16,6 +16,7 @@ import type {
   SupportWorkspaceSelectionCaseResponseDto,
   SupportWorkspaceSelectionResponseDto,
 } from "@/shared/api/generated/models";
+import { readMockSupportAssignment } from "@/features/support-case-assignment/api/support-assignment-mock-state";
 
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
 export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
@@ -454,17 +455,25 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
   },
 };
 
-const mockCapabilities: SupportWorkspaceSelection["capabilities"] = {
+function mockCapabilities(
+  selectedCase: MockSupportCase | undefined,
+): SupportWorkspaceSelection["capabilities"] {
+  const assignment = selectedCase
+    ? readMockSupportAssignment(selectedCase.id)
+    : null;
+  const actionable = Boolean(selectedCase && selectedCase.status !== "RESOLVED");
+  return {
   assignCase: false,
-  claimAssignment: false,
+  claimAssignment: actionable && !assignment,
   escalateCase: true,
   manageCase: true,
-  releaseAssignment: false,
+  releaseAssignment: actionable && Boolean(assignment),
   reply: true,
   replyWithoutTranslation: false,
   suspendAi: false,
-  transferAssignment: false,
-};
+  transferAssignment: actionable && Boolean(assignment),
+  };
+}
 
 const mockReadStateByConversation = new Map<
   string,
@@ -547,6 +556,7 @@ const mockSupportCases: readonly MockSupportCase[] = [
 ];
 
 function mockCaseSelection(value: MockSupportCase): SupportWorkspaceCase {
+  const assignment = readMockSupportAssignment(value.id);
   return {
     id: value.id,
     title: value.title,
@@ -559,8 +569,20 @@ function mockCaseSelection(value: MockSupportCase): SupportWorkspaceCase {
     updatedAt: value.updatedAt,
     version: value.version,
     latestRevisionId: null,
-    assignee: null,
-    assignment: null,
+    assignee: assignment
+      ? { id: assignment.operatorId, displayName: assignment.operatorName }
+      : null,
+    assignment: assignment
+      ? {
+          id: assignment.id,
+          state: "ASSIGNED",
+          operatorId: assignment.operatorId,
+          operatorName: assignment.operatorName,
+          teamName: assignment.teamName,
+          version: assignment.version,
+          actionEtag: assignment.actionEtag,
+        }
+      : null,
   };
 }
 
@@ -665,7 +687,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         { code: "ACCOUNT", label: "Аккаунт" },
         { code: "GENERAL", label: "Общие вопросы" },
       ],
-      capabilities: mockCapabilities,
+      capabilities: mockCapabilities(selectedCase),
       endUser: {
         id: endUserId,
         externalId:

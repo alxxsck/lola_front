@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseAssignmentCandidateActionsResponseDto } from "./supportCaseAssignmentCandidateActionsResponseDto";
+import type { SupportCaseAssignmentCandidateTargetActionsResponseDto } from "./supportCaseAssignmentCandidateTargetActionsResponseDto";
 
 export interface SupportCaseAssignmentCandidateOperatorResponseDto {
-  actions: SupportCaseAssignmentCandidateActionsResponseDto;
+  actions: SupportCaseAssignmentCandidateTargetActionsResponseDto;
   /** @minimum 0 */
   availableCapacityUnits: number;
   displayName: string;

@@ -5,20 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseAssignmentClaim403Code } from "./supportCaseAssignmentClaim403Code";
-import type { SupportCaseAssignmentClaim403Current } from "./supportCaseAssignmentClaim403Current";
+import type { ApiErrorResponseDto } from "./apiErrorResponseDto";
+import type { SupportCaseAssignmentClaim403AllOf } from "./supportCaseAssignmentClaim403AllOf";
 
-export type SupportCaseAssignmentClaim403 = {
-  code: SupportCaseAssignmentClaim403Code;
-  current?: SupportCaseAssignmentClaim403Current;
-  /** @pattern ^"sa1\.[A-Za-z0-9_-]{43}"$ */
-  currentActionEtag?: string;
-  /** @pattern ^"sc1\.[A-Za-z0-9_-]{43}"$ */
-  currentReadToken?: string;
-  /** @minimum 0 */
-  currentUnits?: number;
-  /** @minimum 1 */
-  currentVersion?: number;
-  /** @minimum 1 */
-  maxCapacityUnits?: number;
-};
+export type SupportCaseAssignmentClaim403 = ApiErrorResponseDto &
+  SupportCaseAssignmentClaim403AllOf;

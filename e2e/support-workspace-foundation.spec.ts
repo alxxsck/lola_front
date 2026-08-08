@@ -534,17 +534,59 @@ test("matches the browser viewport at every desktop and tablet breakpoint", asyn
   }
 });
 
-test("shows only the operator's server-authoritative routing offers", async ({
+test("keeps assignment actions in the Case inspector without exposing capabilities", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "Свернуть" }).click();
-  const offers = page.getByRole("region", { name: "Предложения из очереди" });
+  await page.goto("/support/inbox/cases/case-demo-game?mode=cases");
+  await expect(
+    page.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Действия" }).click();
+  const desk = page.getByRole("region", { name: "Кто ведёт обращение" });
 
-  await expect(offers).toBeVisible();
-  await expect(offers).toContainText("Активных предложений сейчас нет.");
-  await expect(offers.getByText(/assignmentId|offerToken|queueId/)).toHaveCount(
-    0,
+  await expect(desk).toBeVisible();
+  await expect(desk).toContainText("Назначение");
+  await expect(desk).toContainText("Claimant");
+  await expect(desk).toContainText("Наблюдатели");
+  await expect(desk).toContainText("Доступность");
+  await expect(desk.getByText(/assignmentId|offerToken|actionEtag/)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Взять в работу" }).click();
+  await page.evaluate(() =>
+    sessionStorage.setItem("retenive:e2e:assignment-conflict-once", "1"),
   );
+  const confirmClaim = page.getByRole("button", {
+    name: "Подтвердить назначение на себя",
+  });
+  await confirmClaim.click();
+  const claimDialog = page.getByRole("dialog", { name: "Взять Case в работу" });
+  await expect(claimDialog).toBeVisible();
+  await expect(claimDialog.getByText(/Назначение уже изменилось/)).toBeVisible();
+  await confirmClaim.click();
+  await expect(page.getByRole("dialog", { name: "Взять Case в работу" })).toBeHidden();
+  await expect(desk).toContainText("Алексей · Игры");
+  await expect(page.getByRole("button", { name: "Снять назначение" })).toBeVisible();
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    if (viewport.width < 600) {
+      await page.getByRole("button", { name: "Контекст" }).click();
+      await page.getByRole("tab", { name: "Действия" }).click();
+    }
+    const geometry = await desk.evaluate((element) => ({
+      left: element.getBoundingClientRect().left,
+      right: element.getBoundingClientRect().right,
+      viewport: document.documentElement.clientWidth,
+      overflow:
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }));
+    expect(geometry.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.viewport + 0.5);
+    expect(geometry.overflow).toBe(0);
+  }
 });
 
 test("does not substitute another conversation for an unavailable deep link", async ({

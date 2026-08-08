@@ -26221,10 +26221,6 @@
         ],
         "type": "object"
       },
-      "Object": {
-        "properties": {},
-        "type": "object"
-      },
       "OldContractIntegrationResponseDto": {
         "properties": {
           "acceptedUntil": {
@@ -37211,6 +37207,9 @@
           "claim": {
             "type": "boolean"
           },
+          "release": {
+            "type": "boolean"
+          },
           "transfer": {
             "type": "boolean"
           }
@@ -37218,6 +37217,7 @@
         "required": [
           "claim",
           "assign",
+          "release",
           "transfer"
         ],
         "type": "object"
@@ -37225,7 +37225,7 @@
       "SupportCaseAssignmentCandidateOperatorResponseDto": {
         "properties": {
           "actions": {
-            "$ref": "#/components/schemas/SupportCaseAssignmentCandidateActionsResponseDto"
+            "$ref": "#/components/schemas/SupportCaseAssignmentCandidateTargetActionsResponseDto"
           },
           "availableCapacityUnits": {
             "minimum": 0,
@@ -37251,6 +37251,14 @@
         "properties": {
           "actions": {
             "$ref": "#/components/schemas/SupportCaseAssignmentCandidateActionsResponseDto"
+          },
+          "assignmentState": {
+            "enum": [
+              "UNASSIGNED",
+              "RESERVED",
+              "ASSIGNED"
+            ],
+            "type": "string"
           },
           "caseId": {
             "format": "uuid",
@@ -37307,15 +37315,35 @@
           "caseId",
           "caseVersion",
           "caseReadToken",
+          "assignmentState",
           "actions",
           "teams"
+        ],
+        "type": "object"
+      },
+      "SupportCaseAssignmentCandidateTargetActionsResponseDto": {
+        "properties": {
+          "assign": {
+            "type": "boolean"
+          },
+          "claim": {
+            "type": "boolean"
+          },
+          "transfer": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "claim",
+          "assign",
+          "transfer"
         ],
         "type": "object"
       },
       "SupportCaseAssignmentCandidateTeamResponseDto": {
         "properties": {
           "actions": {
-            "$ref": "#/components/schemas/SupportCaseAssignmentCandidateActionsResponseDto"
+            "$ref": "#/components/schemas/SupportCaseAssignmentCandidateTargetActionsResponseDto"
           },
           "code": {
             "type": "string"
@@ -43988,7 +44016,7 @@
             "default": 30,
             "maximum": 100,
             "minimum": 1,
-            "type": "object"
+            "type": "number"
           }
         },
         "type": "object"
@@ -75156,77 +75184,90 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "IAM_AUTHORIZATION_REQUIRED",
-                        "IDEMPOTENCY_KEY_REQUIRED",
-                        "ASSIGNMENT_IF_MATCH_INVALID",
-                        "ASSIGNMENT_PROJECT_ID_INVALID",
-                        "ASSIGNMENT_CASE_ID_INVALID",
-                        "ASSIGNMENT_TEAM_ID_INVALID",
-                        "ASSIGNMENT_OPERATOR_ID_INVALID",
-                        "ASSIGNMENT_ID_INVALID",
-                        "CASE_VERSION_INVALID",
-                        "ASSIGNMENT_VERSION_INVALID",
-                        "ASSIGNMENT_REASON_NOTE_INVALID",
-                        "ASSIGNMENT_REASON_CODE_INVALID"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75236,67 +75277,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                        "ASSIGNMENT_OVERRIDE_REQUIRED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75306,67 +75360,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "NOT_FOUND_OR_FORBIDDEN",
-                        "SUPPORT_ASSIGNMENT_NOT_ENABLED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75376,81 +75443,94 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "CASE_NOT_ACTIONABLE",
-                        "CASE_VERSION_CONFLICT",
-                        "ASSIGNMENT_ALREADY_OWNED",
-                        "ASSIGNMENT_NOT_CURRENT",
-                        "ASSIGNMENT_VERSION_CONFLICT",
-                        "ASSIGNMENT_OPERATOR_UNAVAILABLE",
-                        "ASSIGNMENT_OPERATOR_INELIGIBLE",
-                        "ASSIGNMENT_CAPACITY_EXCEEDED",
-                        "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
-                        "ASSIGNMENT_TRANSFER_NOOP",
-                        "ASSIGNMENT_PROJECTION_DRIFT",
-                        "ASSIGNMENT_LOAD_DRIFT",
-                        "ASSIGNMENT_CONCURRENT_UPDATE",
-                        "ASSIGNMENT_EVIDENCE_INCOMPLETE",
-                        "WORKFORCE_NOT_PUBLISHED",
-                        "IDEMPOTENCY_KEY_REUSED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75498,6 +75578,336 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SupportCaseAssignmentCandidatesResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "ASSIGNMENT_CASE_CANDIDATE_ID_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "PERMISSION_DENIED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_CANDIDATE_SET_TOO_LARGE"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
                 }
               }
             },
@@ -75594,77 +76004,90 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "IAM_AUTHORIZATION_REQUIRED",
-                        "IDEMPOTENCY_KEY_REQUIRED",
-                        "ASSIGNMENT_IF_MATCH_INVALID",
-                        "ASSIGNMENT_PROJECT_ID_INVALID",
-                        "ASSIGNMENT_CASE_ID_INVALID",
-                        "ASSIGNMENT_TEAM_ID_INVALID",
-                        "ASSIGNMENT_OPERATOR_ID_INVALID",
-                        "ASSIGNMENT_ID_INVALID",
-                        "CASE_VERSION_INVALID",
-                        "ASSIGNMENT_VERSION_INVALID",
-                        "ASSIGNMENT_REASON_NOTE_INVALID",
-                        "ASSIGNMENT_REASON_CODE_INVALID"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75674,67 +76097,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                        "ASSIGNMENT_OVERRIDE_REQUIRED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75744,67 +76180,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "NOT_FOUND_OR_FORBIDDEN",
-                        "SUPPORT_ASSIGNMENT_NOT_ENABLED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75814,81 +76263,94 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "CASE_NOT_ACTIONABLE",
-                        "CASE_VERSION_CONFLICT",
-                        "ASSIGNMENT_ALREADY_OWNED",
-                        "ASSIGNMENT_NOT_CURRENT",
-                        "ASSIGNMENT_VERSION_CONFLICT",
-                        "ASSIGNMENT_OPERATOR_UNAVAILABLE",
-                        "ASSIGNMENT_OPERATOR_INELIGIBLE",
-                        "ASSIGNMENT_CAPACITY_EXCEEDED",
-                        "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
-                        "ASSIGNMENT_TRANSFER_NOOP",
-                        "ASSIGNMENT_PROJECTION_DRIFT",
-                        "ASSIGNMENT_LOAD_DRIFT",
-                        "ASSIGNMENT_CONCURRENT_UPDATE",
-                        "ASSIGNMENT_EVIDENCE_INCOMPLETE",
-                        "WORKFORCE_NOT_PUBLISHED",
-                        "IDEMPOTENCY_KEY_REUSED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -75988,77 +76450,90 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "IAM_AUTHORIZATION_REQUIRED",
-                        "IDEMPOTENCY_KEY_REQUIRED",
-                        "ASSIGNMENT_IF_MATCH_INVALID",
-                        "ASSIGNMENT_PROJECT_ID_INVALID",
-                        "ASSIGNMENT_CASE_ID_INVALID",
-                        "ASSIGNMENT_TEAM_ID_INVALID",
-                        "ASSIGNMENT_OPERATOR_ID_INVALID",
-                        "ASSIGNMENT_ID_INVALID",
-                        "CASE_VERSION_INVALID",
-                        "ASSIGNMENT_VERSION_INVALID",
-                        "ASSIGNMENT_REASON_NOTE_INVALID",
-                        "ASSIGNMENT_REASON_CODE_INVALID"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76068,67 +76543,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                        "ASSIGNMENT_OVERRIDE_REQUIRED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76138,67 +76626,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "NOT_FOUND_OR_FORBIDDEN",
-                        "SUPPORT_ASSIGNMENT_NOT_ENABLED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76208,81 +76709,94 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "CASE_NOT_ACTIONABLE",
-                        "CASE_VERSION_CONFLICT",
-                        "ASSIGNMENT_ALREADY_OWNED",
-                        "ASSIGNMENT_NOT_CURRENT",
-                        "ASSIGNMENT_VERSION_CONFLICT",
-                        "ASSIGNMENT_OPERATOR_UNAVAILABLE",
-                        "ASSIGNMENT_OPERATOR_INELIGIBLE",
-                        "ASSIGNMENT_CAPACITY_EXCEEDED",
-                        "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
-                        "ASSIGNMENT_TRANSFER_NOOP",
-                        "ASSIGNMENT_PROJECTION_DRIFT",
-                        "ASSIGNMENT_LOAD_DRIFT",
-                        "ASSIGNMENT_CONCURRENT_UPDATE",
-                        "ASSIGNMENT_EVIDENCE_INCOMPLETE",
-                        "WORKFORCE_NOT_PUBLISHED",
-                        "IDEMPOTENCY_KEY_REUSED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76388,77 +76902,90 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "IAM_AUTHORIZATION_REQUIRED",
-                        "IDEMPOTENCY_KEY_REQUIRED",
-                        "ASSIGNMENT_IF_MATCH_INVALID",
-                        "ASSIGNMENT_PROJECT_ID_INVALID",
-                        "ASSIGNMENT_CASE_ID_INVALID",
-                        "ASSIGNMENT_TEAM_ID_INVALID",
-                        "ASSIGNMENT_OPERATOR_ID_INVALID",
-                        "ASSIGNMENT_ID_INVALID",
-                        "CASE_VERSION_INVALID",
-                        "ASSIGNMENT_VERSION_INVALID",
-                        "ASSIGNMENT_REASON_NOTE_INVALID",
-                        "ASSIGNMENT_REASON_CODE_INVALID"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "ASSIGNMENT_IF_MATCH_INVALID",
+                                "ASSIGNMENT_PROJECT_ID_INVALID",
+                                "ASSIGNMENT_CASE_ID_INVALID",
+                                "ASSIGNMENT_TEAM_ID_INVALID",
+                                "ASSIGNMENT_OPERATOR_ID_INVALID",
+                                "ASSIGNMENT_ID_INVALID",
+                                "CASE_VERSION_INVALID",
+                                "ASSIGNMENT_VERSION_INVALID",
+                                "ASSIGNMENT_REASON_NOTE_INVALID",
+                                "ASSIGNMENT_REASON_CODE_INVALID"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76468,67 +76995,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
-                        "ASSIGNMENT_OVERRIDE_REQUIRED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "ASSIGNMENT_OWNER_OR_OVERRIDE_REQUIRED",
+                                "ASSIGNMENT_OVERRIDE_REQUIRED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76538,67 +77078,80 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "NOT_FOUND_OR_FORBIDDEN",
-                        "SUPPORT_ASSIGNMENT_NOT_ENABLED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -76608,81 +77161,94 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "code": {
-                      "enum": [
-                        "CASE_NOT_ACTIONABLE",
-                        "CASE_VERSION_CONFLICT",
-                        "ASSIGNMENT_ALREADY_OWNED",
-                        "ASSIGNMENT_NOT_CURRENT",
-                        "ASSIGNMENT_VERSION_CONFLICT",
-                        "ASSIGNMENT_OPERATOR_UNAVAILABLE",
-                        "ASSIGNMENT_OPERATOR_INELIGIBLE",
-                        "ASSIGNMENT_CAPACITY_EXCEEDED",
-                        "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
-                        "ASSIGNMENT_TRANSFER_NOOP",
-                        "ASSIGNMENT_PROJECTION_DRIFT",
-                        "ASSIGNMENT_LOAD_DRIFT",
-                        "ASSIGNMENT_CONCURRENT_UPDATE",
-                        "ASSIGNMENT_EVIDENCE_INCOMPLETE",
-                        "WORKFORCE_NOT_PUBLISHED",
-                        "IDEMPOTENCY_KEY_REUSED"
-                      ],
-                      "type": "string"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
                     },
-                    "current": {
-                      "additionalProperties": false,
+                    {
                       "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorCmsUserId": {
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "operatorDisplayName": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "minimum": 1,
-                          "type": "integer"
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "CASE_NOT_ACTIONABLE",
+                                "CASE_VERSION_CONFLICT",
+                                "ASSIGNMENT_ALREADY_OWNED",
+                                "ASSIGNMENT_NOT_CURRENT",
+                                "ASSIGNMENT_VERSION_CONFLICT",
+                                "ASSIGNMENT_OPERATOR_UNAVAILABLE",
+                                "ASSIGNMENT_OPERATOR_INELIGIBLE",
+                                "ASSIGNMENT_CAPACITY_EXCEEDED",
+                                "ASSIGNMENT_LEGACY_RECONCILIATION_REQUIRED",
+                                "ASSIGNMENT_TRANSFER_NOOP",
+                                "ASSIGNMENT_PROJECTION_DRIFT",
+                                "ASSIGNMENT_LOAD_DRIFT",
+                                "ASSIGNMENT_CONCURRENT_UPDATE",
+                                "ASSIGNMENT_EVIDENCE_INCOMPLETE",
+                                "WORKFORCE_NOT_PUBLISHED",
+                                "IDEMPOTENCY_KEY_REUSED"
+                              ],
+                              "type": "string"
+                            },
+                            "details": {
+                              "properties": {
+                                "current": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorCmsUserId": {
+                                      "format": "uuid",
+                                      "type": "string"
+                                    },
+                                    "operatorDisplayName": {
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "minimum": 1,
+                                      "type": "integer"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "operatorCmsUserId",
+                                    "operatorDisplayName"
+                                  ],
+                                  "type": "object"
+                                },
+                                "currentActionEtag": {
+                                  "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentReadToken": {
+                                  "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
+                                  "type": "string"
+                                },
+                                "currentUnits": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "currentVersion": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                },
+                                "maxCapacityUnits": {
+                                  "minimum": 1,
+                                  "type": "integer"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "operatorCmsUserId",
-                        "operatorDisplayName"
-                      ],
                       "type": "object"
-                    },
-                    "currentActionEtag": {
-                      "pattern": "^\"sa1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentReadToken": {
-                      "pattern": "^\"sc1\\.[A-Za-z0-9_-]{43}\"$",
-                      "type": "string"
-                    },
-                    "currentUnits": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "currentVersion": {
-                      "minimum": 1,
-                      "type": "integer"
-                    },
-                    "maxCapacityUnits": {
-                      "minimum": 1,
-                      "type": "integer"
                     }
-                  },
-                  "required": [
-                    "code"
-                  ],
-                  "type": "object"
+                  ]
                 }
               }
             },
@@ -82209,14 +82775,10 @@
             "name": "limit",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ],
               "default": 30,
               "maximum": 100,
-              "minimum": 1
+              "minimum": 1,
+              "type": "number"
             }
           }
         ],
@@ -82226,6 +82788,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SupportRoutingOwnOfferCatalogDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_OFFER_NOT_FOUND_OR_FORBIDDEN"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
                 }
               }
             },
@@ -82311,6 +82933,136 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "SUPPORT_OFFER_IF_MATCH_INVALID",
+                                "SUPPORT_OFFER_ACTION_INVALID"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_OFFER_NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_OFFER_ACTOR_MISMATCH"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_OFFER_VERSION_CONFLICT",
+                                "SUPPORT_OFFER_IDEMPOTENCY_KEY_REUSED",
+                                "SUPPORT_OFFER_EXPIRED",
+                                "SUPPORT_OFFER_ALREADY_TERMINAL",
+                                "SUPPORT_OFFER_CANDIDATE_INELIGIBLE",
+                                "SUPPORT_OFFER_PROJECT_DISABLED",
+                                "ASSIGNMENT_LOAD_DRIFT"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -82388,6 +83140,136 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SupportRoutingOfferActionReceiptDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "IAM_AUTHORIZATION_REQUIRED",
+                                "IDEMPOTENCY_KEY_REQUIRED",
+                                "SUPPORT_OFFER_IF_MATCH_INVALID",
+                                "SUPPORT_OFFER_ACTION_INVALID"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_OFFER_NOT_FOUND_OR_FORBIDDEN",
+                                "SUPPORT_OFFER_ACTOR_MISMATCH"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_ASSIGNMENT_NOT_ENABLED"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "error": {
+                          "properties": {
+                            "code": {
+                              "enum": [
+                                "SUPPORT_OFFER_VERSION_CONFLICT",
+                                "SUPPORT_OFFER_IDEMPOTENCY_KEY_REUSED",
+                                "SUPPORT_OFFER_EXPIRED",
+                                "SUPPORT_OFFER_ALREADY_TERMINAL",
+                                "SUPPORT_OFFER_CANDIDATE_INELIGIBLE",
+                                "SUPPORT_OFFER_PROJECT_DISABLED",
+                                "ASSIGNMENT_LOAD_DRIFT"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  ]
                 }
               }
             },

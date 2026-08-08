@@ -6,12 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportCaseAssignmentCandidateActionsResponseDto } from "./supportCaseAssignmentCandidateActionsResponseDto";
+import type { SupportCaseAssignmentCandidatesResponseDtoAssignmentState } from "./supportCaseAssignmentCandidatesResponseDtoAssignmentState";
 import type { SupportCaseAssignmentCandidatesResponseDtoCurrentAssignment } from "./supportCaseAssignmentCandidatesResponseDtoCurrentAssignment";
 import type { SupportCaseAssignmentCandidateTeamResponseDto } from "./supportCaseAssignmentCandidateTeamResponseDto";
 import type { SupportCaseAssignmentCandidatesResponseDtoWorkforceRevision } from "./supportCaseAssignmentCandidatesResponseDtoWorkforceRevision";
 
 export interface SupportCaseAssignmentCandidatesResponseDto {
   actions: SupportCaseAssignmentCandidateActionsResponseDto;
+  assignmentState: SupportCaseAssignmentCandidatesResponseDtoAssignmentState;
   caseId: string;
   /** @pattern ^"sc1\.[A-Za-z0-9_-]{43}"$ */
   caseReadToken: string;

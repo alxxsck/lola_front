@@ -58,17 +58,15 @@ import { createSupportViewsController } from "@/features/support-views/model/use
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
 import { createSupportMessageDeliveryController } from "@/features/conversation-delivery/model/use-support-message-delivery";
-import { supportAssignmentReleaseSource } from "@/features/support-case-assignment/api/support-assignment-release-source";
-import { createSupportAssignmentReleaseController } from "@/features/support-case-assignment/model/use-support-assignment-release";
+import { supportAssignmentSource } from "@/features/support-case-assignment/api/support-assignment-source";
+import { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
+import SupportAssignmentOfferTray from "@/features/support-case-assignment/ui/SupportAssignmentOfferTray.vue";
 import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
 import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
 import { supportInternalNotesSource } from "@/features/support-internal-notes/api/support-internal-notes-source";
 import { createSupportInternalNotesController } from "@/features/support-internal-notes/model/use-support-internal-notes";
 import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue";
-import { supportRoutingOfferSource } from "@/features/support-routing-offers/api/support-routing-offer-source";
-import { createSupportRoutingOffersController } from "@/features/support-routing-offers/model/use-support-routing-offers";
-import SupportRoutingOffers from "@/features/support-routing-offers/ui/SupportRoutingOffers.vue";
 import {
   supportWorkspaceSource,
   type SupportInboxItem,
@@ -76,13 +74,13 @@ import {
 } from "@/features/support-workspace/api/support-workspace-source";
 import {
   canManageOwnSupportAvailability,
+  canManageOwnSupportAssignments,
   canManageSupportConversationAiSuspension,
   canReceiveSupportRoutingOffers,
   canReadSupportWorkspace,
   canReadSupportConversationAiSuspension,
   canReadSupportInternalNoteHistory,
   canReadSupportInternalNotes,
-  canReleaseSupportCaseAssignment,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportUserProfileSource } from "@/features/support-workspace/api/support-user-profile-source";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
@@ -630,6 +628,10 @@ const selectedAssignmentAuthorityKey = computed(() => {
     assignment?.id ?? "",
     assignment?.version ?? "",
     assignment?.actionEtag ?? "",
+    conversation.selection.value?.capabilitiesRevision ?? "",
+    conversation.selection.value?.capabilities.claimAssignment ?? false,
+    conversation.selection.value?.capabilities.releaseAssignment ?? false,
+    conversation.selection.value?.capabilities.transferAssignment ?? false,
   ].join("\u0000");
 });
 const aiSuspensionAccessDenied = ref(false);
@@ -808,16 +810,6 @@ const internalNotes = createSupportInternalNotesController(
   },
   supportInternalNotesSource,
 );
-const assignmentReleaseAccessDenied = ref(false);
-const canReleaseSelectedAssignment = computed(
-  () =>
-    !assignmentReleaseAccessDenied.value &&
-    canReleaseSupportCaseAssignment(
-      auth.project?.effectivePermissionCodes ?? [],
-      auth.user?.id,
-      conversation.selection.value?.case?.assignment?.operatorId,
-    ),
-);
 const availabilityAccessDenied = ref(false);
 const canReadAvailability = computed(
   () =>
@@ -844,50 +836,75 @@ const availability = createSupportAvailabilityController(
   },
   supportAvailabilitySource,
 );
-const routingOffersAccessDenied = ref(false);
+const assignmentAccessDenied = ref(false);
+const canManageOwnAssignments = computed(
+  () =>
+    !assignmentAccessDenied.value &&
+    canManageOwnSupportAssignments(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
+);
+const canOverrideAssignments = computed(
+  () =>
+    !assignmentAccessDenied.value &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.assignments.override",
+    ),
+);
 const canManageRoutingOffers = computed(
   () =>
-    !routingOffersAccessDenied.value &&
+    !assignmentAccessDenied.value &&
     canReceiveSupportRoutingOffers(
       auth.project?.effectivePermissionCodes ?? [],
     ),
 );
-const routingOffers = createSupportRoutingOffersController(
-  {
-    projectId: () => auth.project?.id,
-    canManage: () => canManageRoutingOffers.value,
-    async onForbidden() {
-      routingOffersAccessDenied.value = true;
-      try {
-        await auth.refreshContext();
-      } catch {
-        // The private offer capabilities have already been purged.
-      }
-    },
-    async onChanged() {
-      await Promise.all([inbox.load(), conversation.reconcile()]);
-    },
-  },
-  supportRoutingOfferSource,
-);
-const assignmentRelease = createSupportAssignmentReleaseController(
+const assignment = createSupportAssignmentController(
+  supportAssignmentSource,
   {
     projectId: () => auth.project?.id,
     selection: () => conversation.selection.value,
-    canRelease: () => canReleaseSelectedAssignment.value,
+    canManageOwn: () => canManageOwnAssignments.value,
+    canOverride: () => canOverrideAssignments.value,
+    canReceiveOffers: () => canManageRoutingOffers.value,
     async onForbidden() {
-      assignmentReleaseAccessDenied.value = true;
+      assignmentAccessDenied.value = true;
       try {
         await auth.refreshContext();
       } catch {
-        // The action surface is already hidden until a new authoritative selection.
+        // Assignment capabilities and private offers were already purged.
       }
+      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+        () => undefined,
+      );
     },
     async onChanged() {
-      await Promise.all([inbox.load(), conversation.reconcile()]);
+      await Promise.all([
+        inbox.load(),
+        conversation.reconcile(),
+        canReadAvailability.value ? availability.load() : Promise.resolve(),
+      ]);
     },
   },
-  supportAssignmentReleaseSource,
+);
+const assignmentAvailabilityLabel = computed(() => {
+  const snapshot = availability.availability.value;
+  if (!canReadAvailability.value) return "Нет права на просмотр";
+  if (!snapshot) return availability.loading.value ? "Загружается…" : "Не загружена";
+  const state =
+    {
+      AVAILABLE: "Доступен для новых обращений",
+      BUSY: "Занят",
+      AWAY: "Отошёл",
+      DRAINING: "Завершает текущую работу",
+      OFFLINE: "Офлайн",
+    }[snapshot.effectiveState] ?? snapshot.effectiveState;
+  return snapshot.acceptsNewWork ? state : `${state} · новую работу не принимает`;
+});
+const assignmentSurfaceController = computed(() =>
+  canManageOwnAssignments.value || canOverrideAssignments.value
+    ? assignment
+    : undefined,
 );
 const profileAccessDenied = ref(false);
 const canReadProfile = computed(
@@ -1319,7 +1336,7 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
 }
 
 async function reload(): Promise<void> {
-  assignmentReleaseAccessDenied.value = false;
+  assignmentAccessDenied.value = false;
   aiSuspensionAccessDenied.value = false;
   internalNotesAccessDenied.value = false;
   aiSuspensionDialogVisible.value = false;
@@ -1331,7 +1348,14 @@ async function reload(): Promise<void> {
     inbox.load(),
     conversation.load(),
     canReadAvailability.value ? availability.load() : Promise.resolve(),
-    canManageRoutingOffers.value ? routingOffers.load() : Promise.resolve(),
+  ]);
+  await Promise.all([
+    canManageOwnAssignments.value || canOverrideAssignments.value
+      ? assignment.loadCase()
+      : Promise.resolve(),
+    canManageRoutingOffers.value
+      ? assignment.loadOffers()
+      : Promise.resolve(),
   ]);
   reply.syncSelection();
   reloadSelectedAiSuspension();
@@ -1561,7 +1585,7 @@ async function handleConversationForbidden(): Promise<void> {
   translation.reset();
   profile.reset();
   internalNotes.reset();
-  assignmentRelease.reset();
+  assignment.resetCase();
   try {
     await auth.refreshContext();
   } catch {
@@ -1649,7 +1673,7 @@ onMounted(async () => {
     await availability.load();
     availability.startHeartbeat();
   }
-  if (canManageRoutingOffers.value) await routingOffers.load();
+  if (canManageRoutingOffers.value) await assignment.loadOffers();
 });
 
 watch(
@@ -1669,16 +1693,14 @@ watch(
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     availabilityAccessDenied.value = false;
-    routingOffersAccessDenied.value = false;
-    assignmentReleaseAccessDenied.value = false;
+    assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
-    assignmentRelease.reset();
+    assignment.reset();
     availability.reset();
-    routingOffers.reset();
     profile.reset();
     internalNotes.reset();
     caseDesk.reset();
@@ -1708,6 +1730,7 @@ watch(
         await availability.load();
         availability.startHeartbeat();
       }
+      if (canManageRoutingOffers.value) await assignment.loadOffers();
     })();
   },
 );
@@ -1744,11 +1767,19 @@ watch(canCreateSavedViews, (allowed) => {
 });
 
 watch(canManageRoutingOffers, (allowed) => {
-  if (!allowed) routingOffers.reset();
+  if (!allowed) {
+    assignment.resetOffers();
+    return;
+  }
+  void assignment.loadOffers();
 });
 
-watch(canReleaseSelectedAssignment, (allowed) => {
-  if (!allowed) assignmentRelease.reset();
+watch([canManageOwnAssignments, canOverrideAssignments], ([canOwn, canOverride]) => {
+  if (!canOwn && !canOverride) {
+    assignment.resetCase();
+    return;
+  }
+  void assignment.loadCase();
 });
 
 watch(canReadSelectedAiSuspension, (allowed) => {
@@ -1796,13 +1827,6 @@ watch(
 );
 
 watch(
-  () => conversation.selection.value?.capabilities.releaseAssignment,
-  (allowed) => {
-    if (!allowed) assignmentRelease.reset();
-  },
-);
-
-watch(
   selectedInternalNotesAuthorityKey,
   (authorityKey, previousAuthorityKey) => {
     if (authorityKey === previousAuthorityKey) return;
@@ -1813,7 +1837,13 @@ watch(
 );
 
 watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
-  if (authorityKey !== previousAuthorityKey) assignmentRelease.reset();
+  if (authorityKey === previousAuthorityKey) return;
+  const caseId = authorityKey.split("\u0000", 1)[0];
+  const previousCaseId = previousAuthorityKey?.split("\u0000", 1)[0];
+  if (caseId !== previousCaseId || !assignment.mutating.value)
+    assignment.resetCase();
+  if (canManageOwnAssignments.value || canOverrideAssignments.value)
+    void assignment.loadCase();
 });
 
 watch(
@@ -1896,13 +1926,13 @@ watch(
     }
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
-    assignmentReleaseAccessDenied.value = false;
+    assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
-    assignmentRelease.reset();
+    assignment.resetCase();
     profile.reset();
     internalNotes.reset();
     messageDelivery.reset();
@@ -2017,8 +2047,7 @@ onBeforeUnmount(() => {
   setSendWithoutTranslationVisible(false);
   workspaceLive.dispose();
   availability.reset();
-  routingOffers.reset();
-  assignmentRelease.reset();
+  assignment.reset();
   aiSuspensionDialogVisible.value = false;
   aiSuspensionHistoryVisible.value = false;
   inbox.reset();
@@ -2083,13 +2112,20 @@ onBeforeUnmount(() => {
               conversation.loading.value ||
               availability.loading.value ||
               availability.changing.value ||
-              routingOffers.loading.value ||
-              Boolean(routingOffers.changingOfferId.value)
+              assignment.caseLoading.value ||
+              assignment.offerLoading.value ||
+              assignment.mutating.value ||
+              Boolean(assignment.offerChangingId.value)
             "
             @click="reload"
           />
         </div>
       </header>
+
+      <SupportAssignmentOfferTray
+        v-if="canManageRoutingOffers"
+        :controller="assignment"
+      />
 
       <div
         class="support-workspace card"
@@ -2424,47 +2460,19 @@ onBeforeUnmount(() => {
             :case-desk="caseDesk"
             :can-read-case-desk="canReadSelectedCaseDesk"
             :can-manage-case="canManageSelectedCase"
-            :can-release-assignment="canReleaseSelectedAssignment"
+            :assignment-controller="assignmentSurfaceController"
+            :availability-label="assignmentAvailabilityLabel"
             :can-read-internal-notes="canReadSelectedInternalNotes"
             :can-read-profile="canReadProfile"
             :profile="profile.profile.value"
             :profile-loading="profile.loading.value"
             :profile-error="profile.error.value"
-            :assignment-release="{
-              releasing: assignmentRelease.releasing.value,
-              error: assignmentRelease.error.value,
-              unknownOutcome: assignmentRelease.unknownOutcome.value,
-              completed: assignmentRelease.completed.value,
-              canRetry: assignmentRelease.canRetry.value,
-            }"
             @load-profile="profile.load"
-            @release-assignment="assignmentRelease.release"
-            @retry-assignment-release="assignmentRelease.retryUnknownOutcome"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
           />
         </ResponsiveWorkspaceInspector>
       </div>
-      <SupportRoutingOffers
-        v-if="canManageRoutingOffers"
-        class="support-routing-offers"
-        :class="{
-          'support-routing-offers--empty':
-            !routingOffers.loading.value &&
-            !routingOffers.offers.value.length &&
-            !routingOffers.error.value,
-        }"
-        :offers="routingOffers.offers.value"
-        :loading="routingOffers.loading.value"
-        :changing-offer-id="routingOffers.changingOfferId.value"
-        :error="routingOffers.error.value"
-        :unknown-outcome="routingOffers.unknownOutcome.value"
-        :last-outcome="routingOffers.lastOutcome.value"
-        :can-retry="routingOffers.canRetry.value"
-        @refresh="routingOffers.load"
-        @action="routingOffers.act"
-        @retry="routingOffers.retryUnknownOutcome"
-      />
       <Dialog
         v-if="canReadAvailability"
         v-model:visible="availabilityDialogVisible"
@@ -2633,17 +2641,6 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-}
-.support-workspace-page--full-tab .support-routing-offers--empty {
-  display: none;
-}
-.support-workspace-page--full-tab
-  .support-routing-offers:not(.support-routing-offers--empty) {
-  flex: 0 0 auto;
-  max-height: min(180px, 24dvh);
-  margin: 12px 0 0;
-  overflow: auto;
-  overscroll-behavior: contain;
 }
 .support-workspace {
   height: calc(100dvh - 150px);

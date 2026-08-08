@@ -12,8 +12,13 @@ const publishedFixtureSchemas = {
     operationId: "SupportCaseAssignment_assign",
     status: "409",
   },
+  assignmentCandidates: "SupportCaseAssignmentCandidatesResponseDto",
   degradedQueue: "SupportQueueCasesPageResponseDto",
   ownOffers: "SupportRoutingOwnOfferCatalogDto",
+  expiredOfferConflict: {
+    operationId: "SupportRoutingOffer_accept",
+    status: "409",
+  },
   availabilityLeaseExpired: "SupportOperatorAvailabilityResponseDto",
   emptyWorkforce: "SupportWorkforceSettingsResponseDto",
 } as const;
@@ -79,9 +84,6 @@ describe("support inbox, Case and workforce contract fixtures", () => {
     ).toMatchObject({ publication: "NOT_PUBLISHED", status: 403 });
     expect(
       supportInboxCaseWorkforceContractFixtures.staleCaseWorkflow,
-    ).toMatchObject({ publication: "NOT_PUBLISHED", status: 409 });
-    expect(
-      supportInboxCaseWorkforceContractFixtures.expiredOfferConflict,
     ).toMatchObject({ publication: "NOT_PUBLISHED", status: 409 });
     expect(
       supportInboxCaseWorkforceContractFixtures.partialBulkOutcome,

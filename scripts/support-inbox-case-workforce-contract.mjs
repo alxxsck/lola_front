@@ -39,40 +39,52 @@ function requireParameterEnum(operationValue, name, values) {
   }
 }
 
-function requireInlineResponseEnum(
-  operationValue,
-  status,
-  propertyName,
-  values,
-) {
+function inlineErrorSchema(operationValue, status) {
   const responseSchema =
     operationValue.responses?.[status]?.content?.["application/json"]?.schema;
-  const actual = new Set(
-    responseSchema?.properties?.[propertyName]?.enum ?? [],
+  return (
+    responseSchema?.properties?.error ??
+    responseSchema?.allOf?.find((entry) => entry.properties?.error)?.properties
+      ?.error
   );
+}
+
+function requireInlineErrorEnum(operationValue, status, values) {
+  const actual = new Set(inlineErrorSchema(operationValue, status)?.properties?.code?.enum ?? []);
   for (const value of values) {
     if (!actual.has(value)) {
       throw new Error(
-        `${operationValue.operationId} ${status}.${propertyName} must retain ${value}`,
+        `${operationValue.operationId} ${status}.error.code must retain ${value}`,
       );
     }
   }
 }
 
-function requireInlineResponseFields(operationValue, status, fields) {
-  const responseSchema =
-    operationValue.responses?.[status]?.content?.["application/json"]?.schema;
-  if (!responseSchema) {
+function requireInlineErrorFields(operationValue, status, fields) {
+  const errorSchema = inlineErrorSchema(operationValue, status);
+  if (!errorSchema) {
     throw new Error(
       `${operationValue.operationId} must retain typed response ${status}`,
     );
   }
 
-  const properties = responseSchema.properties ?? {};
+  const properties = errorSchema.properties ?? {};
   for (const field of fields) {
     if (!(field in properties)) {
       throw new Error(
-        `${operationValue.operationId} ${status} must publish ${field}`,
+        `${operationValue.operationId} ${status}.error must publish ${field}`,
+      );
+    }
+  }
+}
+
+function requireInlineErrorDetailFields(operationValue, status, fields) {
+  const properties =
+    inlineErrorSchema(operationValue, status)?.properties?.details?.properties ?? {};
+  for (const field of fields) {
+    if (!(field in properties)) {
+      throw new Error(
+        `${operationValue.operationId} ${status}.error.details must publish ${field}`,
       );
     }
   }
@@ -355,10 +367,10 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     assignmentTransfer,
   ]) {
     for (const status of ["400", "403", "404"]) {
-      requireInlineResponseFields(operationValue, status, ["code"]);
+      requireInlineErrorFields(operationValue, status, ["code"]);
     }
-    requireInlineResponseFields(operationValue, "409", [
-      "code",
+    requireInlineErrorFields(operationValue, "409", ["code", "details"]);
+    requireInlineErrorDetailFields(operationValue, "409", [
       "current",
       "currentActionEtag",
       "currentReadToken",
@@ -366,7 +378,7 @@ export function validateSupportInboxCaseWorkforceContract(document) {
       "currentVersion",
       "maxCapacityUnits",
     ]);
-    requireInlineResponseEnum(operationValue, "409", "code", [
+    requireInlineErrorEnum(operationValue, "409", [
       "CASE_VERSION_CONFLICT",
       "ASSIGNMENT_VERSION_CONFLICT",
       "ASSIGNMENT_CAPACITY_EXCEEDED",
@@ -388,6 +400,14 @@ export function validateSupportInboxCaseWorkforceContract(document) {
   for (const operationValue of [offerAccept, offerDecline]) {
     requireHeader(operationValue, "Idempotency-Key");
     requireHeader(operationValue, "If-Match");
+    for (const status of ["400", "403", "404", "409"])
+      requireInlineErrorFields(operationValue, status, ["code"]);
+    requireInlineErrorEnum(operationValue, "409", [
+      "SUPPORT_OFFER_VERSION_CONFLICT",
+      "SUPPORT_OFFER_IDEMPOTENCY_KEY_REUSED",
+      "SUPPORT_OFFER_EXPIRED",
+      "SUPPORT_OFFER_ALREADY_TERMINAL",
+    ]);
   }
   requireProperties(document, "SupportRoutingOwnOfferCatalogDto", ["offers"]);
   requireProperties(document, "SupportRoutingOwnOfferDto", [

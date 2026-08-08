@@ -9,5 +9,6 @@
 export interface SupportCaseAssignmentCandidateActionsResponseDto {
   assign: boolean;
   claim: boolean;
+  release: boolean;
   transfer: boolean;
 }

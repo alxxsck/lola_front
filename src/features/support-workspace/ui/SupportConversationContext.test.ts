@@ -6,7 +6,7 @@ import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
 } from "@/features/support-workspace/api/support-workspace-source";
-import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
+import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
 import SupportConversationContext from "./SupportConversationContext.vue";
 
 const conversation: SupportWorkspaceConversation = {
@@ -203,16 +203,11 @@ describe("support conversation context", () => {
     expect(allowed.emitted("openInternalNotes")).toHaveLength(1);
   });
 
-  it("requires both session assignment authority and the server Case capability for release", async () => {
-    const actionableSelection: SupportWorkspaceSelection = {
-      ...selection,
-      capabilities: { ...selection.capabilities, releaseAssignment: true },
-    };
+  it("mounts the unified assignment surface only when its controller is available", async () => {
     const denied = mount(SupportConversationContext, {
       props: {
         conversation,
-        selection: actionableSelection,
-        canReleaseAssignment: false,
+        selection,
       },
       global: {
         stubs: {
@@ -225,8 +220,35 @@ describe("support conversation context", () => {
     const allowed = mount(SupportConversationContext, {
       props: {
         conversation,
-        selection: actionableSelection,
-        canReleaseAssignment: true,
+        selection,
+        assignmentController: {
+          caseSnapshot: ref(null),
+          caseLoading: ref(false),
+          mutating: ref(false),
+          error: ref(""),
+          unknownOutcome: ref(false),
+          draft: ref(null),
+          canRetry: ref(false),
+          canClaim: ref(false),
+          canRelease: ref(false),
+          canTransfer: ref(false),
+          offers: ref([]),
+          offerLoading: ref(false),
+          offerChangingId: ref(null),
+          offerError: ref(""),
+          offerUnknownOutcome: ref(false),
+          offerCanRetry: ref(false),
+          loadCase: async () => undefined,
+          setDraft: () => undefined,
+          submit: async () => undefined,
+          retryUnknownOutcome: async () => undefined,
+          loadOffers: async () => undefined,
+          actOnOffer: async () => undefined,
+          retryUnknownOfferOutcome: async () => undefined,
+          resetCase: () => undefined,
+          resetOffers: () => undefined,
+          reset: () => undefined,
+        } as never,
       },
       global: {
         stubs: {
@@ -242,8 +264,8 @@ describe("support conversation context", () => {
 
     await denied.findAll('[role="tab"]')[3]!.trigger("click");
     await allowed.findAll('[role="tab"]')[3]!.trigger("click");
-    expect(denied.findComponent(SupportAssignmentRelease).exists()).toBe(false);
-    expect(allowed.findComponent(SupportAssignmentRelease).exists()).toBe(true);
+    expect(denied.findComponent(SupportAssignmentDesk).exists()).toBe(false);
+    expect(allowed.findComponent(SupportAssignmentDesk).exists()).toBe(true);
   });
 
   it("localizes every server Case state and priority instead of exposing enum values", async () => {

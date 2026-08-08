@@ -5,12 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { Object } from "./object";
 
 export type SupportRoutingOfferListParams = {
   /**
    * @minimum 1
    * @maximum 100
    */
-  limit?: Object;
+  limit?: number;
 };

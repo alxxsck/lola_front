@@ -2,10 +2,10 @@
 import { computed, ref, watch } from "vue";
 import Button from "primevue/button";
 import Message from "primevue/message";
-import SupportAssignmentRelease from "@/features/support-case-assignment/ui/SupportAssignmentRelease.vue";
+import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
+import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
 import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
-import type { SupportAssignmentReleaseInput } from "@/features/support-case-assignment/model/use-support-assignment-release";
 import type {
   ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
@@ -26,44 +26,30 @@ const props = withDefaults(
     selection: SupportWorkspaceSelection;
     canManageCase?: boolean;
     canReadCaseDesk?: boolean;
-    canReleaseAssignment?: boolean;
+    assignmentController?: ReturnType<typeof createSupportAssignmentController>;
+    availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     canReadProfile?: boolean;
     profile?: ProfileProjectionResponseDto | null;
     profileLoading?: boolean;
     profileError?: string;
-    assignmentRelease?: {
-      releasing: boolean;
-      error: string;
-      unknownOutcome: boolean;
-      completed: boolean;
-      canRetry: boolean;
-    };
     caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
   }>(),
   {
     canReadProfile: false,
     canManageCase: false,
     canReadCaseDesk: false,
-    canReleaseAssignment: false,
+    assignmentController: undefined,
+    availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
     profile: null,
     profileLoading: false,
     profileError: "",
-    assignmentRelease: () => ({
-      releasing: false,
-      error: "",
-      unknownOutcome: false,
-      completed: false,
-      canRetry: false,
-    }),
   },
 );
 
 const emit = defineEmits<{
   loadProfile: [];
-  releaseAssignment: [input: SupportAssignmentReleaseInput];
-  retryAssignmentRelease: [];
   openInternalNotes: [];
   classifyCase: [];
 }>();
@@ -93,10 +79,25 @@ const hasAvailableActions = computed(
   () =>
     props.canManageCase ||
     props.canReadInternalNotes ||
-    (props.canReleaseAssignment &&
-      props.selection.capabilities.releaseAssignment &&
-      Boolean(props.selection.case?.assignment)),
+    Boolean(props.assignmentController),
 );
+
+const claimantLabel = computed(() => {
+  if (!props.caseDesk?.detail.value)
+    return props.caseDesk?.loading.value ? "Загружается…" : "Не загружен";
+  const items = props.caseDesk?.detail.value?.escalations.items ?? [];
+  const active = [...items]
+    .reverse()
+    .find(
+      (item) =>
+        item.claimant &&
+        item.status !== "CLOSED" &&
+        item.status !== "CANCELLED",
+    );
+  return active?.claimant
+    ? `${active.claimant.displayName} · эскалация`
+    : "Нет активного claimant";
+});
 
 function labelCaseStatus(value: string): string {
   return (
@@ -480,6 +481,14 @@ defineExpose({ requestClassification });
         </div>
       </div>
       <div v-if="hasAvailableActions" class="action-stack">
+        <SupportAssignmentDesk
+          v-if="assignmentController && selection.case"
+          :controller="assignmentController"
+          :assignment="selection.case.assignment"
+          :claimant-label="claimantLabel"
+          viewers-label="Presence ещё не подключён"
+          :availability-label="availabilityLabel"
+        />
         <Button
           v-if="canManageCase"
           class="classify-case"
@@ -497,16 +506,6 @@ defineExpose({ requestClassification });
           severity="secondary"
           outlined
           @click="emit('openInternalNotes')"
-        />
-        <SupportAssignmentRelease
-          v-if="
-            canReleaseAssignment &&
-            selection.case?.assignment &&
-            selection.capabilities.releaseAssignment
-          "
-          v-bind="assignmentRelease"
-          @release="emit('releaseAssignment', $event)"
-          @retry="emit('retryAssignmentRelease')"
         />
       </div>
       <div v-else class="empty-card">
