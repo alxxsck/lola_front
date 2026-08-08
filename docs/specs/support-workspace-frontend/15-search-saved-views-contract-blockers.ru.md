@@ -96,3 +96,16 @@ bounded `SupportWorkspace_read`, который побеждает конфли�
 PostgreSQL lifecycle и index-backed load по 20k pending/published/dead hints без `Sort`, два
 production health-профиля и повторные spec/standards/architecture/security/scalability review без
 P0/P1.
+
+### Ticket 16 — Case workflow и classification
+
+**Готово, можно проверять и брать в разработку.**
+
+Backend `main` `2113c99` публикует server-owned `allowedActions`, canonical classification с
+confidence/evidence, effective priority floor с bounded reasons и immutable policy pin. Priority
+override проверяется и аудитируется на сервере; typed mutation errors возвращают актуальный Case.
+Timeline содержит typed actor/reason/previous/next/server timestamp без arbitrary payload.
+
+Проверено: полный suite 3864 теста без failures, build/Prisma/architecture, 534 clean migrations,
+PostgreSQL upgrade и lock serialization, нагрузка 20k Cases/100 concurrent readers с p95 ниже
+500 мс, production `/health` 200 и два повторных независимых strict review без P0/P1.

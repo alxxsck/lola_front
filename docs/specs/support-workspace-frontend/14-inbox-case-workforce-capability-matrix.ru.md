@@ -3,8 +3,8 @@
 Статус: normative baseline для frontend Task 02
 Версия: 1
 Дата: 7 августа 2026 года
-Backend source: `0ca33c93e52d689de388187091e6aa2f6c05639b`
-Pinned contract: `sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`
+Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
+Pinned contract: `sha256:3314e5d11365e22267f384657bad4d21e309037ac335934de7da3ead61b1a59e`
 
 Документ отделяет опубликованный transport contract от возможности построить
 безопасный UI. `READY` означает полный typed contract. `RELEASE_GATED` требует
@@ -35,15 +35,14 @@ range. Это не делает Saved Views готовыми: клиент не 
 | Capability                   | Operation / contract                       | Permission                      | OCC / audit                                                     | Status                                                    |
 | ---------------------------- | ------------------------------------------ | ------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
 | Case detail                  | `EndUserCases_detail`                      | `project.cases.read`            | Case `version`; server `availableStatuses`                      | `READY`                                                   |
-| Workflow correction          | `EndUserCases_workflow`                    | `project.cases.manage`          | `expectedVersion`, UUID `idempotencyKey`, обязательный `reason` | success contract `READY`; error schemas `NOT_PUBLISHED`   |
-| Classification correction    | `EndUserCases_classification`              | `project.cases.manage`          | те же preconditions; type/group/impact/urgency/priority         | базовая команда `READY`; priority-safe UI `NOT_PUBLISHED` |
+| Workflow correction          | `EndUserCases_workflow`                    | `project.cases.manage`          | `expectedVersion`, UUID `idempotencyKey`, обязательный `reason` | `READY`; typed `400/403/404/409`                           |
+| Classification correction    | `EndUserCases_classification`              | `project.cases.manage`          | те же preconditions; type/group/impact/urgency/priority         | `READY`; server проверяет floor/override                   |
 | Workflow allowed transitions | `EndUserCaseResponseDto.availableStatuses` | read authority Case             | server-owned список переходов                                   | `READY` только для workflow                               |
-| Case action authority        | selection `capabilities.manageCase`        | effective project permission    | нет action-level classification/priority capabilities           | `NOT_PUBLISHED`                                           |
-| Priority floor               | Case Intelligence policy                   | `project.cases.settings.manage` | compiled policy остаётся arbitrary object                       | `NOT_PUBLISHED` для operator inspector                    |
+| Case action authority        | `EndUserCaseResponseDto.allowedActions`    | effective project permission    | server-owned workflow/classification/priority actions            | `READY`                                                   |
+| Priority floor               | Case detail classification policy          | read authority Case             | effective floor, bounded reasons, immutable policy pin           | `READY`                                                   |
 
-Frontend не разрешает понижение priority на основании локального floor. Пока
-backend не публикует effective floor и отдельный allowed action, Task 16 не
-может считать priority correction безопасно завершённой.
+Frontend не вычисляет priority floor и разрешения локально: использует effective floor,
+`allowedActions` и policy pin из Case projection. Backend gate Task 16 закрыт в `2113c99`.
 
 ## 3. Assignment и routing offers
 
@@ -106,7 +105,6 @@ Unpublished forbidden/stale/expired-offer/bulk/unknown-outcome сценарии 
 | Gap                                                         | Следующий owner                     |
 | ----------------------------------------------------------- | ----------------------------------- |
 | typed search/Saved View responses и закрытая filter grammar | backend search + Task 11            |
-| priority floor и classification allowed action/errors       | backend Case Intelligence + Task 16 |
 | eligible assignment targets и offer errors                  | backend assignment + Tasks 17–18    |
 | live capacity, current routing reason/reservation           | backend workforce/routing + Task 19 |
 | selected-Case SLA clock projection/action ETag              | backend SLA/workspace + Task 19     |

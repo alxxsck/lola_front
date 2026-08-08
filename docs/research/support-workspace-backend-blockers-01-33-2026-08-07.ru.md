@@ -69,8 +69,8 @@ Surface states и e2e без дублирования Message.
 
 ## Итоговая карта
 
-Сводно: **11** задач не имеют прямого backend-блокера, **10** имеют полный blocker,
-**10** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через core.
+Сводно: **12** задач не имеют прямого backend-блокера, **10** имеют полный blocker,
+**9** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через core.
 
 | № | Задача | Backend-статус | Что именно мешает полному завершению |
 |---:|---|---|---|
@@ -89,7 +89,7 @@ Surface states и e2e без дублирования Message.
 | 13 | Durable send/idempotency recovery | Нет (снят `3791c37`); frontend complete | `AdminMessaging_lookupOutcome` опубликован и подключён |
 | 14 | Read/unread/first-unread | Нет (снят `75739a1`) | Reader-scoped read state и monotonic ACK опубликованы |
 | 15 | Delivery/reconnect reconciliation | Нет (снят `0f5404f`) | Lookup/retry и полный typed realtime contract опубликованы |
-| 16 | Case workflow/classification | **Частичный** | Нет priority floor, action-level authority, confidence/evidence и typed audit/errors |
+| 16 | Case workflow/classification | Нет (снят `2113c99`) | Полный server-owned workflow/classification contract опубликован |
 | 17 | Operator assignment actions | **Частичный** | Нет Case-scoped eligible Team/operator targets и typed offer errors |
 | 18 | Lead assignment overrides | **Частичный** | Нет eligible targets, explicit override action, bulk receipt и outcome lookup |
 | 19 | SLA/routing/availability context | **Частичный** | Нет selected-Case clocks, current routing reason/reservation и live load projection |
@@ -318,28 +318,22 @@ Frontend перед реализацией должен обновить pinned 
 
 ### 16 — Case workflow и классификация
 
-**Статус: частичный backend-блокер.**
+**Статус: backend-блокер снят (`2113c99`). Готово, можно проверять и брать в разработку.**
 
-Готово: `EndUserCases_detail`, `EndUserCases_workflow`, `EndUserCases_classification`, Case
-`version`, `availableStatuses`, expectedVersion, idempotency key и reason.
+`EndUserCases_detail`, `EndUserCases_workflow` и `EndUserCases_classification` теперь публикуют
+server-owned allowed actions, canonical classification с confidence/evidence, effective priority
+floor с bounded reasons и обязательным immutable policy pin. Priority override проверяется и
+аудируется на сервере; trusted Platform floors применяются атомарно при create/attach/reopen.
 
-Не хватает:
+Typed `400/403/404/409` возвращают актуальный Case projection. Timeline больше не раскрывает
+arbitrary payload: actor, reason, previous/next и server timestamp проецируются из append-only
+revision lineage. Merge/split/router используют общий advisory Case lock и стабильный порядок
+захвата; merged read-only Cases исключены из фоновой обработки.
 
-- effective priority floor и объяснения policy для выбранного Case;
-- action-level allowed actions для workflow/classification/priority вместо coarse
-  `capabilities.manageCase`;
-- classification confidence/evidence в typed Case projection;
-- typed 4xx/409 responses у legacy workflow/classification operations;
-- typed audit payload actor/reason/previous/next: `EndUserCaseEventResponseDto.payload` остаётся
-  arbitrary object.
-
-Что может frontend сейчас: read-only Case desk и server-provided workflow transitions; базовую
-classification mutation можно собрать, но нельзя безопасно завершить priority correction и полный
-audit UX.
-
-Evidence: `src/modules/end-user-cases/api/end-user-cases.controller.ts`,
-`EndUserCaseResponseDto`, `UpdateEndUserCaseWorkflowDto`, `ClassifyEndUserCaseDto`,
-`SupportWorkspaceCapabilitiesResponseDto`.
+Проверено: полный suite 3864 теста, 0 failures; architecture 53/53; Prisma и build; 534 clean
+migrations; PostgreSQL upgrade/serialization; 20k Cases и 100 конкурентных detail/timeline reads
+(p95 385,8/83,9 мс при лимите 500 мс); production bootstrap и `/health` 200; повторные
+spec/standards/security/architecture/scalability review без P0/P1.
 
 ### 17 — Действия оператора с назначением
 
@@ -670,9 +664,9 @@ schemas.
    filter/sort grammar, system preset catalog. Разблокирует 10, 11, часть 26 и core cutover.
 2. **Messaging recovery/read state** — idempotency outcome lookup, reader high-water/unread/first
    unread, delivery lookup/retry, typed realtime admission. Разблокирует 13–15.
-3. **Case desk authority** — priority floor, classification evidence/actions/errors, eligible
+3. **Case desk authority** — workflow/classification закрыты в `2113c99`; остаются eligible
    assignment targets, bulk receipts, selected-Case SLA/routing/load projection. Разблокирует
-   16–19 и оставшуюся часть 26.
+   17–19 и оставшуюся часть 26.
 4. **Collaboration/files/content completion** — typing/viewers contract, Message/Note attachments,
    note actions, Macro/Knowledge missing lifecycle/error/provenance contracts. Разблокирует 21–25.
 5. **Project rollout** — typed Support Workspace/Lead Control admission для 28–29.
