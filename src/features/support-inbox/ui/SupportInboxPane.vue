@@ -19,8 +19,8 @@ import type {
 } from "@/shared/api/generated/models";
 import type { SupportViewSelection } from "@/features/support-views/api/support-views-source";
 import SupportViewsRail from "@/features/support-views/ui/SupportViewsRail.vue";
-import { relativeTime } from "@/shared/lib/format";
-import { slaSignalLabel } from "@/features/support-case-operations/model/support-case-operations";
+import { formatDate, relativeTime } from "@/shared/lib/format";
+import { slaSignalCompactLabel } from "@/features/support-case-operations/model/support-case-operations";
 
 const props = defineProps<{
   mode: SupportInboxMode;
@@ -218,17 +218,27 @@ function caseStatus(value: string): string {
   );
 }
 
+const casePriorityPresentation: Record<
+  string,
+  { label: string; emphasized: boolean }
+> = {
+  LOW: { label: "Низкий", emphasized: false },
+  NORMAL: { label: "Обычный", emphasized: false },
+  HIGH: { label: "Высокий", emphasized: true },
+  URGENT: { label: "Срочный", emphasized: true },
+  CRITICAL: { label: "Критический", emphasized: true },
+};
+
 function casePriority(value: string): string {
-  return (
-    {
-      LOW: "Низкий",
-      NORMAL: "Обычный",
-      HIGH: "Высокий",
-      URGENT: "Срочный",
-      CRITICAL: "Критический",
-    }[value] ?? value
-  );
+  return casePriorityPresentation[value]?.label ?? value;
 }
+
+function isPriorityEmphasized(value: string): boolean {
+  return casePriorityPresentation[value]?.emphasized ?? false;
+}
+
+const shadowSlaExplanation =
+  "Теневой прогноз помогает оценить риск. Прогноз не является договорным сроком и не управляет действиями оператора.";
 
 function initials(value: string): string {
   return value
@@ -248,6 +258,41 @@ function inboxTime(value: string): string {
     day: "numeric",
     month: "short",
   }).format(parsed);
+}
+
+function caseAccessibleLabel(
+  item: Extract<SupportInboxItem, { kind: "CASE" }>,
+): string {
+  return [
+    `Обращение ${item.projectSequence}`,
+    item.title,
+    caseStatus(item.status),
+    casePriority(item.priority),
+    item.groupCode,
+    item.attentionRequired ? "требуется реакция" : "",
+    item.slaSignal?.state === "AVAILABLE"
+      ? slaSignalCompactLabel(item.slaSignal)
+      : "",
+  ]
+    .filter(Boolean)
+    .join(". ");
+}
+
+function caseTooltip(
+  item: Extract<SupportInboxItem, { kind: "CASE" }>,
+): string {
+  return [
+    item.title,
+    item.groupCode,
+    formatDate(item.lastActivityAt),
+    item.slaSignal?.state === "AVAILABLE" ? shadowSlaExplanation : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function slaDescriptionId(caseId: string): string {
+  return `case-sla-description-${caseId}`;
 }
 
 function unreadLabel(
@@ -552,28 +597,52 @@ function unreadLabel(
           selected: selectedKey === itemKey(item),
           'conversation-row': item.kind === 'CONVERSATION',
           'case-row': item.kind === 'CASE',
+          'case-row--with-sla':
+            item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
         }"
         :aria-current="selectedKey === itemKey(item) ? 'true' : undefined"
+        :aria-label="item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined"
+        :aria-describedby="
+          item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE'
+            ? slaDescriptionId(item.id)
+            : undefined
+        "
+        :title="item.kind === 'CASE' ? caseTooltip(item) : undefined"
         @click="emit('select', item)"
       >
         <span
           class="inbox-row__avatar"
-          :class="{ attention: item.kind === 'CASE' && item.attentionRequired }"
+          :class="{
+            attention: item.kind === 'CASE' && item.attentionRequired,
+            'case-row__sequence': item.kind === 'CASE',
+          }"
         >
-          {{
-            item.kind === "CASE"
-              ? item.projectSequence.slice(-2)
-              : initials(item.title)
-          }}
+          <template v-if="item.kind === 'CASE'">
+            <span>{{ item.projectSequence }}</span>
+            <i
+              v-if="item.attentionRequired"
+              class="pi pi-bell case-row__attention-icon"
+              aria-hidden="true"
+            />
+          </template>
+          <template v-else>{{ initials(item.title) }}</template>
         </span>
         <span class="inbox-row__body">
-          <span class="inbox-row__headline">
+          <span
+            class="inbox-row__headline"
+            :class="{ 'case-row__headline': item.kind === 'CASE' }"
+          >
             <strong :title="item.title">{{ item.title }}</strong>
             <time
               :datetime="
                 item.kind === 'CASE'
                   ? item.lastActivityAt
                   : (item.lastMessageAt ?? item.updatedAt)
+              "
+              :title="
+                item.kind === 'CASE'
+                  ? formatDate(item.lastActivityAt)
+                  : formatDate(item.lastMessageAt ?? item.updatedAt)
               "
             >
               {{
@@ -597,30 +666,43 @@ function unreadLabel(
             >
           </span>
           <template v-if="item.kind === 'CASE'">
-            <span class="inbox-row__meta">
-              <span class="state-chip">{{ caseStatus(item.status) }}</span>
+            <span class="inbox-row__meta case-row__metadata">
+              <span class="case-row__status">{{ caseStatus(item.status) }}</span>
+              <span class="case-row__separator" aria-hidden="true">·</span>
               <span
                 :class="[
-                  'priority-chip',
-                  `priority-${item.priority.toLowerCase()}`,
+                  'case-row__priority',
+                  {
+                    'case-row__priority--emphasis': isPriorityEmphasized(
+                      item.priority,
+                    ),
+                    [`priority-${item.priority.toLowerCase()}`]:
+                      isPriorityEmphasized(item.priority),
+                  },
                 ]"
                 >{{ casePriority(item.priority) }}</span
               >
-              <span class="truncate">{{ item.groupCode }}</span>
-              <span v-if="item.attentionRequired" class="attention-copy"
-                ><i class="pi pi-bell" /> Нужна реакция</span
-              >
+              <span class="case-row__separator" aria-hidden="true">·</span>
+              <span class="case-row__topic" :title="item.groupCode">{{
+                item.groupCode
+              }}</span>
             </span>
             <span
               v-if="item.slaSignal?.state === 'AVAILABLE'"
               data-sla-signal
+              :title="`${slaSignalCompactLabel(item.slaSignal)}. ${shadowSlaExplanation}`"
               :class="[
-                'inbox-sla-signal',
+                'inbox-sla-signal case-row__sla',
                 `signal-${item.slaSignal.signalCode.toLowerCase()}`,
               ]"
             >
               <i class="pi pi-stopwatch" aria-hidden="true" />
-              <span>{{ slaSignalLabel(item.slaSignal) }}</span>
+              <span>{{ slaSignalCompactLabel(item.slaSignal) }}</span>
+              <span
+                :id="slaDescriptionId(item.id)"
+                class="sr-only"
+                >{{ shadowSlaExplanation }}</span
+              >
             </span>
           </template>
           <span v-else class="inbox-row__meta">
@@ -973,6 +1055,9 @@ function unreadLabel(
   color: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    background-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inbox-row::before {
   content: "";
@@ -1014,11 +1099,51 @@ function unreadLabel(
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
 }
+.case-row {
+  min-height: 68px;
+  padding: 8px 12px;
+  align-items: stretch;
+  gap: 8px;
+}
+.case-row--with-sla {
+  min-height: 84px;
+}
+.case-row .case-row__sequence {
+  width: 28px;
+  height: auto;
+  min-height: 24px;
+  align-self: stretch;
+  place-items: start center;
+  padding-top: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.case-row__attention-icon {
+  font-size: 0.66rem;
+  line-height: 1;
+}
+.case-row .case-row__sequence.attention {
+  background: transparent;
+  color: var(--status-warning-text);
+}
 .inbox-row__body {
   min-width: 0;
   flex: 1;
   display: grid;
   gap: 5px;
+}
+.case-row .inbox-row__body {
+  align-content: center;
+  gap: 3px;
 }
 .inbox-row__headline,
 .inbox-row__meta {
@@ -1042,6 +1167,16 @@ function unreadLabel(
   font-size: 0.72rem;
   white-space: nowrap;
 }
+.case-row__headline {
+  min-height: 20px;
+}
+.case-row__headline strong {
+  line-height: 1.35;
+}
+.case-row__headline time {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
 .unread-count {
   min-width: 22px;
   height: 22px;
@@ -1064,8 +1199,56 @@ function unreadLabel(
   row-gap: 4px;
   overflow: hidden;
 }
-.state-chip,
-.priority-chip {
+.case-row__metadata {
+  min-height: 18px;
+  flex-wrap: nowrap;
+  gap: 0;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.case-row__metadata > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.case-row__separator {
+  flex: 0 0 auto;
+  margin: 0 5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.case-row__status {
+  flex: 0 0 auto;
+}
+.case-row__priority {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-weight: 650;
+}
+.case-row__priority--emphasis {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+.case-row__priority--emphasis.priority-high,
+.case-row__priority--emphasis.priority-urgent {
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.case-row__priority--emphasis.priority-critical {
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.case-row__topic {
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+}
+.state-chip {
   flex: 0 0 auto;
   padding: 2px 6px;
   border-radius: 999px;
@@ -1073,34 +1256,6 @@ function unreadLabel(
   color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 650;
-}
-.priority-chip {
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-}
-.priority-chip.priority-high,
-.priority-chip.priority-urgent {
-  background: var(--status-warning-soft);
-  color: var(--status-warning-text);
-}
-.priority-chip.priority-critical {
-  background: var(--status-danger-soft);
-  color: var(--status-danger-text);
-}
-.attention-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--status-warning-text);
-}
-.attention-copy i {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
-  display: inline-grid;
-  place-items: center;
-  font-size: 0.72rem;
-  line-height: 1;
 }
 .inbox-sla-signal {
   min-width: 0;
@@ -1110,6 +1265,20 @@ function unreadLabel(
   color: var(--text-secondary);
   font-size: 0.67rem;
   line-height: 1.3;
+}
+.case-row__sla {
+  min-height: 18px;
+  gap: 5px;
+  overflow: hidden;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.inbox-sla-signal.case-row__sla span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .inbox-sla-signal i {
   flex: 0 0 auto;
@@ -1128,10 +1297,6 @@ function unreadLabel(
 }
 .inbox-sla-signal.signal-sla_breached {
   color: var(--status-danger-text);
-}
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .inbox-skeletons {
   min-height: 0;
@@ -1221,8 +1386,27 @@ function unreadLabel(
   .inbox-tools__panel {
     max-height: 60vh;
   }
+  .case-row__headline strong {
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap !important;
+  border: 0;
 }
 @media (prefers-reduced-motion: reduce) {
+  .inbox-row,
   .inbox-tools__trigger,
   .inbox-tools__chevron,
   .inbox-tools-panel-enter-active,

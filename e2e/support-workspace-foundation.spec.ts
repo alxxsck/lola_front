@@ -370,7 +370,12 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
     '[data-selection-key="CASE:case-demo-game"] [data-sla-signal]',
   );
   await expect(slaSignal).toContainText("Риск первого ответа");
-  await expect(slaSignal).toContainText("теневой прогноз");
+  await expect(slaSignal).toContainText("15 мин · прогноз");
+  await expect(slaSignal).not.toContainText("теневой прогноз");
+  await expect(slaSignal).toHaveAttribute(
+    "title",
+    /Прогноз не является договорным сроком/,
+  );
   const slaSignalLayout = await slaSignal.evaluate((element) => {
     const copy = element.querySelector("span")!;
     const style = getComputedStyle(copy);
@@ -380,26 +385,38 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
       horizontalOverflow: copy.scrollWidth - copy.clientWidth,
     };
   });
-  expect(slaSignalLayout.whiteSpace).toBe("normal");
-  expect(slaSignalLayout.textOverflow).not.toBe("ellipsis");
+  expect(slaSignalLayout.whiteSpace).toBe("nowrap");
   expect(slaSignalLayout.horizontalOverflow).toBeLessThanOrEqual(1);
 
-  const inboxRowsLayout = await queue
-    .locator(".inbox-row")
-    .evaluateAll((rows) =>
+  for (const width of [285, 300, 320]) {
+    await queue.evaluate((element, value) => {
+      (element as HTMLElement).style.width = `${value}px`;
+    }, width);
+    const inboxRowsLayout = await queue.locator(".case-row").evaluateAll((rows) =>
       rows.map((row, index) => {
         const rect = row.getBoundingClientRect();
         const nextRect = rows[index + 1]?.getBoundingClientRect();
+        const hasSla = row.classList.contains("case-row--with-sla");
         return {
-          contentOverflow: row.scrollHeight - row.clientHeight,
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          hasSla,
+          contentOverflow: row.scrollWidth - row.clientWidth,
           overlap: nextRect ? rect.bottom - nextRect.top : 0,
         };
       }),
     );
-  for (const row of inboxRowsLayout) {
-    expect(row.contentOverflow).toBeLessThanOrEqual(1);
-    expect(row.overlap).toBeLessThanOrEqual(1);
+    for (const row of inboxRowsLayout) {
+      expect(row.width).toBeGreaterThanOrEqual(width - 1);
+      expect(row.width).toBeLessThanOrEqual(width);
+      expect(row.height).toBe(row.hasSla ? 84 : 68);
+      expect(row.contentOverflow).toBeLessThanOrEqual(1);
+      expect(row.overlap).toBeLessThanOrEqual(1);
+    }
   }
+  await queue.evaluate((element) => {
+    (element as HTMLElement).style.width = "";
+  });
 
   await expect(searchToolsTrigger).toHaveAttribute("aria-expanded", "false");
   await searchToolsTrigger.click();
@@ -446,6 +463,39 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
   expect(desktopGeometry.overflow).toBe(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox?view=system:ALL_CONVERSATIONS");
+  await showBaseInbox(page);
+  const mobileQueue = page.getByRole("complementary", {
+    name: "Диалоги проекта",
+  });
+  await mobileQueue
+    .getByRole("button", { name: "Обращения", exact: true })
+    .click();
+  const mobileCaseRows = mobileQueue.locator(".case-row");
+  await expect(mobileCaseRows).toHaveCount(3);
+  const mobileRowLayout = await mobileCaseRows.evaluateAll((rows) =>
+    rows.map((row) => {
+      const title = row.querySelector<HTMLElement>(
+        ".case-row__headline strong",
+      );
+      return {
+        horizontalOverflow: row.scrollWidth - row.clientWidth,
+        titleLineClamp: title
+          ? getComputedStyle(title).webkitLineClamp
+          : "",
+      };
+    }),
+  );
+  for (const row of mobileRowLayout) {
+    expect(row.horizontalOverflow).toBeLessThanOrEqual(1);
+    expect(row.titleLineClamp).toBe("2");
+  }
+  await expect(
+    mobileQueue
+      .getByRole("button", { name: /Не запускается игра/ })
+      .locator(".case-row__attention-icon"),
+  ).toBeVisible();
+
   await page.goto("/support/inbox/cases/case-demo-game?mode=cases");
   await page.getByRole("button", { name: "Контекст" }).click();
   const mobileContext = page.getByRole("region", { name: "Контекст диалога" });

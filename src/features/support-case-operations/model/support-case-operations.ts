@@ -27,6 +27,18 @@ export function slaKindLabel(kind: SupportSlaClockKind): string {
 export function slaSignalLabel(signal: SupportWorkspaceSlaSignal): string {
   if (signal.state === "DISABLED") return "SLA отключён";
   if (signal.state === "NO_ACTIVE_CLOCK") return "Нет активного SLA";
+  return `${slaSignalCoreLabel(signal)} · теневой прогноз`;
+}
+
+export function slaSignalCompactLabel(
+  signal: Extract<SupportWorkspaceSlaSignal, { state: "AVAILABLE" }>,
+): string {
+  return `${slaSignalCoreLabel(signal)} · прогноз`;
+}
+
+function slaSignalCoreLabel(
+  signal: Extract<SupportWorkspaceSlaSignal, { state: "AVAILABLE" }>,
+): string {
   const prefix = {
     SLA_BREACHED: "Нарушен срок",
     SLA_AT_RISK: "Риск",
@@ -34,7 +46,7 @@ export function slaSignalLabel(signal: SupportWorkspaceSlaSignal): string {
     SLA_DUE: "До",
   }[signal.signalCode];
   const duration = formatBusinessDuration(signal.remainingBusinessMs);
-  return `${prefix} ${slaKindLabel(signal.kind)} · ${duration} · теневой прогноз`;
+  return `${prefix} ${slaKindLabel(signal.kind)} · ${duration}`;
 }
 
 export function slaClockStatus(clock: SupportSlaClock): string {

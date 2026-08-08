@@ -174,21 +174,35 @@ describe("SupportInboxPane", () => {
     );
   });
 
-  it("renders authoritative Case signals without unavailable SLA or assignment", () => {
+  it("renders a compact Case row without duplicating its attention state", () => {
     const wrapper = render();
+    const row = wrapper.get(".case-row");
 
     expect(wrapper.text()).toContain("Обращения");
     expect(wrapper.text()).toContain("Все чаты");
-    expect(wrapper.text()).toContain("Нужен оператор");
-    expect(wrapper.text()).toContain("Высокий");
-    expect(wrapper.text()).toContain("Нужна реакция");
+    expect(row.get(".case-row__sequence").text()).toBe("42");
+    expect(row.get(".case-row__headline").text()).toContain(
+      "Очень длинное название обращения о возврате платежа",
+    );
+    expect(row.get(".case-row__metadata").text()).toContain(
+      "Нужен оператор",
+    );
+    expect(row.get(".case-row__priority").classes()).toContain(
+      "case-row__priority--emphasis",
+    );
+    expect(row.text()).not.toContain("Нужна реакция");
+    expect(row.find(".case-row__attention-icon").exists()).toBe(true);
+    expect(row.classes()).not.toContain("case-row--with-sla");
     expect(wrapper.text()).not.toMatch(/SLA|назнач/i);
-    expect(
-      wrapper.get('.inbox-row[aria-current="true"]').attributes("title"),
-    ).toBeUndefined();
+    expect(row.attributes("aria-label")).toContain(
+      "Очень длинное название обращения о возврате платежа",
+    );
+    expect(row.attributes("aria-label")).toContain("BILLING");
+    expect(row.attributes("title")).toContain("BILLING");
+    expect(row.get("time").attributes("title")).toContain("2026");
   });
 
-  it("renders one textual shadow SLA signal without relying on colour", () => {
+  it("renders one compact SLA forecast with the full explanation available", () => {
     const wrapper = render({
       items: [
         {
@@ -212,7 +226,34 @@ describe("SupportInboxPane", () => {
     const signal = wrapper.get("[data-sla-signal]");
     expect(signal.text()).toContain("Риск первого ответа");
     expect(signal.text()).toContain("15 мин");
-    expect(signal.text()).toContain("теневой прогноз");
+    expect(signal.text()).toContain("прогноз");
+    expect(signal.text()).not.toContain("теневой прогноз");
+    expect(signal.attributes("title")).toContain(
+      "Прогноз не является договорным сроком",
+    );
+    expect(wrapper.get(".case-row").attributes("aria-describedby")).toBe(
+      "case-sla-description-case-1",
+    );
+    expect(wrapper.get("#case-sla-description-case-1").text()).toContain(
+      "не является договорным сроком",
+    );
+    expect(wrapper.get(".case-row").classes()).toContain("case-row--with-sla");
+  });
+
+  it("keeps a normal priority as quiet metadata instead of another chip", () => {
+    const wrapper = render({
+      items: [
+        {
+          ...items[0]!,
+          priority: "NORMAL",
+          attentionRequired: false,
+        },
+      ],
+    });
+
+    const priority = wrapper.get(".case-row__priority");
+    expect(priority.text()).toBe("Обычный");
+    expect(priority.classes()).not.toContain("case-row__priority--emphasis");
   });
 
   it("changes server-owned mode and selects the exact typed row", async () => {
