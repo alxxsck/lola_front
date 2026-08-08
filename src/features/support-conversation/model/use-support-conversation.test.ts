@@ -19,6 +19,15 @@ function conversation(id: string): SupportWorkspaceConversation {
     isCurrent: true,
     currentInteractionSessionCount: 1,
     lastMessageAt: null,
+    readState: {
+      conversationId: id,
+      lastReadOrdinal: 0,
+      highestOrdinal: 1,
+      firstUnreadOrdinal: 1,
+      unreadMessageCount: 1,
+      unreadCustomerMessageCount: 1,
+      updatedAt: null,
+    },
   };
 }
 
@@ -27,6 +36,8 @@ function selection(
   messages: SupportWorkspaceMessage[],
   nextCursor: string | null = null,
   preserveMessageConversationIds = false,
+  newerCursor: string | null = null,
+  anchorOrdinal: number | null = 1,
 ): SupportWorkspaceSelection {
   return {
     checkpoint: "checkpoint-1",
@@ -59,6 +70,8 @@ function selection(
         ? messages
         : messages.map((item) => ({ ...item, conversationId })),
       nextCursor,
+      newerCursor,
+      anchorOrdinal,
     },
   };
 }
@@ -84,6 +97,422 @@ function deferred<T>() {
 }
 
 describe("support conversation controller", () => {
+  it("keeps the initial first-unread anchor and follows the signed newer cursor", async () => {
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(
+          selection(
+            "conversation-1",
+            [message("first-unread", 3), message("fourth", 4)],
+            "older-page",
+            false,
+            "newer-page",
+            3,
+          ),
+        )
+        .mockResolvedValueOnce(
+          selection(
+            "conversation-1",
+            [message("fifth", 5), message("sixth", 6)],
+            null,
+            false,
+            null,
+            null,
+          ),
+        ),
+      markConversationRead: vi.fn(),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+
+    await controller.load();
+    await controller.loadNewer();
+
+    expect(source.readSelection).toHaveBeenNthCalledWith(
+      2,
+      "project-1",
+      { conversationId: "conversation-1" },
+      { messageNewerCursor: "newer-page", messageLimit: 50 },
+    );
+    expect(controller.messages.value.map((item) => item.ordinal)).toEqual([
+      3, 4, 5, 6,
+    ]);
+    expect(controller.firstUnreadOrdinal.value).toBe(3);
+    expect(controller.newerMessageCursor.value).toBeNull();
+  });
+
+  it("serializes visible high-water ACKs and commits only authoritative read state", async () => {
+    const first = deferred<SupportWorkspaceConversation["readState"]>();
+    const second = deferred<SupportWorkspaceConversation["readState"]>();
+    const onReadStateChange = vi.fn();
+    const initial = selection("conversation-1", [
+      message("first", 1),
+      message("second", 2),
+      message("third", 3),
+      message("fourth", 4),
+    ]);
+    initial.conversation!.readState = {
+      conversationId: "conversation-1",
+      lastReadOrdinal: 0,
+      highestOrdinal: 4,
+      firstUnreadOrdinal: 1,
+      unreadMessageCount: 4,
+      unreadCustomerMessageCount: 4,
+      updatedAt: null,
+    };
+    const source = {
+      readSelection: vi.fn().mockResolvedValue(initial),
+      markConversationRead: vi
+        .fn()
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise),
+    };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => "conversation-1",
+        onReadStateChange,
+      },
+      source,
+    );
+    await controller.load();
+
+    const firstAck = controller.markVisible(2);
+    const latestAck = controller.markVisible(4);
+    expect(source.markConversationRead).toHaveBeenCalledTimes(1);
+    expect(source.markConversationRead).toHaveBeenLastCalledWith(
+      "project-1",
+      "conversation-1",
+      2,
+    );
+
+    first.resolve({
+      ...initial.conversation!.readState,
+      lastReadOrdinal: 2,
+      firstUnreadOrdinal: 3,
+      unreadMessageCount: 2,
+      unreadCustomerMessageCount: 2,
+      updatedAt: "2026-08-08T10:00:00.000Z",
+    });
+    await Promise.resolve();
+    expect(source.markConversationRead).toHaveBeenCalledTimes(2);
+    expect(source.markConversationRead).toHaveBeenLastCalledWith(
+      "project-1",
+      "conversation-1",
+      4,
+    );
+
+    second.resolve({
+      ...initial.conversation!.readState,
+      lastReadOrdinal: 4,
+      firstUnreadOrdinal: null,
+      unreadMessageCount: 0,
+      unreadCustomerMessageCount: 0,
+      updatedAt: "2026-08-08T10:00:01.000Z",
+    });
+    await Promise.all([firstAck, latestAck]);
+
+    expect(controller.readState.value?.lastReadOrdinal).toBe(4);
+    expect(controller.firstUnreadOrdinal.value).toBe(1);
+    expect(onReadStateChange).toHaveBeenLastCalledWith(
+      "conversation-1",
+      expect.objectContaining({ lastReadOrdinal: 4, unreadMessageCount: 0 }),
+    );
+  });
+
+  it("ACKs the linked conversation while the workspace is selected by Case id", async () => {
+    const linked = selection("conversation-linked-to-case", [
+      message("first", 1),
+    ]);
+    const markConversationRead = vi.fn().mockResolvedValue({
+      ...linked.conversation!.readState,
+      lastReadOrdinal: 1,
+      firstUnreadOrdinal: null,
+      unreadMessageCount: 0,
+      unreadCustomerMessageCount: 0,
+      updatedAt: "2026-08-08T10:00:00.000Z",
+    });
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => undefined,
+        caseId: () => "case-1",
+      },
+      {
+        readSelection: vi.fn().mockResolvedValue(linked),
+        markConversationRead,
+      },
+    );
+
+    await controller.load();
+    await controller.markVisible(1);
+
+    expect(markConversationRead).toHaveBeenCalledWith(
+      "project-1",
+      "conversation-linked-to-case",
+      1,
+    );
+  });
+
+  it("does not let a stale reconnect projection decrease the read position", async () => {
+    const current = selection("conversation-1", [message("fourth", 4)]);
+    current.conversation!.readState = {
+      ...current.conversation!.readState,
+      lastReadOrdinal: 4,
+      highestOrdinal: 4,
+      firstUnreadOrdinal: null,
+      unreadMessageCount: 0,
+      unreadCustomerMessageCount: 0,
+    };
+    const stale = selection("conversation-1", [message("fourth", 4)]);
+    stale.conversation!.readState = {
+      ...stale.conversation!.readState,
+      lastReadOrdinal: 2,
+      highestOrdinal: 4,
+      firstUnreadOrdinal: 3,
+      unreadMessageCount: 2,
+      unreadCustomerMessageCount: 2,
+    };
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(current)
+        .mockResolvedValueOnce(stale),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+
+    await controller.load();
+    await controller.reconcile();
+
+    expect(controller.readState.value?.lastReadOrdinal).toBe(4);
+    expect(
+      controller.selection.value?.conversation?.readState.lastReadOrdinal,
+    ).toBe(4);
+  });
+
+  it("commits an in-flight read ACK when reconnect resolves first", async () => {
+    const initial = selection("conversation-1", [
+      message("first", 1),
+      message("second", 2),
+      message("third", 3),
+      message("fourth", 4),
+    ]);
+    initial.conversation!.readState = {
+      ...initial.conversation!.readState,
+      highestOrdinal: 4,
+      unreadMessageCount: 4,
+      unreadCustomerMessageCount: 4,
+    };
+    const reconnect = deferred<SupportWorkspaceSelection>();
+    const ack = deferred<SupportWorkspaceConversation["readState"]>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(initial)
+        .mockReturnValueOnce(reconnect.promise),
+      markConversationRead: vi.fn().mockReturnValue(ack.promise),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+    await controller.load();
+
+    const pendingAck = controller.markVisible(4);
+    const pendingReconnect = controller.reconcile();
+    reconnect.resolve(initial);
+    await pendingReconnect;
+    ack.resolve({
+      ...initial.conversation!.readState,
+      lastReadOrdinal: 4,
+      firstUnreadOrdinal: null,
+      unreadMessageCount: 0,
+      unreadCustomerMessageCount: 0,
+    });
+    await pendingAck;
+
+    expect(controller.readState.value?.lastReadOrdinal).toBe(4);
+  });
+
+  it("keeps older pagination owned while reconnect overlaps", async () => {
+    const initial = selection(
+      "conversation-1",
+      [message("third", 3), message("fourth", 4)],
+      "older-page",
+    );
+    const older = deferred<SupportWorkspaceSelection>();
+    const reconnect = deferred<SupportWorkspaceSelection>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(initial)
+        .mockReturnValueOnce(older.promise)
+        .mockReturnValueOnce(reconnect.promise),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+    await controller.load();
+
+    const pendingOlder = controller.loadOlder();
+    const pendingReconnect = controller.reconcile();
+    reconnect.resolve(initial);
+    await pendingReconnect;
+    older.resolve(
+      selection(
+        "conversation-1",
+        [message("first", 1), message("second", 2)],
+        null,
+        false,
+        null,
+        null,
+      ),
+    );
+    await pendingOlder;
+
+    expect(controller.loadingOlder.value).toBe(false);
+    expect(controller.messages.value.map((item) => item.ordinal)).toEqual([
+      1, 2, 3, 4,
+    ]);
+  });
+
+  it("keeps newer pagination owned while reconnect overlaps", async () => {
+    const initial = selection(
+      "conversation-1",
+      [message("first", 1), message("second", 2)],
+      null,
+      false,
+      "newer-page",
+    );
+    const newer = deferred<SupportWorkspaceSelection>();
+    const reconnect = deferred<SupportWorkspaceSelection>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(initial)
+        .mockReturnValueOnce(newer.promise)
+        .mockReturnValueOnce(reconnect.promise),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+    await controller.load();
+
+    const pendingNewer = controller.loadNewer();
+    const pendingReconnect = controller.reconcile();
+    reconnect.resolve(initial);
+    await pendingReconnect;
+    newer.resolve(
+      selection(
+        "conversation-1",
+        [message("third", 3), message("fourth", 4)],
+        null,
+        false,
+        null,
+        null,
+      ),
+    );
+    await pendingNewer;
+
+    expect(controller.loadingNewer.value).toBe(false);
+    expect(controller.messages.value.map((item) => item.ordinal)).toEqual([
+      1, 2, 3, 4,
+    ]);
+  });
+
+  it("clears an invalidated older loading state when selection changes", async () => {
+    let selectedConversationId = "conversation-1";
+    const older = deferred<SupportWorkspaceSelection>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(
+          selection(
+            "conversation-1",
+            [message("third", 3), message("fourth", 4)],
+            "older-page",
+          ),
+        )
+        .mockReturnValueOnce(older.promise)
+        .mockResolvedValueOnce(
+          selection("conversation-2", [message("new-selection", 1)]),
+        ),
+    };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => selectedConversationId,
+      },
+      source,
+    );
+    await controller.load();
+
+    const pendingOlder = controller.loadOlder();
+    selectedConversationId = "conversation-2";
+    await controller.load();
+    expect(controller.loadingOlder.value).toBe(false);
+    older.resolve(
+      selection("conversation-1", [message("first", 1)], null, false, null),
+    );
+    await pendingOlder;
+
+    expect(controller.loadingOlder.value).toBe(false);
+    expect(controller.selection.value?.conversation?.id).toBe(
+      "conversation-2",
+    );
+  });
+
+  it("clears an invalidated newer loading state when selection changes", async () => {
+    let selectedConversationId = "conversation-1";
+    const newer = deferred<SupportWorkspaceSelection>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(
+          selection(
+            "conversation-1",
+            [message("first", 1)],
+            null,
+            false,
+            "newer-page",
+          ),
+        )
+        .mockReturnValueOnce(newer.promise)
+        .mockResolvedValueOnce(
+          selection("conversation-2", [message("new-selection", 1)]),
+        ),
+    };
+    const controller = createSupportConversationController(
+      {
+        projectId: () => "project-1",
+        conversationId: () => selectedConversationId,
+      },
+      source,
+    );
+    await controller.load();
+
+    const pendingNewer = controller.loadNewer();
+    selectedConversationId = "conversation-2";
+    await controller.load();
+    expect(controller.loadingNewer.value).toBe(false);
+    newer.resolve(
+      selection("conversation-1", [message("second", 2)], null, false, null),
+    );
+    await pendingNewer;
+
+    expect(controller.loadingNewer.value).toBe(false);
+    expect(controller.selection.value?.conversation?.id).toBe(
+      "conversation-2",
+    );
+  });
   it("does not commit a stale history response after selection changes", async () => {
     let selectedConversationId = "conversation-1";
     const response = deferred<SupportWorkspaceSelection>();
@@ -238,7 +667,12 @@ describe("support conversation controller", () => {
   it("keeps a Case without a linked Conversation as an authoritative selection", async () => {
     const caseOnly = selection("unused", []);
     caseOnly.conversation = null;
-    caseOnly.messages = { items: [], nextCursor: null };
+    caseOnly.messages = {
+      items: [],
+      nextCursor: null,
+      newerCursor: null,
+      anchorOrdinal: null,
+    };
     caseOnly.case = {
       id: "case-only",
       title: "Отдельное обращение",

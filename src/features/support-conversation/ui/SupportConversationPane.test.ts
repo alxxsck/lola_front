@@ -14,7 +14,15 @@ const messages: ConversationMessage[] = [
     author: "ADMIN",
     text: "Платёж проверен",
     status: "COMPLETED",
-    delivery: { status: "READ", commandIds: ["command-1"] },
+    delivery: {
+      status: "READ",
+      generation: 1,
+      version: 2,
+      errorCode: null,
+      retryEligible: false,
+      allowedActions: [],
+      commandIds: ["command-1"],
+    },
     createdAt: "2026-08-07T10:01:00.000Z",
   },
   {

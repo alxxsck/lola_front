@@ -132,6 +132,12 @@ function inboxTime(value: string): string {
     month: "short",
   }).format(parsed);
 }
+
+function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>): string {
+  const total = item.readState.unreadMessageCount;
+  const customer = item.readState.unreadCustomerMessageCount;
+  return `${total} непрочитанных сообщения, ${customer} от пользователя`;
+}
 </script>
 
 <template>
@@ -337,6 +343,13 @@ function inboxTime(value: string): string {
                 )
               }}
             </time>
+            <span
+              v-if="item.kind === 'CONVERSATION' && item.readState.unreadMessageCount"
+              class="unread-count"
+              :data-unread-conversation="item.id"
+              :aria-label="unreadLabel(item)"
+              :title="unreadLabel(item)"
+            >{{ item.readState.unreadMessageCount }}</span>
           </span>
           <span v-if="item.kind === 'CASE'" class="inbox-row__meta">
             <span class="state-chip">{{ caseStatus(item.status) }}</span>
@@ -566,6 +579,21 @@ function inboxTime(value: string): string {
   color: var(--text-muted);
   font-size: 0.72rem;
   white-space: nowrap;
+}
+.unread-count {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--surface-card);
+  background: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 .inbox-row__meta {
   color: var(--text-muted);

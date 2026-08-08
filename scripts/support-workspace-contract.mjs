@@ -3,6 +3,7 @@ import {
   operationParameter as parameter,
   requireOperationPermission as requirePermission,
   requireSchemaEnum as requireSchemaEnumValues,
+  requireSchemaFields as requireFields,
   requireSchemaProperties as requireProperties,
   requireSchemaPropertyEnum as requireEnumValues,
 } from "./openapi-contract-assertions.mjs";
@@ -15,6 +16,14 @@ export function validateSupportWorkspaceMessagingContract(document) {
     document,
     "AdminMessaging_lookupOutcome",
   );
+  const readPosition = operation(
+    document,
+    "AdminConversationCollaboration_get",
+  );
+  const markReadPosition = operation(
+    document,
+    "AdminConversationCollaboration_mark",
+  );
   const workspacePermissions = new Set(
     workspaceRead["x-iam-any-permission"]?.map((value) => value.code) ?? [],
   );
@@ -26,11 +35,14 @@ export function validateSupportWorkspaceMessagingContract(document) {
   requirePermission(messageHistory, "project.conversations.read");
   requirePermission(sendMessage, "project.conversations.reply");
   requirePermission(lookupMessageOutcome, "project.conversations.reply");
+  requirePermission(readPosition, "project.conversations.read");
+  requirePermission(markReadPosition, "project.conversations.read");
   if (parameter(workspaceRead, "messageLimit").schema?.maximum !== 100) {
     throw new Error(
       "SupportWorkspace_read messageLimit must remain bounded at 100",
     );
   }
+  parameter(workspaceRead, "messageNewerCursor");
   const idempotencyKey = parameter(sendMessage, "Idempotency-Key");
   if (idempotencyKey.in !== "header" || idempotencyKey.required !== true) {
     throw new Error("AdminMessaging_send must require Idempotency-Key header");
@@ -85,7 +97,51 @@ export function validateSupportWorkspaceMessagingContract(document) {
   ]);
   requireProperties(document, "SupportWorkspaceMessagePageResponseDto", [
     "items",
+    "anchorOrdinal",
   ]);
+  requireFields(document, "SupportWorkspaceMessagePageResponseDto", [
+    "nextCursor",
+    "newerCursor",
+  ]);
+  requireProperties(document, "CmsConversationReadPositionResponseDto", [
+    "conversationId",
+    "lastReadOrdinal",
+    "highestOrdinal",
+    "firstUnreadOrdinal",
+    "unreadMessageCount",
+    "unreadCustomerMessageCount",
+  ]);
+  requireProperties(document, "SupportWorkspaceConversationRowResponseDto", [
+    "readState",
+  ]);
+  requireProperties(
+    document,
+    "SupportWorkspaceSelectionConversationResponseDto",
+    ["readState"],
+  );
+  requireProperties(document, "MarkCmsConversationReadPositionDto", [
+    "lastReadOrdinal",
+  ]);
+  const readPositionResponse =
+    readPosition.responses?.["200"]?.content?.["application/json"]?.schema
+      ?.$ref;
+  const markReadPositionRequest =
+    markReadPosition.requestBody?.content?.["application/json"]?.schema?.$ref;
+  const markReadPositionResponse =
+    markReadPosition.responses?.["200"]?.content?.["application/json"]?.schema
+      ?.$ref;
+  if (
+    readPositionResponse !==
+      "#/components/schemas/CmsConversationReadPositionResponseDto" ||
+    markReadPositionRequest !==
+      "#/components/schemas/MarkCmsConversationReadPositionDto" ||
+    markReadPositionResponse !==
+      "#/components/schemas/CmsConversationReadPositionResponseDto"
+  ) {
+    throw new Error(
+      "Conversation read position operations must retain typed request and response schemas",
+    );
+  }
   requireProperties(document, "AdminConversationMessageResponseDto", [
     "id",
     "threadId",

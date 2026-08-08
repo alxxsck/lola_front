@@ -5,10 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { AdminMessagingErrorResponseDtoCode } from "./adminMessagingErrorResponseDtoCode";
+import type { AdminMessagingErrorBodyDto } from "./adminMessagingErrorBodyDto";
 
 export interface AdminMessagingErrorResponseDto {
-  code: AdminMessagingErrorResponseDtoCode;
-  message?: string;
-  reason?: string;
+  error: AdminMessagingErrorBodyDto;
 }

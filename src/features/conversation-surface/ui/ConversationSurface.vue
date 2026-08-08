@@ -41,6 +41,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "load-older": [];
+  "load-newer": [];
+  "visible-high-water": [ordinal: number];
   "cancel-translation": [];
   "change-translation-mode": [mode: "ORIGINAL" | "TRANSLATED"];
   "reconcile-required": [issues: ConversationSurfaceReconcileIssue[]];
@@ -66,6 +68,8 @@ const newMessageCount = ref(0);
 let anchor: { height: number; top: number } | null = null;
 let stickToLatest = true;
 let surfaceResizeObserver: ResizeObserver | null = null;
+let messageVisibilityObserver: IntersectionObserver | null = null;
+let visibleHighWaterTimer: number | null = null;
 
 const draftKey = computed(() => conversationSurfaceDraftKey(props.composer));
 const scrollSessionKey = computed(() =>
@@ -139,6 +143,20 @@ const messageProjection = computed(() => {
   return { messages: ordered, issues };
 });
 const orderedMessages = computed(() => messageProjection.value.messages);
+const newMessageLabel = computed(() => {
+  const count = newMessageCount.value;
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+  const noun =
+    mod100 >= 11 && mod100 <= 14
+      ? "новых сообщений"
+      : mod10 === 1
+        ? "новое сообщение"
+        : mod10 >= 2 && mod10 <= 4
+          ? "новых сообщения"
+          : "новых сообщений";
+  return `${count} ${noun}`;
+});
 
 function initials(value: string): string {
   return (
@@ -201,6 +219,10 @@ function nearLatest(element = logElement.value): boolean {
   return element.scrollHeight - element.scrollTop - element.clientHeight < 96;
 }
 
+function atConversationLatest(element = logElement.value): boolean {
+  return !props.history.hasNewer && nearLatest(element);
+}
+
 function scrollToLatest(smooth = true): void {
   const element = logElement.value;
   if (!element) return;
@@ -211,6 +233,80 @@ function scrollToLatest(smooth = true): void {
   if (!element.scrollTo) element.scrollTop = element.scrollHeight;
   newMessageCount.value = 0;
   stickToLatest = true;
+}
+
+function scrollToOrdinal(ordinal: number): boolean {
+  const element = logElement.value;
+  if (!element) return false;
+  const message = element.querySelector<HTMLElement>(
+    `[data-message-ordinal="${ordinal}"]`,
+  );
+  if (!message) return false;
+  const logRect = element.getBoundingClientRect();
+  element.scrollTop += message.getBoundingClientRect().top - logRect.top - 16;
+  stickToLatest = false;
+  return true;
+}
+
+function readingSurfaceIsAttended(): boolean {
+  return document.visibilityState === "visible" && document.hasFocus();
+}
+
+function reportVisibleHighWater(): void {
+  if (!readingSurfaceIsAttended()) return;
+  const element = logElement.value;
+  if (!element) return;
+  const logRect = element.getBoundingClientRect();
+  if (logRect.height <= 0) return;
+  let highWater = 0;
+  for (const message of element.querySelectorAll<HTMLElement>(
+    "[data-message-ordinal]",
+  )) {
+    const ordinal = Number(message.dataset.messageOrdinal);
+    const rect = message.getBoundingClientRect();
+    const visibleHeight =
+      Math.min(rect.bottom, logRect.bottom) - Math.max(rect.top, logRect.top);
+    const requiredHeight = Math.min(Math.max(rect.height, 0), 48);
+    if (
+      Number.isSafeInteger(ordinal) &&
+      ordinal > 0 &&
+      requiredHeight > 0 &&
+      visibleHeight >= requiredHeight
+    ) {
+      highWater = Math.max(highWater, ordinal);
+    }
+  }
+  if (highWater > 0) emit("visible-high-water", highWater);
+}
+
+function queueVisibleHighWater(): void {
+  if (visibleHighWaterTimer !== null) return;
+  visibleHighWaterTimer = window.setTimeout(() => {
+    visibleHighWaterTimer = null;
+    reportVisibleHighWater();
+  }, 75);
+}
+
+function syncMessageVisibilityObserver(): void {
+  messageVisibilityObserver?.disconnect();
+  const element = logElement.value;
+  if (!element || typeof IntersectionObserver === "undefined") {
+    messageVisibilityObserver = null;
+    return;
+  }
+  messageVisibilityObserver = new IntersectionObserver(
+    () => queueVisibleHighWater(),
+    { root: element, threshold: 0 },
+  );
+  for (const message of element.querySelectorAll<HTMLElement>(
+    "[data-message-ordinal]",
+  ))
+    messageVisibilityObserver.observe(message);
+}
+
+function handleReadingAttentionChange(): void {
+  if (!readingSurfaceIsAttended()) return;
+  queueVisibleHighWater();
 }
 
 function captureScrollAnchor(key = scrollSessionKey.value): void {
@@ -235,9 +331,24 @@ async function restoreScrollAnchor(
   await nextTick();
   const element = logElement.value;
   if (!element) return;
+  const firstUnreadOrdinal = props.history.firstUnreadOrdinal;
+  if (
+    firstUnreadOrdinal !== null &&
+    firstUnreadOrdinal !== undefined &&
+    scrollToOrdinal(firstUnreadOrdinal)
+  ) {
+    queueVisibleHighWater();
+    return;
+  }
   const saved = readConversationSurfaceScrollAnchor(key);
-  if (!saved || saved.atLatest) {
+  if (!saved) {
     scrollToLatest(false);
+    queueVisibleHighWater();
+    return;
+  }
+  if (saved.atLatest) {
+    scrollToLatest(false);
+    queueVisibleHighWater();
     return;
   }
   const message = [
@@ -250,6 +361,7 @@ async function restoreScrollAnchor(
   const logRect = element.getBoundingClientRect();
   element.scrollTop +=
     message.getBoundingClientRect().top - logRect.top - saved.offset;
+  queueVisibleHighWater();
 }
 
 function requestOlder(): void {
@@ -266,11 +378,23 @@ function requestOlder(): void {
   emit("load-older");
 }
 
+function requestNewer(): void {
+  if (
+    !props.history.hasNewer ||
+    props.history.loading ||
+    props.history.loadingNewer
+  )
+    return;
+  emit("load-newer");
+}
+
 function handleLogScroll(): void {
-  stickToLatest = nearLatest();
+  stickToLatest = atConversationLatest();
   if (stickToLatest) newMessageCount.value = 0;
   if ((logElement.value?.scrollTop ?? 100) <= 72) requestOlder();
+  if (nearLatest() && props.history.hasNewer) requestNewer();
   captureScrollAnchor();
+  queueVisibleHighWater();
 }
 
 watch(scrollSessionKey, async (nextKey, previousKey) => {
@@ -333,7 +457,15 @@ watch(
     if (!next.length || anchor) return;
     if (!previous.length) {
       await nextTick();
-      scrollToLatest(false);
+      syncMessageVisibilityObserver();
+      const firstUnreadOrdinal = props.history.firstUnreadOrdinal;
+      if (
+        firstUnreadOrdinal === null ||
+        firstUnreadOrdinal === undefined ||
+        !scrollToOrdinal(firstUnreadOrdinal)
+      )
+        scrollToLatest(false);
+      queueVisibleHighWater();
       return;
     }
     const previousLast = previous.at(-1);
@@ -341,24 +473,45 @@ watch(
     const appended =
       previousLastIndex >= 0 ? next.length - previousLastIndex - 1 : 0;
     if (!appended) return;
-    const stickToBottom = nearLatest();
+    const stickToBottom = atConversationLatest();
     await nextTick();
+    syncMessageVisibilityObserver();
     if (stickToBottom) scrollToLatest(false);
     else newMessageCount.value += appended;
+    queueVisibleHighWater();
   },
   { flush: "pre" },
 );
 
 onMounted(() => {
+  window.addEventListener("focus", handleReadingAttentionChange);
+  document.addEventListener("visibilitychange", handleReadingAttentionChange);
+  void nextTick(() => syncMessageVisibilityObserver());
   void restoreScrollAnchor();
   if (typeof ResizeObserver === "undefined") return;
   surfaceResizeObserver = new ResizeObserver(() => {
-    if (stickToLatest) void nextTick(() => scrollToLatest(false));
+    if (stickToLatest)
+      void nextTick(() => {
+        scrollToLatest(false);
+        queueVisibleHighWater();
+      });
+    else queueVisibleHighWater();
   });
   if (logElement.value) surfaceResizeObserver.observe(logElement.value);
 });
 onBeforeUnmount(() => {
   captureScrollAnchor();
+  window.removeEventListener("focus", handleReadingAttentionChange);
+  document.removeEventListener(
+    "visibilitychange",
+    handleReadingAttentionChange,
+  );
+  messageVisibilityObserver?.disconnect();
+  messageVisibilityObserver = null;
+  if (visibleHighWaterTimer !== null) {
+    window.clearTimeout(visibleHighWaterTimer);
+    visibleHighWaterTimer = null;
+  }
   surfaceResizeObserver?.disconnect();
   surfaceResizeObserver = null;
 });
@@ -491,17 +644,25 @@ onBeforeUnmount(() => {
         <strong>Пока нет сообщений</strong>
         <span>Начните диалог, когда будете готовы.</span>
       </div>
-      <article
-        v-for="message in orderedMessages"
-        v-else
-        :key="message.id"
-        class="conversation-surface__message"
-        :class="[
-          `is-${message.placement.toLowerCase()}`,
-          `is-${(message.tone ?? 'DEFAULT').toLowerCase()}`,
-        ]"
-        :data-message-id="message.id"
-      >
+      <template v-for="message in orderedMessages" v-else :key="message.id">
+        <div
+          v-if="history.firstUnreadOrdinal === message.ordinal"
+          class="conversation-surface__first-unread"
+          role="separator"
+          aria-label="Новые сообщения"
+          :data-first-unread-ordinal="message.ordinal"
+        >
+          <span>Новые сообщения</span>
+        </div>
+        <article
+          class="conversation-surface__message"
+          :class="[
+            `is-${message.placement.toLowerCase()}`,
+            `is-${(message.tone ?? 'DEFAULT').toLowerCase()}`,
+          ]"
+          :data-message-id="message.id"
+          :data-message-ordinal="message.ordinal"
+        >
         <div class="conversation-surface__message-meta">
           <span>
             <Avatar
@@ -543,7 +704,35 @@ onBeforeUnmount(() => {
           />
           {{ message.delivery.label }}
         </span>
-      </article>
+        </article>
+      </template>
+
+      <Button
+        v-if="history.hasNewer"
+        type="button"
+        label="Показать следующие сообщения"
+        icon="pi pi-chevron-down"
+        severity="secondary"
+        text
+        size="small"
+        class="conversation-surface__newer"
+        data-action="load-newer"
+        :loading="history.loadingNewer"
+        :disabled="history.loading"
+        @click="requestNewer"
+      />
+
+      <p
+        v-if="history.readError"
+        class="conversation-surface__read-error"
+        role="status"
+      >
+        <i class="pi pi-cloud-upload" aria-hidden="true" />
+        <span>{{ history.readError }}</span>
+        <button type="button" @click="queueVisibleHighWater">
+          Повторить
+        </button>
+      </p>
     </div>
 
     <button
@@ -552,7 +741,7 @@ onBeforeUnmount(() => {
       class="conversation-surface__new-messages"
       @click="scrollToLatest()"
     >
-      {{ newMessageCount }} новых сообщений
+      {{ newMessageLabel }}
       <i class="pi pi-arrow-down" aria-hidden="true" />
     </button>
 
@@ -690,6 +879,66 @@ onBeforeUnmount(() => {
 .conversation-surface__older {
   display: flex;
   margin: 0 auto 14px;
+}
+.conversation-surface__newer {
+  display: flex;
+  margin: 6px auto 0;
+}
+.conversation-surface__first-unread {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: var(--status-accent-text);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.conversation-surface__first-unread::before,
+.conversation-surface__first-unread::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: color-mix(in srgb, var(--status-accent-text) 26%, var(--line));
+}
+.conversation-surface__first-unread span {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--status-accent-soft) 76%,
+    var(--surface-card)
+  );
+}
+.conversation-surface__read-error {
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px auto 0;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--status-warning-text) 24%, var(--line));
+  border-radius: 10px;
+  color: var(--status-warning-text);
+  background: color-mix(in srgb, var(--status-warning-soft) 88%, var(--surface-card));
+  font-size: 0.72rem;
+}
+.conversation-surface__read-error button {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
 }
 .conversation-surface__translation-progress {
   position: sticky;
@@ -848,7 +1097,7 @@ onBeforeUnmount(() => {
   right: 24px;
   bottom: 126px;
   z-index: 3;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 1px solid
     color-mix(in srgb, var(--status-accent-text) 24%, var(--line));
@@ -893,6 +1142,9 @@ onBeforeUnmount(() => {
     padding: 14px 12px 22px;
   }
   .conversation-surface__older {
+    min-height: 44px;
+  }
+  .conversation-surface__newer {
     min-height: 44px;
   }
   .conversation-surface__message {

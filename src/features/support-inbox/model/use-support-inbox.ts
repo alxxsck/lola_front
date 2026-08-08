@@ -3,6 +3,7 @@ import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportInboxItem,
   SupportInboxMode,
+  SupportConversationReadState,
   SupportWorkspaceCaseRow,
   SupportWorkspaceConversation,
   SupportWorkspaceSource,
@@ -74,6 +75,25 @@ export function createSupportInboxController(
         ? { ...item, kind: "CASE" as const }
         : { ...item, kind: "CONVERSATION" as const },
     ) as SupportInboxItem[];
+  }
+
+  function applyConversationReadState(
+    conversationId: string,
+    readState: SupportConversationReadState,
+  ): void {
+    if (readState.conversationId !== conversationId) return;
+    let changed = false;
+    const nextItems = items.value.map((item) => {
+      if (item.kind !== "CONVERSATION" || item.id !== conversationId) {
+        return item;
+      }
+      if (readState.lastReadOrdinal < item.readState.lastReadOrdinal) {
+        return item;
+      }
+      changed = true;
+      return { ...item, readState };
+    });
+    if (changed) items.value = nextItems;
   }
 
   function readPage(
@@ -176,6 +196,7 @@ export function createSupportInboxController(
     failure,
     load,
     loadMore,
+    applyConversationReadState,
     reset,
   };
 }

@@ -896,6 +896,15 @@
             "format": "date-time",
             "type": "string"
           },
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "RETRY_FAILED_DELIVERY"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "channel": {
             "enum": [
               "SDK_REALTIME"
@@ -909,6 +918,14 @@
             },
             "type": "array"
           },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -917,6 +934,10 @@
             "format": "uuid",
             "nullable": true,
             "type": "string"
+          },
+          "retryEligible": {
+            "description": "Domain eligibility only; the current actor must also have reply capability.",
+            "type": "boolean"
           },
           "status": {
             "description": "Acceptance is PENDING; only an authenticated client ACK may advance to DELIVERED or READ.",
@@ -930,10 +951,19 @@
               "NOT_REDELIVERED"
             ],
             "type": "string"
+          },
+          "version": {
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
           "status",
+          "generation",
+          "version",
+          "errorCode",
+          "retryEligible",
+          "allowedActions",
           "commandIds"
         ],
         "type": "object"
@@ -1005,7 +1035,7 @@
         ],
         "type": "object"
       },
-      "AdminMessagingErrorResponseDto": {
+      "AdminMessagingErrorBodyDto": {
         "properties": {
           "code": {
             "enum": [
@@ -1028,19 +1058,52 @@
               "ADMIN_MESSAGE_AUTHOR_NOT_FOUND",
               "IDEMPOTENCY_KEY_REUSED",
               "ADMIN_MESSAGE_IDEMPOTENCY_KEY_INVALID",
-              "ADMIN_MESSAGE_OUTCOME_NOT_FOUND"
+              "ADMIN_MESSAGE_OUTCOME_NOT_FOUND",
+              "DELIVERY_RETRY_IDEMPOTENCY_KEY_REQUIRED",
+              "CONVERSATION_DELIVERY_NOT_FOUND",
+              "DELIVERY_RETRY_IDEMPOTENCY_KEY_REUSED",
+              "DELIVERY_RETRY_OUTCOME_AMBIGUOUS",
+              "DELIVERY_RETRY_STALE",
+              "DELIVERY_RETRY_NOT_FAILED",
+              "DELIVERY_RETRY_NOT_ALLOWED"
             ],
             "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/AdminMessagingErrorDetailsDto"
           },
           "message": {
             "type": "string"
           },
           "reason": {
             "type": "string"
+          },
+          "requestId": {
+            "type": "string"
           }
         },
         "required": [
-          "code"
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "AdminMessagingErrorDetailsDto": {
+        "properties": {
+          "currentDelivery": {
+            "$ref": "#/components/schemas/AdminMessageDeliveryResponseDto"
+          }
+        },
+        "type": "object"
+      },
+      "AdminMessagingErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/AdminMessagingErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -1101,6 +1164,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "readState": {
+            "$ref": "#/components/schemas/CmsConversationReadPositionResponseDto"
+          },
           "status": {
             "allOf": [
               {
@@ -1129,7 +1195,8 @@
           "messageCount",
           "lastMessage",
           "isCurrent",
-          "currentInteractionSessionCount"
+          "currentInteractionSessionCount",
+          "readState"
         ],
         "type": "object"
       },
@@ -10018,11 +10085,613 @@
         ],
         "type": "object"
       },
+      "CmsConversationAttachmentRealtimeSnapshotDto": {
+        "properties": {
+          "contentType": {
+            "type": "string"
+          },
+          "displayFilename": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "displayFilename",
+          "contentType",
+          "sizeBytes"
+        ],
+        "type": "object"
+      },
+      "CmsConversationAuthorAvatarAssetRealtimeDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version"
+        ],
+        "type": "object"
+      },
+      "CmsConversationDeliveryRealtimeContractResponseDto": {
+        "properties": {
+          "authority": {
+            "enum": [
+              "REST_AUTHORITATIVE"
+            ],
+            "type": "string"
+          },
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "eventSequenceUsage": {
+            "description": "The transactionally allocated per-conversation sequence detects gaps and triggers bounded REST reconciliation. It never overrides generation/version state ordering.",
+            "enum": [
+              "GAP_HINT_ONLY"
+            ],
+            "type": "string"
+          },
+          "mergePolicy": {
+            "enum": [
+              "REST_WINS_REVOKE_WINS_EQUAL_KEY"
+            ],
+            "type": "string"
+          },
+          "messageUpsertEvent": {
+            "enum": [
+              "conversation.message.upserted.v1"
+            ],
+            "type": "string"
+          },
+          "messageUpsertPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationMessageRealtimeUpsertEventDto"
+            ],
+            "type": "string"
+          },
+          "monotonicKey": {
+            "description": "REVOKED has higher operationPrecedence than UPSERTED for an equal generation/version.",
+            "example": [
+              "generation",
+              "version",
+              "operationPrecedence"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reconcileOperationId": {
+            "enum": [
+              "SupportWorkspace_read"
+            ],
+            "type": "string"
+          },
+          "requireProjectGenerationGuard": {
+            "type": "boolean"
+          },
+          "requireSelectionGenerationGuard": {
+            "type": "boolean"
+          },
+          "retryOperationId": {
+            "enum": [
+              "AdminMessaging_retryFailedDelivery"
+            ],
+            "type": "string"
+          },
+          "revokeEvent": {
+            "enum": [
+              "conversation.message.delivery.revoked.v1"
+            ],
+            "type": "string"
+          },
+          "revokePayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationDeliveryRealtimeRevokedEventDto"
+            ],
+            "type": "string"
+          },
+          "translationUpsertEvent": {
+            "enum": [
+              "conversation.message.translation.upserted.v1"
+            ],
+            "type": "string"
+          },
+          "translationUpsertPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationTranslationRealtimeUpsertEventDto"
+            ],
+            "type": "string"
+          },
+          "upsertEvent": {
+            "enum": [
+              "conversation.message.delivery.upserted.v1"
+            ],
+            "type": "string"
+          },
+          "upsertPayloadSchemaRef": {
+            "enum": [
+              "#/components/schemas/CmsConversationDeliveryRealtimeUpsertEventDto"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "authority",
+          "messageUpsertEvent",
+          "messageUpsertPayloadSchemaRef",
+          "translationUpsertEvent",
+          "translationUpsertPayloadSchemaRef",
+          "upsertEvent",
+          "revokeEvent",
+          "upsertPayloadSchemaRef",
+          "revokePayloadSchemaRef",
+          "retryOperationId",
+          "reconcileOperationId",
+          "monotonicKey",
+          "mergePolicy",
+          "eventSequenceUsage",
+          "requireProjectGenerationGuard",
+          "requireSelectionGenerationGuard"
+        ],
+        "type": "object"
+      },
+      "CmsConversationDeliveryRealtimeRevokedEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/CmsConversationDeliveryRealtimeStateDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventSequence": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "REVOKED"
+            ],
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "eventSequence",
+          "projectId",
+          "endUserId",
+          "conversationId",
+          "messageId",
+          "occurredAt",
+          "delivery",
+          "operation"
+        ],
+        "type": "object"
+      },
+      "CmsConversationDeliveryRealtimeStateDto": {
+        "properties": {
+          "acceptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "RETRY_FAILED_DELIVERY"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channel": {
+            "enum": [
+              "SDK_REALTIME"
+            ],
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "interactionSessionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "retryEligible": {
+            "description": "Domain eligibility only; combine with the REST workspace reply capability.",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "DELIVERING",
+              "DELIVERED",
+              "READ",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "status",
+          "generation",
+          "version",
+          "errorCode",
+          "retryEligible",
+          "allowedActions",
+          "acceptedAt",
+          "interactionSessionId"
+        ],
+        "type": "object"
+      },
+      "CmsConversationDeliveryRealtimeUpsertEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/CmsConversationDeliveryRealtimeStateDto"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventSequence": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "UPSERTED"
+            ],
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "eventSequence",
+          "projectId",
+          "endUserId",
+          "conversationId",
+          "messageId",
+          "occurredAt",
+          "delivery",
+          "operation"
+        ],
+        "type": "object"
+      },
+      "CmsConversationMessageAuthorRealtimeDto": {
+        "properties": {
+          "avatarAsset": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CmsConversationAuthorAvatarAssetRealtimeDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "avatarUrl": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "presentationVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "cmsUserId",
+          "displayName",
+          "avatarUrl"
+        ],
+        "type": "object"
+      },
+      "CmsConversationMessageRealtimeStateDto": {
+        "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/CmsConversationAttachmentRealtimeSnapshotDto"
+            },
+            "type": "array"
+          },
+          "author": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CmsConversationMessageAuthorRealtimeDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "contentState": {
+            "enum": [
+              "ACTIVE",
+              "TOMBSTONED",
+              "PURGED"
+            ],
+            "type": "string"
+          },
+          "contentVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "role": {
+            "enum": [
+              "USER",
+              "ASSISTANT",
+              "ADMIN",
+              "SCENARIO",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "WRITING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "threadId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "tombstonedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "threadId",
+          "role",
+          "status",
+          "text",
+          "contentState",
+          "contentVersion",
+          "revisionNumber",
+          "tombstonedAt",
+          "ordinal",
+          "author",
+          "attachments",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "CmsConversationMessageRealtimeUpsertEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "message": {
+            "$ref": "#/components/schemas/CmsConversationMessageRealtimeStateDto"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "endUserId",
+          "conversationId",
+          "occurredAt",
+          "message"
+        ],
+        "type": "object"
+      },
+      "CmsConversationReadPositionErrorBodyDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "REQUEST_VALIDATION_FAILED",
+              "IAM_AUTHORIZATION_REQUIRED",
+              "NOT_FOUND_OR_FORBIDDEN",
+              "CONVERSATION_READ_ORDINAL_INVALID",
+              "CONVERSATION_READ_ORDINAL_AHEAD"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/CmsConversationReadPositionErrorDetailsDto"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "CmsConversationReadPositionErrorDetailsDto": {
+        "properties": {
+          "highestOrdinal": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "CmsConversationReadPositionErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/CmsConversationReadPositionErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "CmsConversationReadPositionResponseDto": {
         "properties": {
           "conversationId": {
             "format": "uuid",
             "type": "string"
+          },
+          "firstUnreadOrdinal": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
           },
           "highestOrdinal": {
             "minimum": 0,
@@ -10050,8 +10719,120 @@
           "conversationId",
           "lastReadOrdinal",
           "highestOrdinal",
+          "firstUnreadOrdinal",
           "unreadMessageCount",
           "unreadCustomerMessageCount"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTranslationRealtimeStateDto": {
+        "properties": {
+          "detectedSourceLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "errorCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceLocale": {
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceMessageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "COMPLETED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "targetLocale": {
+            "type": "string"
+          },
+          "translatedText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "sourceMessageId",
+          "status",
+          "sourceLocale",
+          "detectedSourceLocale",
+          "targetLocale",
+          "translatedText",
+          "warnings",
+          "errorCode",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "CmsConversationTranslationRealtimeUpsertEventDto": {
+        "properties": {
+          "contractVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "eventId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "messageId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/CmsConversationTranslationRealtimeStateDto"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "eventId",
+          "projectId",
+          "endUserId",
+          "conversationId",
+          "messageId",
+          "occurredAt",
+          "translation"
         ],
         "type": "object"
       },
@@ -15132,6 +15913,57 @@
         ],
         "type": "object"
       },
+      "EndUserCaseClassificationEvidenceResponseDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "MESSAGE",
+              "CASE_EVIDENCE",
+              "CMS_ACTION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseClassificationResponseDto": {
+        "properties": {
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseClassificationEvidenceResponseDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "AI",
+              "CMS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "confidence",
+          "evidence"
+        ],
+        "type": "object"
+      },
       "EndUserCaseCmsParticipationResponseDto": {
         "properties": {
           "actionCount": {
@@ -15150,6 +15982,234 @@
         "required": [
           "messageCount",
           "actionCount"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCommandCurrentResponseDto": {
+        "properties": {
+          "assignedCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "groupCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "resolutionAssessment": {
+            "enum": [
+              "NOT_ASSESSED",
+              "LIKELY_RESOLVED",
+              "CONFIRMED_RESOLVED",
+              "LIKELY_UNRESOLVED",
+              "CONFIRMED_UNRESOLVED",
+              "INCONCLUSIVE"
+            ],
+            "type": "string"
+          },
+          "resolutionSource": {
+            "enum": [
+              "END_USER_EXPLICIT",
+              "CMS_USER",
+              "TRUSTED_VERIFICATION",
+              "AI_INFERENCE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "INFORMATION_REQUEST",
+              "PROBLEM_RESOLUTION",
+              "DECISION_SUPPORT",
+              "ACTION_REQUEST",
+              "FEEDBACK",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "status",
+          "assignedCmsUserId"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCommandErrorBodyResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "BAD_REQUEST",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "NOT_FOUND_OR_FORBIDDEN",
+              "CONFLICT",
+              "UNPROCESSABLE_ENTITY",
+              "REQUEST_VALIDATION_FAILED",
+              "CASE_NOT_FOUND",
+              "CASE_VERSION_CONFLICT",
+              "CASE_IDEMPOTENCY_KEY_REUSED",
+              "CASE_MERGED",
+              "CASE_WORKFLOW_TRANSITION_INVALID",
+              "CASE_ESCALATION_COMMAND_REQUIRED",
+              "CASE_ESCALATION_VERSION_CONFLICT",
+              "CASE_CONCURRENT_UPDATE",
+              "CASE_CLASSIFICATION_EMPTY",
+              "CASE_POLICY_INVALID",
+              "CASE_CLASSIFICATION_GROUP_NOT_PUBLISHED",
+              "CASE_PRIORITY_BELOW_FLOOR_FORBIDDEN"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "$ref": "#/components/schemas/EndUserCaseCommandErrorDetailsResponseDto"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseCommandErrorDetailsResponseDto": {
+        "properties": {
+          "availableStatuses": {
+            "items": {
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "WAITING_END_USER",
+                "WAITING_SYSTEM",
+                "WAITING_ADMIN",
+                "RESOLVED",
+                "UNRESOLVED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "currentCase": {
+            "$ref": "#/components/schemas/EndUserCaseCommandCurrentResponseDto"
+          },
+          "currentStatus": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "currentVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "escalationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "escalationStatus": {
+            "enum": [
+              "REQUESTED",
+              "CLAIMED"
+            ],
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseCommandValidationIssueResponseDto"
+            },
+            "type": "array"
+          },
+          "mergedIntoCaseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "priorityPolicy": {
+            "$ref": "#/components/schemas/EndUserCasePriorityPolicyResponseDto"
+          }
+        },
+        "type": "object"
+      },
+      "EndUserCaseCommandErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/EndUserCaseCommandErrorBodyResponseDto"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -15262,6 +16322,25 @@
         ],
         "type": "object"
       },
+      "EndUserCaseCommandValidationIssueResponseDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
       "EndUserCaseCostBudgetResponseDto": {
         "properties": {
           "backlogCount": {
@@ -15365,6 +16444,361 @@
           "operations",
           "budget",
           "calculatedAt"
+        ],
+        "type": "object"
+      },
+      "EndUserCaseDetailResponseDto": {
+        "properties": {
+          "activeEscalation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveEndUserCaseEscalationResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "aggregationDirtyAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "CHANGE_CLASSIFICATION",
+                "RAISE_PRIORITY",
+                "LOWER_PRIORITY_TO_FLOOR",
+                "OVERRIDE_PRIORITY_FLOOR",
+                "SET_STATUS_OPEN",
+                "SET_STATUS_IN_PROGRESS",
+                "SET_STATUS_WAITING_END_USER",
+                "SET_STATUS_WAITING_SYSTEM",
+                "SET_STATUS_RESOLVED",
+                "SET_STATUS_UNRESOLVED",
+                "SET_STATUS_CANCELLED",
+                "REQUEST_ESCALATION"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "assignee": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseAssigneeResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "availableStatuses": {
+            "items": {
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "WAITING_END_USER",
+                "WAITING_SYSTEM",
+                "WAITING_ADMIN",
+                "RESOLVED",
+                "UNRESOLVED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "CMS"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/EndUserCaseClassificationResponseDto"
+          },
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentTone": {
+            "enum": [
+              "CALM",
+              "CONFUSED",
+              "CONCERNED",
+              "FRUSTRATED",
+              "ANGRY",
+              "POSITIVE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "degradedReason": {
+            "enum": [
+              "BUDGET",
+              "PROVIDER",
+              "QUEUE",
+              "PLATFORM_PAUSED"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "endUser": {
+            "$ref": "#/components/schemas/EndUserCaseEndUserResponseDto"
+          },
+          "endUserRecontactCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "firstObservedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "groupCode": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "initialTone": {
+            "enum": [
+              "CALM",
+              "CONFUSED",
+              "CONCERNED",
+              "FRUSTRATED",
+              "ANGRY",
+              "POSITIVE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastEndUserRecontactAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "latestVerificationRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "mergedIntoCaseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "messageCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "nextAggregationAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "primaryLanguage": {
+            "nullable": true,
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priorityPolicy": {
+            "$ref": "#/components/schemas/EndUserCasePriorityPolicyResponseDto"
+          },
+          "priorityReasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "prioritySource": {
+            "enum": [
+              "PLATFORM_RULE",
+              "PROJECT_RULE",
+              "AI",
+              "CMS_OVERRIDE"
+            ],
+            "type": "string"
+          },
+          "projectSequence": {
+            "description": "JSON-safe project-local sequence.",
+            "type": "string"
+          },
+          "reopenedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requiresSpecialist": {
+            "type": "boolean"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/EndUserCaseResolutionResponseDto"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "splitEvidence": {
+            "items": {
+              "$ref": "#/components/schemas/EndUserCaseSplitEvidenceResponseDto"
+            },
+            "type": "array"
+          },
+          "splitFromCaseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "staleAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "suggestedGroup": {
+            "nullable": true,
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "toneTrend": {
+            "enum": [
+              "IMPROVING",
+              "STABLE",
+              "WORSENING",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "INFORMATION_REQUEST",
+              "PROBLEM_RESOLUTION",
+              "DECISION_SUPPORT",
+              "ACTION_REQUEST",
+              "FEEDBACK",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "waitingSince": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "workSummary": {
+            "$ref": "#/components/schemas/EndUserCaseWorkSummaryResponseDto"
+          }
+        },
+        "required": [
+          "id",
+          "projectSequence",
+          "version",
+          "type",
+          "groupCode",
+          "title",
+          "goal",
+          "summary",
+          "status",
+          "availableStatuses",
+          "classification",
+          "resolution",
+          "impact",
+          "urgency",
+          "priority",
+          "prioritySource",
+          "priorityReasons",
+          "initialTone",
+          "currentTone",
+          "toneTrend",
+          "languages",
+          "channels",
+          "endUser",
+          "requiresSpecialist",
+          "messageCount",
+          "firstObservedAt",
+          "lastActivityAt",
+          "endUserRecontactCount",
+          "createdAt",
+          "updatedAt",
+          "allowedActions",
+          "priorityPolicy"
         ],
         "type": "object"
       },
@@ -15601,8 +17035,34 @@
         ],
         "type": "object"
       },
+      "EndUserCaseEventActorResponseDto": {
+        "properties": {
+          "cmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "CMS_USER",
+              "SYSTEM",
+              "BREAK_GLASS",
+              "SYSTEM_OR_BREAK_GLASS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "cmsUserId"
+        ],
+        "type": "object"
+      },
       "EndUserCaseEventResponseDto": {
         "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/EndUserCaseEventActorResponseDto"
+          },
           "caseVersion": {
             "minimum": 1,
             "type": "number"
@@ -15615,11 +17075,29 @@
             "format": "uuid",
             "type": "string"
           },
-          "payload": {
-            "additionalProperties": true,
+          "next": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseEventValueResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "previous": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EndUserCaseEventValueResponseDto"
+              }
+            ],
+            "nullable": true,
             "type": "object"
           },
           "projectSequence": {
+            "type": "string"
+          },
+          "reason": {
+            "nullable": true,
             "type": "string"
           },
           "type": {
@@ -15648,9 +17126,69 @@
           "projectSequence",
           "type",
           "caseVersion",
-          "payload",
+          "actor",
+          "reason",
+          "previous",
+          "next",
           "createdAt"
         ],
+        "type": "object"
+      },
+      "EndUserCaseEventValueResponseDto": {
+        "properties": {
+          "assignedCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "groupCode": {
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "WAITING_END_USER",
+              "WAITING_SYSTEM",
+              "WAITING_ADMIN",
+              "RESOLVED",
+              "UNRESOLVED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "EndUserCaseMessageLinkResponseDto": {
@@ -15875,6 +17413,55 @@
         ],
         "type": "object"
       },
+      "EndUserCasePriorityPolicyResponseDto": {
+        "properties": {
+          "effectiveFloor": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "HIGH",
+              "URGENT",
+              "CRITICAL"
+            ],
+            "type": "string"
+          },
+          "overrideActive": {
+            "type": "boolean"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "policyVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "PLATFORM_RULE",
+              "PROJECT_RULE",
+              "AI"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "effectiveFloor",
+          "source",
+          "reasons",
+          "overrideActive",
+          "policyRevisionId",
+          "policyVersion"
+        ],
+        "type": "object"
+      },
       "EndUserCaseResolutionResponseDto": {
         "properties": {
           "assessment": {
@@ -15924,6 +17511,26 @@
             "nullable": true,
             "type": "string"
           },
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "CHANGE_CLASSIFICATION",
+                "RAISE_PRIORITY",
+                "LOWER_PRIORITY_TO_FLOOR",
+                "OVERRIDE_PRIORITY_FLOOR",
+                "SET_STATUS_OPEN",
+                "SET_STATUS_IN_PROGRESS",
+                "SET_STATUS_WAITING_END_USER",
+                "SET_STATUS_WAITING_SYSTEM",
+                "SET_STATUS_RESOLVED",
+                "SET_STATUS_UNRESOLVED",
+                "SET_STATUS_CANCELLED",
+                "REQUEST_ESCALATION"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "assignee": {
             "allOf": [
               {
@@ -15959,6 +17566,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/EndUserCaseClassificationResponseDto"
           },
           "closedAt": {
             "format": "date-time",
@@ -16080,6 +17690,9 @@
               "CRITICAL"
             ],
             "type": "string"
+          },
+          "priorityPolicy": {
+            "$ref": "#/components/schemas/EndUserCasePriorityPolicyResponseDto"
           },
           "priorityReasons": {
             "items": {
@@ -16212,6 +17825,7 @@
           "summary",
           "status",
           "availableStatuses",
+          "classification",
           "resolution",
           "impact",
           "urgency",
@@ -30561,6 +32175,52 @@
         ],
         "type": "object"
       },
+      "RetryFailedConversationDeliveryDto": {
+        "properties": {
+          "expectedGeneration": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "intent": {
+            "enum": [
+              "RETRY_FAILED_DELIVERY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "intent",
+          "expectedGeneration",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "RetryFailedConversationDeliveryResponseDto": {
+        "properties": {
+          "delivery": {
+            "$ref": "#/components/schemas/AdminMessageDeliveryResponseDto"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "intent": {
+            "enum": [
+              "RETRY_FAILED_DELIVERY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate",
+          "intent",
+          "delivery"
+        ],
+        "type": "object"
+      },
       "RevokeBrowserPushSubscriptionDto": {
         "properties": {
           "expectedVersion": {
@@ -44446,6 +46106,9 @@
             "minimum": 0,
             "type": "number"
           },
+          "readState": {
+            "$ref": "#/components/schemas/CmsConversationReadPositionResponseDto"
+          },
           "status": {
             "enum": [
               "OPEN",
@@ -44470,6 +46133,7 @@
           "lastMessage",
           "isCurrent",
           "currentInteractionSessionCount",
+          "readState",
           "createdAt",
           "updatedAt"
         ],
@@ -44607,11 +46271,20 @@
       },
       "SupportWorkspaceMessagePageResponseDto": {
         "properties": {
+          "anchorOrdinal": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/AdminConversationMessageResponseDto"
             },
             "type": "array"
+          },
+          "newerCursor": {
+            "nullable": true,
+            "type": "string"
           },
           "nextCursor": {
             "nullable": true,
@@ -44619,7 +46292,8 @@
           }
         },
         "required": [
-          "items"
+          "items",
+          "anchorOrdinal"
         ],
         "type": "object"
       },
@@ -44797,6 +46471,9 @@
             "minimum": 0,
             "type": "number"
           },
+          "readState": {
+            "$ref": "#/components/schemas/CmsConversationReadPositionResponseDto"
+          },
           "status": {
             "enum": [
               "OPEN",
@@ -44821,6 +46498,7 @@
           "lastMessage",
           "isCurrent",
           "currentInteractionSessionCount",
+          "readState",
           "createdAt",
           "updatedAt",
           "lastMessageOrdinal"
@@ -58361,7 +60039,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EndUserCaseResponseDto"
+                  "$ref": "#/components/schemas/EndUserCaseDetailResponseDto"
                 }
               }
             },
@@ -58476,6 +60154,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
                 }
               }
             },
@@ -59576,6 +61304,56 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EndUserCaseCommandResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndUserCaseCommandErrorResponseDto"
                 }
               }
             },
@@ -75637,6 +77415,36 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -75688,6 +77496,46 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CmsConversationReadPositionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
                 }
               }
             },
@@ -84123,6 +85971,56 @@
         ],
         "x-iam-permission": {
           "code": "project.support.queues.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/realtime-contract": {
+      "get": {
+        "operationId": "SupportRealtime_deliveryContract",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationDeliveryRealtimeContractResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsConversationReadPositionErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read the authoritative delivery reconnect and merge contract",
+        "tags": [
+          "admin support conversation collaboration"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.read",
           "scope": "PROJECT"
         }
       }
@@ -93399,6 +95297,15 @@
           },
           {
             "in": "query",
+            "name": "messageNewerCursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "messageLimit",
             "required": false,
             "schema": {
@@ -97826,6 +99733,133 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "admin messaging"
+        ],
+        "x-iam-permission": {
+          "code": "project.conversations.reply",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/users/{userId}/messages/{messageId}/delivery-actions": {
+      "post": {
+        "operationId": "AdminMessaging_retryFailedDelivery",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "messageId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryFailedConversationDeliveryDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryFailedConversationDeliveryResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMessagingErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retry one safely failed durable delivery generation",
         "tags": [
           "admin messaging"
         ],

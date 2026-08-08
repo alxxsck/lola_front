@@ -8,6 +8,11 @@
 
 export interface CmsConversationReadPositionResponseDto {
   conversationId: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  firstUnreadOrdinal: number | null;
   /** @minimum 0 */
   highestOrdinal: number;
   /** @minimum 0 */

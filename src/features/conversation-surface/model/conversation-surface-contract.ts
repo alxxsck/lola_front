@@ -34,7 +34,11 @@ export interface ConversationSurfaceMessage {
 export interface ConversationSurfaceHistory {
   loading: boolean;
   loadingOlder: boolean;
+  loadingNewer?: boolean;
   hasOlder: boolean;
+  hasNewer?: boolean;
+  firstUnreadOrdinal?: number | null;
+  readError?: string;
   error?: string;
 }
 

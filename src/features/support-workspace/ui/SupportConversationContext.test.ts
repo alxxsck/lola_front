@@ -19,6 +19,15 @@ const conversation: SupportWorkspaceConversation = {
   isCurrent: true,
   currentInteractionSessionCount: 1,
   lastMessageAt: "2026-08-06T10:15:00.000Z",
+  readState: {
+    conversationId: "conversation-1",
+    lastReadOrdinal: 2,
+    highestOrdinal: 3,
+    firstUnreadOrdinal: 3,
+    unreadMessageCount: 1,
+    unreadCustomerMessageCount: 1,
+    updatedAt: null,
+  },
 };
 
 const selection: SupportWorkspaceSelection = {
@@ -69,7 +78,12 @@ const selection: SupportWorkspaceSelection = {
     },
   },
   conversation,
-  messages: { items: [], nextCursor: null },
+  messages: {
+    items: [],
+    nextCursor: null,
+    newerCursor: null,
+    anchorOrdinal: 3,
+  },
 };
 
 function render(

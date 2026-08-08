@@ -173,7 +173,12 @@ describe("support workspace selection contract mapper", () => {
     const response: SupportWorkspaceSelectionResponseDto = {
       ...full,
       conversation: null,
-      messages: { items: [], nextCursor: null },
+      messages: {
+        items: [],
+        nextCursor: null,
+        newerCursor: null,
+        anchorOrdinal: null,
+      },
     };
 
     const mapped = mapSupportWorkspaceSelection(response, {
@@ -182,7 +187,12 @@ describe("support workspace selection contract mapper", () => {
 
     expect(mapped.case?.id).toBe(full.case.id);
     expect(mapped.conversation).toBeNull();
-    expect(mapped.messages).toEqual({ items: [], nextCursor: null });
+    expect(mapped.messages).toEqual({
+      items: [],
+      nextCursor: null,
+      newerCursor: null,
+      anchorOrdinal: null,
+    });
   });
 
   it("maps the executable minimal selection fixture", () => {
@@ -201,8 +211,18 @@ describe("support workspace selection contract mapper", () => {
         id: response.conversation.id,
         title: "Диалог без названия",
         lastMessageOrdinal: 0,
+        readState: {
+          lastReadOrdinal: 0,
+          firstUnreadOrdinal: null,
+          unreadMessageCount: 0,
+        },
       },
-      messages: { items: [], nextCursor: null },
+      messages: {
+        items: [],
+        nextCursor: null,
+        newerCursor: null,
+        anchorOrdinal: null,
+      },
     });
   });
 
@@ -224,6 +244,12 @@ describe("support workspace selection contract mapper", () => {
       conversation: {
         id: response.conversation.id,
         lastMessageOrdinal: 17,
+        readState: {
+          lastReadOrdinal: 15,
+          firstUnreadOrdinal: 16,
+          unreadMessageCount: 2,
+          unreadCustomerMessageCount: 1,
+        },
       },
       messages: {
         items: [
@@ -234,6 +260,8 @@ describe("support workspace selection contract mapper", () => {
           },
         ],
         nextCursor: "messages:older",
+        newerCursor: "messages:newer",
+        anchorOrdinal: 16,
       },
     });
   });
@@ -283,6 +311,15 @@ describe("support workspace selection contract mapper", () => {
         lastMessageOrdinal: 17,
         isCurrent: true,
         currentInteractionSessionCount: 0,
+        readState: {
+          conversationId: "conversation-1",
+          lastReadOrdinal: 15,
+          highestOrdinal: 17,
+          firstUnreadOrdinal: 16,
+          unreadMessageCount: 2,
+          unreadCustomerMessageCount: 1,
+          updatedAt: "2026-08-07T09:59:00.000Z",
+        },
         createdAt: "2026-08-07T09:00:00.000Z",
         updatedAt: "2026-08-07T10:00:00.000Z",
       },
@@ -311,6 +348,11 @@ describe("support workspace selection contract mapper", () => {
               commandIds: ["command-17"],
               interactionSessionId: null,
               status: "PENDING",
+              generation: 1,
+              version: 0,
+              errorCode: null,
+              retryEligible: false,
+              allowedActions: [],
               acceptedAt: "2026-08-07T10:00:00.000Z",
             },
             createdAt: "2026-08-07T10:00:00.000Z",
@@ -318,6 +360,8 @@ describe("support workspace selection contract mapper", () => {
           },
         ],
         nextCursor: "older-page",
+        newerCursor: "newer-page",
+        anchorOrdinal: 16,
       },
       relatedCases: [],
       relatedConversations: [],
@@ -332,6 +376,12 @@ describe("support workspace selection contract mapper", () => {
     expect(mapped.actionRevisions).toEqual(response.actionRevisions);
     expect(mapped.case?.latestRevisionId).toBe("case-revision-8");
     expect(mapped.conversation?.lastMessageOrdinal).toBe(17);
+    expect(mapped.conversation?.readState).toMatchObject({
+      lastReadOrdinal: 15,
+      firstUnreadOrdinal: 16,
+      unreadMessageCount: 2,
+      unreadCustomerMessageCount: 1,
+    });
     expect(mapped.messages).toEqual({
       items: [
         expect.objectContaining({
@@ -342,11 +392,18 @@ describe("support workspace selection contract mapper", () => {
             commandIds: ["command-17"],
             interactionSessionId: null,
             status: "PENDING",
+            generation: 1,
+            version: 0,
+            errorCode: null,
+            retryEligible: false,
+            allowedActions: [],
             acceptedAt: "2026-08-07T10:00:00.000Z",
           },
         }),
       ],
       nextCursor: "older-page",
+      newerCursor: "newer-page",
+      anchorOrdinal: 16,
     });
   });
 });

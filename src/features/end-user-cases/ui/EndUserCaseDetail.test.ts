@@ -451,7 +451,10 @@ describe("EndUserCaseDetail", () => {
         type: "ASSIGNED",
         caseVersion: 2,
         projectSequence: "3",
-        payload: {},
+        actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+        reason: "Назначено оператору",
+        previous: null,
+        next: { assignedCmsUserId: "cms-1" },
         createdAt: "2026-07-26T09:12:00.000Z",
       },
     ];

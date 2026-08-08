@@ -337,6 +337,17 @@ export function mapConversationMessage(
               ],
               "delivery status",
             ),
+            generation: dto.delivery.generation,
+            version: dto.delivery.version,
+            errorCode: dto.delivery.errorCode,
+            retryEligible: dto.delivery.retryEligible,
+            allowedActions: dto.delivery.allowedActions.map((action) =>
+              retainKnownValue(
+                action,
+                ["RETRY_FAILED_DELIVERY"],
+                "delivery action",
+              ),
+            ),
             ...(dto.delivery.acceptedAt
               ? { acceptedAt: dto.delivery.acceptedAt }
               : {}),

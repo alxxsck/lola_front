@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminMessagingErrorResponseDtoCode =
-  (typeof AdminMessagingErrorResponseDtoCode)[keyof typeof AdminMessagingErrorResponseDtoCode];
+export type AdminMessagingErrorBodyDtoCode =
+  (typeof AdminMessagingErrorBodyDtoCode)[keyof typeof AdminMessagingErrorBodyDtoCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AdminMessagingErrorResponseDtoCode = {
+export const AdminMessagingErrorBodyDtoCode = {
   TRANSLATION_DRAFT_REQUIRES_EXACT_CONVERSATION:
     "TRANSLATION_DRAFT_REQUIRES_EXACT_CONVERSATION",
   TRANSLATION_SEND_WITHOUT_PERMISSION_REQUIRED:
@@ -39,4 +39,13 @@ export const AdminMessagingErrorResponseDtoCode = {
   ADMIN_MESSAGE_IDEMPOTENCY_KEY_INVALID:
     "ADMIN_MESSAGE_IDEMPOTENCY_KEY_INVALID",
   ADMIN_MESSAGE_OUTCOME_NOT_FOUND: "ADMIN_MESSAGE_OUTCOME_NOT_FOUND",
+  DELIVERY_RETRY_IDEMPOTENCY_KEY_REQUIRED:
+    "DELIVERY_RETRY_IDEMPOTENCY_KEY_REQUIRED",
+  CONVERSATION_DELIVERY_NOT_FOUND: "CONVERSATION_DELIVERY_NOT_FOUND",
+  DELIVERY_RETRY_IDEMPOTENCY_KEY_REUSED:
+    "DELIVERY_RETRY_IDEMPOTENCY_KEY_REUSED",
+  DELIVERY_RETRY_OUTCOME_AMBIGUOUS: "DELIVERY_RETRY_OUTCOME_AMBIGUOUS",
+  DELIVERY_RETRY_STALE: "DELIVERY_RETRY_STALE",
+  DELIVERY_RETRY_NOT_FAILED: "DELIVERY_RETRY_NOT_FAILED",
+  DELIVERY_RETRY_NOT_ALLOWED: "DELIVERY_RETRY_NOT_ALLOWED",
 } as const;

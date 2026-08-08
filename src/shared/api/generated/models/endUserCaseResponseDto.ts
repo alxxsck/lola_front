@@ -6,15 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EndUserCaseResponseDtoActiveEscalation } from "./endUserCaseResponseDtoActiveEscalation";
+import type { EndUserCaseResponseDtoAllowedActionsItem } from "./endUserCaseResponseDtoAllowedActionsItem";
 import type { EndUserCaseResponseDtoAssignee } from "./endUserCaseResponseDtoAssignee";
 import type { EndUserCaseResponseDtoAvailableStatusesItem } from "./endUserCaseResponseDtoAvailableStatusesItem";
 import type { EndUserCaseResponseDtoChannelsItem } from "./endUserCaseResponseDtoChannelsItem";
+import type { EndUserCaseClassificationResponseDto } from "./endUserCaseClassificationResponseDto";
 import type { EndUserCaseResponseDtoCurrentTone } from "./endUserCaseResponseDtoCurrentTone";
 import type { EndUserCaseResponseDtoDegradedReason } from "./endUserCaseResponseDtoDegradedReason";
 import type { EndUserCaseEndUserResponseDto } from "./endUserCaseEndUserResponseDto";
 import type { EndUserCaseResponseDtoImpact } from "./endUserCaseResponseDtoImpact";
 import type { EndUserCaseResponseDtoInitialTone } from "./endUserCaseResponseDtoInitialTone";
 import type { EndUserCaseResponseDtoPriority } from "./endUserCaseResponseDtoPriority";
+import type { EndUserCasePriorityPolicyResponseDto } from "./endUserCasePriorityPolicyResponseDto";
 import type { EndUserCaseResponseDtoPrioritySource } from "./endUserCaseResponseDtoPrioritySource";
 import type { EndUserCaseResolutionResponseDto } from "./endUserCaseResolutionResponseDto";
 import type { EndUserCaseSplitEvidenceResponseDto } from "./endUserCaseSplitEvidenceResponseDto";
@@ -29,10 +32,12 @@ export interface EndUserCaseResponseDto {
   activeEscalation?: EndUserCaseResponseDtoActiveEscalation;
   /** @nullable */
   aggregationDirtyAt?: string | null;
+  allowedActions?: EndUserCaseResponseDtoAllowedActionsItem[];
   /** @nullable */
   assignee?: EndUserCaseResponseDtoAssignee;
   availableStatuses: EndUserCaseResponseDtoAvailableStatusesItem[];
   channels: EndUserCaseResponseDtoChannelsItem[];
+  classification: EndUserCaseClassificationResponseDto;
   /** @nullable */
   closedAt?: string | null;
   createdAt: string;
@@ -63,6 +68,7 @@ export interface EndUserCaseResponseDto {
   /** @nullable */
   primaryLanguage?: string | null;
   priority: EndUserCaseResponseDtoPriority;
+  priorityPolicy?: EndUserCasePriorityPolicyResponseDto;
   priorityReasons: string[];
   prioritySource: EndUserCaseResponseDtoPrioritySource;
   /** JSON-safe project-local sequence. */

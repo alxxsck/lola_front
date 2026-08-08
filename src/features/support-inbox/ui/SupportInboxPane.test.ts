@@ -28,6 +28,29 @@ const items: SupportInboxItem[] = [
   },
 ];
 
+const unreadConversation: SupportInboxItem = {
+  kind: "CONVERSATION",
+  id: "conversation-1",
+  endUserId: "user-1",
+  title: "Вопрос по депозиту",
+  status: "OPEN",
+  createdAt: "2026-08-07T09:00:00.000Z",
+  updatedAt: "2026-08-07T10:00:00.000Z",
+  messageCount: 8,
+  isCurrent: true,
+  currentInteractionSessionCount: 1,
+  lastMessageAt: "2026-08-07T10:00:00.000Z",
+  readState: {
+    conversationId: "conversation-1",
+    lastReadOrdinal: 5,
+    highestOrdinal: 8,
+    firstUnreadOrdinal: 6,
+    unreadMessageCount: 3,
+    unreadCustomerMessageCount: 2,
+    updatedAt: "2026-08-07T09:55:00.000Z",
+  },
+};
+
 function render(overrides: Record<string, unknown> = {}) {
   return mount(SupportInboxPane, {
     props: {
@@ -68,6 +91,20 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SupportInboxPane", () => {
+  it("renders the authoritative unread count without deriving it from time", () => {
+    const wrapper = render({
+      mode: "ALL_CONVERSATIONS",
+      items: [unreadConversation],
+      selectedKey: undefined,
+    });
+
+    const badge = wrapper.get('[data-unread-conversation="conversation-1"]');
+    expect(badge.text()).toBe("3");
+    expect(badge.attributes("aria-label")).toContain(
+      "3 непрочитанных сообщения, 2 от пользователя",
+    );
+  });
+
   it("renders authoritative Case signals without unavailable SLA or assignment", () => {
     const wrapper = render();
 

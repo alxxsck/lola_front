@@ -388,6 +388,11 @@ export interface ConversationMessage {
       | "FAILED"
       | "CANCELLED"
       | "NOT_REDELIVERED";
+    generation: number;
+    version: number;
+    errorCode: string | null;
+    retryEligible: boolean;
+    allowedActions: Array<"RETRY_FAILED_DELIVERY">;
     acceptedAt?: string;
     interactionSessionId?: string | null;
     commandIds: string[];

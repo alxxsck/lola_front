@@ -280,6 +280,9 @@ const conversation = createSupportConversationController(
     conversationId: () => routeConversationId.value,
     caseId: () => routeCaseId.value,
     onForbidden: handleConversationForbidden,
+    onReadStateChange(conversationId, state) {
+      inbox.applyConversationReadState(conversationId, state);
+    },
   },
   supportWorkspaceSource,
 );
@@ -547,7 +550,11 @@ const bulkTranslationCompleted = computed(
 const supportConversationHistory = computed<ConversationSurfaceHistory>(() => ({
   loading: conversation.loading.value,
   loadingOlder: conversation.loadingOlder.value,
+  loadingNewer: conversation.loadingNewer.value,
   hasOlder: Boolean(conversation.nextMessageCursor.value),
+  hasNewer: Boolean(conversation.newerMessageCursor.value),
+  firstUnreadOrdinal: conversation.firstUnreadOrdinal.value,
+  readError: conversation.readError.value || undefined,
   error:
     !conversation.loading.value && !conversation.messages.value.length
       ? conversation.error.value || undefined
@@ -2141,6 +2148,8 @@ onBeforeUnmount(() => {
               :composer="supportConversationComposer"
               :ai-suspension="supportConversationAiSuspension"
               @load-older="conversation.loadOlder"
+              @load-newer="conversation.loadNewer"
+              @visible-high-water="conversation.markVisible"
               @cancel-translation="translation.cancelMessageTranslations"
               @change-translation-mode="changeSupportTranslationMode"
               @reconcile-required="reconcileSupportSurface"

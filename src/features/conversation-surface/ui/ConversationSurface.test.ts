@@ -1,5 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ConversationSurface from "./ConversationSurface.vue";
 import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
 import type {
@@ -8,6 +8,20 @@ import type {
   ConversationSurfaceTranslation,
 } from "../model/conversation-surface-contract";
 import { runConversationSurfaceBehaviorSuite } from "../testing/conversation-surface-behavior-suite";
+import {
+  conversationSurfaceSessionKey,
+  writeConversationSurfaceScrollAnchor,
+} from "../model/conversation-surface-session";
+
+beforeEach(() => {
+  vi.spyOn(document, "hasFocus").mockReturnValue(true);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 const messages: ConversationSurfaceMessage[] = [
   {
@@ -172,6 +186,181 @@ runConversationSurfaceBehaviorSuite({
 });
 
 describe("ConversationSurface", () => {
+  it("marks the first unread boundary and reports only the visibly read high-water", async () => {
+    vi.useFakeTimers();
+    const wrapper = mountSurface({
+      history: {
+        loading: false,
+        loadingOlder: false,
+        hasOlder: false,
+        firstUnreadOrdinal: 2,
+      },
+    });
+    const divider = wrapper.get('[data-first-unread-ordinal="2"]');
+    expect(divider.text()).toContain("Новые сообщения");
+    expect(
+      divider.element.nextElementSibling?.getAttribute("data-message-id"),
+    ).toBe("message-2");
+
+    const log = wrapper.get('[role="log"]');
+    vi.spyOn(log.element, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      bottom: 240,
+      height: 240,
+      left: 0,
+      right: 600,
+      width: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const rendered = wrapper.findAll<HTMLElement>("[data-message-id]");
+    vi.spyOn(rendered[0]!.element, "getBoundingClientRect").mockReturnValue({
+      top: -80,
+      bottom: -10,
+      height: 70,
+      left: 0,
+      right: 300,
+      width: 300,
+      x: 0,
+      y: -80,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(rendered[1]!.element, "getBoundingClientRect").mockReturnValue({
+      top: 40,
+      bottom: 120,
+      height: 80,
+      left: 300,
+      right: 600,
+      width: 300,
+      x: 300,
+      y: 40,
+      toJSON: () => ({}),
+    });
+
+    await log.trigger("scroll");
+    await vi.advanceTimersByTimeAsync(75);
+    expect(wrapper.emitted("visible-high-water")?.at(-1)).toEqual([2]);
+  });
+
+  it("does not report observed messages until the document is visible and focused", async () => {
+    vi.useFakeTimers();
+    let callback: IntersectionObserverCallback | undefined;
+    class MockIntersectionObserver {
+      constructor(next: IntersectionObserverCallback) {
+        callback = next;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+      readonly root = null;
+      readonly rootMargin = "0px";
+      readonly thresholds = [0];
+    }
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    vi.mocked(document.hasFocus).mockReturnValue(false);
+    const wrapper = mountSurface({
+      history: {
+        loading: false,
+        loadingOlder: false,
+        hasOlder: false,
+        firstUnreadOrdinal: 2,
+      },
+    });
+    await flushPromises();
+    const observed = wrapper.get('[data-message-ordinal="2"]').element;
+    const log = wrapper.get('[role="log"]');
+    vi.spyOn(log.element, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      bottom: 120,
+      height: 120,
+      left: 0,
+      right: 390,
+      width: 390,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(observed, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      bottom: 2000,
+      height: 2000,
+      left: 0,
+      right: 390,
+      width: 390,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    callback?.(
+      [
+        {
+          target: observed,
+          isIntersecting: true,
+          boundingClientRect: { height: 80 },
+          intersectionRect: { height: 80 },
+        } as IntersectionObserverEntry,
+      ],
+      {} as IntersectionObserver,
+    );
+    await vi.advanceTimersByTimeAsync(75);
+    expect(wrapper.emitted("visible-high-water")).toBeUndefined();
+
+    vi.mocked(document.hasFocus).mockReturnValue(true);
+    window.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(75);
+    expect(wrapper.emitted("visible-high-water")?.at(-1)).toEqual([2]);
+  });
+
+  it("prefers the authoritative first unread over a saved latest anchor", async () => {
+    const activeComposer = composer();
+    writeConversationSurfaceScrollAnchor(
+      conversationSurfaceSessionKey(activeComposer.scope),
+      { messageId: "message-2", offset: 0, atLatest: true },
+    );
+    const scrollTo = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+      configurable: true,
+      value: scrollTo,
+    });
+    try {
+      mountSurface({
+        composer: activeComposer,
+        history: {
+          loading: false,
+          loadingOlder: false,
+          hasOlder: false,
+          firstUnreadOrdinal: 1,
+        },
+      });
+      await flushPromises();
+
+      expect(scrollTo).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
+    }
+  });
+
+  it("loads the signed newer page without treating the current window as latest", async () => {
+    const wrapper = mountSurface({
+      history: {
+        loading: false,
+        loadingOlder: false,
+        loadingNewer: false,
+        hasOlder: false,
+        hasNewer: true,
+        firstUnreadOrdinal: 1,
+      },
+    });
+
+    await wrapper.get('[data-action="load-newer"]').trigger("click");
+
+    expect(wrapper.emitted("load-newer")).toHaveLength(1);
+  });
+
   it("preserves the compact Users composer visual contract", () => {
     const wrapper = mountSurface();
     const labels = wrapper.findAll("button").map((button) => button.text());
@@ -604,6 +793,7 @@ describe("ConversationSurface", () => {
       scrollHeight: { configurable: true, value: 960 },
       scrollTo: { configurable: true, value: scrollTo },
     });
+    scrollTo.mockClear();
 
     await wrapper.setProps({
       messages,
@@ -612,6 +802,96 @@ describe("ConversationSurface", () => {
     await flushPromises();
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 960, behavior: "auto" });
+  });
+
+  it("opens asynchronously loaded history at first unread instead of latest", async () => {
+    const wrapper = mountSurface({
+      messages: [],
+      history: {
+        loading: true,
+        loadingOlder: false,
+        hasOlder: true,
+        firstUnreadOrdinal: 2,
+      },
+    });
+    const log = wrapper.get('[role="log"]').element as HTMLElement;
+    const scrollTo = vi.fn();
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 960 },
+      scrollTo: { configurable: true, value: scrollTo },
+    });
+    await flushPromises();
+    scrollTo.mockClear();
+
+    await wrapper.setProps({
+      messages,
+      history: {
+        loading: false,
+        loadingOlder: false,
+        hasOlder: true,
+        firstUnreadOrdinal: 2,
+      },
+    });
+    const unread = wrapper.get('[data-message-ordinal="2"]').element;
+    vi.spyOn(log, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      bottom: 300,
+      height: 300,
+      left: 0,
+      right: 600,
+      width: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(unread, "getBoundingClientRect").mockReturnValue({
+      top: 180,
+      bottom: 260,
+      height: 80,
+      left: 300,
+      right: 600,
+      width: 300,
+      x: 300,
+      y: 180,
+      toJSON: () => ({}),
+    });
+    await flushPromises();
+
+    expect(log.scrollTop).toBe(164);
+    expect(scrollTo).not.toHaveBeenCalledWith({ top: 960, behavior: "auto" });
+  });
+
+  it("shows a new-message pill without moving an operator who is reading history", async () => {
+    const wrapper = mountSurface();
+    const log = wrapper.get('[role="log"]').element as HTMLElement;
+    const scrollTo = vi.fn();
+    Object.defineProperties(log, {
+      scrollHeight: { configurable: true, value: 900 },
+      clientHeight: { configurable: true, value: 300 },
+      scrollTo: { configurable: true, value: scrollTo },
+    });
+    log.scrollTop = 120;
+    await flushPromises();
+    scrollTo.mockClear();
+
+    await wrapper.setProps({
+      messages: [
+        ...messages,
+        {
+          ...messages[0]!,
+          id: "message-3",
+          ordinal: 3,
+          content: { ...messages[0]!.content, text: "A new answer" },
+        },
+      ],
+    });
+    await flushPromises();
+
+    expect(log.scrollTop).toBe(120);
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(wrapper.get(".conversation-surface__new-messages").text()).toContain(
+      "1 новое сообщение",
+    );
   });
 
   it("does not expose renderer or composer replacement slots", () => {

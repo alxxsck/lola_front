@@ -1525,7 +1525,7 @@ describe("единое рабочее пространство пользова�
 
     expect(scrollTo).not.toHaveBeenCalled();
     expect(wrapper.get(".conversation-surface__new-messages").text()).toContain(
-      "1 новых сообщений",
+      "1 новое сообщение",
     );
   });
 

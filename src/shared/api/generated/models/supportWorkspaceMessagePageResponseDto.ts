@@ -8,7 +8,14 @@
 import type { AdminConversationMessageResponseDto } from "./adminConversationMessageResponseDto";
 
 export interface SupportWorkspaceMessagePageResponseDto {
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  anchorOrdinal: number | null;
   items: AdminConversationMessageResponseDto[];
+  /** @nullable */
+  newerCursor?: string | null;
   /** @nullable */
   nextCursor?: string | null;
 }

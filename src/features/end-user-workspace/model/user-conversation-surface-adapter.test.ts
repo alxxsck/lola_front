@@ -23,7 +23,15 @@ describe("Users Conversation Surface adapter", () => {
         },
         text: "Ответ",
         status: "COMPLETED",
-        delivery: { status: "READ", commandIds: [] },
+        delivery: {
+          status: "READ",
+          generation: 1,
+          version: 2,
+          errorCode: null,
+          retryEligible: false,
+          allowedActions: [],
+          commandIds: [],
+        },
         createdAt: "2026-08-07T10:01:00.000Z",
       },
       {

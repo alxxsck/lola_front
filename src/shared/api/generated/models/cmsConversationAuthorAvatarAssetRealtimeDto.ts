@@ -6,4 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type EndUserCaseEventResponseDtoPayload = { [key: string]: unknown };
+export interface CmsConversationAuthorAvatarAssetRealtimeDto {
+  id: string;
+  /** @minimum 1 */
+  version: number;
+}

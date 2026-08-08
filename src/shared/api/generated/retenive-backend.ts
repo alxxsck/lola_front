@@ -117,6 +117,7 @@ import type {
   CmsAgentRequestPageResponseDto,
   CmsAgentRequestResponseDto,
   CmsAuthenticatedResponseDto,
+  CmsConversationDeliveryRealtimeContractResponseDto,
   CmsConversationReadPositionResponseDto,
   CmsEmailChangeCancelledResponseDto,
   CmsEmailChangeRequestDto,
@@ -236,13 +237,13 @@ import type {
   EndUserCaseAssigneesResponseDto,
   EndUserCaseCommandResponseDto,
   EndUserCaseCostSummaryResponseDto,
+  EndUserCaseDetailResponseDto,
   EndUserCaseEscalationCommandResponseDto,
   EndUserCaseEscalationsResponseDto,
   EndUserCaseMessagesResponseDto,
   EndUserCasePolicyPreviewResponseDto,
   EndUserCasePolicyResponseDto,
   EndUserCasePolicyRevisionResponseDto,
-  EndUserCaseResponseDto,
   EndUserCaseSummaryResponseDto,
   EndUserCaseTimelineResponseDto,
   EndUserCasesListParams,
@@ -468,6 +469,8 @@ import type {
   ResolveSupportQualityDisputeDto,
   RestoreEventDefinitionDto,
   ResumeConversationAIDto,
+  RetryFailedConversationDeliveryDto,
+  RetryFailedConversationDeliveryResponseDto,
   RevokeBrowserPushSubscriptionDto,
   RevokeCmsUserSessionDto,
   RevokeSupportRoutingAdmissionReceiptDto,
@@ -2382,9 +2385,9 @@ export const endUserCasesList = (
 export const endUserCasesDetail = (
   projectId: string,
   caseId: string,
-  options?: SecondParameter<typeof request<EndUserCaseResponseDto>>,
+  options?: SecondParameter<typeof request<EndUserCaseDetailResponseDto>>,
 ) => {
-  return request<EndUserCaseResponseDto>(
+  return request<EndUserCaseDetailResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}`,
       method: "GET",
@@ -7529,6 +7532,24 @@ export const supportQueuePublish = (
   );
 };
 
+/**
+ * @summary Read the authoritative delivery reconnect and merge contract
+ */
+export const supportRealtimeDeliveryContract = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<CmsConversationDeliveryRealtimeContractResponseDto>
+  >,
+) => {
+  return request<CmsConversationDeliveryRealtimeContractResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/realtime-contract`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportRoutingRuntimeActivation = (
   projectId: string,
   options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
@@ -9539,6 +9560,29 @@ export const adminMessagingSend = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: sendAdminMessageDto,
+    },
+    options,
+  );
+};
+
+/**
+ * @summary Retry one safely failed durable delivery generation
+ */
+export const adminMessagingRetryFailedDelivery = (
+  projectId: string,
+  userId: string,
+  messageId: string,
+  retryFailedConversationDeliveryDto: BodyType<RetryFailedConversationDeliveryDto>,
+  options?: SecondParameter<
+    typeof request<RetryFailedConversationDeliveryResponseDto>
+  >,
+) => {
+  return request<RetryFailedConversationDeliveryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/messages/${messageId}/delivery-actions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: retryFailedConversationDeliveryDto,
     },
     options,
   );
@@ -12186,6 +12230,9 @@ export type SupportQueuePreviewDraftResult = NonNullable<
 export type SupportQueuePublishResult = NonNullable<
   Awaited<ReturnType<typeof supportQueuePublish>>
 >;
+export type SupportRealtimeDeliveryContractResult = NonNullable<
+  Awaited<ReturnType<typeof supportRealtimeDeliveryContract>>
+>;
 export type SupportRoutingRuntimeActivationResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeActivation>>
 >;
@@ -12543,6 +12590,9 @@ export type ConversationTranslationPutResult = NonNullable<
 >;
 export type AdminMessagingSendResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingSend>>
+>;
+export type AdminMessagingRetryFailedDeliveryResult = NonNullable<
+  Awaited<ReturnType<typeof adminMessagingRetryFailedDelivery>>
 >;
 export type AdminMessagingLookupOutcomeResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingLookupOutcome>>

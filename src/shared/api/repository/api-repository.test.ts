@@ -996,6 +996,15 @@ describe("api repository adapter", () => {
           messageCount: 4,
           isCurrent: true,
           currentInteractionSessionCount: 1,
+          readState: {
+            conversationId: "conversation-1",
+            lastReadOrdinal: 3,
+            highestOrdinal: 4,
+            firstUnreadOrdinal: 4,
+            unreadMessageCount: 1,
+            unreadCustomerMessageCount: 0,
+            updatedAt: null,
+          },
           lastMessage: {
             id: "message-4",
             role: "ADMIN",

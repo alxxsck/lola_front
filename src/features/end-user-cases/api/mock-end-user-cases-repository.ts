@@ -49,6 +49,11 @@ const primaryCase: EndUserCase = {
     "Платёж найден. Провайдер обрабатывает его дольше обычного; ожидаем проверяемый результат.",
   status: "WAITING_SYSTEM",
   availableStatuses: ["IN_PROGRESS", "WAITING_ADMIN", "RESOLVED"],
+  classification: {
+    source: "AI",
+    confidence: 0.91,
+    evidence: [{ id: "message-demo-1", kind: "MESSAGE" }],
+  },
   resolution: {
     assessment: "LIKELY_RESOLVED",
     source: "AI_INFERENCE",
@@ -178,7 +183,10 @@ type MockTimelineEvent = {
   type: "ADMIN_ATTENTION_REQUESTED" | "ADMIN_ATTENTION_CLAIMED";
   caseVersion: number;
   projectSequence: string;
-  payload: Record<string, unknown>;
+  actor: { type: "CMS_USER" | "SYSTEM"; cmsUserId: string | null };
+  reason: string | null;
+  previous: Record<string, unknown> | null;
+  next: Record<string, unknown> | null;
   createdAt: string;
 };
 const mockTimelineSeed: MockTimelineEvent[] = [
@@ -188,7 +196,10 @@ const mockTimelineSeed: MockTimelineEvent[] = [
     type: "ADMIN_ATTENTION_REQUESTED",
     caseVersion: 1,
     projectSequence: "47",
-    payload: {},
+    actor: { type: "SYSTEM", cmsUserId: null },
+    reason: "Пользователь запросил поддержку",
+    previous: null,
+    next: { status: "WAITING_ADMIN" },
     createdAt: requestedEscalation.requestedAt,
   },
 ];
@@ -387,13 +398,26 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
           mockTimelineEvents
             .filter((event) => event.caseId === caseId)
             .map(
-              ({ id, type, caseVersion, projectSequence, payload, createdAt }) =>
+              ({
+                id,
+                type,
+                caseVersion,
+                projectSequence,
+                actor,
+                reason,
+                previous,
+                next,
+                createdAt,
+              }) =>
                 ({
                   id,
                   type,
                   caseVersion,
                   projectSequence,
-                  payload,
+                  actor,
+                  reason,
+                  previous,
+                  next,
                   createdAt,
                 }),
             ),
@@ -544,7 +568,10 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       type: "ADMIN_ATTENTION_REQUESTED",
       caseVersion: value.version,
       projectSequence: value.projectSequence,
-      payload: { escalationId: escalation.id },
+      actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+      reason: command.summary,
+      previous: null,
+      next: { status: "WAITING_ADMIN" },
       createdAt: requestedAt,
     });
     return {
@@ -588,10 +615,10 @@ export const mockEndUserCasesRepository: EndUserCasesRepository = {
       type: "ADMIN_ATTENTION_CLAIMED",
       caseVersion: value.version,
       projectSequence: value.projectSequence,
-      payload: {
-        escalationId: escalation.id,
-        claimantCmsUserId: escalation.claimant?.id,
-      },
+      actor: { type: "CMS_USER", cmsUserId: "cms-1" },
+      reason: "Эскалация принята оператором",
+      previous: { status: "WAITING_ADMIN" },
+      next: { status: "IN_PROGRESS" },
       createdAt: claimedAt,
     });
     return { escalation, caseVersion: value.version, replayed: false };

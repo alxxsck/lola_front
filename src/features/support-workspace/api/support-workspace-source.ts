@@ -1,4 +1,7 @@
-import { supportWorkspaceRead } from "@/shared/api/generated/retenive-backend";
+import {
+  adminConversationCollaborationMark,
+  supportWorkspaceRead,
+} from "@/shared/api/generated/retenive-backend";
 import { repository } from "@/shared/api/repository";
 import type {
   CursorPage,
@@ -8,6 +11,7 @@ import { mapConversationMessage } from "@/shared/api/repository/mappers";
 import { isMockMode } from "@/shared/config/data-mode";
 import type { ConversationMessage } from "@/shared/types/domain";
 import type {
+  CmsConversationReadPositionResponseDto,
   SupportWorkspaceCaseRowResponseDto,
   SupportWorkspaceSelectionCaseResponseDto,
   SupportWorkspaceSelectionResponseDto,
@@ -46,6 +50,23 @@ export interface SupportWorkspaceConversation {
   currentInteractionSessionCount: number;
   lastMessageAt: string | null;
   lastMessageOrdinal?: number;
+  readState: SupportConversationReadState;
+}
+
+export interface SupportConversationReadState {
+  conversationId: string;
+  lastReadOrdinal: number;
+  highestOrdinal: number;
+  firstUnreadOrdinal: number | null;
+  unreadMessageCount: number;
+  unreadCustomerMessageCount: number;
+  updatedAt: string | null;
+}
+
+export interface SupportWorkspaceMessagePage
+  extends CursorPage<SupportWorkspaceMessage> {
+  newerCursor: string | null;
+  anchorOrdinal: number | null;
 }
 
 export interface SupportWorkspaceSelection {
@@ -74,7 +95,7 @@ export interface SupportWorkspaceSelection {
   };
   case: SupportWorkspaceCase | null;
   conversation: SupportWorkspaceConversation | null;
-  messages: CursorPage<SupportWorkspaceMessage>;
+  messages: SupportWorkspaceMessagePage;
 }
 
 export interface SupportWorkspaceActionRevisions {
@@ -121,8 +142,17 @@ export interface SupportWorkspaceSource {
   readSelection(
     projectId: string,
     target: SupportWorkspaceSelectionTarget,
-    request?: { messageCursor?: string; messageLimit?: number },
+    request?: {
+      messageCursor?: string;
+      messageNewerCursor?: string;
+      messageLimit?: number;
+    },
   ): Promise<SupportWorkspaceSelection>;
+  markConversationRead(
+    projectId: string,
+    conversationId: string,
+    lastReadOrdinal: number,
+  ): Promise<SupportConversationReadState>;
 }
 
 /** Exact server-owned target for the inspector. One of the ids is required. */
@@ -143,7 +173,26 @@ type WorkspaceConversationDto = {
   currentInteractionSessionCount: number;
   lastMessage: { createdAt: string } | null;
   lastMessageOrdinal?: number;
+  readState: CmsConversationReadPositionResponseDto;
 };
+
+export function mapConversationReadState(
+  value: CmsConversationReadPositionResponseDto,
+  expectedConversationId = value.conversationId,
+): SupportConversationReadState {
+  if (value.conversationId !== expectedConversationId) {
+    throw new Error("Support workspace returned read state for another conversation");
+  }
+  return {
+    conversationId: value.conversationId,
+    lastReadOrdinal: value.lastReadOrdinal,
+    highestOrdinal: value.highestOrdinal,
+    firstUnreadOrdinal: value.firstUnreadOrdinal,
+    unreadMessageCount: value.unreadMessageCount,
+    unreadCustomerMessageCount: value.unreadCustomerMessageCount,
+    updatedAt: value.updatedAt ?? null,
+  };
+}
 
 function mapWorkspaceConversation(
   conversation: WorkspaceConversationDto,
@@ -162,6 +211,7 @@ function mapWorkspaceConversation(
     ...(conversation.lastMessageOrdinal !== undefined
       ? { lastMessageOrdinal: conversation.lastMessageOrdinal }
       : {}),
+    readState: mapConversationReadState(conversation.readState, conversation.id),
   };
 }
 
@@ -328,6 +378,8 @@ export function mapSupportWorkspaceSelection(
             })()
           : [],
       nextCursor: response.messages.nextCursor ?? null,
+      newerCursor: response.messages.newerCursor ?? null,
+      anchorOrdinal: response.messages.anchorOrdinal,
     },
   };
 }
@@ -380,6 +432,9 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       ...(request?.messageCursor
         ? { messageCursor: request.messageCursor }
         : {}),
+      ...(request?.messageNewerCursor
+        ? { messageNewerCursor: request.messageNewerCursor }
+        : {}),
     });
     if (response.mode !== "SELECTION") {
       throw new Error(
@@ -387,6 +442,15 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       );
     }
     return mapSupportWorkspaceSelection(response, target);
+  },
+
+  async markConversationRead(projectId, conversationId, lastReadOrdinal) {
+    return mapConversationReadState(
+      await adminConversationCollaborationMark(projectId, conversationId, {
+        lastReadOrdinal,
+      }),
+      conversationId,
+    );
   },
 };
 
@@ -401,6 +465,33 @@ const mockCapabilities: SupportWorkspaceSelection["capabilities"] = {
   suspendAi: false,
   transferAssignment: false,
 };
+
+const mockReadStateByConversation = new Map<
+  string,
+  SupportConversationReadState
+>();
+
+function mockConversationReadState(
+  conversationId: string,
+  highestOrdinal: number,
+): SupportConversationReadState {
+  const current = mockReadStateByConversation.get(conversationId);
+  if (current && current.highestOrdinal >= highestOrdinal) return current;
+  const lastReadOrdinal = current?.lastReadOrdinal ?? Math.max(0, highestOrdinal - 2);
+  const unreadMessageCount = Math.max(0, highestOrdinal - lastReadOrdinal);
+  const value: SupportConversationReadState = {
+    conversationId,
+    lastReadOrdinal,
+    highestOrdinal,
+    firstUnreadOrdinal:
+      unreadMessageCount > 0 ? lastReadOrdinal + 1 : null,
+    unreadMessageCount,
+    unreadCustomerMessageCount: Math.min(1, unreadMessageCount),
+    updatedAt: current?.updatedAt ?? null,
+  };
+  mockReadStateByConversation.set(conversationId, value);
+  return value;
+}
 
 type MockSupportCase = SupportWorkspaceCaseRow & {
   conversationId: string | null;
@@ -514,6 +605,10 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         currentInteractionSessionCount:
           conversation.currentInteractionSessionCount,
         lastMessageAt: conversation.lastMessage?.createdAt ?? null,
+        readState: mockConversationReadState(
+          conversation.id,
+          conversation.messageCount,
+        ),
       })),
       nextCursor: page.nextCursor,
     };
@@ -557,6 +652,9 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         )
       : { items: [], nextCursor: null };
     const endUserId = selected?.endUser.id ?? selectedCase!.endUserId;
+    const readState = selected
+      ? mockConversationReadState(selected.id, selected.messageCount)
+      : null;
     return {
       checkpoint: `mock:${projectId}:${target.caseId ?? conversationId}`,
       capabilitiesRevision: "mock-read-only",
@@ -586,13 +684,44 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
             currentInteractionSessionCount:
               selected.currentInteractionSessionCount,
             lastMessageAt: selected.lastMessage?.createdAt ?? null,
+            readState: readState!,
           }
         : null,
       messages: {
         items: withMockMessageOrdinals(messages.items),
         nextCursor: messages.nextCursor,
+        newerCursor: null,
+        anchorOrdinal: request?.messageCursor
+          ? null
+          : (readState?.firstUnreadOrdinal ?? null),
       },
     };
+  },
+
+  async markConversationRead(_projectId, conversationId, lastReadOrdinal) {
+    const current = mockConversationReadState(conversationId, lastReadOrdinal);
+    const nextLastReadOrdinal = Math.min(
+      current.highestOrdinal,
+      Math.max(current.lastReadOrdinal, lastReadOrdinal),
+    );
+    const unreadMessageCount = Math.max(
+      0,
+      current.highestOrdinal - nextLastReadOrdinal,
+    );
+    const next: SupportConversationReadState = {
+      ...current,
+      lastReadOrdinal: nextLastReadOrdinal,
+      firstUnreadOrdinal:
+        unreadMessageCount > 0 ? nextLastReadOrdinal + 1 : null,
+      unreadMessageCount,
+      unreadCustomerMessageCount: Math.min(
+        current.unreadCustomerMessageCount,
+        unreadMessageCount,
+      ),
+      updatedAt: new Date().toISOString(),
+    };
+    mockReadStateByConversation.set(conversationId, next);
+    return next;
   },
 };
 

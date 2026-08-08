@@ -26,6 +26,10 @@ export type SupportWorkspaceReadParams = {
    */
   messageCursor?: string;
   /**
+   * @maxLength 2048
+   */
+  messageNewerCursor?: string;
+  /**
    * @minimum 1
    * @maximum 100
    */

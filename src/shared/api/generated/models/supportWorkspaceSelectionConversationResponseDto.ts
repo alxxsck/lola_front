@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportWorkspaceSelectionConversationResponseDtoLastMessage } from "./supportWorkspaceSelectionConversationResponseDtoLastMessage";
+import type { CmsConversationReadPositionResponseDto } from "./cmsConversationReadPositionResponseDto";
 import type { SupportWorkspaceSelectionConversationResponseDtoStatus } from "./supportWorkspaceSelectionConversationResponseDtoStatus";
 
 export interface SupportWorkspaceSelectionConversationResponseDto {
@@ -23,6 +24,7 @@ export interface SupportWorkspaceSelectionConversationResponseDto {
   lastMessageOrdinal: number;
   /** @minimum 0 */
   messageCount: number;
+  readState: CmsConversationReadPositionResponseDto;
   status: SupportWorkspaceSelectionConversationResponseDtoStatus;
   /** @nullable */
   title?: string | null;

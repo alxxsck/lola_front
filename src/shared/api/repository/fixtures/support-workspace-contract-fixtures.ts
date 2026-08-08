@@ -34,6 +34,15 @@ const minimalConversation = {
   lastMessageOrdinal: 0,
   isCurrent: true,
   currentInteractionSessionCount: 0,
+  readState: {
+    conversationId: "30000000-0000-4000-8000-000000000000",
+    lastReadOrdinal: 0,
+    highestOrdinal: 0,
+    firstUnreadOrdinal: null,
+    unreadMessageCount: 0,
+    unreadCustomerMessageCount: 0,
+    updatedAt: null,
+  },
   createdAt: "2026-08-07T09:00:00.000Z",
   updatedAt: "2026-08-07T09:00:00.000Z",
 } as const;
@@ -48,7 +57,12 @@ const minimalSelectionSuccess = {
   endUser,
   case: null,
   conversation: minimalConversation,
-  messages: { items: [], nextCursor: null },
+  messages: {
+    items: [],
+    nextCursor: null,
+    newerCursor: null,
+    anchorOrdinal: null,
+  },
   relatedCases: [],
   relatedConversations: [],
   relatedCasesTruncated: false,
@@ -94,6 +108,15 @@ const fullSelectionSuccess = {
     lastMessageOrdinal: 17,
     isCurrent: true,
     currentInteractionSessionCount: 0,
+    readState: {
+      conversationId: "30000000-0000-4000-8000-000000000001",
+      lastReadOrdinal: 15,
+      highestOrdinal: 17,
+      firstUnreadOrdinal: 16,
+      unreadMessageCount: 2,
+      unreadCustomerMessageCount: 1,
+      updatedAt: "2026-08-07T09:59:00.000Z",
+    },
     createdAt: "2026-08-07T09:00:00.000Z",
     updatedAt: "2026-08-07T10:00:00.000Z",
   },
@@ -122,6 +145,11 @@ const fullSelectionSuccess = {
           commandIds: ["70000000-0000-4000-8000-000000000017"],
           interactionSessionId: null,
           status: "PENDING",
+          generation: 1,
+          version: 0,
+          errorCode: null,
+          retryEligible: false,
+          allowedActions: [],
           acceptedAt: "2026-08-07T10:00:00.000Z",
         },
         createdAt: "2026-08-07T10:00:00.000Z",
@@ -129,12 +157,16 @@ const fullSelectionSuccess = {
       },
     ],
     nextCursor: "messages:older",
+    newerCursor: "messages:newer",
+    anchorOrdinal: 16,
   },
 } satisfies SupportWorkspaceSelectionResponseDto;
 
 const historyNextPage = {
   items: [],
   nextCursor: "messages:oldest",
+  newerCursor: null,
+  anchorOrdinal: null,
 } satisfies SupportWorkspaceMessagePageResponseDto;
 
 const unknownDeliveryStatusMessage = {

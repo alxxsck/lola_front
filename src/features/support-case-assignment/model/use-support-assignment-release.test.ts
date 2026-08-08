@@ -67,8 +67,22 @@ function selection(
       isCurrent: true,
       currentInteractionSessionCount: 1,
       lastMessageAt: null,
+      readState: {
+        conversationId: "conversation-1",
+        lastReadOrdinal: 0,
+        highestOrdinal: 0,
+        firstUnreadOrdinal: null,
+        unreadMessageCount: 0,
+        unreadCustomerMessageCount: 0,
+        updatedAt: null,
+      },
     },
-    messages: { items: [], nextCursor: null },
+    messages: {
+      items: [],
+      nextCursor: null,
+      newerCursor: null,
+      anchorOrdinal: null,
+    },
     ...overrides,
     classificationOptions: overrides.classificationOptions ?? [],
   };

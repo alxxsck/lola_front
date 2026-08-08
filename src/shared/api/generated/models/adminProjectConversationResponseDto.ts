@@ -7,6 +7,7 @@
  */
 import type { AdminProjectConversationEndUserResponseDto } from "./adminProjectConversationEndUserResponseDto";
 import type { AdminProjectConversationResponseDtoLastMessage } from "./adminProjectConversationResponseDtoLastMessage";
+import type { CmsConversationReadPositionResponseDto } from "./cmsConversationReadPositionResponseDto";
 import type { ThreadStatus } from "./threadStatus";
 
 export interface AdminProjectConversationResponseDto {
@@ -22,6 +23,7 @@ export interface AdminProjectConversationResponseDto {
   /** @minimum 0 */
   messageCount: number;
   projectId: string;
+  readState: CmsConversationReadPositionResponseDto;
   status: ThreadStatus;
   /** @nullable */
   title: string | null;

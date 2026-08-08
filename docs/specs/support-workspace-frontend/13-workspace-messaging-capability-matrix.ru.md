@@ -3,8 +3,8 @@
 Статус: normative baseline для frontend Task 01
 Версия: 3
 Дата: 8 августа 2026 года
-Backend source: `0f5404fcc07b9bebc8c23776177d1576e7075bf4`
-Pinned contract: `sha256:0ebe0c20bcc0e41a747d2f876d8d25f19d543ad3ee230ce496fcd0ae6542c3d0`
+Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
+Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b55647719a948aa0e`
 
 Этот документ отделяет опубликованный production contract от backend intent.
 `READY` означает, что операция есть в pinned OpenAPI. `RELEASE_GATED` означает,

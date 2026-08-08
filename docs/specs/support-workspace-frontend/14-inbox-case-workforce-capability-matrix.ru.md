@@ -4,7 +4,7 @@
 Версия: 1
 Дата: 7 августа 2026 года
 Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
-Pinned contract: `sha256:3314e5d11365e22267f384657bad4d21e309037ac335934de7da3ead61b1a59e`
+Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b55647719a948aa0e`
 
 Документ отделяет опубликованный transport contract от возможности построить
 безопасный UI. `READY` означает полный typed contract. `RELEASE_GATED` требует

@@ -109,6 +109,8 @@ test("workspace messaging contract requires the published read and send operatio
     "AdminConversations_listMessages",
     "AdminMessaging_send",
     "AdminMessaging_lookupOutcome",
+    "AdminConversationCollaboration_get",
+    "AdminConversationCollaboration_mark",
   ];
 
   for (const operationId of operationIds) {
@@ -123,6 +125,90 @@ test("workspace messaging contract requires the published read and send operatio
       () => validateSupportWorkspaceMessagingContract(contract),
       new RegExp(operationId, "u"),
     );
+  }
+});
+
+test("workspace read state remains server-owned and directionally pageable", async () => {
+  const { validateSupportWorkspaceMessagingContract } = await import(
+    "./support-workspace-contract.mjs"
+  );
+  const requiredFields = {
+    CmsConversationReadPositionResponseDto: [
+      "conversationId",
+      "lastReadOrdinal",
+      "highestOrdinal",
+      "firstUnreadOrdinal",
+      "unreadMessageCount",
+      "unreadCustomerMessageCount",
+    ],
+    SupportWorkspaceConversationRowResponseDto: ["readState"],
+    SupportWorkspaceSelectionConversationResponseDto: ["readState"],
+    SupportWorkspaceMessagePageResponseDto: ["anchorOrdinal"],
+  };
+
+  for (const [schemaName, fields] of Object.entries(requiredFields)) {
+    for (const field of fields) {
+      const contract = await pinnedContract();
+      const target = contract.components.schemas[schemaName];
+      target.required = target.required.filter((value) => value !== field);
+      assert.throws(
+        () => validateSupportWorkspaceMessagingContract(contract),
+        new RegExp(`${schemaName}.*${field}`, "u"),
+      );
+    }
+  }
+
+  for (const field of ["nextCursor", "newerCursor"]) {
+    const contract = await pinnedContract();
+    delete contract.components.schemas.SupportWorkspaceMessagePageResponseDto
+      .properties[field];
+    assert.throws(
+      () => validateSupportWorkspaceMessagingContract(contract),
+      new RegExp(`SupportWorkspaceMessagePageResponseDto.*${field}`, "u"),
+    );
+  }
+
+  const missingNewerCursor = await pinnedContract();
+  operation(
+    missingNewerCursor,
+    "SupportWorkspace_read",
+  ).parameters = operation(
+    missingNewerCursor,
+    "SupportWorkspace_read",
+  ).parameters.filter((value) => value.name !== "messageNewerCursor");
+  assert.throws(
+    () => validateSupportWorkspaceMessagingContract(missingNewerCursor),
+    /SupportWorkspace_read.*messageNewerCursor/u,
+  );
+});
+
+test("read position GET and ACK retain IAM authority and monotonic request shape", async () => {
+  const { validateSupportWorkspaceMessagingContract } = await import(
+    "./support-workspace-contract.mjs"
+  );
+  const mutations = [
+    (contract) => {
+      delete operation(contract, "AdminConversationCollaboration_get")[
+        "x-iam-permission"
+      ];
+    },
+    (contract) => {
+      delete operation(contract, "AdminConversationCollaboration_mark")[
+        "x-iam-permission"
+      ];
+    },
+    (contract) => {
+      const target = contract.components.schemas.MarkCmsConversationReadPositionDto;
+      target.required = target.required.filter(
+        (value) => value !== "lastReadOrdinal",
+      );
+    },
+  ];
+
+  for (const mutate of mutations) {
+    const contract = await pinnedContract();
+    mutate(contract);
+    assert.throws(() => validateSupportWorkspaceMessagingContract(contract));
   }
 });
 

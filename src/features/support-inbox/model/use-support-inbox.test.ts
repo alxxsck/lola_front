@@ -19,6 +19,15 @@ function conversation(id: string): SupportWorkspaceConversation {
     isCurrent: true,
     currentInteractionSessionCount: 0,
     lastMessageAt: null,
+    readState: {
+      conversationId: id,
+      lastReadOrdinal: 0,
+      highestOrdinal: 1,
+      firstUnreadOrdinal: 1,
+      unreadMessageCount: 1,
+      unreadCustomerMessageCount: 1,
+      updatedAt: null,
+    },
   };
 }
 
@@ -39,6 +48,44 @@ function supportCase(id: string): SupportWorkspaceCaseRow {
 }
 
 describe("support inbox controller", () => {
+  it("applies only monotonic authoritative read state to the matching conversation row", async () => {
+    const source = {
+      readCases: vi.fn(),
+      readConversations: vi.fn().mockResolvedValue({
+        items: [conversation("conversation-1")],
+        nextCursor: null,
+      }),
+    };
+    const controller = createSupportInboxController(
+      { projectId: () => "project-1", mode: () => "ALL_CONVERSATIONS" },
+      source,
+    );
+    await controller.load();
+
+    controller.applyConversationReadState("conversation-1", {
+      conversationId: "conversation-1",
+      lastReadOrdinal: 1,
+      highestOrdinal: 1,
+      firstUnreadOrdinal: null,
+      unreadMessageCount: 0,
+      unreadCustomerMessageCount: 0,
+      updatedAt: "2026-08-08T10:00:00.000Z",
+    });
+    controller.applyConversationReadState("conversation-1", {
+      conversationId: "conversation-1",
+      lastReadOrdinal: 0,
+      highestOrdinal: 1,
+      firstUnreadOrdinal: 1,
+      unreadMessageCount: 1,
+      unreadCustomerMessageCount: 1,
+      updatedAt: null,
+    });
+
+    expect(controller.items.value[0]).toMatchObject({
+      kind: "CONVERSATION",
+      readState: { lastReadOrdinal: 1, unreadMessageCount: 0 },
+    });
+  });
   it("does not commit a page that resolves after the workspace was reset", async () => {
     let resolvePage: (value: { items: []; nextCursor: null }) => void = () => {
       throw new Error("The inbox request did not start");

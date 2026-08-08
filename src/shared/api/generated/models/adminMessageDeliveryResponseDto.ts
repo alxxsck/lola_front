@@ -5,16 +5,26 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminMessageDeliveryResponseDtoAllowedActionsItem } from "./adminMessageDeliveryResponseDtoAllowedActionsItem";
 import type { AdminMessageDeliveryResponseDtoChannel } from "./adminMessageDeliveryResponseDtoChannel";
 import type { AdminMessageDeliveryResponseDtoStatus } from "./adminMessageDeliveryResponseDtoStatus";
 
 export interface AdminMessageDeliveryResponseDto {
   acceptedAt?: string;
+  allowedActions: AdminMessageDeliveryResponseDtoAllowedActionsItem[];
   channel?: AdminMessageDeliveryResponseDtoChannel;
   commandIds: string[];
+  /** @nullable */
+  errorCode: string | null;
+  /** @minimum 1 */
+  generation: number;
   id?: string;
   /** @nullable */
   interactionSessionId?: string | null;
+  /** Domain eligibility only; the current actor must also have reply capability. */
+  retryEligible: boolean;
   /** Acceptance is PENDING; only an authenticated client ACK may advance to DELIVERED or READ. */
   status: AdminMessageDeliveryResponseDtoStatus;
+  /** @minimum 0 */
+  version: number;
 }

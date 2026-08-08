@@ -27,6 +27,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "load-older": [];
+  "load-newer": [];
+  "visible-high-water": [ordinal: number];
   "cancel-translation": [];
   "change-translation-mode": [mode: "ORIGINAL" | "TRANSLATED"];
   "reconcile-required": [issues: ConversationSurfaceReconcileIssue[]];
@@ -62,6 +64,8 @@ const surfaceMessages = computed(() =>
     :composer="composer"
     :ai-suspension="aiSuspension"
     @load-older="emit('load-older')"
+    @load-newer="emit('load-newer')"
+    @visible-high-water="emit('visible-high-water', $event)"
     @cancel-translation="emit('cancel-translation')"
     @change-translation-mode="emit('change-translation-mode', $event)"
     @reconcile-required="emit('reconcile-required', $event)"
