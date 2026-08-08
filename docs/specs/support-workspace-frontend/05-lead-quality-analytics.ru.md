@@ -262,3 +262,32 @@ Leaderboard по скорости ответа без качества, слож
 - аналитика показывает definition/timezone/cohort и защищённый drill-down;
 - browser не вычисляет project metrics из неполных страниц;
 - QA/analytics routes не включаются до готовности IAM и OpenAPI contracts.
+
+## 8. Case Intelligence funnel, качество и стоимость
+
+Support analytics после backend handoff показывает server-owned funnel:
+
+```text
+Conversations with USER activity
+  → product conversations
+  → created/reopened Cases
+  → monitored Cases
+  → offered handoff
+  → Human Escalations
+  → accepted human work
+  → verified/assumed/abandoned/unresolved outcome
+```
+
+Нужно отдельно показывать volume и качество Detection, Escalation и Safety:
+`CASUAL / PRODUCT_INQUIRY / PRODUCT_PROBLEM`, `CREATE / ATTACH / REOPEN /
+DEFER`, containment, false handoff, missed critical, correction, critical
+recall, time-to-escalation и knowledge gaps. Cost раскрывается по stage/model/
+policy revision и нормализуется на 1 000 signals, accepted Case, Escalation и
+resolved Case; cache/tokens/latency не смешиваются с product outcome.
+
+Обычный monitored Case не считается уведомлением или человеческим handoff.
+Источник эскалации хранится отдельно: `END_USER_REQUEST`,
+`RETENIVE_DECISION`, `CMS_USER`, `SYSTEM_POLICY`, `SAFETY`. Каждая метрика
+показывает definition, numerator/denominator, timezone, cohort,
+complete-through, policy revision и suppression rules. Browser не восстанавливает
+funnel из загруженных Messages.

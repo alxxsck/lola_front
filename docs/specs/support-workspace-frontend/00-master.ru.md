@@ -22,7 +22,8 @@
 /support/control       — live-контроль лида
 /support/quality       — проверка качества
 /support/analytics     — историческая статистика
-/support/settings/*    — настройки по отдельным permissions
+/support/settings/case-intelligence/* — detection, escalation, safety и evaluation
+/support/settings/*    — остальные настройки по отдельным permissions
 ```
 
 Долгоживущая работа оператора должна происходить на route-level странице, а не
@@ -43,6 +44,8 @@ dialog и Support быть не может. `/live` остаётся диагн�
 - inspector Case, пользователя, данных, знаний, интеграций и activity;
 - вложения, macros и Internal Knowledge после готовности контрактов;
 - отдельные поверхности для оперативного контроля, QA и аналитики;
+- guided Case Intelligence: detection, human escalation, safety routing,
+  model/budget, evaluation, versions и decision log;
 - точная permission/capability модель, accessibility и тестирование.
 
 Не входят:
@@ -69,15 +72,19 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [08-remediation-plan.ru.md](./08-remediation-plan.ru.md)                                                       | проверенный gap analysis и порядок устранения разрывов                    |
 | [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                                                     | целевой UI/UX, responsive и visual acceptance                             |
 | [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)                               | full-tab shell, кнопка, motion, scroll/focus contract                     |
-| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F7, cutover и отдельный integration track             |
-| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 33 локальных задач и их blocking edges                     |
+| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F8, cutover и отдельный integration track             |
+| [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 37 локальных задач и их blocking edges                     |
 | [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)             | W0 contract matrix workspace, history, send, delivery и blockers          |
 | [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md)           | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers     |
 | [15-content-lead-notification-capability-matrix.ru.md](./15-content-lead-notification-capability-matrix.ru.md) | W0 matrix notes, macros, Internal Knowledge, Lead Control и notifications |
-| [Backend-блокеры задач 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)          | актуальные direct/partial/transitive gates по backend `origin/main`        |
+| [16-case-intelligence-detection-escalation.ru.md](./16-case-intelligence-detection-escalation.ru.md)           | Case Detection, Human Escalation, safety, cost, evaluation и settings IA  |
+| [Backend-блокеры задач 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)        | актуальные direct/partial/transitive gates по backend `origin/main`       |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
 [support-operator-workspace-ux.ru.md](../../research/support-operator-workspace-ux.ru.md).
+
+Primary-source discovery Case Intelligence, escalation, safety, evaluation и cost:
+[support-case-intelligence-escalation-primary-sources-2026-08-08.ru.md](../../research/support-case-intelligence-escalation-primary-sources-2026-08-08.ru.md).
 
 ## 4. Нормативные продуктовые понятия
 
@@ -92,9 +99,21 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | Presence/viewing/typing | Краткоживущая подсказка о присутствии                | Ownership                 |
 | Read position           | Личная durable позиция чтения actor                  | Socket receipt            |
 | Delivery                | Доставка конкретного сообщения                       | HTTP success или presence |
+| Case Detection Decision | Нужно ли создать, связать или переоткрыть Case       | Human Escalation          |
+| Review Disposition      | Нужен ли фоновый monitoring/QA review                | Human handoff             |
+| Handoff Action          | Offer, один вопрос или committed Escalation          | Review или routing        |
+| Safety Decision         | Обязательный risk outcome и safe-response gate       | Project budget            |
+| Case Escalation         | Durable причина handoff человеку                     | Assignment/notification   |
 
 Frontend обязан показывать эти состояния раздельно. Один зелёный индикатор
 «активен» для них запрещён.
+
+Для каждого USER-сигнала backend независимо определяет контекст разговора
+`CASUAL / PRODUCT_INQUIRY / PRODUCT_PROBLEM`, review disposition, handoff
+action и Safety decision. Обычный продуктовый вопрос может стать Case для
+контроля качества, не создавая push или персонального attention. Уведомление
+появляется только из committed Escalation, Assignment либо отдельного
+Operational Alert.
 
 ## 5. Пользователи и главные задачи
 

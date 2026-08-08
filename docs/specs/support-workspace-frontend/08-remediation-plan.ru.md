@@ -75,7 +75,7 @@ Surface. «Переиспользовали repository/controller, но нари
   `createdAt + id`, а не по authoritative `ordinal`, и перед отправкой требует
   активную `onlineSession`. Это прямо блокирует durable offline reply.
 - В UI отсутствуют read position/unread, delivery `ACCEPTED/DELIVERED/READ/
-  FAILED`, author snapshot, viewers/typing, version-conflict recovery,
+FAILED`, author snapshot, viewers/typing, version-conflict recovery,
   attachments и internal-note visibility.
 - Нынешние reply templates захардкожены в dialog; это не Support Macro с
   catalog, revision, variables, provenance и usage.
@@ -93,23 +93,23 @@ Surface. «Переиспользовали repository/controller, но нари
 
 ## 3. Матрица разрыва
 
-| Контур | Требуемый результат | Состояние фронтенда | Блокер/следующий ход |
-| --- | --- | --- | --- |
-| Рабочее место | Три панели, route state, Cases + все Conversations | Раздельные `/cases` и profile modal | Построить shell и переносить извлечённые модули |
-| Project inbox | system views, cursor, filters, search, saved views | Endpoint Conversations есть, UI нет; Case list отдельный | F1 после review DTO; остальное после Tickets 11–12 в pinned OpenAPI |
-| Лента/отправка | ordinal, unread, delivery, offline, draft recovery | timestamp order, online gate, нет delivery/read | Сначала Chat/Durable Delivery contract и F2 |
-| Case работа | lifecycle, category/priority, assignment, SLA, inspector | Старые Case commands есть, нет общей рабочей поверхности | Скомпоновать только после allowedActions/revision contract |
-| Workforce | availability, capacity, teams, skills, offers/reservation | Нет UI | Принять Tickets 05–07, 13–14 через OpenAPI и F3 |
-| Коллаборация | viewers, typing, conflict notice, public/note modes | Presence смешан с online session; note нет | Новые realtime/read contracts, F4 |
-| Вложения | upload/scan/grants, public/note isolation | Нет support contract/UI | Attachment contract и F4 |
-| Контент | macros, internal notes, Internal Knowledge в inspector | hardcoded templates; AI knowledge отдельно | Tickets 15–16 OpenAPI и F5; не переиспользовать `/knowledge` как внутреннюю базу |
-| Настройки | teams, queues, routing, SLA, detection/classification, macros, knowledge | Только raw JSON category/priority policy | Заменить по разделам после publishable revision contracts |
-| Управление | control center, alerts, causal timeline | Нет route/UI | Tickets 09–10 OpenAPI и F6 |
-| QA/аналитика | versioned review, scorecard, reports/drill-down | Нет contracts; старые Case counts не эквивалентны | Отдельный backend/IAM discovery и F7; не считать в браузере |
-| Public End User chat | claimant identity, readBy, typing, attachments, offline delivery | SDK не является зависимостью/модулем этого repo | Параллельный SDK track и version gate до delivery rollout |
-| Browser notifications | личные preferences, devices, permission recovery, secure deep link | Нет Support UI | Ticket 20 contract; не показывать ложный enabled state |
-| External work | connection/mapping, Case actions, compatibility inbox, recovery | Нет UI | Отдельный adapter/OpenAPI vertical; core Case не зависит от vendor |
-| Retention/legal hold | tombstone/purge/hold и propagation | Нет пользовательских/операционных состояний | Backend policy + permissioned settings/audit до F4–F6 |
+| Контур                | Требуемый результат                                                      | Состояние фронтенда                                      | Блокер/следующий ход                                                             |
+| --------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Рабочее место         | Три панели, route state, Cases + все Conversations                       | Раздельные `/cases` и profile modal                      | Построить shell и переносить извлечённые модули                                  |
+| Project inbox         | system views, cursor, filters, search, saved views                       | Endpoint Conversations есть, UI нет; Case list отдельный | F1 после review DTO; остальное после Tickets 11–12 в pinned OpenAPI              |
+| Лента/отправка        | ordinal, unread, delivery, offline, draft recovery                       | timestamp order, online gate, нет delivery/read          | Сначала Chat/Durable Delivery contract и F2                                      |
+| Case работа           | lifecycle, category/priority, assignment, SLA, inspector                 | Старые Case commands есть, нет общей рабочей поверхности | Скомпоновать только после allowedActions/revision contract                       |
+| Workforce             | availability, capacity, teams, skills, offers/reservation                | Нет UI                                                   | Принять Tickets 05–07, 13–14 через OpenAPI и F3                                  |
+| Коллаборация          | viewers, typing, conflict notice, public/note modes                      | Presence смешан с online session; note нет               | Новые realtime/read contracts, F4                                                |
+| Вложения              | upload/scan/grants, public/note isolation                                | Нет support contract/UI                                  | Attachment contract и F4                                                         |
+| Контент               | macros, internal notes, Internal Knowledge в inspector                   | hardcoded templates; AI knowledge отдельно               | Tickets 15–16 OpenAPI и F5; не переиспользовать `/knowledge` как внутреннюю базу |
+| Настройки             | teams, queues, routing, SLA, detection/classification, macros, knowledge | Только raw JSON category/priority policy                 | Заменить по разделам после publishable revision contracts                        |
+| Управление            | control center, alerts, causal timeline                                  | Нет route/UI                                             | Tickets 09–10 OpenAPI и F6                                                       |
+| QA/аналитика          | versioned review, scorecard, reports/drill-down                          | Нет contracts; старые Case counts не эквивалентны        | Отдельный backend/IAM discovery и F7; не считать в браузере                      |
+| Public End User chat  | claimant identity, readBy, typing, attachments, offline delivery         | SDK не является зависимостью/модулем этого repo          | Параллельный SDK track и version gate до delivery rollout                        |
+| Browser notifications | личные preferences, devices, permission recovery, secure deep link       | Нет Support UI                                           | Ticket 20 contract; не показывать ложный enabled state                           |
+| External work         | connection/mapping, Case actions, compatibility inbox, recovery          | Нет UI                                                   | Отдельный adapter/OpenAPI vertical; core Case не зависит от vendor               |
+| Retention/legal hold  | tombstone/purge/hold и propagation                                       | Нет пользовательских/операционных состояний              | Backend policy + permissioned settings/audit до F4–F6                            |
 
 ## 4. Обязательные правила до начала реализации
 
@@ -140,7 +140,7 @@ Surface. «Переиспользовали repository/controller, но нари
 1. unresolved product/contract questions из раздела 8 оформляются как
    `wayfinder`-карта decision tickets с blocking edges;
 2. принятые решения схлопываются в одну normative spec и capability matrix W0;
-3. фазы F0–F7 и P2 режутся на tracer-bullet tickets, каждый со своим backend
+3. фазы F0–F8 и P2 режутся на tracer-bullet tickets, каждый со своим backend
    contract gate, feature flag и release proof;
 4. каждый готовый ticket реализуется в свежем контексте через TDD и закрывается
    Standards + Spec review.
@@ -316,6 +316,11 @@ editor-ами с preview/publish/rollback и audit.
 **Exit.** Оператор отрабатывает Case lifecycle и понимает ответственность,
 ожидание, SLA и классификацию, не переходя в старые страницы.
 
+Case Intelligence settings не входят в exit F3: старый JSON editor остаётся
+compatibility route, а полноценные Detection/Escalation/Safety policies,
+evaluation и rollout выполняются отдельной F8 по
+[спецификации](./16-case-intelligence-detection-escalation.ru.md).
+
 ### F4 — совместная работа и вложения
 
 **Frontend work.**
@@ -403,6 +408,23 @@ systems остаются adapter boundary.
 **Exit.** Ежедневный операторский flow выполняется в Support; старый dialog
 остаётся только launcher-ом или удалён после measured adoption.
 
+### F8 — Case Intelligence Detection, Escalation и evaluation
+
+**Backend handoff.** Closed versioned DTO и commands для Detection Policy,
+Escalation Policy, platform-owned Safety Policy overlay, approved model/budget,
+dry-run, datasets, shadow comparison, decision log, metrics и rollout. Каждая
+decision закрепляет policy/model/compiler revisions, reason/evidence и cost.
+
+**Frontend work.** Guided settings IA, rule/category editors, stateful
+escalation scenarios, safety routing overlay, test console, evaluation,
+versions/audit, decision log и Case-scoped explain. Ordinary Case и committed
+Human Escalation визуально и операционно разделены.
+
+**Exit.** Project может дёшево и проверяемо отличать casual общение от
+продуктового обращения, управлять условиями handoff и измерять качество,
+стоимость и последствия до publish. Safety floor не отключается Project
+budget/pause; browser не исполняет policy и не считает метрики локально.
+
 ## 6. Очередность backend handoff
 
 ```text
@@ -415,6 +437,7 @@ Macros/notes + Internal Knowledge ───────> F5
 Lead control/alerts/notifications ───────> F6
 External-work adapter contracts ─────────> F6
 QA/analytics contracts ──────────────────> F7
+Case Intelligence policies/runtime/evals ─> F8
 ```
 
 Ticket 12 (search/saved views) может идти параллельно routing после Queue

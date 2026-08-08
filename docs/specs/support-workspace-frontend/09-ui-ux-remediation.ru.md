@@ -133,12 +133,12 @@ audit. Нельзя собирать один универсальный JSON ed
 
 ### Breakpoints и размеры
 
-| Viewport | Обязательная композиция |
-| --- | --- |
-| `≥1600px` | app rail `64`, Support nav `208`, inbox `336`, Conversation `min 600`, inspector `392` |
+| Viewport      | Обязательная композиция                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `≥1600px`     | app rail `64`, Support nav `208`, inbox `336`, Conversation `min 600`, inspector `392`                        |
 | `1280–1599px` | app rail `56–64`, Support nav collapsed `48–56`, inbox `300–320`, Conversation `min 520`, inspector `336–360` |
-| `768–1279px` | compact rail, inbox `288–320` + Conversation; inspector — right drawer `min(420px, 92vw)` |
-| `<768px` | одна рабочая поверхность; route stack и системный Back; bottom sheet только для коротких действий |
+| `768–1279px`  | compact rail, inbox `288–320` + Conversation; inspector — right drawer `min(420px, 92vw)`                     |
+| `<768px`      | одна рабочая поверхность; route stack и системный Back; bottom sheet только для коротких действий             |
 
 На `1440px` существующий CMS sidebar шириной `250px` оставляет всего `1190px`.
 Этого недостаточно для inbox + полноценной переписки + inspector. Поэтому
@@ -177,19 +177,19 @@ Support route переключает общий layout на компактный
 Нужно использовать существующие semantic tokens, не hardcoded hex и не новую
 параллельную палитру.
 
-| Область | Оформление |
-| --- | --- |
-| app rail | `--surface-card`, правая граница `--border-default` |
-| Support nav | `--surface-subtle` |
-| inbox | `--surface-card` |
-| message stream | `color-mix(in srgb, var(--surface-canvas) 96%, var(--brand) 4%)` |
-| inspector | `--surface-card` |
-| selected inbox row | `--surface-active` + brand accent слева `2px` |
-| unread row | text strong + unread dot; не заливать всю строку кислотным brand |
-| composer | `--surface-raised`, border и мягкая тень первого уровня |
-| public agent bubble | neutral raised surface; Lola/human различаются identity, не цветом текста |
-| end-user bubble | brand tint с проверенным contrast |
-| internal note | status-specific subtle background + иконка + явный label `Внутренняя заметка` |
+| Область             | Оформление                                                                    |
+| ------------------- | ----------------------------------------------------------------------------- |
+| app rail            | `--surface-card`, правая граница `--border-default`                           |
+| Support nav         | `--surface-subtle`                                                            |
+| inbox               | `--surface-card`                                                              |
+| message stream      | `color-mix(in srgb, var(--surface-canvas) 96%, var(--brand) 4%)`              |
+| inspector           | `--surface-card`                                                              |
+| selected inbox row  | `--surface-active` + brand accent слева `2px`                                 |
+| unread row          | text strong + unread dot; не заливать всю строку кислотным brand              |
+| composer            | `--surface-raised`, border и мягкая тень первого уровня                       |
+| public agent bubble | neutral raised surface; Lola/human различаются identity, не цветом текста     |
+| end-user bubble     | brand tint с проверенным contrast                                             |
+| internal note       | status-specific subtle background + иконка + явный label `Внутренняя заметка` |
 
 Priority остаётся badge внутри строки. Красная/оранжевая рамка всей карточки
 создаёт визуальный шум и не должна быть главным носителем состояния. SLA risk,
@@ -352,7 +352,7 @@ Inspector сохраняет выбранный tab per operator, но permissio
   история чата никогда не копируется автоматически.
 - Case inspector: link existing, create, add comment и unlink по
   `allowedActions`; outbound command имеет `В очереди / Отправляется / Повтор /
-  Создано / Требует внимания / Результат неизвестен`, idempotency и timeline.
+Создано / Требует внимания / Результат неизвестен`, idempotency и timeline.
   `202` означает pending, а не success. Vendor status не заменяет canonical
   Lola Case state.
 - External comments имеют отдельную timeline. Internal comment — безопасный
@@ -375,10 +375,31 @@ Inspector сохраняет выбранный tab per operator, но permissio
 
 ### Case Intelligence
 
-Guided sections: include/exclude topics, category examples, model, confidence,
-budget, aggregation/router, auto-apply rules. Preview обязан показать shadow
-sample, confusion/error buckets, precision/recall/cost и manual corrections.
-Publish не разрешён без понятного impact и rollback revision.
+Полная IA и interaction-модель закреплены в
+[Case Intelligence Detection и Human Escalation](./16-case-intelligence-detection-escalation.ru.md).
+Настройки нельзя сводить к одному JSON textarea или одному списку ключевых слов.
+Это отдельная settings-поверхность с разделами:
+
+- `Обзор`: runtime state, published revisions, backlog, quality/cost guards;
+- `Определение обращений`: scope, categories, positive/negative examples,
+  closed rule builder, thresholds и test console;
+- `Эскалация`: direct human request, `offer / ask once / escalate`, stateful
+  failure/clarification/repeat counters и routing reference;
+- `Safety routing`: заблокированные platform rules и разрешённый Project
+  overlay для queue/SLA/channel;
+- `Модели и бюджет`: approved profiles, прогноз, limits, fallback и cost;
+- `Оценка`: candidate/published comparison, confusion/error buckets,
+  precision/recall/critical recall/cost;
+- `Версии и audit`: diff, publish/canary/pause/rollback;
+- `Журнал решений`: reason codes, rules, confidence, policy/model pins и
+  безопасные evidence references.
+
+Desktop использует section navigation и один content canvas. На tablet
+navigation становится drawer, на mobile editor list/detail/preview идут route
+stack с сохранением draft. Publish недоступен без schema/overlap/quality gate и
+понятного impact; rollback создаёт новую immutable revision. Ordinary Case не
+показывает notification control: attention появляется только после committed
+Escalation/Assignment/Operational Alert.
 
 ## 9. Public End User chat — отдельный UI-трек
 
@@ -391,7 +412,7 @@ CMS workspace не завершает продукт без публичного
 - Для человека показываются approved display name/avatar snapshot, для Lola —
   стабильная product identity. Внутренние team/operator IDs не раскрываются.
 - Bubble показывает автора, вложения и read semantics `Lola / Support / оба /
-  никто` по published projection, а не по frontend timer.
+никто` по published projection, а не по frontend timer.
 - Read ACK отправляется high-water только после фактического render/visibility
   и повторяется безопасно после reconnect.
 - Typing bidirectional; Lola typing выводится из durable AssistantTurn, человек
@@ -446,16 +467,16 @@ CMS workspace не завершает продукт без публичного
 
 Перед rollout каждой vertical нужны снимки и интерактивная проверка:
 
-| Сценарий | Desktop | Tablet | Mobile |
-| --- | --- | --- | --- |
-| inbox empty/loading/error | `1600×1000`, `1440×1000` | `1024×768` | `390×844` |
-| selected Case + inspector | да | drawer | route |
-| all Conversations without Case | да | да | да |
-| first unread + pagination anchor | да | да | да |
-| public reply/note/error/unknown outcome | light + dark | dark | light + keyboard |
-| long text/image/document | light + dark | да | narrow embedded |
-| SLA breach/attention/unassigned | да | да | да |
-| permission revoke/project switch | да | да | да |
+| Сценарий                                | Desktop                  | Tablet     | Mobile           |
+| --------------------------------------- | ------------------------ | ---------- | ---------------- |
+| inbox empty/loading/error               | `1600×1000`, `1440×1000` | `1024×768` | `390×844`        |
+| selected Case + inspector               | да                       | drawer     | route            |
+| all Conversations without Case          | да                       | да         | да               |
+| first unread + pagination anchor        | да                       | да         | да               |
+| public reply/note/error/unknown outcome | light + dark             | dark       | light + keyboard |
+| long text/image/document                | light + dark             | да         | narrow embedded  |
+| SLA breach/attention/unassigned         | да                       | да         | да               |
+| permission revoke/project switch        | да                       | да         | да               |
 
 Acceptance checklist:
 

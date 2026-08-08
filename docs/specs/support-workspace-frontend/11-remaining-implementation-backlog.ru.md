@@ -34,9 +34,9 @@ F1 inbox/navigation ──> F2 messaging reliability ──> F3 Case desk
 F6 lead control + notifications
   ↓
 F7 QA/analytics contracts
-  ↓
 cutover
 
+Параллельно после backend handoff: F8 Case Intelligence policies/evaluation
 Отдельно после core: JSM / HelpDesk integrations
 ```
 
@@ -218,6 +218,31 @@ Analytics:
 Браузер не вычисляет employee score или историческую статистику из загруженных
 страниц сообщений.
 
+### F8. Case Intelligence Detection и Human Escalation
+
+Эта вертикаль не является частью обычной classification correction в F3 и не
+разблокируется старым raw JSON policy endpoint. Нужны отдельные versioned
+backend contracts из
+[нормативной спецификации](./16-case-intelligence-detection-escalation.ru.md).
+
+- синхронизировать closed DTO для Detection, Escalation, Safety overlay,
+  model/budget profiles и Decision projection;
+- построить guided Detection editor: scope, categories, positive/negative
+  examples, typed rules, thresholds, ambiguity и test console;
+- построить Escalation editor: explicit human request, offer/ask/escalate,
+  trusted failure counters, urgency и routing policy reference;
+- показать platform safety floor как locked, разрешая только published Project
+  routing overlay;
+- добавить candidate evaluation, shadow/canary, quality/cost admission,
+  version diff, audit и rollback;
+- дать permissioned Decision log и Case-scoped explain без raw prompt/PII;
+- добавить server-owned funnel от USER activity до Case, Escalation и outcome;
+- не вычислять decisions, quality или cost из Messages в браузере.
+
+Exit: продуктовый вопрос наблюдаем как Case без ложного push, явный handoff и
+safety создают durable Escalation, а лид может безопасно настроить, проверить,
+опубликовать и откатить policy с измеримым качеством и стоимостью.
+
 ## 4. Cutover
 
 Перед переводом операторов нужны:
@@ -286,7 +311,7 @@ panel и не обещает действие, которого нет в опу
 - история чата никогда не копируется автоматически;
 - internal/public external comment с разными permissions и подтверждением;
 - status `В очереди / Отправляется / Создано / Требует внимания /
-  Результат неизвестен`;
+Результат неизвестен`;
 - HTTP `202` остаётся pending до remote confirmation;
 - копирование remote text создаёт редактируемый chat draft, но не отправляет
   его пользователю.
@@ -299,6 +324,7 @@ Integration exit: disconnect/reconnect, `202`, retry и unknown outcome не
 ```text
 P0: W0, F0, F1, F2, F3, core cutover
 P1: F4, F5, завершение Lead Control, browser notifications
+P1 после backend handoff: F8 Case Intelligence Detection/Escalation
 P2: JSM/HelpDesk integration track
 P3: QA/analytics после готовности отдельных контрактов
 ```

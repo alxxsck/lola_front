@@ -349,16 +349,16 @@ Escalation. Safety regex поднимают priority до `CRITICAL`, однак
 
 ## 5. Lifecycle, publish, rollback и audit
 
-| Возможность | Фактическое состояние |
-| --- | --- |
-| Draft | Реализован; новый draft supersede-ит предыдущий |
-| Preview | Реализован, но preview показывает compiled policy и примеры priority floors, а не прогон текстовых Case examples |
-| Publish | Реализован с expected version и idempotency |
-| Immutable revision | Реализована в `EndUserCasePolicyRevision`; Cases/analysis runs pin-ят revision ([`schema.prisma`, строки 3728–3752](/Users/alxxsck/Documents/Lola_backend/prisma/schema.prisma#L3728-L3752)) |
-| История revisions | Сохраняется в БД как `SUPERSEDED`, но публичного list/get revision API нет |
-| Rollback/restore | First-class endpoint отсутствует; старую revision нельзя выбрать и опубликовать через текущий API |
-| Audit | Есть IAM mutation audit с operation/revision/replay; publish reason принимается, но не хранится как отдельное читаемое поле revision/command |
-| Shadow dataset/evaluation | Нормативно обязательно, но authoring API, dataset lifecycle и measurable publish gate для Case Policy отсутствуют |
+| Возможность                                 | Фактическое состояние                                                                                                                                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Draft                                       | Реализован; новый draft supersede-ит предыдущий                                                                                                                                                           |
+| Preview                                     | Реализован, но preview показывает compiled policy и примеры priority floors, а не прогон текстовых Case examples                                                                                          |
+| Publish                                     | Реализован с expected version и idempotency                                                                                                                                                               |
+| Immutable revision                          | Реализована в `EndUserCasePolicyRevision`; Cases/analysis runs pin-ят revision ([`schema.prisma`, строки 3728–3752](/Users/alxxsck/Documents/Lola_backend/prisma/schema.prisma#L3728-L3752))              |
+| История revisions                           | Сохраняется в БД как `SUPERSEDED`, но публичного list/get revision API нет                                                                                                                                |
+| Rollback/restore                            | First-class endpoint отсутствует; старую revision нельзя выбрать и опубликовать через текущий API                                                                                                         |
+| Audit                                       | Есть IAM mutation audit с operation/revision/replay; publish reason принимается, но не хранится как отдельное читаемое поле revision/command                                                              |
+| Shadow dataset/evaluation                   | Нормативно обязательно, но authoring API, dataset lifecycle и measurable publish gate для Case Policy отсутствуют                                                                                         |
 | Automatic rollback/degrade by quality drift | Нормативно описан ([Support Platform backend, строки 546–555](/Users/alxxsck/Documents/Lola_backend/docs/specs/support-platform/01-backend.ru.md#L546-L555)), в текущем Case Policy lifecycle отсутствует |
 
 OpenAPI также недостаточно строг для полноценного нового frontend: `groups` и `priorityRules`
@@ -371,26 +371,26 @@ Generated client не получает закрытые типы вложенн�
 
 ## 6. Итоговая матрица
 
-| Требование | Документация | Код/API сейчас | Вывод |
-| --- | --- | --- | --- |
-| Проверить каждый USER message | Да | Durable signal на каждый completed message | **Есть** |
-| Не вызывать модель синхронно на каждый message | Да | Debounce + batch до 8 signals | **Есть** |
-| `NO_CASE/CREATE/ATTACH/REOPEN` | Да | Structured Router + backend validation | **Есть** |
-| Category code/label | Да | Policy editor + Router evidence | **Есть** |
-| Category description/examples | Да | Сохраняются, но не доходят до Router | **Частично, фактически не влияют** |
-| Include/exclude examples/rules | Да | Нет поля и compiler/runtime | **Нет** |
-| Keywords для Case detection | Не обязательны как единственный механизм, но допустимы внутри deterministic rules | Нет Project-owned механизма | **Нет** |
-| Deterministic duplicate/noise/exclusion/attach gate до AI | Да | Отдельные куски есть, provider call не обходится полноценно | **Частично** |
-| Настраиваемый confidence/ambiguity | Да | `0.75/0.65` hardcoded; low confidence parked | **Нет настройки** |
-| Отдельный `CASE_INTELLIGENCE` model profile | Да | Только ASSISTANT/TRANSLATION; structured model deployment-wide | **Нет** |
-| Project budget limits | Да | Platform env caps и read-only cost summary | **Нет Project-настройки** |
-| Version/draft/preview/publish | Да | Реализовано | **Есть** |
-| Revision history/rollback | Да | Superseded rows есть, public history/rollback API нет | **Частично** |
-| Shadow dataset/quality gate | Да | Нет authoring/evaluation lifecycle | **Нет** |
-| Явная просьба позвать человека | Да | Product Action + trusted message check + Case Escalation | **Есть, если action включён** |
-| Project keywords для просьбы о человеке | Да в End User Cases spec | Adapter читает, public schema запрещает | **Не работает** |
-| Ручная эскалация CMS User | Да | REST command + IAM/OCC/audit | **Есть** |
-| Автоматическая эскалация по неспособности Lola/high-risk policy | Архитектурно предусмотрена | Нет production caller `RETENIVE_DECISION` | **Нет** |
+| Требование                                                      | Документация                                                                      | Код/API сейчас                                                 | Вывод                              |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------- |
+| Проверить каждый USER message                                   | Да                                                                                | Durable signal на каждый completed message                     | **Есть**                           |
+| Не вызывать модель синхронно на каждый message                  | Да                                                                                | Debounce + batch до 8 signals                                  | **Есть**                           |
+| `NO_CASE/CREATE/ATTACH/REOPEN`                                  | Да                                                                                | Structured Router + backend validation                         | **Есть**                           |
+| Category code/label                                             | Да                                                                                | Policy editor + Router evidence                                | **Есть**                           |
+| Category description/examples                                   | Да                                                                                | Сохраняются, но не доходят до Router                           | **Частично, фактически не влияют** |
+| Include/exclude examples/rules                                  | Да                                                                                | Нет поля и compiler/runtime                                    | **Нет**                            |
+| Keywords для Case detection                                     | Не обязательны как единственный механизм, но допустимы внутри deterministic rules | Нет Project-owned механизма                                    | **Нет**                            |
+| Deterministic duplicate/noise/exclusion/attach gate до AI       | Да                                                                                | Отдельные куски есть, provider call не обходится полноценно    | **Частично**                       |
+| Настраиваемый confidence/ambiguity                              | Да                                                                                | `0.75/0.65` hardcoded; low confidence parked                   | **Нет настройки**                  |
+| Отдельный `CASE_INTELLIGENCE` model profile                     | Да                                                                                | Только ASSISTANT/TRANSLATION; structured model deployment-wide | **Нет**                            |
+| Project budget limits                                           | Да                                                                                | Platform env caps и read-only cost summary                     | **Нет Project-настройки**          |
+| Version/draft/preview/publish                                   | Да                                                                                | Реализовано                                                    | **Есть**                           |
+| Revision history/rollback                                       | Да                                                                                | Superseded rows есть, public history/rollback API нет          | **Частично**                       |
+| Shadow dataset/quality gate                                     | Да                                                                                | Нет authoring/evaluation lifecycle                             | **Нет**                            |
+| Явная просьба позвать человека                                  | Да                                                                                | Product Action + trusted message check + Case Escalation       | **Есть, если action включён**      |
+| Project keywords для просьбы о человеке                         | Да в End User Cases spec                                                          | Adapter читает, public schema запрещает                        | **Не работает**                    |
+| Ручная эскалация CMS User                                       | Да                                                                                | REST command + IAM/OCC/audit                                   | **Есть**                           |
+| Автоматическая эскалация по неспособности Lola/high-risk policy | Архитектурно предусмотрена                                                        | Нет production caller `RETENIVE_DECISION`                      | **Нет**                            |
 
 ## 7. Что нужно закрыть на backend до полноценного frontend
 
@@ -419,3 +419,17 @@ Generated client не получает закрытые типы вложенн�
 Intelligence Settings. Делать на фронте поля include/exclude, keywords, threshold, model, budget,
 shadow и rollback без backend contract означало бы хранить неработающие настройки или подменять
 server policy клиентской логикой.
+
+## 8. Зафиксированная декомпозиция
+
+После code/spec и primary-source discovery исторический backend Ticket 18 признан слишком широким
+и декомпозирован без изменения существующей нумерации core Support:
+
+- backend 31 — closed Detection/Escalation/Safety policy и Decision runtime contract;
+- backend 32 — cheap structured Router, separate model profile, budget и failure recovery;
+- backend 33 — stateful Human Escalation, trusted outcome counters и Safety integration;
+- backend 34 — dataset/evaluation, Decision log, cost, shadow/canary/publish/rollback.
+
+Frontend разбит соответственно на 34–37: contract/settings foundation, Detection editor,
+Escalation/Safety editor и evaluation/rollout. Нормативные контракты и UI описаны в
+[Case Intelligence Detection и Human Escalation](../specs/support-workspace-frontend/16-case-intelligence-detection-escalation.ru.md).

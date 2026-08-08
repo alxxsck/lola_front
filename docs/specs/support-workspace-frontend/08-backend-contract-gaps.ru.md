@@ -10,6 +10,24 @@
 за которыми frontend не должен создавать локальную «истину» или показывать
 псевдо-функциональность.
 
+## P1: Case Intelligence Detection и Human Escalation
+
+Существующий Case policy/OpenAPI и legacy `/cases/settings` не разблокируют
+полноценную настройку. На фактическом runtime каждый USER message создаёт
+signal, но Project не может отдельно опубликовать typed Detection Policy и
+Escalation Policy, настроить include/exclude, confidence tiers, approved cheap
+model/budget, stateful failure/clarification counters, test/shadow evaluation
+или безопасный rollback. Описание и examples taxonomy сохраняются, но не
+доходят до router как полноценный compiled policy; runtime thresholds остаются
+code-owned, а `adminRequestTerms` не выражены согласованным closed DTO.
+
+До backend задач 31–34 frontend не должен превращать raw JSON editor в новый
+source of truth, исполнять keyword rules в браузере или считать message text
+доказательством эскалации. Normative handoff описан в
+[Case Intelligence Detection и Human Escalation](./16-case-intelligence-detection-escalation.ru.md),
+а проверка текущей реализации — в
+[backend-аудите](../../research/support-case-intelligence-backend-audit-2026-08-08.ru.md).
+
 ## P1: rollout
 
 В contract нет явного server-owned поля или endpoint для

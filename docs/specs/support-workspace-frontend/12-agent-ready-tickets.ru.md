@@ -1,6 +1,6 @@
 # Support Workspace: локальные agent-ready задачи
 
-Здесь собраны ссылки на 33 локальные задачи. Исходные issue-файлы лежат в
+Здесь собраны ссылки на 37 локальных задач. Исходные issue-файлы лежат в
 `.scratch/support-workspace/issues`: папка доступна в репозитории, но Finder и
 некоторые IDE могут скрывать её из-за точки в имени. Этот индекс находится в
 обычной папке `docs`, поэтому задачи можно открыть без настройки показа скрытых
@@ -18,7 +18,7 @@ backend `main` `3791c37bf7c3f70f1114b16682ef643fc62107af`, OpenAPI SHA-256
 
 - **Нет прямого backend-блокера:** 01–13, 20, 27.
 - **Можно делать только незаблокированную часть:** 15–19, 22, 24–26.
-- **Полный backend blocker:** 14, 21, 23, 30–33.
+- **Полный backend blocker:** 14, 21, 23, 30–37.
 - **Транзитивный blocker через core:** 28–29.
 
 Статус и точное условие снятия gate продублированы в каждом соответствующем
@@ -26,6 +26,10 @@ issue-файле. В частности, 12 не заблокирован backen
 свободным: в backend `main` External Work/JSM/HelpDesk API отсутствует. Задача
 20 не имеет собственного backend gap, но остаётся dependency-blocked до
 завершения доступной части 16.
+
+Case Intelligence задачи 34–37 добавлены после отдельного code/spec и
+primary-source discovery 8 августа 2026 года. Их backend gates — новые задачи
+backend 31–34; legacy Case policy и raw JSON editor эти gates не снимают.
 
 ## Все задачи
 
@@ -64,7 +68,12 @@ issue-файле. В частности, 12 не заблокирован backen
 | 31  | Integration Settings и External Work                     | 30 + backend full                | [Открыть](../../../.scratch/support-workspace/issues/31-add-integration-settings-external-work.md)       |
 | 32  | JSM/HelpDesk actions в Case inspector                    | 16, 30, 31 + backend full        | [Открыть](../../../.scratch/support-workspace/issues/32-add-case-external-work-actions.md)               |
 | 33  | Support Quality и Analytics                              | 29 + backend/IAM full            | [Открыть](../../../.scratch/support-workspace/issues/33-add-support-quality-analytics.md)                |
+| 34  | Case Intelligence contracts и settings foundation        | backend 31                       | [Открыть](../../../.scratch/support-workspace/issues/34-sync-case-intelligence-contracts.md)             |
+| 35  | Detection Policy editor и test console                   | 34 + backend 31–32               | [Открыть](../../../.scratch/support-workspace/issues/35-build-case-detection-policy-editor.md)           |
+| 36  | Escalation/Safety editor и simulator                     | 34 + backend 31–33               | [Открыть](../../../.scratch/support-workspace/issues/36-build-human-escalation-policy-editor.md)         |
+| 37  | Evaluation, decision log, cost и rollout                 | 34–36 + backend 34               | [Открыть](../../../.scratch/support-workspace/issues/37-add-case-intelligence-evaluation-rollout.md)     |
 
-Core cutover 28–29 намеренно не зависит от задач 21–27 и 30–33. Presence,
+Core cutover 28–29 намеренно не зависит от задач 21–27 и 30–37. Presence,
 notes, attachments, macros, Internal Knowledge, Lead Control, notifications,
-JSM/HelpDesk, QA и analytics поставляются отдельными вертикалями после P0.
+JSM/HelpDesk, QA, analytics и Case Intelligence settings поставляются
+отдельными вертикалями после P0.
