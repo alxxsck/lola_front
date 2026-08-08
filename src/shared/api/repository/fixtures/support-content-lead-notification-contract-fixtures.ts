@@ -84,6 +84,7 @@ const staleLeadSummary = {
   slaRolloutState: "SHADOW",
   capabilities: {
     noEligibleOperator: "UNAVAILABLE",
+    routingCapacityRisks: "AVAILABLE",
     savedQueues: "UNAVAILABLE",
     teamSkillLanguageCapacity: "UNAVAILABLE",
     sla: "SHADOW",

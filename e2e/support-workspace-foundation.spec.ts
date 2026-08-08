@@ -145,7 +145,9 @@ test("recovers an accepted reply after reload without creating a duplicate", asy
   await page
     .getByRole("button", { name: /Бонусы и программа лояльности/ })
     .click();
-  await expect(page.getByText("Пользователь офлайн", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Пользователь офлайн", { exact: true }),
+  ).toBeVisible();
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   const text = "Проверка durable recovery после перезагрузки";
   await composer.fill(text);
@@ -185,7 +187,9 @@ test("recovers an accepted reply after reload without creating a duplicate", asy
   await page.reload();
 
   await expect(page.getByText(text, { exact: true })).toHaveCount(1);
-  await expect(page.getByText("Пользователь офлайн", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Пользователь офлайн", { exact: true }),
+  ).toBeVisible();
   await expect(composer).toHaveValue("");
   await expect(
     page.getByRole("button", { name: "Проверить результат" }),
@@ -281,18 +285,30 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
 }) => {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   await expect(queue.getByRole("heading", { name: "Входящие" })).toBeVisible();
+  await queue.getByRole("button", { name: "Новый поиск" }).click();
+  await queue
+    .getByRole("searchbox", { name: "Поиск по поддержке" })
+    .press("Escape");
   await expect(queue.locator(".conversation-row")).toHaveCount(3);
   await expect(
     queue.getByRole("button", { name: "Все чаты", pressed: true }),
   ).toBeVisible();
-  await queue.getByRole("button", { name: "Обращения" }).click();
-  await expect(page).toHaveURL(/\/support\/inbox\?mode=cases$/);
+  await queue.getByRole("button", { name: "Обращения", exact: true }).click();
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === "/support/inbox" &&
+      url.searchParams.get("mode") === "cases"
+    );
+  });
   await expect(queue.locator(".case-row")).toHaveCount(3);
 
   await queue.getByRole("button", { name: /Не поступил депозит/ }).click();
-  await expect(page).toHaveURL(
-    /\/support\/inbox\/cases\/case-demo-deposit\?mode=cases$/,
-  );
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === "/support/inbox/cases/case-demo-deposit" &&
+      url.searchParams.get("mode") === "cases"
+    );
+  });
   const desktopContext = page.locator(".context-pane");
   const viewportWidth = page.viewportSize()?.width ?? 1280;
   const usesMobileContextRoute = viewportWidth <= 767;
@@ -312,6 +328,84 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
   await expect(context.getByRole("tab", { name: "Кейс" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "История" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Действия" })).toBeVisible();
+});
+
+test("shows server-owned SLA and routing context on desktop and mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/support/inbox");
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  await queue.getByRole("button", { name: "Обращения" }).click();
+  await queue.getByRole("button", { name: "Новый поиск" }).click();
+  await queue
+    .getByRole("searchbox", { name: "Поиск по поддержке" })
+    .press("Escape");
+  const slaSignal = queue.locator(
+    '[data-selection-key="CASE:case-demo-game"] [data-sla-signal]',
+  );
+  await expect(slaSignal).toContainText("Риск первого ответа");
+  await expect(slaSignal).toContainText("теневой прогноз");
+
+  await queue.getByRole("button", { name: /Не запускается игра/ }).click();
+  const desktopContext = page.locator(".context-pane");
+  await desktopContext.getByRole("tab", { name: "Кейс" }).click();
+  const operations = desktopContext.getByRole("region", {
+    name: "SLA и маршрутизация",
+  });
+  await expect(operations).toContainText("Теневой прогноз");
+  await expect(operations).toContainText("Игры");
+  await expect(operations).toContainText("Не хватает свободной ёмкости");
+  await expect(operations).toContainText("Не хватает навыка");
+
+  const desktopGeometry = await operations.evaluate((element) => ({
+    left: element.getBoundingClientRect().left,
+    right: element.getBoundingClientRect().right,
+    viewport: document.documentElement.clientWidth,
+    overflow:
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  }));
+  expect(desktopGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(desktopGeometry.right).toBeLessThanOrEqual(
+    desktopGeometry.viewport + 0.5,
+  );
+  expect(desktopGeometry.overflow).toBe(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/support/inbox/cases/case-demo-game?mode=cases");
+  await page.getByRole("button", { name: "Контекст" }).click();
+  const mobileContext = page.getByRole("region", { name: "Контекст диалога" });
+  await mobileContext.getByRole("tab", { name: "Кейс" }).click();
+  const mobileOperations = mobileContext.getByRole("region", {
+    name: "SLA и маршрутизация",
+  });
+  await expect(mobileOperations).toContainText("0 из 4 подходят");
+  const mobileGeometry = await mobileOperations.evaluate((element) => ({
+    left: element.getBoundingClientRect().left,
+    right: element.getBoundingClientRect().right,
+    viewport: document.documentElement.clientWidth,
+    overflow:
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  }));
+  expect(mobileGeometry.left).toBeGreaterThanOrEqual(0);
+  expect(mobileGeometry.right).toBeLessThanOrEqual(
+    mobileGeometry.viewport + 0.5,
+  );
+  expect(mobileGeometry.overflow).toBe(0);
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .disableRules(["color-contrast"])
+    .include(".operations-context")
+    .analyze();
+  expect(
+    accessibility.violations.filter(
+      (violation) =>
+        violation.impact === "critical" || violation.impact === "serious",
+    ),
+  ).toEqual([]);
 });
 
 test("changes Case classification through exact server authority and records the reason", async ({
@@ -589,7 +683,9 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
   await expect(desk).toContainText("Claimant");
   await expect(desk).toContainText("Наблюдатели");
   await expect(desk).toContainText("Доступность");
-  await expect(desk.getByText(/assignmentId|offerToken|actionEtag/)).toHaveCount(0);
+  await expect(
+    desk.getByText(/assignmentId|offerToken|actionEtag/),
+  ).toHaveCount(0);
 
   await page.getByRole("button", { name: "Взять в работу" }).click();
   await page.evaluate(() =>
@@ -601,11 +697,17 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
   await confirmClaim.click();
   const claimDialog = page.getByRole("dialog", { name: "Взять Case в работу" });
   await expect(claimDialog).toBeVisible();
-  await expect(claimDialog.getByText(/Назначение уже изменилось/)).toBeVisible();
+  await expect(
+    claimDialog.getByText(/Назначение уже изменилось/),
+  ).toBeVisible();
   await confirmClaim.click();
-  await expect(page.getByRole("dialog", { name: "Взять Case в работу" })).toBeHidden();
+  await expect(
+    page.getByRole("dialog", { name: "Взять Case в работу" }),
+  ).toBeHidden();
   await expect(desk).toContainText("Алексей · Игры");
-  await expect(page.getByRole("button", { name: "Снять назначение" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Снять назначение" }),
+  ).toBeVisible();
 
   for (const viewport of [
     { width: 1440, height: 900 },
@@ -621,7 +723,8 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
       right: element.getBoundingClientRect().right,
       viewport: document.documentElement.clientWidth,
       overflow:
-        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
     }));
     expect(geometry.left).toBeGreaterThanOrEqual(0);
     expect(geometry.right).toBeLessThanOrEqual(geometry.viewport + 0.5);
@@ -686,9 +789,7 @@ test("uses the real mobile history stack and preserves safe inbox query", async 
   );
 
   await page.getByRole("button", { name: "Назад к списку диалогов" }).click();
-  await expect(page).toHaveURL(
-    /\/support\/inbox\?view=mine&status=open$/,
-  );
+  await expect(page).toHaveURL(/\/support\/inbox\?view=mine&status=open$/);
   await page.goBack();
   await expect(page).toHaveURL(/\/support\/control$/);
 });

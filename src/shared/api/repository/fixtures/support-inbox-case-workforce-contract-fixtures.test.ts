@@ -23,6 +23,39 @@ const publishedFixtureSchemas = {
   emptyWorkforce: "SupportWorkforceSettingsResponseDto",
 } as const;
 
+function normalizeNullableUnions(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeNullableUnions);
+  if (!value || typeof value !== "object") return value;
+  const source = value as Record<string, unknown>;
+  if (source.nullable === true && Array.isArray(source.oneOf)) {
+    const oneOf = source.oneOf;
+    const rest = Object.fromEntries(
+      Object.entries(source).filter(
+        ([key]) =>
+          ![
+            "nullable",
+            "oneOf",
+            "discriminator",
+            "additionalProperties",
+          ].includes(key),
+      ),
+    );
+    return {
+      ...(normalizeNullableUnions(rest) as Record<string, unknown>),
+      anyOf: [
+        ...oneOf.map(normalizeNullableUnions),
+        { type: "null" },
+      ],
+    };
+  }
+  return Object.fromEntries(
+    Object.entries(source).map(([key, entry]) => [
+      key,
+      normalizeNullableUnions(entry),
+    ]),
+  );
+}
+
 describe("support inbox, Case and workforce contract fixtures", () => {
   it("validates every published fixture against the pinned OpenAPI schema", async () => {
     const contract = JSON.parse(
@@ -46,6 +79,9 @@ describe("support inbox, Case and workforce contract fixtures", () => {
         >
       >;
     };
+    const normalizedComponents = normalizeNullableUnions(
+      contract.components,
+    );
     const ajv = new Ajv({ strict: false, validateFormats: false });
 
     for (const fixtureName of Object.keys(publishedFixtureSchemas) as Array<
@@ -68,8 +104,8 @@ describe("support inbox, Case and workforce contract fixtures", () => {
               "application/json"
             ]?.schema;
       const validate = ajv.compile({
-        components: contract.components,
-        ...targetSchema,
+        components: normalizedComponents,
+        ...(normalizeNullableUnions(targetSchema) as object),
       });
       expect(
         validate(supportInboxCaseWorkforceContractFixtures[fixtureName]),

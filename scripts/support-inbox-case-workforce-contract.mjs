@@ -61,7 +61,9 @@ function inlineErrorSchema(operationValue, status) {
 }
 
 function requireInlineErrorEnum(operationValue, status, values) {
-  const actual = new Set(inlineErrorSchema(operationValue, status)?.properties?.code?.enum ?? []);
+  const actual = new Set(
+    inlineErrorSchema(operationValue, status)?.properties?.code?.enum ?? [],
+  );
   for (const value of values) {
     if (!actual.has(value)) {
       throw new Error(
@@ -91,7 +93,8 @@ function requireInlineErrorFields(operationValue, status, fields) {
 
 function requireInlineErrorDetailFields(operationValue, status, fields) {
   const properties =
-    inlineErrorSchema(operationValue, status)?.properties?.details?.properties ?? {};
+    inlineErrorSchema(operationValue, status)?.properties?.details
+      ?.properties ?? {};
   for (const field of fields) {
     if (!(field in properties)) {
       throw new Error(
@@ -148,9 +151,75 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "priority",
     "groupCode",
     "attentionRequired",
+    "slaSignal",
     "lastActivityAt",
     "updatedAt",
   ]);
+  requireProperties(document, "SupportWorkspaceSelectionResponseDto", [
+    "sla",
+    "routing",
+  ]);
+  requireProperties(document, "SupportWorkspaceSlaSignalAvailableResponseDto", [
+    "state",
+    "rolloutState",
+    "signalCode",
+    "kind",
+    "timing",
+    "risk",
+    "pauseReason",
+    "currentDeadlineAt",
+    "remainingBusinessMs",
+    "computedAt",
+  ]);
+  requirePropertyEnum(
+    document,
+    "SupportWorkspaceSlaSignalAvailableResponseDto",
+    "signalCode",
+    ["SLA_BREACHED", "SLA_AT_RISK", "SLA_PAUSED", "SLA_DUE"],
+  );
+  requireProperties(document, "SupportSlaCaseProjectionResponseDto", [
+    "rolloutState",
+    "occurrence",
+    "clocks",
+  ]);
+  requireProperties(document, "SupportSlaCaseClockResponseDto", [
+    "kind",
+    "timing",
+    "risk",
+    "outcome",
+    "remainingBusinessMs",
+    "pauseReason",
+    "currentDeadlineAt",
+  ]);
+  requireProperties(document, "SupportCaseRoutingAvailableResponseDto", [
+    "state",
+    "reasonCode",
+    "assignmentState",
+    "decision",
+    "reservation",
+    "fallback",
+  ]);
+  requireProperties(document, "SupportCaseRoutingDecisionResponseDto", [
+    "mode",
+    "outcome",
+    "queue",
+    "candidateCount",
+    "exclusionCounts",
+    "evaluatedAt",
+    "candidates",
+  ]);
+  requireSchemaFields(
+    document,
+    "SupportCaseRoutingExclusionCountsResponseDto",
+    [
+      "TEAM_NOT_ELIGIBLE",
+      "SKILL_REQUIRED",
+      "LANGUAGE_REQUIRED",
+      "AVAILABILITY_NOT_ROUTABLE",
+      "CAPACITY_EXHAUSTED",
+      "FACT_STALE",
+    ],
+  );
 
   const conversationList = operation(
     document,
@@ -400,30 +469,42 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     requirePermission(operationValue, "project.support.assignments.override");
     requireHeader(operationValue, "Idempotency-Key");
   }
-  requireProperties(document, "SupportCaseAssignmentCandidateActionsResponseDto", [
-    "assign",
-    "assignWithOverride",
-    "claim",
-    "release",
-    "transfer",
-    "transferWithOverride",
-  ]);
-  requireProperties(document, "SupportCaseAssignmentCandidateOperatorResponseDto", [
-    "actions",
-    "availableCapacityUnits",
-    "displayName",
-    "effectiveAvailability",
-    "id",
-    "requiredOverrides",
-  ]);
-  requireSchemaFields(document, "SupportCaseAssignmentCandidateOperatorResponseDto", [
-    "actions",
-    "availableCapacityUnits",
-    "displayName",
-    "effectiveAvailability",
-    "id",
-    "requiredOverrides",
-  ]);
+  requireProperties(
+    document,
+    "SupportCaseAssignmentCandidateActionsResponseDto",
+    [
+      "assign",
+      "assignWithOverride",
+      "claim",
+      "release",
+      "transfer",
+      "transferWithOverride",
+    ],
+  );
+  requireProperties(
+    document,
+    "SupportCaseAssignmentCandidateOperatorResponseDto",
+    [
+      "actions",
+      "availableCapacityUnits",
+      "displayName",
+      "effectiveAvailability",
+      "id",
+      "requiredOverrides",
+    ],
+  );
+  requireSchemaFields(
+    document,
+    "SupportCaseAssignmentCandidateOperatorResponseDto",
+    [
+      "actions",
+      "availableCapacityUnits",
+      "displayName",
+      "effectiveAvailability",
+      "id",
+      "requiredOverrides",
+    ],
+  );
   requireProperties(document, "ForceAssignSupportCaseAssignmentDto", [
     "teamId",
     "operatorCmsUserId",
@@ -452,7 +533,9 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "reasonCode",
     "reasonNote",
   ]);
-  requireProperties(document, "SupportCaseAssignmentBatchRequestDto", ["items"]);
+  requireProperties(document, "SupportCaseAssignmentBatchRequestDto", [
+    "items",
+  ]);
   requireProperties(document, "SupportCaseAssignmentBatchItemRequestDto", [
     "clientItemId",
     "caseId",
@@ -485,14 +568,22 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "failedCount",
     "items",
   ]);
-  requirePropertyEnum(document, "SupportCaseAssignmentBatchResponseDto", "outcome", [
-    "PENDING",
-    "SUCCEEDED",
-    "PARTIAL",
-    "FAILED",
-  ]);
-  requireResponseSchema(commandOutcome, "200", "SupportCaseAssignmentMutationResponseDto");
-  requireResponseSchema(batchOutcome, "200", "SupportCaseAssignmentBatchResponseDto");
+  requirePropertyEnum(
+    document,
+    "SupportCaseAssignmentBatchResponseDto",
+    "outcome",
+    ["PENDING", "SUCCEEDED", "PARTIAL", "FAILED"],
+  );
+  requireResponseSchema(
+    commandOutcome,
+    "200",
+    "SupportCaseAssignmentMutationResponseDto",
+  );
+  requireResponseSchema(
+    batchOutcome,
+    "200",
+    "SupportCaseAssignmentBatchResponseDto",
+  );
   requireInlineErrorEnum(commandOutcome, "404", [
     "ASSIGNMENT_COMMAND_OUTCOME_NOT_FOUND",
   ]);
@@ -868,7 +959,11 @@ export function validateSupportInboxCaseWorkforceContract(document) {
   const searchMessages = operation(document, "SupportSearch_messages");
   const searchUsers = operation(document, "SupportSearch_users");
   const searchContracts = [
-    [searchCases, "SupportCaseSearchQueryDto", "SupportSearchCasePageResponseDto"],
+    [
+      searchCases,
+      "SupportCaseSearchQueryDto",
+      "SupportSearchCasePageResponseDto",
+    ],
     [
       searchConversations,
       "SupportConversationSearchQueryDto",
@@ -885,7 +980,11 @@ export function validateSupportInboxCaseWorkforceContract(document) {
       "SupportSearchEndUserPageResponseDto",
     ],
   ];
-  for (const [operationValue, requestSchema, responseSchema] of searchContracts) {
+  for (const [
+    operationValue,
+    requestSchema,
+    responseSchema,
+  ] of searchContracts) {
     requirePermission(operationValue, "project.support.search.read");
     requireRequestSchema(operationValue, requestSchema);
     requireResponseSchema(operationValue, "200", responseSchema);

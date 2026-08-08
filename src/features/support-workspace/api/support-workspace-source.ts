@@ -12,6 +12,8 @@ import { isMockMode } from "@/shared/config/data-mode";
 import type { ConversationMessage } from "@/shared/types/domain";
 import type {
   CmsConversationReadPositionResponseDto,
+  SupportCaseRoutingAvailableResponseDto,
+  SupportSlaCaseProjectionResponseDto,
   SupportWorkspaceCaseRowResponseDto,
   SupportWorkspaceSelectionCaseResponseDto,
   SupportWorkspaceSelectionResponseDto,
@@ -30,10 +32,113 @@ export interface SupportWorkspaceCaseRow {
   priority: string;
   groupCode: string;
   attentionRequired: boolean;
+  slaSignal: SupportWorkspaceSlaSignal | null;
   lastActivityAt: string;
   updatedAt: string;
   version: number;
 }
+
+export type SupportWorkspaceSlaSignal =
+  | {
+      state: "DISABLED";
+      rolloutState: "DISABLED" | "SHADOW";
+      computedAt: string | null;
+    }
+  | {
+      state: "NO_ACTIVE_CLOCK";
+      rolloutState: "DISABLED" | "SHADOW";
+      computedAt: string | null;
+    }
+  | {
+      state: "AVAILABLE";
+      rolloutState: "SHADOW";
+      signalCode: "SLA_BREACHED" | "SLA_AT_RISK" | "SLA_PAUSED" | "SLA_DUE";
+      kind: SupportSlaClockKind;
+      timing: "RUNNING" | "PAUSED";
+      risk: SupportSlaRisk;
+      pauseReason: SupportSlaPauseReason;
+      currentDeadlineAt: string | null;
+      remainingBusinessMs: number;
+      computedAt: string;
+    };
+
+export type SupportSlaClockKind =
+  "FIRST_HUMAN_RESPONSE" | "NEXT_HUMAN_RESPONSE" | "RESOLUTION";
+export type SupportSlaRisk = "ON_TRACK" | "AT_RISK" | "BREACHED";
+export type SupportSlaPauseReason =
+  "WAITING_END_USER" | "WAITING_SYSTEM" | null;
+
+export interface SupportSlaClock {
+  kind: SupportSlaClockKind;
+  timing: "RUNNING" | "PAUSED";
+  risk: SupportSlaRisk;
+  outcome: "OPEN" | "MET" | "CANCELLED" | "MIGRATED";
+  pauseReason: SupportSlaPauseReason;
+  targetBusinessSeconds: number;
+  consumedBusinessMs: number;
+  remainingBusinessMs: number;
+  currentDeadlineAt: string | null;
+  breachedAt: string | null;
+  metAt: string | null;
+}
+
+export interface SupportSlaContext {
+  rolloutState: "DISABLED" | "SHADOW";
+  occurrenceState: "ACTIVE" | "TERMINAL" | null;
+  clocks: SupportSlaClock[];
+}
+
+export type SupportRoutingExclusion =
+  | "ASSIGNMENT_CONFLICT"
+  | "AVAILABILITY_NOT_ROUTABLE"
+  | "CAPACITY_EXHAUSTED"
+  | "CASE_COOLDOWN"
+  | "DATA_SCOPE_DENIED"
+  | "FACT_STALE"
+  | "LANGUAGE_REQUIRED"
+  | "LEASE_EXPIRED"
+  | "MEMBERSHIP_INACTIVE"
+  | "RECEIVE_PERMISSION_MISSING"
+  | "SKILL_REQUIRED"
+  | "TEAM_NOT_ELIGIBLE";
+
+export type SupportRoutingContext =
+  | { state: "REDACTED" | "NOT_EVALUATED" }
+  | {
+      state: "AVAILABLE";
+      reasonCode: SupportCaseRoutingAvailableResponseDto["reasonCode"];
+      assignmentState: "UNASSIGNED" | "RESERVED" | "ASSIGNED";
+      mode: "SHADOW" | "LIVE_PROPOSAL" | null;
+      outcome:
+        | "WINNER"
+        | "NO_ELIGIBLE_OPERATOR"
+        | "CAPACITY_GAP"
+        | "CONFIGURATION_REQUIRED"
+        | "STALE_INPUT"
+        | "DEGRADED"
+        | null;
+      queue: { code: string; name: string } | null;
+      candidateCount: number;
+      eligibleCandidateCount: number | null;
+      exclusions: Partial<Record<SupportRoutingExclusion, number>>;
+      evaluatedAt: string | null;
+      candidatesTruncated: boolean;
+      reservation: {
+        expiresAt: string;
+        capacityWeightUnits: number;
+      } | null;
+      fallback: {
+        state:
+          | "EVALUATION_PENDING"
+          | "EVALUATION_PROCESSING"
+          | "SCHEDULED"
+          | "PROCESSING"
+          | "EXHAUSTED"
+          | "DEGRADED";
+        candidateAttempt: number;
+        availableAt: string;
+      } | null;
+    };
 
 export type SupportInboxItem =
   | (SupportWorkspaceCaseRow & { kind: "CASE" })
@@ -64,8 +169,7 @@ export interface SupportConversationReadState {
   updatedAt: string | null;
 }
 
-export interface SupportWorkspaceMessagePage
-  extends CursorPage<SupportWorkspaceMessage> {
+export interface SupportWorkspaceMessagePage extends CursorPage<SupportWorkspaceMessage> {
   newerCursor: string | null;
   anchorOrdinal: number | null;
 }
@@ -95,6 +199,8 @@ export interface SupportWorkspaceSelection {
     locale?: string | null;
   };
   case: SupportWorkspaceCase | null;
+  sla: SupportSlaContext | null;
+  routing: SupportRoutingContext | null;
   conversation: SupportWorkspaceConversation | null;
   messages: SupportWorkspaceMessagePage;
 }
@@ -182,7 +288,9 @@ export function mapConversationReadState(
   expectedConversationId = value.conversationId,
 ): SupportConversationReadState {
   if (value.conversationId !== expectedConversationId) {
-    throw new Error("Support workspace returned read state for another conversation");
+    throw new Error(
+      "Support workspace returned read state for another conversation",
+    );
   }
   return {
     conversationId: value.conversationId,
@@ -212,7 +320,10 @@ function mapWorkspaceConversation(
     ...(conversation.lastMessageOrdinal !== undefined
       ? { lastMessageOrdinal: conversation.lastMessageOrdinal }
       : {}),
-    readState: mapConversationReadState(conversation.readState, conversation.id),
+    readState: mapConversationReadState(
+      conversation.readState,
+      conversation.id,
+    ),
   };
 }
 
@@ -228,9 +339,100 @@ export function mapWorkspaceCaseRow(
     priority: value.priority,
     groupCode: value.groupCode,
     attentionRequired: value.attentionRequired,
+    slaSignal: mapWorkspaceSlaSignal(value.slaSignal),
     lastActivityAt: value.lastActivityAt,
     updatedAt: value.updatedAt,
     version: value.version,
+  };
+}
+
+function mapWorkspaceSlaSignal(
+  value: SupportWorkspaceCaseRowResponseDto["slaSignal"],
+): SupportWorkspaceSlaSignal | null {
+  if (!value) return null;
+  if (value.state !== "AVAILABLE") {
+    return {
+      state: value.state,
+      rolloutState: value.rolloutState,
+      computedAt: value.computedAt ?? null,
+    };
+  }
+  return {
+    state: "AVAILABLE",
+    rolloutState: value.rolloutState,
+    signalCode: value.signalCode,
+    kind: value.kind,
+    timing: value.timing,
+    risk: value.risk,
+    pauseReason: value.pauseReason,
+    currentDeadlineAt: value.currentDeadlineAt,
+    remainingBusinessMs: value.remainingBusinessMs,
+    computedAt: value.computedAt,
+  };
+}
+
+function mapSlaContext(
+  value: SupportSlaCaseProjectionResponseDto | null,
+): SupportSlaContext | null {
+  if (!value) return null;
+  return {
+    rolloutState: value.rolloutState,
+    occurrenceState: value.occurrence?.state ?? null,
+    clocks: value.clocks.map((clock) => ({
+      kind: clock.kind,
+      timing: clock.timing,
+      risk: clock.risk,
+      outcome: clock.outcome,
+      pauseReason: clock.pauseReason,
+      targetBusinessSeconds: clock.targetBusinessSeconds,
+      consumedBusinessMs: clock.consumedBusinessMs,
+      remainingBusinessMs: clock.remainingBusinessMs,
+      currentDeadlineAt: clock.currentDeadlineAt,
+      breachedAt: clock.breachedAt,
+      metAt: clock.metAt,
+    })),
+  };
+}
+
+function mapRoutingContext(
+  value: SupportWorkspaceSelectionResponseDto["routing"],
+): SupportRoutingContext | null {
+  if (!value) return null;
+  if (value.state !== "AVAILABLE") return { state: value.state };
+  const decision = value.decision;
+  return {
+    state: "AVAILABLE",
+    reasonCode: value.reasonCode,
+    assignmentState: value.assignmentState,
+    mode: decision?.mode ?? null,
+    outcome: decision?.outcome ?? null,
+    queue: decision?.queue
+      ? { code: decision.queue.code, name: decision.queue.name }
+      : null,
+    candidateCount: decision?.candidateCount ?? 0,
+    eligibleCandidateCount:
+      decision &&
+      !decision.candidates.truncated &&
+      decision.candidates.items.length === decision.candidateCount
+        ? decision.candidates.items.filter((candidate) => candidate.eligible)
+            .length
+        : null,
+    exclusions: decision?.exclusionCounts ?? {},
+    evaluatedAt: decision?.evaluatedAt ?? null,
+    candidatesTruncated: decision?.candidates.truncated ?? false,
+    reservation: value.reservation
+      ? {
+          expiresAt: value.reservation.expiresAt,
+          capacityWeightUnits: value.reservation.capacityWeightUnits,
+        }
+      : null,
+    fallback: value.fallback
+      ? {
+          state: value.fallback.state,
+          candidateAttempt: value.fallback.candidateAttempt,
+          availableAt: value.fallback.availableAt,
+        }
+      : null,
   };
 }
 
@@ -367,6 +569,8 @@ export function mapSupportWorkspaceSelection(
     capabilities: response.capabilities,
     endUser: response.endUser,
     case: supportCase,
+    sla: mapSlaContext(response.sla),
+    routing: mapRoutingContext(response.routing),
     conversation,
     messages: {
       items: conversation
@@ -461,17 +665,19 @@ function mockCapabilities(
   const assignment = selectedCase
     ? readMockSupportAssignment(selectedCase.id)
     : null;
-  const actionable = Boolean(selectedCase && selectedCase.status !== "RESOLVED");
+  const actionable = Boolean(
+    selectedCase && selectedCase.status !== "RESOLVED",
+  );
   return {
-  assignCase: false,
-  claimAssignment: actionable && !assignment,
-  escalateCase: true,
-  manageCase: true,
-  releaseAssignment: actionable && Boolean(assignment),
-  reply: true,
-  replyWithoutTranslation: false,
-  suspendAi: false,
-  transferAssignment: actionable && Boolean(assignment),
+    assignCase: false,
+    claimAssignment: actionable && !assignment,
+    escalateCase: true,
+    manageCase: true,
+    releaseAssignment: actionable && Boolean(assignment),
+    reply: true,
+    replyWithoutTranslation: false,
+    suspendAi: false,
+    transferAssignment: actionable && Boolean(assignment),
   };
 }
 
@@ -486,14 +692,14 @@ function mockConversationReadState(
 ): SupportConversationReadState {
   const current = mockReadStateByConversation.get(conversationId);
   if (current && current.highestOrdinal >= highestOrdinal) return current;
-  const lastReadOrdinal = current?.lastReadOrdinal ?? Math.max(0, highestOrdinal - 2);
+  const lastReadOrdinal =
+    current?.lastReadOrdinal ?? Math.max(0, highestOrdinal - 2);
   const unreadMessageCount = Math.max(0, highestOrdinal - lastReadOrdinal);
   const value: SupportConversationReadState = {
     conversationId,
     lastReadOrdinal,
     highestOrdinal,
-    firstUnreadOrdinal:
-      unreadMessageCount > 0 ? lastReadOrdinal + 1 : null,
+    firstUnreadOrdinal: unreadMessageCount > 0 ? lastReadOrdinal + 1 : null,
     unreadMessageCount,
     unreadCustomerMessageCount: Math.min(1, unreadMessageCount),
     updatedAt: current?.updatedAt ?? null,
@@ -519,6 +725,18 @@ const mockSupportCases: readonly MockSupportCase[] = [
     priority: "URGENT",
     groupCode: "PAYMENTS",
     attentionRequired: false,
+    slaSignal: {
+      state: "AVAILABLE",
+      rolloutState: "SHADOW",
+      signalCode: "SLA_PAUSED",
+      kind: "RESOLUTION",
+      timing: "PAUSED",
+      risk: "ON_TRACK",
+      pauseReason: "WAITING_SYSTEM",
+      currentDeadlineAt: "2026-07-26T11:30:00.000Z",
+      remainingBusinessMs: 5_400_000,
+      computedAt: "2026-07-26T10:00:00.000Z",
+    },
     lastActivityAt: "2026-07-26T10:00:00.000Z",
     updatedAt: "2026-07-26T10:00:00.000Z",
     version: 2,
@@ -534,6 +752,18 @@ const mockSupportCases: readonly MockSupportCase[] = [
     priority: "HIGH",
     groupCode: "GAMES",
     attentionRequired: true,
+    slaSignal: {
+      state: "AVAILABLE",
+      rolloutState: "SHADOW",
+      signalCode: "SLA_AT_RISK",
+      kind: "FIRST_HUMAN_RESPONSE",
+      timing: "RUNNING",
+      risk: "AT_RISK",
+      pauseReason: null,
+      currentDeadlineAt: "2026-07-26T09:35:00.000Z",
+      remainingBusinessMs: 900_000,
+      computedAt: "2026-07-26T09:20:00.000Z",
+    },
     lastActivityAt: "2026-07-26T09:20:00.000Z",
     updatedAt: "2026-07-26T09:20:00.000Z",
     version: 1,
@@ -549,6 +779,11 @@ const mockSupportCases: readonly MockSupportCase[] = [
     priority: "NORMAL",
     groupCode: "ACCOUNT",
     attentionRequired: false,
+    slaSignal: {
+      state: "NO_ACTIVE_CLOCK",
+      rolloutState: "SHADOW",
+      computedAt: "2026-07-26T08:30:00.000Z",
+    },
     lastActivityAt: "2026-07-26T08:30:00.000Z",
     updatedAt: "2026-07-26T08:30:00.000Z",
     version: 4,
@@ -601,6 +836,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         priority: item.priority,
         groupCode: item.groupCode,
         attentionRequired: item.attentionRequired,
+        slaSignal: item.slaSignal,
         lastActivityAt: item.lastActivityAt,
         updatedAt: item.updatedAt,
         version: item.version,
@@ -698,6 +934,81 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         locale: null,
       },
       case: selectedCase ? mockCaseSelection(selectedCase) : null,
+      sla: selectedCase
+        ? {
+            rolloutState: "SHADOW",
+            occurrenceState:
+              selectedCase.status === "RESOLVED" ? "TERMINAL" : "ACTIVE",
+            clocks:
+              selectedCase.slaSignal?.state === "AVAILABLE"
+                ? [
+                    {
+                      kind: selectedCase.slaSignal.kind,
+                      timing: selectedCase.slaSignal.timing,
+                      risk: selectedCase.slaSignal.risk,
+                      outcome:
+                        selectedCase.status === "RESOLVED" ? "MET" : "OPEN",
+                      pauseReason: selectedCase.slaSignal.pauseReason,
+                      targetBusinessSeconds: 7_200,
+                      consumedBusinessMs: 1_800_000,
+                      remainingBusinessMs:
+                        selectedCase.slaSignal.remainingBusinessMs,
+                      currentDeadlineAt:
+                        selectedCase.slaSignal.currentDeadlineAt,
+                      breachedAt: null,
+                      metAt:
+                        selectedCase.status === "RESOLVED"
+                          ? selectedCase.updatedAt
+                          : null,
+                    },
+                  ]
+                : [],
+          }
+        : null,
+      routing: selectedCase
+        ? {
+            state: "AVAILABLE",
+            reasonCode:
+              selectedCase.status === "RESOLVED"
+                ? "ROUTING_OFFER_ACCEPTED"
+                : selectedCase.id === "case-demo-game"
+                  ? "CAPACITY_GAP"
+                  : "ROUTING_EVALUATION_PENDING",
+            assignmentState: readMockSupportAssignment(selectedCase.id)
+              ? "ASSIGNED"
+              : "UNASSIGNED",
+            mode: "LIVE_PROPOSAL",
+            outcome:
+              selectedCase.id === "case-demo-game" ? "CAPACITY_GAP" : null,
+            queue: {
+              code: selectedCase.groupCode,
+              name:
+                selectedCase.groupCode === "PAYMENTS"
+                  ? "Платежи"
+                  : selectedCase.groupCode === "GAMES"
+                    ? "Игры"
+                    : "Аккаунты",
+            },
+            candidateCount: selectedCase.id === "case-demo-game" ? 4 : 2,
+            eligibleCandidateCount:
+              selectedCase.id === "case-demo-game" ? 0 : 2,
+            exclusions:
+              selectedCase.id === "case-demo-game"
+                ? { CAPACITY_EXHAUSTED: 3, SKILL_REQUIRED: 1 }
+                : {},
+            evaluatedAt: selectedCase.updatedAt,
+            candidatesTruncated: false,
+            reservation: null,
+            fallback:
+              selectedCase.id === "case-demo-game"
+                ? {
+                    state: "SCHEDULED",
+                    candidateAttempt: 2,
+                    availableAt: "2026-07-26T09:25:00.000Z",
+                  }
+                : null,
+          }
+        : null,
       conversation: selected
         ? {
             id: selected.id,

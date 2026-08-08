@@ -8,6 +8,7 @@ import type { createSupportLeadAssignmentController } from "@/features/support-l
 import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
+import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
 import type {
   ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
@@ -28,8 +29,14 @@ const props = withDefaults(
     selection: SupportWorkspaceSelection;
     canManageCase?: boolean;
     canReadCaseDesk?: boolean;
+    canReadSlaContext?: boolean;
+    canReadRoutingContext?: boolean;
+    reservationReconcileAttempt?: number;
+    reservationReconcileInFlight?: boolean;
     assignmentController?: ReturnType<typeof createSupportAssignmentController>;
-    leadAssignmentController?: ReturnType<typeof createSupportLeadAssignmentController>;
+    leadAssignmentController?: ReturnType<
+      typeof createSupportLeadAssignmentController
+    >;
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     canReadProfile?: boolean;
@@ -42,6 +49,10 @@ const props = withDefaults(
     canReadProfile: false,
     canManageCase: false,
     canReadCaseDesk: false,
+    canReadSlaContext: false,
+    canReadRoutingContext: false,
+    reservationReconcileAttempt: 0,
+    reservationReconcileInFlight: false,
     assignmentController: undefined,
     leadAssignmentController: undefined,
     availabilityLabel: "Недоступность не загружена",
@@ -56,6 +67,7 @@ const emit = defineEmits<{
   loadProfile: [];
   openInternalNotes: [];
   classifyCase: [];
+  reconcileOperations: [expiresAt: string];
 }>();
 
 type InspectorTab = "USER" | "CASE" | "ACTIVITY" | "ACTIONS";
@@ -202,11 +214,14 @@ function activityTypeLabel(value: string): string {
   );
 }
 
-function activityActorLabel(actor: { type: string; cmsUserId?: string | null }): string {
-  if (actor.type === "CMS_USER") return actor.cmsUserId ? `Оператор ${actor.cmsUserId}` : "Оператор";
+function activityActorLabel(actor: {
+  type: string;
+  cmsUserId?: string | null;
+}): string {
+  if (actor.type === "CMS_USER")
+    return actor.cmsUserId ? `Оператор ${actor.cmsUserId}` : "Оператор";
   if (actor.type === "BREAK_GLASS") return "Break-glass операция";
-  if (actor.type === "SYSTEM_OR_BREAK_GLASS")
-    return "Система или break-glass";
+  if (actor.type === "SYSTEM_OR_BREAK_GLASS") return "Система или break-glass";
   return "Система";
 }
 
@@ -246,10 +261,18 @@ function activityValueLabel(key: string, value: unknown): string {
 }
 
 function activityChanges(previous: unknown, next: unknown) {
-  const before = previous && typeof previous === "object" ? previous as Record<string, unknown> : {};
-  const after = next && typeof next === "object" ? next as Record<string, unknown> : {};
+  const before =
+    previous && typeof previous === "object"
+      ? (previous as Record<string, unknown>)
+      : {};
+  const after =
+    next && typeof next === "object" ? (next as Record<string, unknown>) : {};
   return Object.keys(activityFieldLabels)
-    .filter((key) => before[key] !== after[key] && (before[key] !== undefined || after[key] !== undefined))
+    .filter(
+      (key) =>
+        before[key] !== after[key] &&
+        (before[key] !== undefined || after[key] !== undefined),
+    )
     .map((key) => ({
       key,
       label: activityFieldLabels[key]!,
@@ -436,6 +459,15 @@ defineExpose({ requestClassification });
         <i class="pi pi-briefcase" aria-hidden="true" />
         <p>Для этого диалога кейс не создан.</p>
       </div>
+      <SupportCaseOperationsContext
+        v-if="selection.case"
+        :case-id="selection.case.id"
+        :sla="canReadSlaContext ? selection.sla : null"
+        :routing="canReadRoutingContext ? selection.routing : null"
+        :reservation-reconcile-attempt="reservationReconcileAttempt"
+        :reservation-reconcile-in-flight="reservationReconcileInFlight"
+        @reconcile="emit('reconcileOperations', $event)"
+      />
     </section>
 
     <section
@@ -449,20 +481,42 @@ defineExpose({ requestClassification });
           <h3>Кто, что и почему изменил</h3>
         </div>
       </div>
-      <ol v-if="caseDesk?.detail.value?.timeline.events.length" class="activity-list">
-        <li v-for="event in [...caseDesk.detail.value.timeline.events].reverse()" :key="event.id">
+      <ol
+        v-if="caseDesk?.detail.value?.timeline.events.length"
+        class="activity-list"
+      >
+        <li
+          v-for="event in [...caseDesk.detail.value.timeline.events].reverse()"
+          :key="event.id"
+        >
           <span class="activity-marker" aria-hidden="true" />
           <div>
             <header>
               <strong>{{ activityTypeLabel(event.type) }}</strong>
-              <time :datetime="event.createdAt">{{ relativeTime(event.createdAt) }}</time>
+              <time :datetime="event.createdAt">{{
+                relativeTime(event.createdAt)
+              }}</time>
             </header>
-            <p>{{ activityActorLabel(event.actor) }} · версия {{ event.caseVersion }}</p>
-            <p v-if="event.reason" class="activity-reason">{{ event.reason }}</p>
-            <dl v-if="activityChanges(event.previous, event.next).length" class="activity-change">
-              <div v-for="change in activityChanges(event.previous, event.next)" :key="change.key">
+            <p>
+              {{ activityActorLabel(event.actor) }} · версия
+              {{ event.caseVersion }}
+            </p>
+            <p v-if="event.reason" class="activity-reason">
+              {{ event.reason }}
+            </p>
+            <dl
+              v-if="activityChanges(event.previous, event.next).length"
+              class="activity-change"
+            >
+              <div
+                v-for="change in activityChanges(event.previous, event.next)"
+                :key="change.key"
+              >
                 <dt>{{ change.label }}</dt>
-                <dd><span>{{ change.previous }}</span><i aria-hidden="true">→</i><strong>{{ change.next }}</strong></dd>
+                <dd>
+                  <span>{{ change.previous }}</span
+                  ><i aria-hidden="true">→</i><strong>{{ change.next }}</strong>
+                </dd>
               </div>
             </dl>
           </div>
@@ -689,21 +743,94 @@ defineExpose({ requestClassification });
   width: 100%;
   justify-content: flex-start;
 }
-.activity-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
-.activity-list li { position: relative; display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; padding-bottom: 18px; }
-.activity-list li:not(:last-child)::before { content: ""; position: absolute; top: 11px; bottom: 0; left: 5px; width: 1px; background: var(--line); }
-.activity-marker { position: relative; z-index: 1; width: 11px; height: 11px; margin-top: 4px; border: 3px solid var(--surface); border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 1px var(--line); }
-.activity-list header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.activity-list strong { font-size: .76rem; }
-.activity-list time, .activity-list p { margin: 4px 0 0; color: var(--text-muted); font-size: .67rem; line-height: 1.4; }
-.activity-list .activity-reason { color: var(--text-primary); }
-.activity-list .activity-change { display: grid; gap: 7px; margin: 8px 0 0; padding: 8px 9px; border-left: 2px solid var(--brand); background: var(--surface-muted); }
-.activity-change > div { display: grid; gap: 3px; }
-.activity-change dt { color: var(--text-muted); font-size: .62rem; }
-.activity-change dd { display: flex; align-items: center; gap: 6px; margin: 0; font-size: .68rem; overflow-wrap: anywhere; }
-.activity-change dd span { color: var(--text-muted); text-decoration: line-through; }
-.activity-change dd i { color: var(--brand); font-style: normal; }
-.activity-change dd strong { color: var(--text-primary); }
+.activity-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.activity-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 10px;
+  padding-bottom: 18px;
+}
+.activity-list li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  bottom: 0;
+  left: 5px;
+  width: 1px;
+  background: var(--line);
+}
+.activity-marker {
+  position: relative;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  margin-top: 4px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.activity-list header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.activity-list strong {
+  font-size: 0.76rem;
+}
+.activity-list time,
+.activity-list p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+.activity-list .activity-reason {
+  color: var(--text-primary);
+}
+.activity-list .activity-change {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0 0;
+  padding: 8px 9px;
+  border-left: 2px solid var(--brand);
+  background: var(--surface-muted);
+}
+.activity-change > div {
+  display: grid;
+  gap: 3px;
+}
+.activity-change dt {
+  color: var(--text-muted);
+  font-size: 0.62rem;
+}
+.activity-change dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+.activity-change dd span {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.activity-change dd i {
+  color: var(--brand);
+  font-style: normal;
+}
+.activity-change dd strong {
+  color: var(--text-primary);
+}
 .empty-card {
   display: grid;
   justify-items: center;

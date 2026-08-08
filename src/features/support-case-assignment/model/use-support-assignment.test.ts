@@ -58,6 +58,8 @@ function selection(
       anchorOrdinal: null,
     },
     ...overrides,
+    sla: overrides.sla ?? null,
+    routing: overrides.routing ?? null,
   };
 }
 
@@ -71,13 +73,26 @@ function snapshot(
     assignmentState: "UNASSIGNED",
     currentAssignment: null,
     workforceRevision: { id: "workforce-1", number: 4 },
-    actions: { claim: true, assign: false, assignWithOverride: false, release: false, transfer: false, transferWithOverride: false },
+    actions: {
+      claim: true,
+      assign: false,
+      assignWithOverride: false,
+      release: false,
+      transfer: false,
+      transferWithOverride: false,
+    },
     teams: [
       {
         id: "team-1",
         code: "PAYMENTS",
         name: "Платежи",
-        actions: { claim: true, assign: false, assignWithOverride: false, transfer: false, transferWithOverride: false },
+        actions: {
+          claim: true,
+          assign: false,
+          assignWithOverride: false,
+          transfer: false,
+          transferWithOverride: false,
+        },
         operators: [],
       },
     ],
@@ -120,13 +135,26 @@ function assignedSnapshot(): SupportAssignmentSnapshot {
       version: 3,
       actionEtag: '"sa1.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"',
     },
-    actions: { claim: false, assign: false, assignWithOverride: false, release: true, transfer: true, transferWithOverride: false },
+    actions: {
+      claim: false,
+      assign: false,
+      assignWithOverride: false,
+      release: true,
+      transfer: true,
+      transferWithOverride: false,
+    },
     teams: [
       {
         id: "team-2",
         code: "VIP",
         name: "VIP",
-        actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
+        actions: {
+          claim: false,
+          assign: false,
+          assignWithOverride: false,
+          transfer: true,
+          transferWithOverride: false,
+        },
         operators: [
           {
             id: "operator-2",
@@ -134,7 +162,13 @@ function assignedSnapshot(): SupportAssignmentSnapshot {
             availableCapacityUnits: 300,
             effectiveAvailability: "AVAILABLE",
             requiredOverrides: [],
-            actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
+            actions: {
+              claim: false,
+              assign: false,
+              assignWithOverride: false,
+              transfer: true,
+              transferWithOverride: false,
+            },
           },
         ],
       },
@@ -157,16 +191,13 @@ function source(
 describe("support assignment controller", () => {
   it("exposes claim only when session, workspace and Case candidate authorities agree", async () => {
     const current = ref(selection());
-    const controller = createSupportAssignmentController(
-      source(),
-      {
-        projectId: () => "project-1",
-        selection: () => current.value,
-        canManageOwn: () => true,
-        canOverride: () => false,
-        canReceiveOffers: () => false,
-      },
-    );
+    const controller = createSupportAssignmentController(source(), {
+      projectId: () => "project-1",
+      selection: () => current.value,
+      canManageOwn: () => true,
+      canOverride: () => false,
+      canReceiveOffers: () => false,
+    });
 
     await controller.loadCase();
     expect(controller.canClaim.value).toBe(true);
@@ -192,18 +223,15 @@ describe("support assignment controller", () => {
         assignmentVersion: 1,
       });
     const onChanged = vi.fn();
-    const controller = createSupportAssignmentController(
-      source({ execute }),
-      {
-        projectId: () => "project-1",
-        selection: () => selection(),
-        canManageOwn: () => true,
-        canOverride: () => false,
-        canReceiveOffers: () => false,
-        createIdempotencyKey: () => "assignment-intent-1",
-        onChanged,
-      },
-    );
+    const controller = createSupportAssignmentController(source({ execute }), {
+      projectId: () => "project-1",
+      selection: () => selection(),
+      canManageOwn: () => true,
+      canOverride: () => false,
+      canReceiveOffers: () => false,
+      createIdempotencyKey: () => "assignment-intent-1",
+      onChanged,
+    });
 
     await controller.loadCase();
     controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
@@ -251,7 +279,13 @@ describe("support assignment controller", () => {
         execute: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(409, "stale", undefined, undefined, "CASE_VERSION_CONFLICT"),
+            new ApiError(
+              409,
+              "stale",
+              undefined,
+              undefined,
+              "CASE_VERSION_CONFLICT",
+            ),
           ),
       }),
       {
@@ -346,15 +380,17 @@ describe("support assignment controller", () => {
     const controller = createSupportAssignmentController(
       source({
         listOffers,
-        actOnOffer: vi.fn().mockRejectedValue(
-          new ApiError(
-            409,
-            "expired",
-            undefined,
-            undefined,
-            "SUPPORT_OFFER_EXPIRED",
+        actOnOffer: vi
+          .fn()
+          .mockRejectedValue(
+            new ApiError(
+              409,
+              "expired",
+              undefined,
+              undefined,
+              "SUPPORT_OFFER_EXPIRED",
+            ),
           ),
-        ),
       }),
       {
         projectId: () => "project-1",
@@ -381,7 +417,13 @@ describe("support assignment controller", () => {
         readCase: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(403, "revoked", undefined, undefined, "NOT_FOUND_OR_FORBIDDEN"),
+            new ApiError(
+              403,
+              "revoked",
+              undefined,
+              undefined,
+              "NOT_FOUND_OR_FORBIDDEN",
+            ),
           ),
       }),
       {
@@ -435,15 +477,17 @@ describe("support assignment controller", () => {
     const onForbidden = vi.fn();
     const controller = createSupportAssignmentController(
       source({
-        execute: vi.fn().mockRejectedValue(
-          new ApiError(
-            403,
-            "revoked",
-            undefined,
-            undefined,
-            "NOT_FOUND_OR_FORBIDDEN",
+        execute: vi
+          .fn()
+          .mockRejectedValue(
+            new ApiError(
+              403,
+              "revoked",
+              undefined,
+              undefined,
+              "NOT_FOUND_OR_FORBIDDEN",
+            ),
           ),
-        ),
       }),
       {
         projectId: () => "project-1",
@@ -476,9 +520,10 @@ describe("support assignment controller", () => {
     };
     const controller = createSupportAssignmentController(
       source({
-        listOffers: vi.fn().mockResolvedValueOnce([offer]).mockRejectedValueOnce(
-          new Error("refresh failed"),
-        ),
+        listOffers: vi
+          .fn()
+          .mockResolvedValueOnce([offer])
+          .mockRejectedValueOnce(new Error("refresh failed")),
         actOnOffer: vi.fn().mockResolvedValue({
           assignmentId: offer.assignmentId,
           caseVersion: 10,
@@ -548,7 +593,14 @@ describe("support assignment controller", () => {
     expect(controller.canRetry.value).toBe(true);
 
     controller.caseSnapshot.value = snapshot({
-      actions: { claim: false, assign: false, assignWithOverride: false, release: false, transfer: false, transferWithOverride: false },
+      actions: {
+        claim: false,
+        assign: false,
+        assignWithOverride: false,
+        release: false,
+        transfer: false,
+        transferWithOverride: false,
+      },
       teams: [],
     });
     await nextTick();
@@ -598,9 +650,9 @@ describe("support assignment controller", () => {
   });
 
   it("never replays a command after a receipt integrity failure", async () => {
-    const execute = vi.fn().mockRejectedValue(
-      new SupportAssignmentIntegrityError(),
-    );
+    const execute = vi
+      .fn()
+      .mockRejectedValue(new SupportAssignmentIntegrityError());
     const controller = createSupportAssignmentController(source({ execute }), {
       projectId: () => "project-1",
       selection: () => selection(),

@@ -29,6 +29,8 @@ function selection(reply = true): SupportWorkspaceSelection {
       lastSeenAt: "2026-08-08T10:00:00.000Z",
     },
     case: null,
+    sla: null,
+    routing: null,
     conversation: {
       id: "conversation-1",
       endUserId: "end-user-1",
@@ -199,15 +201,17 @@ describe("support message delivery controller", () => {
         reconcile,
       },
       {
-        retryFailedDelivery: vi.fn().mockRejectedValue(
-          new ApiError(
-            409,
-            "Состояние доставки изменилось",
-            { currentDelivery: retriedDelivery() },
-            "request-1",
-            "DELIVERY_RECEIPT_STALE",
+        retryFailedDelivery: vi
+          .fn()
+          .mockRejectedValue(
+            new ApiError(
+              409,
+              "Состояние доставки изменилось",
+              { currentDelivery: retriedDelivery() },
+              "request-1",
+              "DELIVERY_RECEIPT_STALE",
+            ),
           ),
-        ),
       },
     );
 
@@ -266,8 +270,6 @@ describe("support message delivery controller", () => {
 
     resolveSecond(retriedDelivery());
     await second;
-    expect(controller.deliveryActions.value.get("message-1")?.busy).toBe(
-      false,
-    );
+    expect(controller.deliveryActions.value.get("message-1")?.busy).toBe(false);
   });
 });

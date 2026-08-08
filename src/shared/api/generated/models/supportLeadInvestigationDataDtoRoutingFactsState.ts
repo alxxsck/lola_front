@@ -11,5 +11,6 @@ export type SupportLeadInvestigationDataDtoRoutingFactsState =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportLeadInvestigationDataDtoRoutingFactsState = {
-  UNAVAILABLE: "UNAVAILABLE",
+  AVAILABLE: "AVAILABLE",
+  NOT_EVALUATED: "NOT_EVALUATED",
 } as const;

@@ -8,6 +8,7 @@
 import type { SupportWorkspaceSelectionCaseResponseDtoAssignee } from "./supportWorkspaceSelectionCaseResponseDtoAssignee";
 import type { SupportWorkspaceSelectionCaseResponseDtoAssignment } from "./supportWorkspaceSelectionCaseResponseDtoAssignment";
 import type { SupportCasePriority } from "./supportCasePriority";
+import type { SupportWorkspaceSelectionCaseResponseDtoSlaSignal } from "./supportWorkspaceSelectionCaseResponseDtoSlaSignal";
 import type { SupportCaseStatus } from "./supportCaseStatus";
 
 export interface SupportWorkspaceSelectionCaseResponseDto {
@@ -25,6 +26,8 @@ export interface SupportWorkspaceSelectionCaseResponseDto {
   latestRevisionId?: string | null;
   priority: SupportCasePriority;
   projectSequence: string;
+  /** @nullable */
+  slaSignal: SupportWorkspaceSelectionCaseResponseDtoSlaSignal;
   status: SupportCaseStatus;
   summary: string;
   title: string;

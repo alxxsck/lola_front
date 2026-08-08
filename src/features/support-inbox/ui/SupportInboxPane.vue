@@ -12,10 +12,14 @@ import type {
 import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
 import type { SupportSearchFailure } from "@/features/support-search/model/use-support-search";
 import SupportSearchToolbar from "@/features/support-search/ui/SupportSearchToolbar.vue";
-import type { SavedSupportViewResponseDto, SupportViewPresetResponseDto } from "@/shared/api/generated/models";
+import type {
+  SavedSupportViewResponseDto,
+  SupportViewPresetResponseDto,
+} from "@/shared/api/generated/models";
 import type { SupportViewSelection } from "@/features/support-views/api/support-views-source";
 import SupportViewsRail from "@/features/support-views/ui/SupportViewsRail.vue";
 import { relativeTime } from "@/shared/lib/format";
+import { slaSignalLabel } from "@/features/support-case-operations/model/support-case-operations";
 
 defineProps<{
   mode: SupportInboxMode;
@@ -57,8 +61,17 @@ const emit = defineEmits<{
   selectSearch: [item: SupportSearchResult];
   loadMoreSearch: [];
   selectView: [selection: SupportViewSelection];
-  createView: [value: { name: string; code: string; scope: "PERSONAL" | "TEAM" | "PROJECT"; teamId: string }];
-  replaceView: [value: { view: SavedSupportViewResponseDto; displayName: string }];
+  createView: [
+    value: {
+      name: string;
+      code: string;
+      scope: "PERSONAL" | "TEAM" | "PROJECT";
+      teamId: string;
+    },
+  ];
+  replaceView: [
+    value: { view: SavedSupportViewResponseDto; displayName: string },
+  ];
   publishView: [view: SavedSupportViewResponseDto];
   archiveView: [view: SavedSupportViewResponseDto];
   defaultView: [selection: SupportViewSelection];
@@ -133,7 +146,9 @@ function inboxTime(value: string): string {
   }).format(parsed);
 }
 
-function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>): string {
+function unreadLabel(
+  item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>,
+): string {
   const total = item.readState.unreadMessageCount;
   const customer = item.readState.unreadCustomerMessageCount;
   return `${total} непрочитанных сообщения, ${customer} от пользователя`;
@@ -203,7 +218,11 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
       @close="emit('closeSearch')"
     />
 
-    <div v-if="searchActive || viewActive" class="search-results" aria-live="polite">
+    <div
+      v-if="searchActive || viewActive"
+      class="search-results"
+      aria-live="polite"
+    >
       <div
         v-if="searchFreshness && searchFreshness.state !== 'READY'"
         :class="['freshness-notice', searchFreshness.state.toLowerCase()]"
@@ -219,23 +238,65 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
         </span>
       </div>
 
-      <div v-if="searchLoading && !searchItems.length" class="inbox-skeletons" aria-busy="true">
-        <div v-for="index in 5" :key="index" class="inbox-skeleton-row"><Skeleton shape="circle" size="32px" /><div><Skeleton width="72%" height="14px" /><Skeleton width="52%" height="12px" /></div></div>
+      <div
+        v-if="searchLoading && !searchItems.length"
+        class="inbox-skeletons"
+        aria-busy="true"
+      >
+        <div v-for="index in 5" :key="index" class="inbox-skeleton-row">
+          <Skeleton shape="circle" size="32px" />
+          <div>
+            <Skeleton width="72%" height="14px" /><Skeleton
+              width="52%"
+              height="12px"
+            />
+          </div>
+        </div>
       </div>
-      <div v-else-if="searchFailure === 'FORBIDDEN'" class="inbox-state" role="alert">
-        <i class="pi pi-lock" aria-hidden="true" /><strong>Поиск больше недоступен</strong><p>Права обновлены; скрытые результаты удалены.</p>
+      <div
+        v-else-if="searchFailure === 'FORBIDDEN'"
+        class="inbox-state"
+        role="alert"
+      >
+        <i class="pi pi-lock" aria-hidden="true" /><strong
+          >Поиск больше недоступен</strong
+        >
+        <p>Права обновлены; скрытые результаты удалены.</p>
       </div>
-      <div v-else-if="searchFailure === 'VALIDATION'" class="inbox-state" role="alert">
-        <i class="pi pi-info-circle" aria-hidden="true" /><strong>Не удалось применить запрос</strong><p>{{ searchError }}</p>
+      <div
+        v-else-if="searchFailure === 'VALIDATION'"
+        class="inbox-state"
+        role="alert"
+      >
+        <i class="pi pi-info-circle" aria-hidden="true" /><strong
+          >Не удалось применить запрос</strong
+        >
+        <p>{{ searchError }}</p>
       </div>
-      <div v-else-if="searchError && !searchItems.length" class="inbox-state" role="alert">
-        <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong>Поиск временно недоступен</strong><p>{{ searchError }}</p>
+      <div
+        v-else-if="searchError && !searchItems.length"
+        class="inbox-state"
+        role="alert"
+      >
+        <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong
+          >Поиск временно недоступен</strong
+        >
+        <p>{{ searchError }}</p>
       </div>
-      <div v-else-if="!searchItems.length && searchFreshness" class="inbox-state">
-        <i class="pi pi-search" aria-hidden="true" /><strong>Ничего не найдено</strong><p>Измените запрос или снимите часть фильтров.</p>
+      <div
+        v-else-if="!searchItems.length && searchFreshness"
+        class="inbox-state"
+      >
+        <i class="pi pi-search" aria-hidden="true" /><strong
+          >Ничего не найдено</strong
+        >
+        <p>Измените запрос или снимите часть фильтров.</p>
       </div>
       <div v-else-if="!searchItems.length" class="inbox-state">
-        <i class="pi pi-search" aria-hidden="true" /><strong>Введите запрос</strong><p>Минимум два символа или выберите фильтр обращений.</p>
+        <i class="pi pi-search" aria-hidden="true" /><strong
+          >Введите запрос</strong
+        >
+        <p>Минимум два символа или выберите фильтр обращений.</p>
       </div>
       <div v-else class="search-result-list">
         <button
@@ -245,14 +306,50 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
           class="search-result-row"
           @click="emit('selectSearch', item)"
         >
-          <span class="search-result-icon"><i :class="item.kind === 'CASE' ? 'pi pi-briefcase' : item.kind === 'CONVERSATION' ? 'pi pi-comments' : item.kind === 'MESSAGE' ? 'pi pi-comment' : 'pi pi-user'" aria-hidden="true" /></span>
+          <span class="search-result-icon"
+            ><i
+              :class="
+                item.kind === 'CASE'
+                  ? 'pi pi-briefcase'
+                  : item.kind === 'CONVERSATION'
+                    ? 'pi pi-comments'
+                    : item.kind === 'MESSAGE'
+                      ? 'pi pi-comment'
+                      : 'pi pi-user'
+              "
+              aria-hidden="true"
+          /></span>
           <span class="search-result-copy">
-            <span class="search-result-meta"><strong>{{ searchKind(item.kind) }}</strong><span>{{ matchReason(item.matchProvenance) }}<template v-if="item.locale"> · {{ item.locale.toUpperCase() }}</template></span><time :datetime="item.activityAt">{{ inboxTime(item.activityAt) }}</time></span>
+            <span class="search-result-meta"
+              ><strong>{{ searchKind(item.kind) }}</strong
+              ><span
+                >{{ matchReason(item.matchProvenance)
+                }}<template v-if="item.locale">
+                  · {{ item.locale.toUpperCase() }}</template
+                ></span
+              ><time :datetime="item.activityAt">{{
+                inboxTime(item.activityAt)
+              }}</time></span
+            >
             <span class="search-result-snippet">{{ item.snippet }}</span>
           </span>
         </button>
-        <div v-if="searchError" class="pagination-error" role="alert"><span>{{ searchError }}</span><button type="button" @click="emit('submitSearch', searchState)">Повторить</button></div>
-        <button v-if="searchHasMore" type="button" class="load-more" :disabled="searchLoading" @click="emit('loadMoreSearch')"><i class="pi pi-chevron-down" aria-hidden="true" /> {{ searchLoading ? "Загружаем…" : "Показать ещё" }}</button>
+        <div v-if="searchError" class="pagination-error" role="alert">
+          <span>{{ searchError }}</span
+          ><button type="button" @click="emit('submitSearch', searchState)">
+            Повторить
+          </button>
+        </div>
+        <button
+          v-if="searchHasMore"
+          type="button"
+          class="load-more"
+          :disabled="searchLoading"
+          @click="emit('loadMoreSearch')"
+        >
+          <i class="pi pi-chevron-down" aria-hidden="true" />
+          {{ searchLoading ? "Загружаем…" : "Показать ещё" }}
+        </button>
       </div>
     </div>
 
@@ -344,27 +441,44 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
               }}
             </time>
             <span
-              v-if="item.kind === 'CONVERSATION' && item.readState.unreadMessageCount"
+              v-if="
+                item.kind === 'CONVERSATION' &&
+                item.readState.unreadMessageCount
+              "
               class="unread-count"
               :data-unread-conversation="item.id"
               :aria-label="unreadLabel(item)"
               :title="unreadLabel(item)"
-            >{{ item.readState.unreadMessageCount }}</span>
+              >{{ item.readState.unreadMessageCount }}</span
+            >
           </span>
-          <span v-if="item.kind === 'CASE'" class="inbox-row__meta">
-            <span class="state-chip">{{ caseStatus(item.status) }}</span>
+          <template v-if="item.kind === 'CASE'">
+            <span class="inbox-row__meta">
+              <span class="state-chip">{{ caseStatus(item.status) }}</span>
+              <span
+                :class="[
+                  'priority-chip',
+                  `priority-${item.priority.toLowerCase()}`,
+                ]"
+                >{{ casePriority(item.priority) }}</span
+              >
+              <span class="truncate">{{ item.groupCode }}</span>
+              <span v-if="item.attentionRequired" class="attention-copy"
+                ><i class="pi pi-bell" /> Нужна реакция</span
+              >
+            </span>
             <span
+              v-if="item.slaSignal?.state === 'AVAILABLE'"
+              data-sla-signal
               :class="[
-                'priority-chip',
-                `priority-${item.priority.toLowerCase()}`,
+                'inbox-sla-signal',
+                `signal-${item.slaSignal.signalCode.toLowerCase()}`,
               ]"
-              >{{ casePriority(item.priority) }}</span
             >
-            <span class="truncate">{{ item.groupCode }}</span>
-            <span v-if="item.attentionRequired" class="attention-copy"
-              ><i class="pi pi-bell" /> Нужна реакция</span
-            >
-          </span>
+              <i class="pi pi-stopwatch" aria-hidden="true" />
+              <span>{{ slaSignalLabel(item.slaSignal) }}</span>
+            </span>
+          </template>
           <span v-else class="inbox-row__meta">
             <span class="state-chip">{{
               item.status === "OPEN" ? "Открыт" : "Закрыт"
@@ -483,20 +597,87 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
   border-radius: 7px;
   background: var(--surface-muted);
   color: var(--text-secondary);
-  font-size: .72rem;
+  font-size: 0.72rem;
 }
-.freshness-notice.degraded { border-color: color-mix(in srgb, var(--status-warning-text) 30%, var(--line)); background: var(--status-warning-soft); color: var(--status-warning-text); }
-.search-result-list { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
-.search-result-row { width: 100%; min-height: 72px; padding: 11px 14px; display: flex; align-items: flex-start; gap: 10px; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.search-result-row:hover { background: var(--surface-muted); }
-.search-result-row:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
-.search-result-icon { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: var(--brand-soft); color: var(--brand); }
-.search-result-copy { min-width: 0; flex: 1; display: grid; gap: 6px; }
-.search-result-meta { min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .68rem; }
-.search-result-meta strong { color: var(--text-primary); font-size: .72rem; }
-.search-result-meta span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.search-result-meta time { flex: 0 0 auto; }
-.search-result-snippet { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--text-secondary); font-size: .78rem; line-height: 1.4; }
+.freshness-notice.degraded {
+  border-color: color-mix(in srgb, var(--status-warning-text) 30%, var(--line));
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.search-result-list {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.search-result-row {
+  width: 100%;
+  min-height: 72px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.search-result-row:hover {
+  background: var(--surface-muted);
+}
+.search-result-row:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+.search-result-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.search-result-copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+.search-result-meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+.search-result-meta strong {
+  color: var(--text-primary);
+  font-size: 0.72rem;
+}
+.search-result-meta span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-result-meta time {
+  flex: 0 0 auto;
+}
+.search-result-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
 .inbox-row {
   position: relative;
   width: 100%;
@@ -627,6 +808,33 @@ function unreadLabel(item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>):
 }
 .attention-copy {
   color: var(--status-warning-text);
+}
+.inbox-sla-signal {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  line-height: 1.3;
+}
+.inbox-sla-signal i {
+  flex: 0 0 auto;
+  color: currentColor;
+  font-size: 0.68rem;
+}
+.inbox-sla-signal span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-sla-signal.signal-sla_at_risk,
+.inbox-sla-signal.signal-sla_paused {
+  color: var(--status-warning-text);
+}
+.inbox-sla-signal.signal-sla_breached {
+  color: var(--status-danger-text);
 }
 .truncate {
   overflow: hidden;

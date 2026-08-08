@@ -78,6 +78,8 @@ const selection: SupportWorkspaceSelection = {
       actionEtag: '"sa1.current.signature"',
     },
   },
+  sla: null,
+  routing: null,
   conversation,
   messages: {
     items: [],
@@ -90,11 +92,21 @@ const selection: SupportWorkspaceSelection = {
 function render(
   profileProps: {
     canReadProfile?: boolean;
+    canReadSlaContext?: boolean;
+    canReadRoutingContext?: boolean;
     profile?: ProfileProjectionResponseDto | null;
+    selection?: SupportWorkspaceSelection;
   } = {},
 ) {
+  const { selection: selectionOverride = selection, ...rest } = profileProps;
   return mount(SupportConversationContext, {
-    props: { conversation, selection, ...profileProps },
+    props: {
+      conversation,
+      selection: selectionOverride,
+      canReadSlaContext: true,
+      canReadRoutingContext: true,
+      ...rest,
+    },
     global: {
       stubs: {
         Button: { template: '<button type="button"><slot /></button>' },
@@ -139,6 +151,51 @@ describe("support conversation context", () => {
     expect(wrapper.text()).not.toContain("raw-external-id-must-not-render");
   });
 
+  it("places SLA and routing context inside the Case inspector", async () => {
+    const wrapper = render({
+      selection: {
+        ...selection,
+        sla: {
+          rolloutState: "SHADOW",
+          occurrenceState: "ACTIVE",
+          clocks: [],
+        },
+        routing: {
+          state: "AVAILABLE",
+          reasonCode: "WINNER",
+          assignmentState: "UNASSIGNED",
+          mode: "LIVE_PROPOSAL",
+          outcome: "WINNER",
+          queue: { code: "BILLING", name: "Платежи" },
+          candidateCount: 2,
+          eligibleCandidateCount: 2,
+          exclusions: {},
+          evaluatedAt: "2026-08-08T10:00:00.000Z",
+          candidatesTruncated: false,
+          reservation: null,
+          fallback: null,
+        },
+      },
+    });
+
+    await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
+
+    const caseInspector = wrapper.get('[aria-label="Кейс"]');
+    expect(caseInspector.text()).toContain("SLA и маршрутизация");
+    expect(caseInspector.text()).toContain("Платежи");
+    expect(caseInspector.text()).toContain("2 из 2 подходят");
+
+    await wrapper.setProps({
+      canReadSlaContext: false,
+      canReadRoutingContext: false,
+    });
+
+    expect(caseInspector.text()).toContain("SLA недоступен для этой роли");
+    expect(caseInspector.text()).toContain("Маршрутизация скрыта для этой роли");
+    expect(caseInspector.text()).not.toContain("Платежи");
+    expect(caseInspector.text()).not.toContain("2 из 2 подходят");
+  });
+
   it("keeps the bounded Case projection for a conversation-only operator", async () => {
     const wrapper = mount(SupportConversationContext, {
       props: {
@@ -151,13 +208,17 @@ describe("support conversation context", () => {
         stubs: {
           Button: { template: '<button type="button"><slot /></button>' },
           Message: { template: "<div><slot /></div>" },
-          SupportCaseDesk: { template: '<div data-testid="exact-case-desk" />' },
+          SupportCaseDesk: {
+            template: '<div data-testid="exact-case-desk" />',
+          },
         },
       },
     });
 
     await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
-    expect(wrapper.find('[data-testid="exact-case-desk"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="exact-case-desk"]').exists()).toBe(
+      false,
+    );
     expect(wrapper.get('[aria-label="Кейс"]').text()).toContain(
       "Проверить возврат бонусов",
     );

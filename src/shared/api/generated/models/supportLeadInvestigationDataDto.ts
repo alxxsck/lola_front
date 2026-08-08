@@ -9,6 +9,7 @@ import type { SupportLeadInvestigationActionTokensDto } from "./supportLeadInves
 import type { SupportLeadInvestigationDataDtoEvidenceSource } from "./supportLeadInvestigationDataDtoEvidenceSource";
 import type { SupportLeadSafeFactDto } from "./supportLeadSafeFactDto";
 import type { SupportLeadInvestigationPinnedDto } from "./supportLeadInvestigationPinnedDto";
+import type { SupportLeadInvestigationDataDtoRouting } from "./supportLeadInvestigationDataDtoRouting";
 import type { SupportLeadInvestigationDataDtoRoutingFactsState } from "./supportLeadInvestigationDataDtoRoutingFactsState";
 import type { SupportLeadInvestigationTimelineSourcesDto } from "./supportLeadInvestigationTimelineSourcesDto";
 
@@ -18,6 +19,8 @@ export interface SupportLeadInvestigationDataDto {
   /** @maxItems 500 */
   facts: SupportLeadSafeFactDto[];
   pinned: SupportLeadInvestigationPinnedDto;
+  /** @nullable */
+  routing: SupportLeadInvestigationDataDtoRouting;
   routingFactsState: SupportLeadInvestigationDataDtoRoutingFactsState;
   timelineSources: SupportLeadInvestigationTimelineSourcesDto;
 }

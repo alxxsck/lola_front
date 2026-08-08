@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportCasePriority } from "./supportCasePriority";
+import type { SupportWorkspaceCaseRowResponseDtoSlaSignal } from "./supportWorkspaceCaseRowResponseDtoSlaSignal";
 import type { SupportCaseStatus } from "./supportCaseStatus";
 
 export interface SupportWorkspaceCaseRowResponseDto {
@@ -16,6 +17,8 @@ export interface SupportWorkspaceCaseRowResponseDto {
   lastActivityAt: string;
   priority: SupportCasePriority;
   projectSequence: string;
+  /** @nullable */
+  slaSignal: SupportWorkspaceCaseRowResponseDtoSlaSignal;
   status: SupportCaseStatus;
   title: string;
   updatedAt: string;

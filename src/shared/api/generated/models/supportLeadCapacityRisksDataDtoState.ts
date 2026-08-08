@@ -11,5 +11,5 @@ export type SupportLeadCapacityRisksDataDtoState =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportLeadCapacityRisksDataDtoState = {
-  UNAVAILABLE: "UNAVAILABLE",
+  AVAILABLE: "AVAILABLE",
 } as const;

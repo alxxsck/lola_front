@@ -34,6 +34,8 @@ function selection(
       locale: "ru",
     },
     case: null,
+    sla: null,
+    routing: null,
     conversation: {
       id: conversationId,
       endUserId: "user-1",
@@ -182,15 +184,17 @@ describe("support reply controller", () => {
         reconcile: vi.fn(),
       },
       {
-        sendAdminMessage: vi.fn().mockRejectedValue(
-          new ApiError(
-            409,
-            "Нужен подготовленный перевод",
-            undefined,
-            undefined,
-            "TRANSLATION_PREVIEW_REQUIRED",
+        sendAdminMessage: vi
+          .fn()
+          .mockRejectedValue(
+            new ApiError(
+              409,
+              "Нужен подготовленный перевод",
+              undefined,
+              undefined,
+              "TRANSLATION_PREVIEW_REQUIRED",
+            ),
           ),
-        ),
         lookupAdminMessageOutcome: vi.fn(),
       },
     );
@@ -218,7 +222,9 @@ describe("support reply controller", () => {
     await controller.send();
 
     expect(sendAdminMessage).not.toHaveBeenCalled();
-    expect(controller.error.value).toBe("У вас нет права отвечать в этом диалоге");
+    expect(controller.error.value).toBe(
+      "У вас нет права отвечать в этом диалоге",
+    );
   });
 
   it("keeps reply drafts scoped to their selected conversation", () => {
@@ -472,15 +478,17 @@ describe("support reply controller", () => {
         reconcile: vi.fn(),
       },
       {
-        sendAdminMessage: vi.fn().mockRejectedValue(
-          new ApiError(
-            409,
-            "Key reused",
-            undefined,
-            undefined,
-            "IDEMPOTENCY_KEY_REUSED",
+        sendAdminMessage: vi
+          .fn()
+          .mockRejectedValue(
+            new ApiError(
+              409,
+              "Key reused",
+              undefined,
+              undefined,
+              "IDEMPOTENCY_KEY_REUSED",
+            ),
           ),
-        ),
         lookupAdminMessageOutcome: vi.fn(),
       },
     );
@@ -494,7 +502,9 @@ describe("support reply controller", () => {
   });
 
   it("discards only a conflicting attempt and starts a new key with the preserved draft", async () => {
-    const blockedSend = vi.fn().mockRejectedValueOnce(
+    const blockedSend = vi
+      .fn()
+      .mockRejectedValueOnce(
         new ApiError(
           409,
           "Key reused",
@@ -534,9 +544,7 @@ describe("support reply controller", () => {
     await restored.send();
 
     expect(retrySend).toHaveBeenCalledTimes(1);
-    expect(retrySend.mock.calls[0]?.[2]?.idempotencyKey).not.toBe(
-      blockedKey,
-    );
+    expect(retrySend.mock.calls[0]?.[2]?.idempotencyKey).not.toBe(blockedKey);
     expect(restored.draft.value).toBe("");
   });
 
@@ -550,7 +558,9 @@ describe("support reply controller", () => {
         reconcile,
       },
       {
-        sendAdminMessage: vi.fn().mockRejectedValue(new ApiError(403, "Forbidden")),
+        sendAdminMessage: vi
+          .fn()
+          .mockRejectedValue(new ApiError(403, "Forbidden")),
         lookupAdminMessageOutcome: vi.fn(),
       },
     );

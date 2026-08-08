@@ -37821,6 +37821,420 @@
         ],
         "type": "string"
       },
+      "SupportCaseRoutingAvailableResponseDto": {
+        "properties": {
+          "assignmentState": {
+            "enum": [
+              "UNASSIGNED",
+              "RESERVED",
+              "ASSIGNED"
+            ],
+            "type": "string"
+          },
+          "decision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingDecisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "fallback": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingFallbackResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "reasonCode": {
+            "enum": [
+              "ROUTING_OFFER_ACTIVE",
+              "ROUTING_OFFER_ACCEPTED",
+              "ROUTING_AUTO_ASSIGNED",
+              "ROUTING_EVALUATION_PENDING",
+              "ROUTING_FALLBACK_PENDING",
+              "ROUTING_FALLBACK_EXHAUSTED",
+              "ROUTING_WORKER_DEGRADED",
+              "WINNER",
+              "NO_ELIGIBLE_OPERATOR",
+              "CAPACITY_GAP",
+              "CONFIGURATION_REQUIRED",
+              "STALE_INPUT",
+              "DEGRADED"
+            ],
+            "type": "string"
+          },
+          "reservation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingReservationResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reasonCode",
+          "assignmentState",
+          "decision",
+          "reservation",
+          "fallback"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingCandidateResponseDto": {
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "exclusions": {
+            "items": {
+              "enum": [
+                "MEMBERSHIP_INACTIVE",
+                "RECEIVE_PERMISSION_MISSING",
+                "TEAM_NOT_ELIGIBLE",
+                "DATA_SCOPE_DENIED",
+                "AVAILABILITY_NOT_ROUTABLE",
+                "LEASE_EXPIRED",
+                "CAPACITY_EXHAUSTED",
+                "SKILL_REQUIRED",
+                "LANGUAGE_REQUIRED",
+                "CASE_COOLDOWN",
+                "ASSIGNMENT_CONFLICT",
+                "FACT_STALE"
+              ],
+              "type": "string"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "operatorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rank": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "rank",
+          "operatorId",
+          "eligible",
+          "exclusions"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingCandidatesResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportCaseRoutingCandidateResponseDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingDecisionResponseDto": {
+        "properties": {
+          "candidateCount": {
+            "maximum": 500,
+            "minimum": 0,
+            "type": "number"
+          },
+          "candidates": {
+            "$ref": "#/components/schemas/SupportCaseRoutingCandidatesResponseDto"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "exclusionCounts": {
+            "$ref": "#/components/schemas/SupportCaseRoutingExclusionCountsResponseDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "SHADOW",
+              "LIVE_PROPOSAL"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "WINNER",
+              "NO_ELIGIBLE_OPERATOR",
+              "CAPACITY_GAP",
+              "CONFIGURATION_REQUIRED",
+              "STALE_INPUT",
+              "DEGRADED"
+            ],
+            "type": "string"
+          },
+          "policyId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "queue": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingQueueResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "selectedOperatorId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "selectedTeamId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "workforceRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "outcome",
+          "queue",
+          "policyId",
+          "policyRevisionId",
+          "workforceRevisionId",
+          "selectedTeamId",
+          "selectedOperatorId",
+          "candidateCount",
+          "exclusionCounts",
+          "evaluatedAt",
+          "candidates"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingExclusionCountsResponseDto": {
+        "properties": {
+          "ASSIGNMENT_CONFLICT": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "AVAILABILITY_NOT_ROUTABLE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CAPACITY_EXHAUSTED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CASE_COOLDOWN": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "DATA_SCOPE_DENIED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "FACT_STALE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LANGUAGE_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LEASE_EXPIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "MEMBERSHIP_INACTIVE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "RECEIVE_PERMISSION_MISSING": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "SKILL_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "TEAM_NOT_ELIGIBLE": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "SupportCaseRoutingFallbackResponseDto": {
+        "properties": {
+          "availableAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "candidateAttempt": {
+            "maximum": 20,
+            "minimum": 0,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "EVALUATION_PENDING",
+              "EVALUATION_PROCESSING",
+              "SCHEDULED",
+              "PROCESSING",
+              "EXHAUSTED",
+              "DEGRADED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "candidateAttempt",
+          "availableAt"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingNotEvaluatedResponseDto": {
+        "properties": {
+          "state": {
+            "enum": [
+              "NOT_EVALUATED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingQueueResponseDto": {
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "generationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "revisionId",
+          "generationId"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingRedactedResponseDto": {
+        "properties": {
+          "state": {
+            "enum": [
+              "REDACTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "SupportCaseRoutingReservationResponseDto": {
+        "properties": {
+          "assignmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "capacityWeightUnits": {
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fencingVersion": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "operatorCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "version",
+          "teamId",
+          "operatorCmsUserId",
+          "capacityWeightUnits",
+          "expiresAt",
+          "fencingVersion"
+        ],
+        "type": "object"
+      },
       "SupportCaseSearchQueryDto": {
         "additionalProperties": false,
         "properties": {
@@ -39831,6 +40245,12 @@
             ],
             "type": "string"
           },
+          "routingCapacityRisks": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
           "savedQueues": {
             "enum": [
               "UNAVAILABLE"
@@ -39854,8 +40274,88 @@
         "required": [
           "noEligibleOperator",
           "savedQueues",
+          "routingCapacityRisks",
           "teamSkillLanguageCapacity",
           "sla"
+        ],
+        "type": "object"
+      },
+      "SupportLeadCapacityRiskItemDto": {
+        "additionalProperties": false,
+        "properties": {
+          "eligibilityExclusionCounts": {
+            "$ref": "#/components/schemas/SupportLeadEligibilityExclusionCountsDto"
+          },
+          "lastDecisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "queue": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadCapacityRiskQueueDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "requiredCapacityUnits": {
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "riskId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "riskVersion": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "teamId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "riskId",
+          "riskVersion",
+          "lastDecisionId",
+          "queue",
+          "teamId",
+          "requiredCapacityUnits",
+          "eligibilityExclusionCounts",
+          "observedAt"
+        ],
+        "type": "object"
+      },
+      "SupportLeadCapacityRiskQueueDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
         ],
         "type": "object"
       },
@@ -39863,22 +40363,26 @@
         "additionalProperties": false,
         "properties": {
           "items": {
-            "description": "Empty until routing Ticket 13.",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/SupportLeadCapacityRiskItemDto"
             },
-            "maxItems": 0,
+            "maxItems": 200,
             "type": "array"
+          },
+          "snapshotAt": {
+            "format": "date-time",
+            "type": "string"
           },
           "state": {
             "enum": [
-              "UNAVAILABLE"
+              "AVAILABLE"
             ],
             "type": "string"
           }
         },
         "required": [
           "state",
+          "snapshotAt",
           "items"
         ],
         "type": "object"
@@ -40186,6 +40690,60 @@
         ],
         "type": "object"
       },
+      "SupportLeadEligibilityExclusionCountsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ASSIGNMENT_CONFLICT": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "AVAILABILITY_NOT_ROUTABLE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CAPACITY_EXHAUSTED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CASE_COOLDOWN": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "DATA_SCOPE_DENIED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "FACT_STALE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LANGUAGE_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LEASE_EXPIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "MEMBERSHIP_INACTIVE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "RECEIVE_PERMISSION_MISSING": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "SKILL_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "TEAM_NOT_ELIGIBLE": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "SupportLeadInvestigationActionTokensDto": {
         "additionalProperties": false,
         "properties": {
@@ -40251,9 +40809,19 @@
           "pinned": {
             "$ref": "#/components/schemas/SupportLeadInvestigationPinnedDto"
           },
+          "routing": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadRoutingContextDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "routingFactsState": {
             "enum": [
-              "UNAVAILABLE"
+              "AVAILABLE",
+              "NOT_EVALUATED"
             ],
             "type": "string"
           },
@@ -40264,6 +40832,7 @@
         "required": [
           "evidenceSource",
           "routingFactsState",
+          "routing",
           "timelineSources",
           "pinned",
           "actionTokens",
@@ -40528,6 +41097,400 @@
           "nextCursor",
           "effectiveWindow",
           "slaRolloutState"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingCandidateDto": {
+        "additionalProperties": false,
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "exclusions": {
+            "items": {
+              "enum": [
+                "MEMBERSHIP_INACTIVE",
+                "RECEIVE_PERMISSION_MISSING",
+                "TEAM_NOT_ELIGIBLE",
+                "DATA_SCOPE_DENIED",
+                "AVAILABILITY_NOT_ROUTABLE",
+                "LEASE_EXPIRED",
+                "CAPACITY_EXHAUSTED",
+                "SKILL_REQUIRED",
+                "LANGUAGE_REQUIRED",
+                "CASE_COOLDOWN",
+                "ASSIGNMENT_CONFLICT",
+                "FACT_STALE"
+              ],
+              "type": "string"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "operatorId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "rank": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "rank",
+          "operatorId",
+          "eligible",
+          "exclusions"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingCandidatesDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportLeadRoutingCandidateDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingContextDto": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentState": {
+            "enum": [
+              "UNASSIGNED",
+              "RESERVED",
+              "ASSIGNED"
+            ],
+            "type": "string"
+          },
+          "decision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadRoutingDecisionDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "fallback": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadRoutingFallbackDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "reasonCode": {
+            "enum": [
+              "ROUTING_OFFER_ACTIVE",
+              "ROUTING_OFFER_ACCEPTED",
+              "ROUTING_AUTO_ASSIGNED",
+              "ROUTING_EVALUATION_PENDING",
+              "ROUTING_FALLBACK_PENDING",
+              "ROUTING_FALLBACK_EXHAUSTED",
+              "ROUTING_WORKER_DEGRADED",
+              "WINNER",
+              "NO_ELIGIBLE_OPERATOR",
+              "CAPACITY_GAP",
+              "CONFIGURATION_REQUIRED",
+              "STALE_INPUT",
+              "DEGRADED"
+            ],
+            "type": "string"
+          },
+          "reservation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadRoutingReservationDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reasonCode",
+          "assignmentState",
+          "decision",
+          "reservation",
+          "fallback"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingDecisionDto": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateCount": {
+            "maximum": 500,
+            "minimum": 0,
+            "type": "number"
+          },
+          "candidates": {
+            "$ref": "#/components/schemas/SupportLeadRoutingCandidatesDto"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "exclusionCounts": {
+            "$ref": "#/components/schemas/SupportLeadRoutingExclusionCountsDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "SHADOW",
+              "LIVE_PROPOSAL"
+            ],
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "WINNER",
+              "NO_ELIGIBLE_OPERATOR",
+              "CAPACITY_GAP",
+              "CONFIGURATION_REQUIRED",
+              "STALE_INPUT",
+              "DEGRADED"
+            ],
+            "type": "string"
+          },
+          "policyId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "queue": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportLeadRoutingQueueDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "selectedOperatorId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "selectedTeamId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "workforceRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "outcome",
+          "queue",
+          "policyId",
+          "policyRevisionId",
+          "workforceRevisionId",
+          "selectedTeamId",
+          "selectedOperatorId",
+          "candidateCount",
+          "exclusionCounts",
+          "evaluatedAt",
+          "candidates"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingExclusionCountsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ASSIGNMENT_CONFLICT": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "AVAILABILITY_NOT_ROUTABLE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CAPACITY_EXHAUSTED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "CASE_COOLDOWN": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "DATA_SCOPE_DENIED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "FACT_STALE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LANGUAGE_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "LEASE_EXPIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "MEMBERSHIP_INACTIVE": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "RECEIVE_PERMISSION_MISSING": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "SKILL_REQUIRED": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "TEAM_NOT_ELIGIBLE": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "SupportLeadRoutingFallbackDto": {
+        "additionalProperties": false,
+        "properties": {
+          "availableAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "candidateAttempt": {
+            "maximum": 20,
+            "minimum": 0,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "EVALUATION_PENDING",
+              "EVALUATION_PROCESSING",
+              "SCHEDULED",
+              "PROCESSING",
+              "EXHAUSTED",
+              "DEGRADED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "candidateAttempt",
+          "availableAt"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingQueueDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "generationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "revisionId",
+          "generationId"
+        ],
+        "type": "object"
+      },
+      "SupportLeadRoutingReservationDto": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "capacityWeightUnits": {
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fencingVersion": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "operatorCmsUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "teamId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "version",
+          "teamId",
+          "operatorCmsUserId",
+          "capacityWeightUnits",
+          "expiresAt",
+          "fencingVersion"
         ],
         "type": "object"
       },
@@ -45239,6 +46202,241 @@
         ],
         "type": "object"
       },
+      "SupportSlaCaseClockResponseDto": {
+        "properties": {
+          "actionEtag": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "breachedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "consumedBusinessMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "currentAtRiskAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "currentDeadlineAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "FIRST_HUMAN_RESPONSE",
+              "NEXT_HUMAN_RESPONSE",
+              "RESOLUTION"
+            ],
+            "type": "string"
+          },
+          "metAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "nextTransitionAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "occurrenceNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "originalAtRiskAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "originalDeadlineAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "OPEN",
+              "MET",
+              "CANCELLED",
+              "MIGRATED"
+            ],
+            "type": "string"
+          },
+          "pauseReason": {
+            "enum": [
+              "WAITING_END_USER",
+              "WAITING_SYSTEM"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "remainingBusinessMs": {
+            "type": "number"
+          },
+          "risk": {
+            "enum": [
+              "ON_TRACK",
+              "AT_RISK",
+              "BREACHED"
+            ],
+            "type": "string"
+          },
+          "targetBusinessSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "timing": {
+            "enum": [
+              "RUNNING",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceNumber",
+          "kind",
+          "generation",
+          "timing",
+          "risk",
+          "outcome",
+          "targetBusinessSeconds",
+          "consumedBusinessMs",
+          "remainingBusinessMs",
+          "pauseReason",
+          "originalAtRiskAt",
+          "originalDeadlineAt",
+          "currentAtRiskAt",
+          "currentDeadlineAt",
+          "nextTransitionAt",
+          "breachedAt",
+          "metAt",
+          "version",
+          "actionEtag"
+        ],
+        "type": "object"
+      },
+      "SupportSlaCaseOccurrenceResponseDto": {
+        "properties": {
+          "actionEtag": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "calendarRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "endedEffectiveAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurrenceNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "policyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ruleCode": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "startedEffectiveAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "TERMINAL"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "occurrenceNumber",
+          "state",
+          "version",
+          "actionEtag",
+          "policyRevisionId",
+          "calendarRevisionId",
+          "ruleCode",
+          "startedEffectiveAt",
+          "endedEffectiveAt"
+        ],
+        "type": "object"
+      },
+      "SupportSlaCaseProjectionResponseDto": {
+        "properties": {
+          "clocks": {
+            "items": {
+              "$ref": "#/components/schemas/SupportSlaCaseClockResponseDto"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "occurrence": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportSlaCaseOccurrenceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "reconciliationCheckpoint": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "DISABLED",
+              "SHADOW"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "rolloutState",
+          "reconciliationCheckpoint",
+          "occurrence",
+          "clocks"
+        ],
+        "type": "object"
+      },
       "SupportSlaConfigurationDraftResponseDto": {
         "properties": {
           "configuration": {
@@ -46434,6 +47632,21 @@
           "projectSequence": {
             "type": "string"
           },
+          "slaSignal": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "state"
+            },
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SupportWorkspaceSlaSignalUnavailableResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/SupportWorkspaceSlaSignalAvailableResponseDto"
+              }
+            ]
+          },
           "status": {
             "allOf": [
               {
@@ -46464,7 +47677,8 @@
           "groupCode",
           "attentionRequired",
           "lastActivityAt",
-          "updatedAt"
+          "updatedAt",
+          "slaSignal"
         ],
         "type": "object"
       },
@@ -46855,6 +48069,21 @@
           "projectSequence": {
             "type": "string"
           },
+          "slaSignal": {
+            "additionalProperties": false,
+            "discriminator": {
+              "propertyName": "state"
+            },
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SupportWorkspaceSlaSignalUnavailableResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/SupportWorkspaceSlaSignalAvailableResponseDto"
+              }
+            ]
+          },
           "status": {
             "allOf": [
               {
@@ -46889,6 +48118,7 @@
           "attentionRequired",
           "lastActivityAt",
           "updatedAt",
+          "slaSignal",
           "goal",
           "summary",
           "assignment"
@@ -47038,12 +48268,46 @@
           },
           "relatedConversationsTruncated": {
             "type": "boolean"
+          },
+          "routing": {
+            "additionalProperties": false,
+            "discriminator": {
+              "mapping": {
+                "AVAILABLE": "#/components/schemas/SupportCaseRoutingAvailableResponseDto",
+                "NOT_EVALUATED": "#/components/schemas/SupportCaseRoutingNotEvaluatedResponseDto",
+                "REDACTED": "#/components/schemas/SupportCaseRoutingRedactedResponseDto"
+              },
+              "propertyName": "state"
+            },
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingRedactedResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingNotEvaluatedResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/SupportCaseRoutingAvailableResponseDto"
+              }
+            ]
+          },
+          "sla": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportSlaCaseProjectionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           }
         },
         "required": [
           "mode",
           "endUser",
           "case",
+          "sla",
+          "routing",
           "conversation",
           "messages",
           "relatedCases",
@@ -47055,6 +48319,133 @@
           "capabilitiesRevision",
           "actionRevisions",
           "checkpoint"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceSlaSignalAvailableResponseDto": {
+        "properties": {
+          "clockVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "computedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "currentDeadlineAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "FIRST_HUMAN_RESPONSE",
+              "NEXT_HUMAN_RESPONSE",
+              "RESOLUTION"
+            ],
+            "type": "string"
+          },
+          "pauseReason": {
+            "enum": [
+              "WAITING_END_USER",
+              "WAITING_SYSTEM"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "reconciliationCheckpoint": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "remainingBusinessMs": {
+            "type": "number"
+          },
+          "risk": {
+            "enum": [
+              "ON_TRACK",
+              "AT_RISK",
+              "BREACHED"
+            ],
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "SHADOW"
+            ],
+            "type": "string"
+          },
+          "signalCode": {
+            "enum": [
+              "SLA_BREACHED",
+              "SLA_AT_RISK",
+              "SLA_PAUSED",
+              "SLA_DUE"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "AVAILABLE"
+            ],
+            "type": "string"
+          },
+          "timing": {
+            "enum": [
+              "RUNNING",
+              "PAUSED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "rolloutState",
+          "reconciliationCheckpoint",
+          "signalCode",
+          "kind",
+          "timing",
+          "risk",
+          "pauseReason",
+          "currentDeadlineAt",
+          "remainingBusinessMs",
+          "clockVersion",
+          "computedAt"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceSlaSignalUnavailableResponseDto": {
+        "properties": {
+          "computedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reconciliationCheckpoint": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "DISABLED",
+              "SHADOW"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "DISABLED",
+              "NO_ACTIVE_CLOCK"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "rolloutState",
+          "reconciliationCheckpoint",
+          "computedAt"
         ],
         "type": "object"
       },
@@ -73909,7 +75300,9 @@
                             "SUPPORT_LEAD_PROJECTION_DEGRADED",
                             "SUPPORT_LEAD_PROJECTION_INCOMPLETE",
                             "SUPPORT_LEAD_CASE_UNAVAILABLE",
-                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID"
+                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID",
+                            "SUPPORT_LEAD_CAPACITY_RISK_INVALID",
+                            "SUPPORT_LEAD_ROUTING_CONTEXT_REDACTED"
                           ],
                           "type": "string"
                         },
@@ -83277,7 +84670,9 @@
                             "SUPPORT_LEAD_PROJECTION_DEGRADED",
                             "SUPPORT_LEAD_PROJECTION_INCOMPLETE",
                             "SUPPORT_LEAD_CASE_UNAVAILABLE",
-                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID"
+                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID",
+                            "SUPPORT_LEAD_CAPACITY_RISK_INVALID",
+                            "SUPPORT_LEAD_ROUTING_CONTEXT_REDACTED"
                           ],
                           "type": "string"
                         },
@@ -83539,7 +84934,9 @@
                             "SUPPORT_LEAD_PROJECTION_DEGRADED",
                             "SUPPORT_LEAD_PROJECTION_INCOMPLETE",
                             "SUPPORT_LEAD_CASE_UNAVAILABLE",
-                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID"
+                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID",
+                            "SUPPORT_LEAD_CAPACITY_RISK_INVALID",
+                            "SUPPORT_LEAD_ROUTING_CONTEXT_REDACTED"
                           ],
                           "type": "string"
                         },
@@ -83815,7 +85212,9 @@
                             "SUPPORT_LEAD_PROJECTION_DEGRADED",
                             "SUPPORT_LEAD_PROJECTION_INCOMPLETE",
                             "SUPPORT_LEAD_CASE_UNAVAILABLE",
-                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID"
+                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID",
+                            "SUPPORT_LEAD_CAPACITY_RISK_INVALID",
+                            "SUPPORT_LEAD_ROUTING_CONTEXT_REDACTED"
                           ],
                           "type": "string"
                         },
@@ -84057,7 +85456,9 @@
                             "SUPPORT_LEAD_PROJECTION_DEGRADED",
                             "SUPPORT_LEAD_PROJECTION_INCOMPLETE",
                             "SUPPORT_LEAD_CASE_UNAVAILABLE",
-                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID"
+                            "SUPPORT_LEAD_PROJECTION_COUNT_INVALID",
+                            "SUPPORT_LEAD_CAPACITY_RISK_INVALID",
+                            "SUPPORT_LEAD_ROUTING_CONTEXT_REDACTED"
                           ],
                           "type": "string"
                         },

@@ -22,6 +22,7 @@ const items: SupportInboxItem[] = [
     priority: "HIGH",
     groupCode: "BILLING",
     attentionRequired: true,
+    slaSignal: null,
     lastActivityAt: "2026-08-07T10:00:00.000Z",
     updatedAt: "2026-08-07T10:00:00.000Z",
     version: 3,
@@ -117,6 +118,33 @@ describe("SupportInboxPane", () => {
     expect(
       wrapper.get('.inbox-row[aria-current="true"]').attributes("title"),
     ).toBeUndefined();
+  });
+
+  it("renders one textual shadow SLA signal without relying on colour", () => {
+    const wrapper = render({
+      items: [
+        {
+          ...items[0]!,
+          slaSignal: {
+            state: "AVAILABLE",
+            rolloutState: "SHADOW",
+            signalCode: "SLA_AT_RISK",
+            kind: "FIRST_HUMAN_RESPONSE",
+            timing: "RUNNING",
+            risk: "AT_RISK",
+            pauseReason: null,
+            currentDeadlineAt: "2026-08-08T10:15:00.000Z",
+            remainingBusinessMs: 900_000,
+            computedAt: "2026-08-08T10:00:00.000Z",
+          },
+        },
+      ],
+    });
+
+    const signal = wrapper.get("[data-sla-signal]");
+    expect(signal.text()).toContain("Риск первого ответа");
+    expect(signal.text()).toContain("15 мин");
+    expect(signal.text()).toContain("теневой прогноз");
   });
 
   it("changes server-owned mode and selects the exact typed row", async () => {

@@ -99,6 +99,28 @@ export function createSupportConversationController(
     readAck = null;
   }
 
+  function purgeOperationsContext(options: {
+    sla: boolean;
+    routing: boolean;
+  }): void {
+    if (!options.sla && !options.routing) return;
+    selectionGeneration += 1;
+    olderRequestGeneration += 1;
+    newerRequestGeneration += 1;
+    reconcileRequestGeneration += 1;
+    readAck = null;
+    loading.value = false;
+    loadingOlder.value = false;
+    loadingNewer.value = false;
+    const projection = selection.value;
+    if (!projection) return;
+    selection.value = {
+      ...projection,
+      ...(options.sla ? { sla: null } : {}),
+      ...(options.routing ? { routing: { state: "REDACTED" } } : {}),
+    };
+  }
+
   function isCurrent(
     projectId: string,
     target: { conversationId?: string; caseId?: string },
@@ -547,6 +569,7 @@ export function createSupportConversationController(
     markVisible,
     applyDeliveryReceipt,
     reconcile,
+    purgeOperationsContext,
     reset,
   };
 }

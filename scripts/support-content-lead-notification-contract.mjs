@@ -717,7 +717,22 @@ export function validateSupportContentLeadNotificationContract(document) {
     "deliveryVersion",
   ]);
   requirePropertyEnum(document, "SupportLeadCapacityRisksDataDto", "state", [
-    "UNAVAILABLE",
+    "AVAILABLE",
+  ]);
+  requireProperties(document, "SupportLeadCapacityRisksDataDto", [
+    "state",
+    "snapshotAt",
+    "items",
+  ]);
+  requireProperties(document, "SupportLeadCapacityRiskItemDto", [
+    "riskId",
+    "riskVersion",
+    "lastDecisionId",
+    "queue",
+    "teamId",
+    "requiredCapacityUnits",
+    "eligibilityExclusionCounts",
+    "observedAt",
   ]);
 
   const alertList = operation(document, "SupportOperationalAlert_list");

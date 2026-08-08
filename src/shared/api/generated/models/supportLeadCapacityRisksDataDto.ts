@@ -5,13 +5,12 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportLeadCapacityRiskItemDto } from "./supportLeadCapacityRiskItemDto";
 import type { SupportLeadCapacityRisksDataDtoState } from "./supportLeadCapacityRisksDataDtoState";
 
 export interface SupportLeadCapacityRisksDataDto {
-  /**
-   * Empty until routing Ticket 13.
-   * @maxItems 0
-   */
-  items: string[];
+  /** @maxItems 200 */
+  items: SupportLeadCapacityRiskItemDto[];
+  snapshotAt: string;
   state: SupportLeadCapacityRisksDataDtoState;
 }

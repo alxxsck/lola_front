@@ -6,12 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportLeadCapabilitiesDtoNoEligibleOperator } from "./supportLeadCapabilitiesDtoNoEligibleOperator";
+import type { SupportLeadCapabilitiesDtoRoutingCapacityRisks } from "./supportLeadCapabilitiesDtoRoutingCapacityRisks";
 import type { SupportLeadCapabilitiesDtoSavedQueues } from "./supportLeadCapabilitiesDtoSavedQueues";
 import type { SupportLeadCapabilitiesDtoSla } from "./supportLeadCapabilitiesDtoSla";
 import type { SupportLeadCapabilitiesDtoTeamSkillLanguageCapacity } from "./supportLeadCapabilitiesDtoTeamSkillLanguageCapacity";
 
 export interface SupportLeadCapabilitiesDto {
   noEligibleOperator: SupportLeadCapabilitiesDtoNoEligibleOperator;
+  routingCapacityRisks: SupportLeadCapabilitiesDtoRoutingCapacityRisks;
   savedQueues: SupportLeadCapabilitiesDtoSavedQueues;
   sla: SupportLeadCapabilitiesDtoSla;
   teamSkillLanguageCapacity: SupportLeadCapabilitiesDtoTeamSkillLanguageCapacity;

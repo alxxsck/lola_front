@@ -119,6 +119,28 @@ test("inbox and Case commands retain bounded server-owned query and mutation sem
         .properties.claimAssignment;
     },
     (contract) => {
+      const target =
+        contract.components.schemas.SupportWorkspaceCaseRowResponseDto;
+      target.required = target.required.filter(
+        (field) => field !== "slaSignal",
+      );
+    },
+    (contract) => {
+      const target =
+        contract.components.schemas.SupportWorkspaceSelectionResponseDto;
+      target.required = target.required.filter((field) => field !== "routing");
+    },
+    (contract) => {
+      const target = contract.components.schemas.SupportSlaCaseClockResponseDto;
+      target.required = target.required.filter(
+        (field) => field !== "remainingBusinessMs",
+      );
+    },
+    (contract) => {
+      delete contract.components.schemas
+        .SupportCaseRoutingExclusionCountsResponseDto.properties.SKILL_REQUIRED;
+    },
+    (contract) => {
       delete contract.components.schemas.ClassifyEndUserCaseDto.properties
         .priority;
     },
@@ -191,11 +213,8 @@ test("assignment and offer commands retain authority, OCC and audited reasons", 
       );
     },
     (contract) => {
-      delete inlineError(
-        contract,
-        "SupportCaseAssignment_release",
-        "409",
-      ).properties.details.properties.currentActionEtag;
+      delete inlineError(contract, "SupportCaseAssignment_release", "409")
+        .properties.details.properties.currentActionEtag;
     },
     (contract) => {
       delete operation(contract, "SupportCaseAssignment_transfer").responses[
@@ -213,27 +232,30 @@ test("assignment and offer commands retain authority, OCC and audited reasons", 
       );
     },
     (contract) => {
-      operation(
-        contract,
-        "SupportCaseAssignment_assignWithOverride",
-      )["x-iam-all-permissions"] = operation(
-        contract,
-        "SupportCaseAssignment_assignWithOverride",
-      )["x-iam-all-permissions"].filter(
+      operation(contract, "SupportCaseAssignment_assignWithOverride")[
+        "x-iam-all-permissions"
+      ] = operation(contract, "SupportCaseAssignment_assignWithOverride")[
+        "x-iam-all-permissions"
+      ].filter(
         (entry) => entry.code !== "project.support.assignments.force_assign",
       );
     },
     (contract) => {
-      const target = contract.components.schemas.ForceAssignSupportCaseAssignmentDto;
-      target.required = target.required.filter((field) => field !== "reasonNote");
+      const target =
+        contract.components.schemas.ForceAssignSupportCaseAssignmentDto;
+      target.required = target.required.filter(
+        (field) => field !== "reasonNote",
+      );
     },
     (contract) => {
-      const target = contract.components.schemas.SupportCaseAssignmentBatchResponseDto;
+      const target =
+        contract.components.schemas.SupportCaseAssignmentBatchResponseDto;
       target.required = target.required.filter((field) => field !== "items");
     },
     (contract) => {
-      delete contract.components.schemas.SupportCaseAssignmentCandidateOperatorResponseDto
-        .properties.requiredOverrides;
+      delete contract.components.schemas
+        .SupportCaseAssignmentCandidateOperatorResponseDto.properties
+        .requiredOverrides;
     },
   ];
 

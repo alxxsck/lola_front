@@ -41,6 +41,7 @@ function supportCase(id: string): SupportWorkspaceCaseRow {
     priority: "NORMAL",
     groupCode: "GENERAL",
     attentionRequired: false,
+    slaSignal: null,
     lastActivityAt: "2026-08-06T10:00:00.000Z",
     updatedAt: "2026-08-06T10:00:00.000Z",
     version: 1,

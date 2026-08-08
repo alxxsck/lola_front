@@ -42,7 +42,10 @@ import { createSupportConversationController } from "@/features/support-conversa
 import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
 import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
 import SupportInboxPane from "@/features/support-inbox/ui/SupportInboxPane.vue";
-import { supportSearchSource, type SupportSearchResult } from "@/features/support-search/api/support-search-source";
+import {
+  supportSearchSource,
+  type SupportSearchResult,
+} from "@/features/support-search/api/support-search-source";
 import {
   hasSupportSearchCriteria,
   normalizeSupportSearchState,
@@ -51,9 +54,18 @@ import {
   type SupportSearchRouteState,
 } from "@/features/support-search/model/support-search-route";
 import { createSupportSearchController } from "@/features/support-search/model/use-support-search";
-import { supportViewsSource, type SupportViewSelection } from "@/features/support-views/api/support-views-source";
+import {
+  supportViewsSource,
+  type SupportViewSelection,
+} from "@/features/support-views/api/support-views-source";
 import { createSavedViewCommand } from "@/features/support-views/model/support-view-draft";
-import { isCustomSupportViewRoute, readSupportViewSelection, shouldLoadCustomSupportView, supportViewRouteKeys, writeSupportViewSelection } from "@/features/support-views/model/support-view-route";
+import {
+  isCustomSupportViewRoute,
+  readSupportViewSelection,
+  shouldLoadCustomSupportView,
+  supportViewRouteKeys,
+  writeSupportViewSelection,
+} from "@/features/support-views/model/support-view-route";
 import { createSupportViewsController } from "@/features/support-views/model/use-support-views";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
 import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
@@ -114,17 +126,69 @@ const canSearchSupport = computed(() =>
     "project.support.search.read",
   ),
 );
-const canReadSavedViews = computed(() =>
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.read") ||
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.self_manage") ||
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.manage"),
+const canReadSavedViews = computed(
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.saved_views.read",
+    ) ||
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.saved_views.self_manage",
+    ) ||
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.saved_views.manage",
+    ),
 );
-const canCreateSavedViews = computed(() =>
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.self_manage") ||
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.manage"),
+const canCreateSavedViews = computed(
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.saved_views.self_manage",
+    ) ||
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.saved_views.manage",
+    ),
 );
 const canManageAllSavedViews = computed(() =>
-  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], "project.support.saved_views.manage"),
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.support.saved_views.manage",
+  ),
+);
+const canReadSlaContext = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.support.sla.read",
+  ),
+);
+const routingContextVisibility = computed<"FULL" | "OWN" | "NONE">(() => {
+  const permissions = auth.project?.effectivePermissionCodes ?? [];
+  if (
+    ([
+      "project.support.routing.read",
+      "project.support.routing.manage",
+      "project.support.lead_control.read",
+    ] as const).some((permission) =>
+      hasProjectPermission(permissions, permission),
+    )
+  )
+    return "FULL";
+  return hasProjectPermission(permissions, "project.support.routing.receive")
+    ? "OWN"
+    : "NONE";
+});
+const canReadRoutingContext = computed(
+  () => routingContextVisibility.value !== "NONE",
+);
+const operationsContextAuthorityKey = computed(() =>
+  [
+    auth.project?.id ?? "",
+    canReadSlaContext.value ? "SLA" : "NO_SLA",
+    routingContextVisibility.value,
+  ].join("\u0000"),
 );
 const routeCaseId = computed(() => {
   const routeId = route.params.caseId;
@@ -191,14 +255,21 @@ const supportViews = createSupportViewsController(
     },
     async onSelection(selection) {
       const query = Object.fromEntries(
-        Object.entries(route.query).filter(([key]) => !supportViewRouteKeys.has(key) && !supportSearchRouteKeys.has(key)),
+        Object.entries(route.query).filter(
+          ([key]) =>
+            !supportViewRouteKeys.has(key) && !supportSearchRouteKeys.has(key),
+        ),
       );
-      await router.replace({ query: { ...query, ...writeSupportViewSelection(selection) } });
+      await router.replace({
+        query: { ...query, ...writeSupportViewSelection(selection) },
+      });
     },
   },
   supportViewsSource,
 );
-const supportSearchVisibleError = computed(() => supportViews.error.value || supportSearch.error.value);
+const supportSearchVisibleError = computed(
+  () => supportViews.error.value || supportSearch.error.value,
+);
 const supportViewIntentKeys = new Map<string, string>();
 function supportViewIntentKey(signature: string): string {
   const current = supportViewIntentKeys.get(signature);
@@ -207,7 +278,9 @@ function supportViewIntentKey(signature: string): string {
   supportViewIntentKeys.set(signature, key);
   return key;
 }
-const viewActive = computed(() => canSearchSupport.value && Boolean(supportViews.selection.value));
+const viewActive = computed(
+  () => canSearchSupport.value && Boolean(supportViews.selection.value),
+);
 const supportSearchRouteKeys = new Set([
   "search",
   "scope",
@@ -238,7 +311,9 @@ const supportSearchRouteKeys = new Set([
 ]);
 let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
-const supportContext = ref<InstanceType<typeof SupportConversationContext> | null>(null);
+const supportContext = ref<InstanceType<
+  typeof SupportConversationContext
+> | null>(null);
 const workspaceFullscreen = ref(true);
 const workspacePresentedFullscreen = ref(true);
 const workspacePresentationTransitioning = ref(false);
@@ -620,6 +695,27 @@ const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
 });
 const selectedCase = computed(() => conversation.selection.value?.case ?? null);
+const reservationReconcileProgress = ref<{
+  key: string;
+  attempts: number;
+} | null>(null);
+const operationsReconcileInFlightKey = ref<string | null>(null);
+let operationsReconcileGeneration = 0;
+const selectedReservationKey = computed(() => {
+  const caseId = selectedCase.value?.id;
+  const routing = conversation.selection.value?.routing;
+  const expiresAt =
+    routing?.state === "AVAILABLE" ? routing.reservation?.expiresAt : null;
+  return caseId && expiresAt ? `${caseId}\u0000${expiresAt}` : null;
+});
+const reservationReconcileAttempt = computed(() =>
+  reservationReconcileProgress.value?.key === selectedReservationKey.value
+    ? reservationReconcileProgress.value.attempts
+    : 0,
+);
+const reservationReconcileInFlight = computed(
+  () => operationsReconcileInFlightKey.value === selectedReservationKey.value,
+);
 const lastInboxSelectionKey = ref("");
 const selectedInboxKey = computed(
   () => requestedSelectionKey.value || lastInboxSelectionKey.value || undefined,
@@ -851,9 +947,7 @@ const canManageOwnAssignments = computed(
 const canOverrideAssignments = computed(
   () =>
     !assignmentAccessDenied.value &&
-    canOverrideSupportAssignments(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canOverrideSupportAssignments(auth.project?.effectivePermissionCodes ?? []),
 );
 const canForceAssignments = computed(
   () =>
@@ -867,34 +961,31 @@ const canManageRoutingOffers = computed(
       auth.project?.effectivePermissionCodes ?? [],
     ),
 );
-const assignment = createSupportAssignmentController(
-  supportAssignmentSource,
-  {
-    projectId: () => auth.project?.id,
-    selection: () => conversation.selection.value,
-    canManageOwn: () => canManageOwnAssignments.value,
-    canOverride: () => canOverrideAssignments.value,
-    canReceiveOffers: () => canManageRoutingOffers.value,
-    async onForbidden() {
-      assignmentAccessDenied.value = true;
-      try {
-        await auth.refreshContext();
-      } catch {
-        // Assignment capabilities and private offers were already purged.
-      }
-      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-        () => undefined,
-      );
-    },
-    async onChanged() {
-      await Promise.all([
-        inbox.load(),
-        conversation.reconcile(),
-        canReadAvailability.value ? availability.load() : Promise.resolve(),
-      ]);
-    },
+const assignment = createSupportAssignmentController(supportAssignmentSource, {
+  projectId: () => auth.project?.id,
+  selection: () => conversation.selection.value,
+  canManageOwn: () => canManageOwnAssignments.value,
+  canOverride: () => canOverrideAssignments.value,
+  canReceiveOffers: () => canManageRoutingOffers.value,
+  async onForbidden() {
+    assignmentAccessDenied.value = true;
+    try {
+      await auth.refreshContext();
+    } catch {
+      // Assignment capabilities and private offers were already purged.
+    }
+    await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+      () => undefined,
+    );
   },
-);
+  async onChanged() {
+    await Promise.all([
+      inbox.load(),
+      conversation.reconcile(),
+      canReadAvailability.value ? availability.load() : Promise.resolve(),
+    ]);
+  },
+});
 const leadAssignment = createSupportLeadAssignmentController(
   supportLeadAssignmentSource,
   {
@@ -929,7 +1020,8 @@ const leadAssignment = createSupportLeadAssignmentController(
 const assignmentAvailabilityLabel = computed(() => {
   const snapshot = availability.availability.value;
   if (!canReadAvailability.value) return "Нет права на просмотр";
-  if (!snapshot) return availability.loading.value ? "Загружается…" : "Не загружена";
+  if (!snapshot)
+    return availability.loading.value ? "Загружается…" : "Не загружена";
   const state =
     {
       AVAILABLE: "Доступен для новых обращений",
@@ -938,7 +1030,9 @@ const assignmentAvailabilityLabel = computed(() => {
       DRAINING: "Завершает текущую работу",
       OFFLINE: "Офлайн",
     }[snapshot.effectiveState] ?? snapshot.effectiveState;
-  return snapshot.acceptsNewWork ? state : `${state} · новую работу не принимает`;
+  return snapshot.acceptsNewWork
+    ? state
+    : `${state} · новую работу не принимает`;
 });
 const assignmentSurfaceController = computed(() =>
   canManageOwnAssignments.value || canOverrideAssignments.value
@@ -1017,7 +1111,9 @@ async function syncSupportSearchRoute(
       ([key]) => !supportSearchRouteKeys.has(key),
     ),
   );
-  await router.replace({ query: { ...query, ...writeSupportSearchRoute(state) } });
+  await router.replace({
+    query: { ...query, ...writeSupportSearchRoute(state) },
+  });
 }
 
 function runSupportSearch(state: SupportSearchRouteState): void {
@@ -1061,7 +1157,9 @@ function changeSupportSearch(state: SupportSearchRouteState): void {
   }, 250);
 }
 
-async function selectSupportView(selection: SupportViewSelection): Promise<void> {
+async function selectSupportView(
+  selection: SupportViewSelection,
+): Promise<void> {
   clearSupportSearchTimer();
   searchOpen.value = false;
   supportSearch.reset();
@@ -1077,40 +1175,73 @@ async function startCustomSupportSearch(): Promise<void> {
   await syncSupportSearchRoute(searchState.value);
 }
 
-async function createSupportView(value: { name: string; code: string; scope: "PERSONAL" | "TEAM" | "PROJECT"; teamId: string }): Promise<void> {
-  const command = createSavedViewCommand(value.name, value.code, value.scope, value.teamId, searchState.value);
+async function createSupportView(value: {
+  name: string;
+  code: string;
+  scope: "PERSONAL" | "TEAM" | "PROJECT";
+  teamId: string;
+}): Promise<void> {
+  const command = createSavedViewCommand(
+    value.name,
+    value.code,
+    value.scope,
+    value.teamId,
+    searchState.value,
+  );
   if (!command) return;
   const signature = `create:${JSON.stringify(command)}`;
-  if (await supportViews.create(command, supportViewIntentKey(signature))) supportViewIntentKeys.delete(signature);
+  if (await supportViews.create(command, supportViewIntentKey(signature)))
+    supportViewIntentKeys.delete(signature);
 }
 
-async function replaceSupportView(value: { view: import("@/shared/api/generated/models").SavedSupportViewResponseDto; displayName: string }): Promise<void> {
+async function replaceSupportView(value: {
+  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto;
+  displayName: string;
+}): Promise<void> {
   const { view } = value;
   const displayName = value.displayName.trim();
-  if (!view.permissions.replaceDraft || displayName.length < 2 || displayName.length > 120) return;
+  if (
+    !view.permissions.replaceDraft ||
+    displayName.length < 2 ||
+    displayName.length > 120
+  )
+    return;
   const command = { draft: { ...view.draft, displayName } };
   const signature = `replace:${view.id}:${view.etag}:${JSON.stringify(command)}`;
-  if (await supportViews.replace(view, command, supportViewIntentKey(signature))) supportViewIntentKeys.delete(signature);
+  if (
+    await supportViews.replace(view, command, supportViewIntentKey(signature))
+  )
+    supportViewIntentKeys.delete(signature);
 }
 
-async function setDefaultSupportView(selection: SupportViewSelection): Promise<void> {
-  const command = selection.kind === "SYSTEM"
+async function setDefaultSupportView(
+  selection: SupportViewSelection,
+): Promise<void> {
+  const command =
+    selection.kind === "SYSTEM"
       ? { kind: "SYSTEM" as const, presetCode: selection.code }
       : { kind: "SAVED" as const, savedViewId: selection.id };
   const signature = `default:${JSON.stringify(command)}:${supportViews.defaultView.value?.etag ?? "none"}`;
-  if (await supportViews.setDefault(command, supportViewIntentKey(signature))) supportViewIntentKeys.delete(signature);
+  if (await supportViews.setDefault(command, supportViewIntentKey(signature)))
+    supportViewIntentKeys.delete(signature);
 }
 
-async function publishSupportView(view: import("@/shared/api/generated/models").SavedSupportViewResponseDto): Promise<void> {
+async function publishSupportView(
+  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
+): Promise<void> {
   if (!view.permissions.publish) return;
   const signature = `publish:${view.id}:${view.etag}`;
-  if (await supportViews.publish(view, supportViewIntentKey(signature))) supportViewIntentKeys.delete(signature);
+  if (await supportViews.publish(view, supportViewIntentKey(signature)))
+    supportViewIntentKeys.delete(signature);
 }
 
-async function archiveSupportView(view: import("@/shared/api/generated/models").SavedSupportViewResponseDto): Promise<void> {
+async function archiveSupportView(
+  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
+): Promise<void> {
   if (!view.permissions.archive) return;
   const signature = `archive:${view.id}:${view.etag}`;
-  if (await supportViews.archive(view, supportViewIntentKey(signature))) supportViewIntentKeys.delete(signature);
+  if (await supportViews.archive(view, supportViewIntentKey(signature)))
+    supportViewIntentKeys.delete(signature);
 }
 
 async function closeSupportSearch(): Promise<void> {
@@ -1132,7 +1263,9 @@ async function closeSupportSearch(): Promise<void> {
   selected?.focus({ preventScroll: true });
 }
 
-async function openSupportSearchResult(item: SupportSearchResult): Promise<void> {
+async function openSupportSearchResult(
+  item: SupportSearchResult,
+): Promise<void> {
   const query = { ...route.query };
   delete query.panel;
   if (item.selection.kind === "CASE") {
@@ -1151,7 +1284,10 @@ async function openSupportSearchResult(item: SupportSearchResult): Promise<void>
     });
     return;
   }
-  await router.push({ name: "users", params: { endUserId: item.selection.id } });
+  await router.push({
+    name: "users",
+    params: { endUserId: item.selection.id },
+  });
 }
 
 async function classifySelectedCase(): Promise<void> {
@@ -1395,12 +1531,48 @@ async function reload(): Promise<void> {
     canManageOwnAssignments.value || canOverrideAssignments.value
       ? assignment.loadCase()
       : Promise.resolve(),
-    canManageRoutingOffers.value
-      ? assignment.loadOffers()
-      : Promise.resolve(),
+    canManageRoutingOffers.value ? assignment.loadOffers() : Promise.resolve(),
   ]);
   reply.syncSelection();
   reloadSelectedAiSuspension();
+}
+
+async function reconcileCaseOperations(expiresAt: string): Promise<void> {
+  const projectId = auth.project?.id;
+  const caseId = selectedCase.value?.id;
+  if (!projectId || !caseId) return;
+  const reservationKey = `${caseId}\u0000${expiresAt}`;
+  const previousAttempts =
+    reservationReconcileProgress.value?.key === reservationKey
+      ? reservationReconcileProgress.value.attempts
+      : 0;
+  if (
+    operationsReconcileInFlightKey.value === reservationKey ||
+    previousAttempts >= 3
+  )
+    return;
+  const generation = ++operationsReconcileGeneration;
+  operationsReconcileInFlightKey.value = reservationKey;
+  try {
+    await Promise.all([inbox.load(), conversation.reconcile()]);
+    if (
+      generation !== operationsReconcileGeneration ||
+      auth.project?.id !== projectId ||
+      selectedCase.value?.id !== caseId
+    )
+      return;
+    if (canManageOwnAssignments.value || canOverrideAssignments.value) {
+      await assignment.loadCase();
+    }
+  } finally {
+    if (generation === operationsReconcileGeneration) {
+      reservationReconcileProgress.value = {
+        key: reservationKey,
+        attempts: previousAttempts + 1,
+      };
+      operationsReconcileInFlightKey.value = null;
+    }
+  }
 }
 
 async function sendReply(): Promise<void> {
@@ -1702,15 +1874,24 @@ onMounted(async () => {
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
   await inbox.load();
-  const initialCustomSearch = shouldLoadCustomSupportView(route.query, hasSupportSearchCriteria(searchState.value));
+  const initialCustomSearch = shouldLoadCustomSupportView(
+    route.query,
+    hasSupportSearchCriteria(searchState.value),
+  );
   if (initialCustomSearch) {
     searchOpen.value = true;
     await supportViews.loadCustom();
     if (!isCustomSupportViewRoute(route.query)) {
-      await router.replace({ query: { ...route.query, ...writeSupportViewSelection(null) } });
+      await router.replace({
+        query: { ...route.query, ...writeSupportViewSelection(null) },
+      });
     }
   } else await supportViews.load(readSupportViewSelection(route.query));
-  if (!supportViews.selection.value && hasSupportSearchCriteria(searchState.value)) await supportSearch.search();
+  if (
+    !supportViews.selection.value &&
+    hasSupportSearchCriteria(searchState.value)
+  )
+    await supportSearch.search();
   if (canReadAvailability.value) {
     await availability.load();
     availability.startHeartbeat();
@@ -1762,12 +1943,24 @@ watch(
     supportViewIntentKeys.clear();
     void (async () => {
       await inbox.load();
-      const resumeCustomSearch = !projectChanged && shouldLoadCustomSupportView(route.query, hasSupportSearchCriteria(searchState.value));
+      const resumeCustomSearch =
+        !projectChanged &&
+        shouldLoadCustomSupportView(
+          route.query,
+          hasSupportSearchCriteria(searchState.value),
+        );
       if (resumeCustomSearch) {
         searchOpen.value = true;
         await supportViews.loadCustom();
-      } else await supportViews.load(projectChanged ? null : readSupportViewSelection(route.query));
-      if (!supportViews.selection.value && !projectChanged && hasSupportSearchCriteria(searchState.value))
+      } else
+        await supportViews.load(
+          projectChanged ? null : readSupportViewSelection(route.query),
+        );
+      if (
+        !supportViews.selection.value &&
+        !projectChanged &&
+        hasSupportSearchCriteria(searchState.value)
+      )
         await supportSearch.search();
       if (canReadAvailability.value) {
         await availability.load();
@@ -1802,11 +1995,28 @@ watch(canReadSavedViews, (allowed) => {
     return;
   }
   if (!canSearchSupport.value) return;
-  const custom = shouldLoadCustomSupportView(route.query, hasSupportSearchCriteria(searchState.value));
-  void (custom ? supportViews.loadCustom() : supportViews.load(readSupportViewSelection(route.query)));
+  const custom = shouldLoadCustomSupportView(
+    route.query,
+    hasSupportSearchCriteria(searchState.value),
+  );
+  void (custom
+    ? supportViews.loadCustom()
+    : supportViews.load(readSupportViewSelection(route.query)));
 });
 watch(canCreateSavedViews, (allowed) => {
   if (!allowed) supportViewIntentKeys.clear();
+});
+
+watch(operationsContextAuthorityKey, (authorityKey, previousAuthorityKey) => {
+  if (authorityKey === previousAuthorityKey) return;
+  operationsReconcileGeneration += 1;
+  operationsReconcileInFlightKey.value = null;
+  reservationReconcileProgress.value = null;
+  conversation.purgeOperationsContext({ sla: true, routing: true });
+  if (!routeCaseId.value && !routeConversationId.value) return;
+  void (conversation.selection.value
+    ? conversation.reconcile()
+    : conversation.load());
 });
 
 watch(canManageRoutingOffers, (allowed) => {
@@ -1817,15 +2027,18 @@ watch(canManageRoutingOffers, (allowed) => {
   void assignment.loadOffers();
 });
 
-watch([canManageOwnAssignments, canOverrideAssignments], ([canOwn, canOverride]) => {
-  if (!canOwn && !canOverride) {
-    assignment.resetCase();
-    leadAssignment.reset();
-    return;
-  }
-  if (!canOverride) leadAssignment.reset();
-  void assignment.loadCase();
-});
+watch(
+  [canManageOwnAssignments, canOverrideAssignments],
+  ([canOwn, canOverride]) => {
+    if (!canOwn && !canOverride) {
+      assignment.resetCase();
+      leadAssignment.reset();
+      return;
+    }
+    if (!canOverride) leadAssignment.reset();
+    void assignment.loadCase();
+  },
+);
 
 watch(canReadSelectedAiSuspension, (allowed) => {
   if (allowed) {
@@ -1897,7 +2110,8 @@ watch(
   async (authorityKey, previousAuthorityKey) => {
     if (authorityKey === previousAuthorityKey) return;
     caseDesk.reset();
-    if (canReadSelectedCaseDesk.value) await caseDesk.load().catch(() => undefined);
+    if (canReadSelectedCaseDesk.value)
+      await caseDesk.load().catch(() => undefined);
   },
   { immediate: true },
 );
@@ -1942,17 +2156,25 @@ watch(
 watch(
   () => route.query.view,
   () => {
-    const custom = shouldLoadCustomSupportView(route.query, hasSupportSearchCriteria(readSupportSearchRoute(route.query)));
+    const custom = shouldLoadCustomSupportView(
+      route.query,
+      hasSupportSearchCriteria(readSupportSearchRoute(route.query)),
+    );
     if (custom) {
       searchOpen.value = true;
-      if (supportViews.selection.value && canSearchSupport.value) void supportViews.loadCustom();
+      if (supportViews.selection.value && canSearchSupport.value)
+        void supportViews.loadCustom();
       return;
     }
     const requested = readSupportViewSelection(route.query);
     const current = supportViews.selection.value;
-    const same = requested?.kind === current?.kind && (requested?.kind === "SYSTEM"
-      ? requested.code === (current?.kind === "SYSTEM" ? current.code : undefined)
-      : requested?.id === (current?.kind === "SAVED" ? current.id : undefined));
+    const same =
+      requested?.kind === current?.kind &&
+      (requested?.kind === "SYSTEM"
+        ? requested.code ===
+          (current?.kind === "SYSTEM" ? current.code : undefined)
+        : requested?.id ===
+          (current?.kind === "SAVED" ? current.id : undefined));
     if (!same && canSearchSupport.value) void supportViews.load(requested);
   },
 );
@@ -2194,12 +2416,30 @@ onBeforeUnmount(() => {
           :can-search="canSearchSupport"
           :search-state="searchState"
           :search-active="searchActive"
-          :search-items="viewActive ? supportViews.items.value : supportSearch.items.value"
-          :search-loading="viewActive ? supportViews.loading.value : supportSearch.loading.value"
-          :search-error="viewActive ? supportViews.error.value : supportSearchVisibleError"
+          :search-items="
+            viewActive ? supportViews.items.value : supportSearch.items.value
+          "
+          :search-loading="
+            viewActive
+              ? supportViews.loading.value
+              : supportSearch.loading.value
+          "
+          :search-error="
+            viewActive ? supportViews.error.value : supportSearchVisibleError
+          "
           :search-failure="supportSearch.failure.value"
-          :search-freshness="viewActive ? supportViews.freshness.value : supportSearch.freshness.value"
-          :search-has-more="Boolean(viewActive ? supportViews.nextCursor.value : supportSearch.nextCursor.value)"
+          :search-freshness="
+            viewActive
+              ? supportViews.freshness.value
+              : supportSearch.freshness.value
+          "
+          :search-has-more="
+            Boolean(
+              viewActive
+                ? supportViews.nextCursor.value
+                : supportSearch.nextCursor.value,
+            )
+          "
           :view-system="supportViews.system.value"
           :view-saved="supportViews.saved.value"
           :view-selection="supportViews.selection.value"
@@ -2216,7 +2456,9 @@ onBeforeUnmount(() => {
           @submit-search="runSupportSearch"
           @close-search="closeSupportSearch"
           @select-search="openSupportSearchResult"
-          @load-more-search="viewActive ? supportViews.loadMore() : supportSearch.loadMore()"
+          @load-more-search="
+            viewActive ? supportViews.loadMore() : supportSearch.loadMore()
+          "
           @select-view="selectSupportView"
           @create-view="createSupportView"
           @replace-view="replaceSupportView"
@@ -2507,6 +2749,10 @@ onBeforeUnmount(() => {
             :case-desk="caseDesk"
             :can-read-case-desk="canReadSelectedCaseDesk"
             :can-manage-case="canManageSelectedCase"
+            :can-read-sla-context="canReadSlaContext"
+            :can-read-routing-context="canReadRoutingContext"
+            :reservation-reconcile-attempt="reservationReconcileAttempt"
+            :reservation-reconcile-in-flight="reservationReconcileInFlight"
             :assignment-controller="assignmentSurfaceController"
             :lead-assignment-controller="leadAssignmentSurfaceController"
             :availability-label="assignmentAvailabilityLabel"
@@ -2518,6 +2764,7 @@ onBeforeUnmount(() => {
             @load-profile="profile.load"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
+            @reconcile-operations="reconcileCaseOperations"
           />
         </ResponsiveWorkspaceInspector>
       </div>

@@ -22,6 +22,7 @@ const value: SupportWorkspaceSelectionCaseResponseDto = {
   status: "OPEN",
   priority: "NORMAL",
   attentionRequired: false,
+  slaSignal: null,
   lastActivityAt: "2026-08-06T10:00:00.000Z",
   updatedAt: "2026-08-06T10:00:00.000Z",
   version: 1,
@@ -40,6 +41,7 @@ describe("support workspace Case mapper", () => {
         priority: "HIGH",
         groupCode: "BILLING",
         attentionRequired: true,
+        slaSignal: null,
         lastActivityAt: "2026-08-06T10:00:00.000Z",
         updatedAt: "2026-08-06T10:00:00.000Z",
         version: 3,
@@ -56,6 +58,7 @@ describe("support workspace Case mapper", () => {
       lastActivityAt: "2026-08-06T10:00:00.000Z",
       updatedAt: "2026-08-06T10:00:00.000Z",
       version: 3,
+      slaSignal: null,
     });
   });
 
@@ -179,6 +182,8 @@ describe("support workspace selection contract mapper", () => {
         newerCursor: null,
         anchorOrdinal: null,
       },
+      routing: supportWorkspaceContractFixtures.fullSelectionSuccess.routing,
+      sla: supportWorkspaceContractFixtures.fullSelectionSuccess.sla,
     };
 
     const mapped = mapSupportWorkspaceSelection(response, {
@@ -367,6 +372,8 @@ describe("support workspace selection contract mapper", () => {
       relatedConversations: [],
       relatedCasesTruncated: false,
       relatedConversationsTruncated: false,
+      routing: supportWorkspaceContractFixtures.fullSelectionSuccess.routing,
+      sla: supportWorkspaceContractFixtures.fullSelectionSuccess.sla,
     };
 
     const mapped = mapSupportWorkspaceSelection(response, {
@@ -374,6 +381,25 @@ describe("support workspace selection contract mapper", () => {
     });
 
     expect(mapped.actionRevisions).toEqual(response.actionRevisions);
+    expect(mapped.sla).toMatchObject({
+      rolloutState: "SHADOW",
+      clocks: [
+        expect.objectContaining({
+          kind: "FIRST_HUMAN_RESPONSE",
+          risk: "AT_RISK",
+          remainingBusinessMs: 1_200_000,
+        }),
+      ],
+    });
+    expect(mapped.routing).toMatchObject({
+      state: "AVAILABLE",
+      reasonCode: "CAPACITY_GAP",
+      queue: { name: "Приоритетные платежи" },
+      candidateCount: 3,
+      eligibleCandidateCount: null,
+      exclusions: { CAPACITY_EXHAUSTED: 2 },
+      fallback: { state: "SCHEDULED" },
+    });
     expect(mapped.case?.latestRevisionId).toBe("case-revision-8");
     expect(mapped.conversation?.lastMessageOrdinal).toBe(17);
     expect(mapped.conversation?.readState).toMatchObject({

@@ -15,6 +15,8 @@ import type { SupportWorkspaceMessagePageResponseDto } from "./supportWorkspaceM
 import type { SupportWorkspaceSelectionResponseDtoMode } from "./supportWorkspaceSelectionResponseDtoMode";
 import type { SupportWorkspaceCaseRowResponseDto } from "./supportWorkspaceCaseRowResponseDto";
 import type { SupportWorkspaceConversationRowResponseDto } from "./supportWorkspaceConversationRowResponseDto";
+import type { SupportWorkspaceSelectionResponseDtoRouting } from "./supportWorkspaceSelectionResponseDtoRouting";
+import type { SupportWorkspaceSelectionResponseDtoSla } from "./supportWorkspaceSelectionResponseDtoSla";
 
 export interface SupportWorkspaceSelectionResponseDto {
   actionRevisions: SupportWorkspaceActionRevisionsResponseDto;
@@ -33,4 +35,8 @@ export interface SupportWorkspaceSelectionResponseDto {
   relatedCasesTruncated: boolean;
   relatedConversations: SupportWorkspaceConversationRowResponseDto[];
   relatedConversationsTruncated: boolean;
+  /** @nullable */
+  routing: SupportWorkspaceSelectionResponseDtoRouting;
+  /** @nullable */
+  sla: SupportWorkspaceSelectionResponseDtoSla;
 }

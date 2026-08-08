@@ -64,6 +64,8 @@ function selection(
       locale: "ru",
     },
     case: null,
+    sla: null,
+    routing: null,
     conversation: conversation(conversationId),
     messages: {
       items: preserveMessageConversationIds
@@ -155,7 +157,11 @@ describe("support conversation controller", () => {
     };
     const controller = createSupportConversationController(
       { projectId: () => "project-1", conversationId: () => "conversation-1" },
-      { readSelection: vi.fn().mockResolvedValue(selection("conversation-1", [failed])) },
+      {
+        readSelection: vi
+          .fn()
+          .mockResolvedValue(selection("conversation-1", [failed])),
+      },
     );
     await controller.load();
 
@@ -852,6 +858,71 @@ describe("support conversation controller", () => {
       "second",
       "third",
     ]);
+  });
+
+  it("purges revoked operations context and rejects an older in-flight projection", async () => {
+    const initial = selection("conversation-1", [message("first", 1)]);
+    initial.sla = {
+      rolloutState: "SHADOW",
+      occurrenceState: "ACTIVE",
+      clocks: [],
+    };
+    initial.routing = {
+      state: "AVAILABLE",
+      reasonCode: "WINNER",
+      assignmentState: "UNASSIGNED",
+      mode: "LIVE_PROPOSAL",
+      outcome: "WINNER",
+      queue: { code: "BILLING", name: "Платежи" },
+      candidateCount: 1,
+      eligibleCandidateCount: 1,
+      exclusions: {},
+      evaluatedAt: "2026-08-08T10:00:00.000Z",
+      candidatesTruncated: false,
+      reservation: null,
+      fallback: null,
+    };
+    const stale = structuredClone(initial);
+    const pending = deferred<SupportWorkspaceSelection>();
+    const source = {
+      readSelection: vi
+        .fn()
+        .mockResolvedValueOnce(initial)
+        .mockReturnValueOnce(pending.promise),
+    };
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      source,
+    );
+
+    await controller.load();
+    const reconcile = controller.reconcile();
+    controller.purgeOperationsContext({ sla: true, routing: true });
+    pending.resolve(stale);
+    await reconcile;
+
+    expect(controller.selection.value?.sla).toBeNull();
+    expect(controller.selection.value?.routing).toEqual({ state: "REDACTED" });
+    expect(controller.messages.value.map((item) => item.id)).toEqual(["first"]);
+  });
+
+  it("rejects an initial projection that returns after operations authority is revoked", async () => {
+    const pending = deferred<SupportWorkspaceSelection>();
+    const controller = createSupportConversationController(
+      { projectId: () => "project-1", conversationId: () => "conversation-1" },
+      { readSelection: vi.fn().mockReturnValueOnce(pending.promise) },
+    );
+
+    const load = controller.load();
+    expect(controller.loading.value).toBe(true);
+    controller.purgeOperationsContext({ sla: true, routing: true });
+    expect(controller.loading.value).toBe(false);
+    pending.resolve(selection("conversation-1", [message("first", 1)]));
+    await load;
+
+    expect(controller.selection.value).toBeNull();
+    expect(controller.messages.value).toEqual([]);
+    expect(controller.loading.value).toBe(false);
   });
 
   it("purges a visible history and ends the live selection after a concealed revoke", async () => {
