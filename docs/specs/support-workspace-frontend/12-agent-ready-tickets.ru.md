@@ -23,7 +23,8 @@ backend `main` `442d185dfb6cd6c9ac9902b7cfbb167291d249b6`, OpenAPI SHA-256
 
 Статус и точное условие снятия gate продублированы в каждом соответствующем
 issue-файле. В частности, 12 не заблокирован backend, а 30 больше не считается
-свободным: в backend `main` External Work/JSM/HelpDesk API отсутствует. Задача
+свободным на момент аудита. Блокер снят backend commit `4a96a2a7`; frontend
+Ticket 31 закрепляет synchronized OpenAPI и adapter boundary. Задача
 20 не имеет собственного backend gap, но остаётся dependency-blocked до
 завершения доступной части 16.
 

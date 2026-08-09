@@ -268,6 +268,23 @@ const navigation = computed(() =>
       projectPermission: "project.support.workspace.rollout.manage",
     },
     {
+      label: "External Work",
+      icon: "pi pi-directions",
+      to: "/support/external-work",
+      project: true,
+      projectPermissionsAny: [
+        "project.support.external_work.inbox_read",
+        "project.support.external_work.read_linked",
+      ],
+    },
+    {
+      label: "Интеграции поддержки",
+      icon: "pi pi-link",
+      to: "/support/settings/integrations",
+      project: true,
+      projectPermission: "project.support.external_work.manage",
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",

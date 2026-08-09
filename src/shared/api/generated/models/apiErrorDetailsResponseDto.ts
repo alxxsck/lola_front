@@ -18,6 +18,7 @@ export interface ApiErrorDetailsResponseDto {
   expectedCurrentRevisionId?: string | null;
   issues?: ApiErrorIssueResponseDto[];
   reason?: string;
+  receiptId?: string;
   /** @minimum 1 */
   retryAfterSeconds?: number;
 }

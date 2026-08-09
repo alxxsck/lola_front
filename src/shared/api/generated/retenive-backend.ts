@@ -244,7 +244,9 @@ import type {
   EmailCaseEscalationPreferenceResponseDto,
   EmailUnsubscribeResponseDto,
   EmptySupportAvailabilityHeartbeatDto,
+  EmptySupportExternalConnectionCommandDto,
   EmptySupportExternalMappingCommandDto,
+  EmptySupportExternalOAuthStartDto,
   EmptySupportSlaConfigurationCommandDto,
   EmptySupportWorkforceCommandDto,
   EndUserAiUsageReportParams,
@@ -370,6 +372,7 @@ import type {
   KnowledgeUploadFileBody,
   LinkEndUserCaseMessageDto,
   LinkHelpDeskCompatibilityTicketDto,
+  LinkHelpDeskCompatibilityTicketResponseDto,
   ListMessagesDto,
   ListThreadMessagesDto,
   ManualAllowanceGrantDto,
@@ -413,6 +416,7 @@ import type {
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
   PreviewScenarioRuleResponseDto,
+  PreviewSupportExternalMappingDto,
   PreviewSupportMacroDto,
   PreviewTelegramBroadcastDto,
   ProductApiRequestLogDetailDto,
@@ -459,6 +463,7 @@ import type {
   PutDefaultAllowancePlanDto,
   PutEndUserAllowanceAssignmentDto,
   PutEndUserOperationalAttributeDto,
+  PutSupportExternalMessageRetentionPolicyDto,
   QuarantineIntegrationIngressDto,
   ReassignProjectRoleDto,
   ReceiveCustomerIoIntegrationEventsBody,
@@ -495,6 +500,7 @@ import type {
   RevokeCmsUserSessionDto,
   RevokeSupportRoutingAdmissionReceiptDto,
   RollbackScenarioDto,
+  RollbackSupportExternalMappingDto,
   RollbackSupportKnowledgeAdmissionDto,
   RollbackSupportKnowledgeRevisionDto,
   RollbackSupportMacroDto,
@@ -531,6 +537,7 @@ import type {
   SegmentDetailResponseDto,
   SegmentRevisionDetailResponseDto,
   SegmentSearchResponseDto,
+  SelectSupportExternalOAuthTenantDto,
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
@@ -568,18 +575,49 @@ import type {
   SupportConversationSearchQueryDto,
   SupportDefaultViewResponseDto,
   SupportEndUserSearchQueryDto,
+  SupportExternalCaseLinksListParams,
+  SupportExternalCatalogReadParams,
+  SupportExternalCatalogRefreshReceiptDto,
+  SupportExternalCatalogRefreshStatusDto,
+  SupportExternalCatalogResponseDto,
+  SupportExternalCommandListForCaseParams,
+  SupportExternalCommandPageResponseDto,
+  SupportExternalCommandRefreshEvidenceBody,
+  SupportExternalCommandStatusResponseDto,
+  SupportExternalCommandSubmitBody,
+  SupportExternalConnectionListParams,
   SupportExternalConnectionListResponseDto,
+  SupportExternalConnectionResponseDto,
+  SupportExternalConnectionTestResponseDto,
+  SupportExternalCreateOptionsResponseDto,
+  SupportExternalInboxListParams,
+  SupportExternalInboxTimelineListParams,
+  SupportExternalItemListParams,
+  SupportExternalItemPageResponseDto,
+  SupportExternalLinkListResponseDto,
+  SupportExternalLinkResponseDto,
+  SupportExternalMappingDiffResponseDto,
   SupportExternalMappingDraftResponseDto,
+  SupportExternalMappingListParams,
   SupportExternalMappingListResponseDto,
+  SupportExternalMappingListRevisionsParams,
+  SupportExternalMappingPreviewResponseDto,
+  SupportExternalMappingRevisionPageResponseDto,
+  SupportExternalMappingRollbackResponseDto,
+  SupportExternalMappingValidationResponseDto,
+  SupportExternalMessageRetentionPolicyResponseDto,
+  SupportExternalMutationOutcomeResponseDto,
+  SupportExternalOAuthStartResponseDto,
+  SupportExternalOAuthTenantListResponseDto,
+  SupportExternalProjectItemResponseDto,
+  SupportExternalTimelineListParams,
+  SupportExternalTimelinePageResponseDto,
   SupportExternalWorkCommandReceiptDto,
-  SupportExternalWorkCommandRequestUnknownCreateEvidenceRefreshBody,
-  SupportExternalWorkCommandSubmitBody,
   SupportExternalWorkImportExecuteDto,
+  SupportExternalWorkImportExecutionResponseDto,
   SupportExternalWorkImportPreviewDto,
-  SupportExternalWorkReadInboxParams,
-  SupportExternalWorkReadInboxTimelineParams,
-  SupportExternalWorkReadItemsParams,
-  SupportExternalWorkReadTimelineParams,
+  SupportExternalWorkImportPreviewResponseDto,
+  SupportExternalWorkOperationsHealthResponseDto,
   SupportInspectorEventPageResponseDto,
   SupportInspectorEventsListParams,
   SupportInternalKnowledgeCreateDownloadGrantParams,
@@ -6321,10 +6359,28 @@ export const adminConversationCollaborationMark = (
   );
 };
 
-export const supportExternalWorkCommandSubmit = (
+export const supportExternalCommandListForCase = (
   projectId: string,
   caseId: string,
-  supportExternalWorkCommandSubmitBody: BodyType<SupportExternalWorkCommandSubmitBody>,
+  params?: SupportExternalCommandListForCaseParams,
+  options?: SecondParameter<
+    typeof request<SupportExternalCommandPageResponseDto>
+  >,
+) => {
+  return request<SupportExternalCommandPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/commands`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportExternalCommandSubmit = (
+  projectId: string,
+  caseId: string,
+  supportExternalCommandSubmitBody: BodyType<SupportExternalCommandSubmitBody>,
   options?: SecondParameter<
     typeof request<SupportExternalWorkCommandReceiptDto>
   >,
@@ -6334,19 +6390,21 @@ export const supportExternalWorkCommandSubmit = (
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/commands`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: supportExternalWorkCommandSubmitBody,
+      data: supportExternalCommandSubmitBody,
     },
     options,
   );
 };
 
-export const supportExternalWorkReadCommand = (
+export const supportExternalCommandRead = (
   projectId: string,
   caseId: string,
   commandId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalCommandStatusResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalCommandStatusResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/commands/${commandId}`,
       method: "GET",
@@ -6355,11 +6413,11 @@ export const supportExternalWorkReadCommand = (
   );
 };
 
-export const supportExternalWorkCommandRequestUnknownCreateEvidenceRefresh = (
+export const supportExternalCommandRefreshEvidence = (
   projectId: string,
   caseId: string,
   commandId: string,
-  supportExternalWorkCommandRequestUnknownCreateEvidenceRefreshBody: BodyType<SupportExternalWorkCommandRequestUnknownCreateEvidenceRefreshBody>,
+  supportExternalCommandRefreshEvidenceBody: BodyType<SupportExternalCommandRefreshEvidenceBody>,
   options?: SecondParameter<
     typeof request<SupportExternalWorkCommandReceiptDto>
   >,
@@ -6369,13 +6427,13 @@ export const supportExternalWorkCommandRequestUnknownCreateEvidenceRefresh = (
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/commands/${commandId}/evidence-refresh`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: supportExternalWorkCommandRequestUnknownCreateEvidenceRefreshBody,
+      data: supportExternalCommandRefreshEvidenceBody,
     },
     options,
   );
 };
 
-export const supportExternalWorkCommandResolveUnknown = (
+export const supportExternalCommandResolveUnknown = (
   projectId: string,
   caseId: string,
   commandId: string,
@@ -6395,7 +6453,7 @@ export const supportExternalWorkCommandResolveUnknown = (
   );
 };
 
-export const supportExternalWorkCommandRetry = (
+export const supportExternalCommandRetry = (
   projectId: string,
   caseId: string,
   commandId: string,
@@ -6412,12 +6470,14 @@ export const supportExternalWorkCommandRetry = (
   );
 };
 
-export const supportExternalWorkCommandCreateOptions = (
+export const supportExternalCaseCreateOptionsRead = (
   projectId: string,
   caseId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalCreateOptionsResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalCreateOptionsResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/create-options`,
       method: "GET",
@@ -6426,27 +6486,29 @@ export const supportExternalWorkCommandCreateOptions = (
   );
 };
 
-export const supportExternalWorkReadLinks = (
+export const supportExternalCaseLinksList = (
   projectId: string,
   caseId: string,
-  options?: SecondParameter<typeof request<void>>,
+  params?: SupportExternalCaseLinksListParams,
+  options?: SecondParameter<typeof request<SupportExternalLinkListResponseDto>>,
 ) => {
-  return request<void>(
+  return request<SupportExternalLinkListResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/links`,
       method: "GET",
+      params,
     },
     options,
   );
 };
 
-export const supportExternalWorkReadLink = (
+export const supportExternalCaseLinksRead = (
   projectId: string,
   caseId: string,
   linkId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<typeof request<SupportExternalLinkResponseDto>>,
 ) => {
-  return request<void>(
+  return request<SupportExternalLinkResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/links/${linkId}`,
       method: "GET",
@@ -6455,14 +6517,16 @@ export const supportExternalWorkReadLink = (
   );
 };
 
-export const supportExternalWorkReadTimeline = (
+export const supportExternalTimelineList = (
   projectId: string,
   caseId: string,
   linkId: string,
-  params?: SupportExternalWorkReadTimelineParams,
-  options?: SecondParameter<typeof request<void>>,
+  params?: SupportExternalTimelineListParams,
+  options?: SecondParameter<
+    typeof request<SupportExternalTimelinePageResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalTimelinePageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/cases/${caseId}/links/${linkId}/timeline`,
       method: "GET",
@@ -6472,8 +6536,25 @@ export const supportExternalWorkReadTimeline = (
   );
 };
 
+export const supportExternalCatalogRefreshStatus = (
+  projectId: string,
+  jobId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalCatalogRefreshStatusDto>
+  >,
+) => {
+  return request<SupportExternalCatalogRefreshStatusDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/catalog-refresh-jobs/${jobId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportExternalConnectionList = (
   projectId: string,
+  params?: SupportExternalConnectionListParams,
   options?: SecondParameter<
     typeof request<SupportExternalConnectionListResponseDto>
   >,
@@ -6482,20 +6563,23 @@ export const supportExternalConnectionList = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/connections`,
       method: "GET",
+      params,
     },
     options,
   );
 };
 
-export const supportExternalCatalogLatest = (
+export const supportExternalCatalogRead = (
   projectId: string,
   connectionId: string,
-  options?: SecondParameter<typeof request<void>>,
+  params?: SupportExternalCatalogReadParams,
+  options?: SecondParameter<typeof request<SupportExternalCatalogResponseDto>>,
 ) => {
-  return request<void>(
+  return request<SupportExternalCatalogResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/catalog`,
       method: "GET",
+      params,
     },
     options,
   );
@@ -6504,9 +6588,11 @@ export const supportExternalCatalogLatest = (
 export const supportExternalCatalogRefresh = (
   projectId: string,
   connectionId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalCatalogRefreshReceiptDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalCatalogRefreshReceiptDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/catalog:refresh`,
       method: "POST",
@@ -6515,12 +6601,109 @@ export const supportExternalCatalogRefresh = (
   );
 };
 
-export const supportExternalWorkImportExecute = (
+export const supportExternalConnectionDisable = (
+  projectId: string,
+  connectionId: string,
+  emptySupportExternalConnectionCommandDto: BodyType<EmptySupportExternalConnectionCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalConnectionResponseDto>
+  >,
+) => {
+  return request<SupportExternalConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalConnectionCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionReconnectOAuth = (
+  projectId: string,
+  connectionId: string,
+  emptySupportExternalOAuthStartDto: BodyType<EmptySupportExternalOAuthStartDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalOAuthStartResponseDto>
+  >,
+) => {
+  return request<SupportExternalOAuthStartResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/oauth/reconnect`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalOAuthStartDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionRevoke = (
+  projectId: string,
+  connectionId: string,
+  emptySupportExternalConnectionCommandDto: BodyType<EmptySupportExternalConnectionCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalConnectionResponseDto>
+  >,
+) => {
+  return request<SupportExternalConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/revoke`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalConnectionCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionTest = (
+  projectId: string,
+  connectionId: string,
+  emptySupportExternalConnectionCommandDto: BodyType<EmptySupportExternalConnectionCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalConnectionTestResponseDto>
+  >,
+) => {
+  return request<SupportExternalConnectionTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${connectionId}/test`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalConnectionCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionStartOAuth = (
+  projectId: string,
+  provider: string,
+  emptySupportExternalOAuthStartDto: BodyType<EmptySupportExternalOAuthStartDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalOAuthStartResponseDto>
+  >,
+) => {
+  return request<SupportExternalOAuthStartResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/connections/${provider}/oauth/start`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalOAuthStartDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalImportExecute = (
   projectId: string,
   supportExternalWorkImportExecuteDto: BodyType<SupportExternalWorkImportExecuteDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalWorkImportExecutionResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalWorkImportExecutionResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/imports`,
       method: "POST",
@@ -6531,12 +6714,14 @@ export const supportExternalWorkImportExecute = (
   );
 };
 
-export const supportExternalWorkImportPreview = (
+export const supportExternalImportPreview = (
   projectId: string,
   supportExternalWorkImportPreviewDto: BodyType<SupportExternalWorkImportPreviewDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalWorkImportPreviewResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalWorkImportPreviewResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/imports:preview`,
       method: "POST",
@@ -6547,12 +6732,12 @@ export const supportExternalWorkImportPreview = (
   );
 };
 
-export const supportExternalWorkReadInbox = (
+export const supportExternalInboxList = (
   projectId: string,
-  params?: SupportExternalWorkReadInboxParams,
-  options?: SecondParameter<typeof request<void>>,
+  params?: SupportExternalInboxListParams,
+  options?: SecondParameter<typeof request<SupportExternalItemPageResponseDto>>,
 ) => {
-  return request<void>(
+  return request<SupportExternalItemPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox`,
       method: "GET",
@@ -6562,27 +6747,15 @@ export const supportExternalWorkReadInbox = (
   );
 };
 
-export const supportExternalWorkReadInboxItem = (
-  projectId: string,
-  remoteItemId: string,
-  options?: SecondParameter<typeof request<void>>,
-) => {
-  return request<void>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/${remoteItemId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportExternalHelpDeskCompatibilityLink = (
+export const supportExternalInboxLinkToCase = (
   projectId: string,
   remoteItemId: string,
   linkHelpDeskCompatibilityTicketDto: BodyType<LinkHelpDeskCompatibilityTicketDto>,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<LinkHelpDeskCompatibilityTicketResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<LinkHelpDeskCompatibilityTicketResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/${remoteItemId}:link`,
       method: "POST",
@@ -6593,15 +6766,33 @@ export const supportExternalHelpDeskCompatibilityLink = (
   );
 };
 
-export const supportExternalWorkReadInboxTimeline = (
+export const supportExternalInboxRead = (
   projectId: string,
-  remoteItemId: string,
-  params?: SupportExternalWorkReadInboxTimelineParams,
-  options?: SecondParameter<typeof request<void>>,
+  itemId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalProjectItemResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalProjectItemResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/${remoteItemId}/timeline`,
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/items/${itemId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportExternalInboxTimelineList = (
+  projectId: string,
+  itemId: string,
+  params?: SupportExternalInboxTimelineListParams,
+  options?: SecondParameter<
+    typeof request<SupportExternalTimelinePageResponseDto>
+  >,
+) => {
+  return request<SupportExternalTimelinePageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/items/${itemId}/timeline`,
       method: "GET",
       params,
     },
@@ -6609,12 +6800,12 @@ export const supportExternalWorkReadInboxTimeline = (
   );
 };
 
-export const supportExternalWorkReadItems = (
+export const supportExternalItemList = (
   projectId: string,
-  params?: SupportExternalWorkReadItemsParams,
-  options?: SecondParameter<typeof request<void>>,
+  params?: SupportExternalItemListParams,
+  options?: SecondParameter<typeof request<SupportExternalItemPageResponseDto>>,
 ) => {
-  return request<void>(
+  return request<SupportExternalItemPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/items`,
       method: "GET",
@@ -6624,12 +6815,14 @@ export const supportExternalWorkReadItems = (
   );
 };
 
-export const supportExternalWorkReadItem = (
+export const supportExternalItemRead = (
   projectId: string,
   itemId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalProjectItemResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalProjectItemResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/items/${itemId}`,
       method: "GET",
@@ -6638,8 +6831,9 @@ export const supportExternalWorkReadItem = (
   );
 };
 
-export const supportExternalWorkMappingList = (
+export const supportExternalMappingList = (
   projectId: string,
+  params?: SupportExternalMappingListParams,
   options?: SecondParameter<
     typeof request<SupportExternalMappingListResponseDto>
   >,
@@ -6648,12 +6842,13 @@ export const supportExternalWorkMappingList = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings`,
       method: "GET",
+      params,
     },
     options,
   );
 };
 
-export const supportExternalWorkMappingCreate = (
+export const supportExternalMappingCreate = (
   projectId: string,
   createSupportExternalMappingDto: BodyType<CreateSupportExternalMappingDto>,
   options?: SecondParameter<
@@ -6671,7 +6866,7 @@ export const supportExternalWorkMappingCreate = (
   );
 };
 
-export const supportExternalWorkMappingGetDraft = (
+export const supportExternalMappingReadDraft = (
   projectId: string,
   mappingId: string,
   options?: SecondParameter<
@@ -6687,7 +6882,7 @@ export const supportExternalWorkMappingGetDraft = (
   );
 };
 
-export const supportExternalWorkMappingUpdateDraft = (
+export const supportExternalMappingReplaceDraft = (
   projectId: string,
   mappingId: string,
   updateSupportExternalMappingDraftDto: BodyType<UpdateSupportExternalMappingDraftDto>,
@@ -6706,7 +6901,23 @@ export const supportExternalWorkMappingUpdateDraft = (
   );
 };
 
-export const supportExternalWorkMappingBeginDraft = (
+export const supportExternalMappingDiffDraft = (
+  projectId: string,
+  mappingId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalMappingDiffResponseDto>
+  >,
+) => {
+  return request<SupportExternalMappingDiffResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings/${mappingId}/draft/diff`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportExternalMappingBeginDraft = (
   projectId: string,
   mappingId: string,
   emptySupportExternalMappingCommandDto: BodyType<EmptySupportExternalMappingCommandDto>,
@@ -6725,7 +6936,26 @@ export const supportExternalWorkMappingBeginDraft = (
   );
 };
 
-export const supportExternalWorkMappingPublish = (
+export const supportExternalMappingPreviewDraft = (
+  projectId: string,
+  mappingId: string,
+  previewSupportExternalMappingDto: BodyType<PreviewSupportExternalMappingDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalMappingPreviewResponseDto>
+  >,
+) => {
+  return request<SupportExternalMappingPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings/${mappingId}/draft/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewSupportExternalMappingDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalMappingPublish = (
   projectId: string,
   mappingId: string,
   emptySupportExternalMappingCommandDto: BodyType<EmptySupportExternalMappingCommandDto>,
@@ -6744,12 +6974,90 @@ export const supportExternalWorkMappingPublish = (
   );
 };
 
-export const supportExternalConnectionTenants = (
+export const supportExternalMappingValidateDraft = (
+  projectId: string,
+  mappingId: string,
+  emptySupportExternalMappingCommandDto: BodyType<EmptySupportExternalMappingCommandDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalMappingValidationResponseDto>
+  >,
+) => {
+  return request<SupportExternalMappingValidationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings/${mappingId}/draft/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: emptySupportExternalMappingCommandDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalMappingListRevisions = (
+  projectId: string,
+  mappingId: string,
+  params?: SupportExternalMappingListRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportExternalMappingRevisionPageResponseDto>
+  >,
+) => {
+  return request<SupportExternalMappingRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings/${mappingId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportExternalMappingRollback = (
+  projectId: string,
+  mappingId: string,
+  revisionId: string,
+  rollbackSupportExternalMappingDto: BodyType<RollbackSupportExternalMappingDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalMappingRollbackResponseDto>
+  >,
+) => {
+  return request<SupportExternalMappingRollbackResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/mappings/${mappingId}/revisions/${revisionId}/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackSupportExternalMappingDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionSelectOAuthTenant = (
   projectId: string,
   sessionId: string,
-  options?: SecondParameter<typeof request<void>>,
+  selectSupportExternalOAuthTenantDto: BodyType<SelectSupportExternalOAuthTenantDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalConnectionResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/oauth-sessions/${sessionId}:select-tenant`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: selectSupportExternalOAuthTenantDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionListOAuthTenants = (
+  projectId: string,
+  sessionId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalOAuthTenantListResponseDto>
+  >,
+) => {
+  return request<SupportExternalOAuthTenantListResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/oauth-sessions/${sessionId}/tenants`,
       method: "GET",
@@ -6758,13 +7066,64 @@ export const supportExternalConnectionTenants = (
   );
 };
 
-export const supportExternalWorkOperationsHealth = (
+export const supportExternalOperationsReadHealth = (
   projectId: string,
-  options?: SecondParameter<typeof request<void>>,
+  options?: SecondParameter<
+    typeof request<SupportExternalWorkOperationsHealthResponseDto>
+  >,
 ) => {
-  return request<void>(
+  return request<SupportExternalWorkOperationsHealthResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/external-work/operations/health`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportExternalRetentionPolicyRead = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalMessageRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportExternalMessageRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/retention-policy`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportExternalRetentionPolicyUpdate = (
+  projectId: string,
+  putSupportExternalMessageRetentionPolicyDto: BodyType<PutSupportExternalMessageRetentionPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportExternalMessageRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportExternalMessageRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/retention-policy`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: putSupportExternalMessageRetentionPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalSettingsMutationReadOutcome = (
+  projectId: string,
+  receiptId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalMutationOutcomeResponseDto>
+  >,
+) => {
+  return request<SupportExternalMutationOutcomeResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/settings-mutations/${receiptId}`,
       method: "GET",
     },
     options,
@@ -12804,94 +13163,137 @@ export type AdminConversationCollaborationGetResult = NonNullable<
 export type AdminConversationCollaborationMarkResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationCollaborationMark>>
 >;
-export type SupportExternalWorkCommandSubmitResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkCommandSubmit>>
+export type SupportExternalCommandListForCaseResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandListForCase>>
 >;
-export type SupportExternalWorkReadCommandResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadCommand>>
+export type SupportExternalCommandSubmitResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandSubmit>>
 >;
-export type SupportExternalWorkCommandRequestUnknownCreateEvidenceRefreshResult =
-  NonNullable<
-    Awaited<
-      ReturnType<
-        typeof supportExternalWorkCommandRequestUnknownCreateEvidenceRefresh
-      >
-    >
-  >;
-export type SupportExternalWorkCommandResolveUnknownResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkCommandResolveUnknown>>
+export type SupportExternalCommandReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandRead>>
 >;
-export type SupportExternalWorkCommandRetryResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkCommandRetry>>
+export type SupportExternalCommandRefreshEvidenceResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandRefreshEvidence>>
 >;
-export type SupportExternalWorkCommandCreateOptionsResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkCommandCreateOptions>>
+export type SupportExternalCommandResolveUnknownResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandResolveUnknown>>
 >;
-export type SupportExternalWorkReadLinksResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadLinks>>
+export type SupportExternalCommandRetryResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCommandRetry>>
 >;
-export type SupportExternalWorkReadLinkResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadLink>>
+export type SupportExternalCaseCreateOptionsReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCaseCreateOptionsRead>>
 >;
-export type SupportExternalWorkReadTimelineResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadTimeline>>
+export type SupportExternalCaseLinksListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCaseLinksList>>
+>;
+export type SupportExternalCaseLinksReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCaseLinksRead>>
+>;
+export type SupportExternalTimelineListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalTimelineList>>
+>;
+export type SupportExternalCatalogRefreshStatusResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCatalogRefreshStatus>>
 >;
 export type SupportExternalConnectionListResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalConnectionList>>
 >;
-export type SupportExternalCatalogLatestResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalCatalogLatest>>
+export type SupportExternalCatalogReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalCatalogRead>>
 >;
 export type SupportExternalCatalogRefreshResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalCatalogRefresh>>
 >;
-export type SupportExternalWorkImportExecuteResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkImportExecute>>
+export type SupportExternalConnectionDisableResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionDisable>>
 >;
-export type SupportExternalWorkImportPreviewResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkImportPreview>>
+export type SupportExternalConnectionReconnectOAuthResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionReconnectOAuth>>
 >;
-export type SupportExternalWorkReadInboxResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadInbox>>
+export type SupportExternalConnectionRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionRevoke>>
 >;
-export type SupportExternalWorkReadInboxItemResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadInboxItem>>
+export type SupportExternalConnectionTestResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionTest>>
 >;
-export type SupportExternalHelpDeskCompatibilityLinkResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalHelpDeskCompatibilityLink>>
+export type SupportExternalConnectionStartOAuthResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionStartOAuth>>
 >;
-export type SupportExternalWorkReadInboxTimelineResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadInboxTimeline>>
+export type SupportExternalImportExecuteResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalImportExecute>>
 >;
-export type SupportExternalWorkReadItemsResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadItems>>
+export type SupportExternalImportPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalImportPreview>>
 >;
-export type SupportExternalWorkReadItemResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkReadItem>>
+export type SupportExternalInboxListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalInboxList>>
 >;
-export type SupportExternalWorkMappingListResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingList>>
+export type SupportExternalInboxLinkToCaseResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalInboxLinkToCase>>
 >;
-export type SupportExternalWorkMappingCreateResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingCreate>>
+export type SupportExternalInboxReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalInboxRead>>
 >;
-export type SupportExternalWorkMappingGetDraftResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingGetDraft>>
+export type SupportExternalInboxTimelineListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalInboxTimelineList>>
 >;
-export type SupportExternalWorkMappingUpdateDraftResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingUpdateDraft>>
+export type SupportExternalItemListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalItemList>>
 >;
-export type SupportExternalWorkMappingBeginDraftResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingBeginDraft>>
+export type SupportExternalItemReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalItemRead>>
 >;
-export type SupportExternalWorkMappingPublishResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkMappingPublish>>
+export type SupportExternalMappingListResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingList>>
 >;
-export type SupportExternalConnectionTenantsResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalConnectionTenants>>
+export type SupportExternalMappingCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingCreate>>
 >;
-export type SupportExternalWorkOperationsHealthResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalWorkOperationsHealth>>
+export type SupportExternalMappingReadDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingReadDraft>>
+>;
+export type SupportExternalMappingReplaceDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingReplaceDraft>>
+>;
+export type SupportExternalMappingDiffDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingDiffDraft>>
+>;
+export type SupportExternalMappingBeginDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingBeginDraft>>
+>;
+export type SupportExternalMappingPreviewDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingPreviewDraft>>
+>;
+export type SupportExternalMappingPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingPublish>>
+>;
+export type SupportExternalMappingValidateDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingValidateDraft>>
+>;
+export type SupportExternalMappingListRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingListRevisions>>
+>;
+export type SupportExternalMappingRollbackResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalMappingRollback>>
+>;
+export type SupportExternalConnectionSelectOAuthTenantResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionSelectOAuthTenant>>
+>;
+export type SupportExternalConnectionListOAuthTenantsResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionListOAuthTenants>>
+>;
+export type SupportExternalOperationsReadHealthResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalOperationsReadHealth>>
+>;
+export type SupportExternalRetentionPolicyReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalRetentionPolicyRead>>
+>;
+export type SupportExternalRetentionPolicyUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalRetentionPolicyUpdate>>
+>;
+export type SupportExternalSettingsMutationReadOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalSettingsMutationReadOutcome>>
 >;
 export type SupportInternalNoteRealtimeContractResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteRealtimeContract>>

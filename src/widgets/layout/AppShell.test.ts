@@ -356,6 +356,8 @@ describe("AppShell", () => {
           "project.conversations.read",
           "project.support.lead_control.read",
           "project.support.workspace.rollout.manage",
+          "project.support.external_work.inbox_read",
+          "project.support.external_work.manage",
         ],
       },
     });
@@ -401,6 +403,14 @@ describe("AppShell", () => {
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Pilot и rollback"))
         ?.attributes("href"),
+      externalWorkLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("External Work"))
+        ?.attributes("href"),
+      externalSettingsLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Интеграции поддержки"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -409,12 +419,14 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 22,
+      navigationLinks: 24,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
       supportNotificationsLink: "/support/settings/notifications",
       supportRolloutLink: "/support/settings/audit-rollout",
+      externalWorkLink: "/support/external-work",
+      externalSettingsLink: "/support/settings/integrations",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

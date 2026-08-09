@@ -338,6 +338,25 @@ export const router = createRouter({
           },
         },
         {
+          path: "support/settings/integrations",
+          name: "support-external-settings",
+          component: () => import("@/pages/SupportExternalSettingsPage.vue"),
+          meta: {
+            projectPermission: "project.support.external_work.manage",
+          },
+        },
+        {
+          path: "support/external-work",
+          name: "support-external-work",
+          component: () => import("@/pages/SupportExternalWorkPage.vue"),
+          meta: {
+            projectPermissionsAny: [
+              "project.support.external_work.inbox_read",
+              "project.support.external_work.read_linked",
+            ],
+          },
+        },
+        {
           path: "support/notifications/open",
           name: "support-notification-open",
           component: () => import("@/pages/SupportNotificationOpenPage.vue"),
@@ -585,7 +604,9 @@ router.beforeEach(async (to) => {
       to.name === "ai-operation-detail" ||
       to.name === "ai-costs" ||
       to.name === "users" ||
-      to.name === "support-workspace-rollout") &&
+      to.name === "support-workspace-rollout" ||
+      to.name === "support-external-settings" ||
+      to.name === "support-external-work") &&
     typeof to.query.projectId === "string"
   ) {
     const target = auth.projects.find(

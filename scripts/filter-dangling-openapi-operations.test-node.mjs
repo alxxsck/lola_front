@@ -18,13 +18,13 @@ test("filters only operations whose schema references are absent from the pin", 
   assert.equal(
     filtered.paths[
       "/api/v1/admin/projects/{projectId}/support/external-work/connections/{provider}/oauth/start"
-    ],
-    undefined,
+    ].post.operationId,
+    "SupportExternalConnection_startOAuth",
   );
   assert.equal(
     document.paths[
       "/api/v1/admin/projects/{projectId}/support/external-work/connections/{provider}/oauth/start"
     ].post.operationId,
-    "SupportExternalConnection_start",
+    "SupportExternalConnection_startOAuth",
   );
 });

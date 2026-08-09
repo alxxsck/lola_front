@@ -8,5 +8,11 @@
 import type { SupportExternalConnectionResponseDto } from "./supportExternalConnectionResponseDto";
 
 export interface SupportExternalConnectionListResponseDto {
+  /** @maxItems 100 */
   items: SupportExternalConnectionResponseDto[];
+  /**
+   * @maxLength 1024
+   * @nullable
+   */
+  nextCursor: string | null;
 }

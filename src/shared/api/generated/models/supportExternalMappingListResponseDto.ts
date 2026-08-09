@@ -8,5 +8,11 @@
 import type { SupportExternalMappingRootResponseDto } from "./supportExternalMappingRootResponseDto";
 
 export interface SupportExternalMappingListResponseDto {
+  /** @maxItems 100 */
   items: SupportExternalMappingRootResponseDto[];
+  /**
+   * @maxLength 1024
+   * @nullable
+   */
+  nextCursor: string | null;
 }

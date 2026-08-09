@@ -7,5 +7,6 @@
  */
 
 export interface LinkHelpDeskCompatibilityTicketDto {
-  [key: string]: unknown;
+  caseId: string;
+  mappingRevisionId: string;
 }

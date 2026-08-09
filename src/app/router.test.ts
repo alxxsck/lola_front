@@ -1062,5 +1062,35 @@ describe("authentication routes", () => {
     ).toBe("function");
     await router.push("/support/settings/audit-rollout");
     expect(router.currentRoute.value.name).toBe("support-workspace-rollout");
+
+    auth.project!.effectivePermissionCodes = ["project.integrations.manage"];
+    await router.push("/support/settings/integrations");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = [
+      "project.support.external_work.manage",
+    ];
+    expect(
+      typeof router.getRoutes().find((route) => route.name === "support-external-settings")
+        ?.components?.default,
+    ).toBe("function");
+    await router.push("/support/settings/integrations");
+    expect(router.currentRoute.value.name).toBe("support-external-settings");
+
+    await router.push("/support/external-work");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = [
+      "project.support.external_work.inbox_read",
+    ];
+    await router.push("/support/external-work");
+    expect(router.currentRoute.value.name).toBe("support-external-work");
+
+    auth.project!.effectivePermissionCodes = [
+      "project.support.external_work.read_linked",
+    ];
+    await router.push("/overview");
+    await router.push("/support/external-work");
+    expect(router.currentRoute.value.name).toBe("support-external-work");
   });
 });
