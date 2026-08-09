@@ -23,6 +23,25 @@ export interface SupportConversationContext {
     conversationId: string,
     state: SupportConversationReadState,
   ): void | Promise<void>;
+  recordTelemetry?(
+    payload: Record<string, string | number | boolean>,
+  ): void;
+}
+
+function readStateMismatchCount(state: SupportConversationReadState): number {
+  const expectedUnread = Math.max(
+    0,
+    state.highestOrdinal - state.lastReadOrdinal,
+  );
+  const expectedFirstUnread = expectedUnread
+    ? state.lastReadOrdinal + 1
+    : null;
+  return Math.min(
+    3,
+    Number(state.unreadMessageCount !== expectedUnread) +
+      Number(state.firstUnreadOrdinal !== expectedFirstUnread) +
+      Number(state.unreadCustomerMessageCount > state.unreadMessageCount),
+  );
 }
 
 function authoritativeOrder(
@@ -217,6 +236,7 @@ export function createSupportConversationController(
   }
 
   async function load(): Promise<void> {
+    const startedAt = performance.now();
     const projectId = context.projectId();
     const target = selectedTarget();
     const requestGeneration = ++selectionGeneration;
@@ -283,7 +303,14 @@ export function createSupportConversationController(
       }
       error.value = "Не удалось загрузить сообщения выбранного диалога";
     } finally {
-      if (requestGeneration === selectionGeneration) loading.value = false;
+      if (requestGeneration === selectionGeneration) {
+        loading.value = false;
+        context.recordTelemetry?.({
+          operation: "conversation_load",
+          outcome: selection.value ? "loaded" : "failed",
+          duration_ms: Math.round(performance.now() - startedAt),
+        });
+      }
     }
   }
 
@@ -427,6 +454,13 @@ export function createSupportConversationController(
         if (!isCurrent(projectId, target, requestGeneration)) return;
         readError.value = "";
         commitReadState(authoritative, requestGeneration);
+        const mismatchCount = readStateMismatchCount(authoritative);
+        context.recordTelemetry?.({
+          operation: "unread_ack",
+          outcome: mismatchCount ? "mismatch" : "matched",
+          duration_ms: 0,
+          mismatch_count: mismatchCount,
+        });
       } catch (cause) {
         if (requestGeneration !== selectionGeneration) return;
         desiredReadOrdinal = readState.value?.lastReadOrdinal ?? 0;
@@ -545,10 +579,24 @@ export function createSupportConversationController(
       ...current,
       delivery,
     });
-    if (merged.delivery === current.delivery) return;
+    if (merged.delivery === current.delivery) {
+      context.recordTelemetry?.({
+        operation: "delivery_reconcile",
+        outcome: "stale_ignored",
+        duration_ms: 0,
+        mismatch_count: 0,
+      });
+      return;
+    }
     const next = [...messages.value];
     next[index] = merged;
     messages.value = next;
+    context.recordTelemetry?.({
+      operation: "delivery_reconcile",
+      outcome: "updated",
+      duration_ms: 0,
+      mismatch_count: 0,
+    });
   }
 
   return {

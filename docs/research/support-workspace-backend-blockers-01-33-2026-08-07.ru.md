@@ -118,7 +118,7 @@ core.
 |  26 | Lead Control                             | Нет (снят `0e3f35d9`)                  | Admission, capacity risks, investigation, Activity и alerts опубликованы              |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
 |  28 | Legacy entry-point cutover               | Нет (снят `4d82b6bd`); frontend complete | Typed project shell admission/rollout опубликован и подключён                       |
-|  29 | Pilot/rollback hardening                 | Нет (снят `9f36796b`)                   | Backend proof опубликован; frontend hardening продолжается                          |
+|  29 | Pilot/rollback hardening                 | Нет (снят `9f36796b`)                   | Frontend complete; production pilot остаётся у Release owner                        |
 |  30 | JSM/HelpDesk contract sync               | **Полный**                              | External Work существует только как нормативная спека, API отсутствует              |
 |  31 | Integration Settings/External Work       | **Полный**                              | Нет connection/catalog/mapping/inbox/receipt APIs                                   |
 |  32 | Case External Work actions               | **Полный**                              | Нет Case link/create/comment/unlink/lookup APIs                                     |
@@ -582,13 +582,19 @@ reload/login, Back/Forward, project query restore, rollback и hard-off.
 
 ### 29 — Hardening, pilot и rollback core Support
 
-**Статус: backend-блокер снят, frontend hardening in progress.**
+**Статус: backend-блокер снят, frontend complete.**
 
 Backend `9f36796b` публикует pilot/rollback proof поверх typed admission/rollout:
 one-project enablement, shell rollback и hard-off имеют server-owned revision,
 OCC и idempotency boundary. Frontend может завершить visual/keyboard/axe/E2E
 matrix, release-owner runbook и управляемую rollback rehearsal без локальных
 вычисляемых rollout-флагов.
+
+Frontend добавил отдельную exact-permission поверхность
+`/support/settings/audit-rollout`, typed GET/PUT adapter с opaque `actionEtag`,
+scope-fenced OCC/replay controller, safe presets, permission purge, telemetry
+allowlist и visual/keyboard/axe/E2E evidence. Фактические backend phase manifests
+и production `GO/ABORT` не симулируются браузером и остаются у Release owner.
 
 ### 30 — Синхронизация JSM/HelpDesk-контрактов
 

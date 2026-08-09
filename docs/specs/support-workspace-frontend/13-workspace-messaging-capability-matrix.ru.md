@@ -25,6 +25,7 @@ Pinned contract: `sha256:2f4da7559279192a20fd77bf07e72c377d9a031724a0d77a21a81ae
 | Message delivery | `AdminMessageDeliveryResponseDto` внутри history/send/lookup/workspace: `status`, `generation`, `version`, `errorCode`, `retryEligible`, `allowedActions` | read/reply permission родительской операции | server receipt; HTTP success не равен `DELIVERED` | merge authority — server generation/version; REST побеждает hint | command identity и исходный lookup key сохраняются до terminal outcome | backend `0f5404f`; REST/OpenAPI/PostgreSQL proofs | `READY`; frontend Task 15 complete |
 | Safe failed-delivery retry | `POST AdminMessaging_retryFailedDelivery` | `project.conversations.reply` | только доказанный `KNOWN_NOT_DELIVERED`; ambiguous/foreign/stale fail closed | обязательны точные `expectedGeneration/expectedVersion` | обязательный actor-scoped `Idempotency-Key` | typed `409/422` с актуальным receipt | `READY`; frontend Task 15 complete |
 | Realtime invalidation | `GET SupportRealtime_deliveryContract`: `conversation.message.upserted.v1`, `conversation.message.translation.upserted.v1`, delivery upsert/revoke и schema refs | `project.conversations.read` при watch и чтении contract | hint не даёт ownership/action authority | per-Conversation sequence gap → bounded `SupportWorkspace_read`; REST wins; Delivery revoke wins equal key | eventId + monotonic Delivery key | public OpenAPI DTO для всех четырёх payloads | `READY`; frontend Task 15 complete |
+| Project shell pilot/rollback | `GET/PUT SupportWorkspace_*Rollout`, отдельно `GET SupportWorkspace_readAdmission` | exact `project.support.workspace.rollout.manage`; admission — `project.cases.read` **или** `project.conversations.read` | safe presets сохраняют server root и не создают browser flag authority | quoted opaque `actionEtag`; успешная команда всегда перечитывает root и admission при наличии read authority | stable 8–200 ASCII key; unknown outcome повторяет exact ETag/body/key | Ticket 29 source/controller/E2E + backend core-pilot proof | `READY`; production phase manifests принадлежат Release owner |
 
 ## 2. Семантика workspace projection
 
@@ -62,6 +63,7 @@ Contract mutation tests обязаны падать при удалении oper
 | Gate | Текущее состояние | Owner / proof |
 | --- | --- | --- |
 | `support_workspace_shell` | typed `SupportWorkspace_readAdmission`; exact `rolloutState`, `entryPointMode`, `legacyAdapterMode` и per-surface capabilities | backend `4d82b6bd`/`9f36796b` + frontend route/E2E proof |
+| Project pilot/rollback control | typed rollout root + exact permission + OCC/idempotency + safe frontend presets | backend `9f36796b` + frontend Ticket 29 proof; production `GO/ABORT` remains external |
 | `support_project_inbox` | отдельный typed flag не опубликован | Task 02 + backend inbox handoff |
 | `support_durable_delivery` | backend contract и release proof готовы; frontend Tasks 13–15 разблокированы | backend `0f5404f`; SDK ACK + 60k outbox load proof |
 | Idempotency lookup | опубликован и подключён | backend `3791c37` + frontend Task 13 tests/e2e |

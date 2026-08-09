@@ -15,14 +15,23 @@ export const apiSupportWorkspaceShellSource: SupportWorkspaceShellSource = {
   },
 };
 
-interface MockWorkspaceRolloutRoot {
+export interface MockWorkspaceRolloutRoot {
   enabled: boolean;
   shellEnabled: boolean;
   hardOff: boolean;
   version: number;
 }
 
+export function mockSupportWorkspaceRolloutEtag(version: number): string {
+  return `"swr1.${version.toString(36).padStart(43, "0")}"`;
+}
+
 const mockWorkspaceRolloutKey = "support-workspace-shell-mock:v1";
+function mockWorkspaceRolloutStorageKey(projectId?: string): string {
+  return !projectId || projectId === "prj_retenive_demo"
+    ? mockWorkspaceRolloutKey
+    : `${mockWorkspaceRolloutKey}:${projectId}`;
+}
 const defaultMockWorkspaceRollout: MockWorkspaceRolloutRoot = {
   enabled: true,
   shellEnabled: true,
@@ -30,9 +39,13 @@ const defaultMockWorkspaceRollout: MockWorkspaceRolloutRoot = {
   version: 1,
 };
 
-export function readMockSupportWorkspaceRollout(): MockWorkspaceRolloutRoot {
+export function readMockSupportWorkspaceRollout(
+  projectId?: string,
+): MockWorkspaceRolloutRoot {
   try {
-    const raw = sessionStorage.getItem(mockWorkspaceRolloutKey);
+    const raw = sessionStorage.getItem(
+      mockWorkspaceRolloutStorageKey(projectId),
+    );
     if (!raw) return { ...defaultMockWorkspaceRollout };
     const value = JSON.parse(raw) as Partial<MockWorkspaceRolloutRoot>;
     if (
@@ -52,21 +65,32 @@ export function readMockSupportWorkspaceRollout(): MockWorkspaceRolloutRoot {
 
 export function writeMockSupportWorkspaceRollout(
   root: MockWorkspaceRolloutRoot,
+  projectId?: string,
 ): void {
-  sessionStorage.setItem(mockWorkspaceRolloutKey, JSON.stringify(root));
+  sessionStorage.setItem(
+    mockWorkspaceRolloutStorageKey(projectId),
+    JSON.stringify(root),
+  );
 }
 
 export function resetMockSupportWorkspaceRollout(): void {
   try {
-    sessionStorage.removeItem(mockWorkspaceRolloutKey);
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (
+        key === mockWorkspaceRolloutKey ||
+        key?.startsWith(`${mockWorkspaceRolloutKey}:`)
+      )
+        sessionStorage.removeItem(key);
+    }
   } catch {
     // The deterministic default already represents the reset state.
   }
 }
 
 export const mockSupportWorkspaceShellSource: SupportWorkspaceShellSource = {
-  async readAdmission() {
-    const root = readMockSupportWorkspaceRollout();
+  async readAdmission(projectId) {
+    const root = readMockSupportWorkspaceRollout(projectId);
     const enabled = root.enabled && root.shellEnabled && !root.hardOff;
     return {
       rolloutState: root.hardOff

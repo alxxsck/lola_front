@@ -261,6 +261,13 @@ const navigation = computed(() =>
       supportNotificationSettings: true,
     },
     {
+      label: "Pilot и rollback",
+      icon: "pi pi-shield",
+      to: "/support/settings/audit-rollout",
+      project: true,
+      projectPermission: "project.support.workspace.rollout.manage",
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",

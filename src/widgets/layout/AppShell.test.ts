@@ -106,12 +106,15 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Поддержка");
     wrapper.unmount();
 
-    writeMockSupportWorkspaceRollout({
-      enabled: true,
-      shellEnabled: false,
-      hardOff: false,
-      version: 2,
-    });
+    writeMockSupportWorkspaceRollout(
+      {
+        enabled: true,
+        shellEnabled: false,
+        hardOff: false,
+        version: 2,
+      },
+      "project-1",
+    );
     clearSupportWorkspaceShellAdmission();
     const rolledBack = mountProjectMenu(pinia, router);
     await flushPromises();
@@ -352,6 +355,7 @@ describe("AppShell", () => {
           "project.end_users.read",
           "project.conversations.read",
           "project.support.lead_control.read",
+          "project.support.workspace.rollout.manage",
         ],
       },
     });
@@ -393,6 +397,10 @@ describe("AppShell", () => {
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Уведомления поддержки"))
         ?.attributes("href"),
+      supportRolloutLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Pilot и rollback"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -401,11 +409,12 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 21,
+      navigationLinks: 22,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
       supportNotificationsLink: "/support/settings/notifications",
+      supportRolloutLink: "/support/settings/audit-rollout",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

@@ -297,12 +297,14 @@ describe("support workspace live controller", () => {
       revoke: vi.fn(),
       reset: vi.fn(),
     };
+    const recordTelemetry = vi.fn();
     const controller = createSupportWorkspaceLiveController(
       {
         reconcile: vi.fn(),
         collaboration,
         currentMessageOrdinal: () => 19,
         hasDraft: () => true,
+        recordTelemetry,
       },
       client,
     );
@@ -317,6 +319,12 @@ describe("support workspace live controller", () => {
     expect(collaboration.setDraftActive).toHaveBeenCalledWith(true, 19);
     expect(collaboration.reconcile).toHaveBeenCalledTimes(1);
     expect(client.setConversationTyping).not.toHaveBeenCalled();
+    expect(recordTelemetry).toHaveBeenCalledWith({
+      operation: "draft_recovery",
+      outcome: "restored",
+      duration_ms: 0,
+      recovered: true,
+    });
     controller.dispose();
   });
 });

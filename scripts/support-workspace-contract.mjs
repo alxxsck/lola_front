@@ -97,6 +97,62 @@ export function validateSupportWorkspaceMessagingContract(document) {
       );
     }
   }
+  requireProperties(document, "SupportWorkspaceRolloutResponseDto", [
+    "version",
+    "enabled",
+    "shellEnabled",
+    "hardOff",
+    "actionEtag",
+  ]);
+  requireProperties(document, "UpdateSupportWorkspaceRolloutDto", [
+    "enabled",
+    "shellEnabled",
+    "hardOff",
+    "reason",
+  ]);
+  const rolloutSchema =
+    document.components?.schemas?.SupportWorkspaceRolloutResponseDto;
+  if (
+    rolloutSchema?.properties?.actionEtag?.pattern !==
+    '^"swr1\\.[A-Za-z0-9_-]{43}"$'
+  )
+    throw new Error(
+      "SupportWorkspaceRolloutResponseDto actionEtag must remain opaque and quoted",
+    );
+  const rolloutReason =
+    document.components?.schemas?.UpdateSupportWorkspaceRolloutDto?.properties
+      ?.reason;
+  if (rolloutReason?.minLength !== 3 || rolloutReason?.maxLength !== 500)
+    throw new Error(
+      "UpdateSupportWorkspaceRolloutDto reason must remain bounded at 3..500",
+    );
+  if (
+    updateWorkspaceRollout.requestBody?.content?.["application/json"]?.schema
+      ?.$ref !== "#/components/schemas/UpdateSupportWorkspaceRolloutDto" ||
+    updateWorkspaceRollout.responses?.["200"]?.content?.["application/json"]
+      ?.schema?.$ref !==
+      "#/components/schemas/SupportWorkspaceRolloutResponseDto"
+  )
+    throw new Error(
+      "SupportWorkspace_updateRollout must retain typed request and receipt schemas",
+    );
+  for (const status of ["400", "401", "403", "404", "409", "428", "503"])
+    if (
+      updateWorkspaceRollout.responses?.[status]?.content?.["application/json"]
+        ?.schema?.$ref !==
+      "#/components/schemas/SupportWorkspaceErrorResponseDto"
+    )
+      throw new Error(
+        `SupportWorkspace_updateRollout ${status} must retain the typed error envelope`,
+      );
+  requireEnumValues(document, "SupportWorkspaceErrorBodyDto", "code", [
+    "SUPPORT_WORKSPACE_IDEMPOTENCY_KEY_REUSED",
+    "SUPPORT_WORKSPACE_REPLAY_OUTCOME_UNAVAILABLE",
+    "SUPPORT_WORKSPACE_ROLLOUT_REASON_INVALID",
+    "SUPPORT_WORKSPACE_VERSION_CONFLICT",
+    "MFA_REQUIRED",
+    "MFA_ENROLLMENT_REQUIRED",
+  ]);
   parameter(workspaceRead, "messageNewerCursor");
   const idempotencyKey = parameter(sendMessage, "Idempotency-Key");
   if (idempotencyKey.in !== "header" || idempotencyKey.required !== true) {

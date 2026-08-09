@@ -17,6 +17,9 @@ export interface SupportReplyContext {
   onAccepted?(attempt: { attachmentDraftKey?: string; attachmentIds?: string[] }): void;
   onMacroDraftRejected?(cause: ApiError): void | Promise<void>;
   onKnowledgeCitationRejected?(cause: ApiError): void | Promise<void>;
+  recordTelemetry?(
+    payload: Record<string, string | number | boolean>,
+  ): void;
 }
 
 function isMacroDraftFailure(cause: unknown): cause is ApiError {
@@ -393,6 +396,8 @@ export function createSupportReplyController(
   }
 
   async function send(delivery: SupportReplyDelivery = {}): Promise<boolean> {
+    const startedAt = performance.now();
+    let attemptedRecovery = false;
     syncSelection();
     const projectId = context.projectId();
     const actorId = context.actorId();
@@ -408,13 +413,21 @@ export function createSupportReplyController(
     const scope = draftKey(projectId, actorId, conversation.id);
     const attachmentIds = delivery.attachmentIds?.filter(Boolean) ?? [];
     const attachmentDraftKey = delivery.attachmentDraftKey?.trim();
+    if (sending.value) {
+      context.recordTelemetry?.({
+        operation: "reply_send",
+        outcome: "suppressed",
+        duration_ms: 0,
+        duplicate_prevented: true,
+      });
+      return false;
+    }
     if (
       !projectId ||
       !actorId ||
       !scope ||
       (!text && !attachmentIds.length) ||
-      (attachmentIds.length > 0 && !attachmentDraftKey) ||
-      sending.value
+      (attachmentIds.length > 0 && !attachmentDraftKey)
     )
       return false;
     if (outcomeState.value === "CHECKING_OUTCOME") {
@@ -531,6 +544,13 @@ export function createSupportReplyController(
           : {}),
       });
       await acceptOutcome(scope, attempt, result);
+      context.recordTelemetry?.({
+        operation: "reply_send",
+        outcome: result.duplicate ? "duplicate_reconciled" : "accepted",
+        duration_ms: Math.round(performance.now() - startedAt),
+        duplicate_prevented: Boolean(result.duplicate),
+        recovered: replaysOriginalPayload,
+      });
       return true;
     } catch (caught) {
       if (!currentScopeMatches(attempt)) return false;
@@ -550,6 +570,7 @@ export function createSupportReplyController(
         await context.onKnowledgeCitationRejected?.(caught);
         error.value = "Источник изменился или больше недоступен. Текст сохранён — выберите материал заново.";
       } else if (isAmbiguousOutcome(caught)) {
+        attemptedRecovery = true;
         await checkAttemptOutcome(scope, attempt);
       } else if (
         caught instanceof ApiError &&
@@ -597,6 +618,13 @@ export function createSupportReplyController(
       sending.value = false;
       if (outcomeState.value === "SENDING") outcomeState.value = "IDLE";
     }
+    context.recordTelemetry?.({
+      operation: "reply_send",
+      outcome: outcomeState.value.toLowerCase(),
+      duration_ms: Math.round(performance.now() - startedAt),
+      duplicate_prevented: false,
+      recovered: attemptedRecovery,
+    });
     return false;
   }
 

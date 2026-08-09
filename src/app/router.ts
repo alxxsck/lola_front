@@ -330,6 +330,14 @@ export const router = createRouter({
           meta: { supportNotificationSettingsAccess: true },
         },
         {
+          path: "support/settings/audit-rollout",
+          name: "support-workspace-rollout",
+          component: () => import("@/pages/SupportWorkspaceRolloutPage.vue"),
+          meta: {
+            projectPermission: "project.support.workspace.rollout.manage",
+          },
+        },
+        {
           path: "support/notifications/open",
           name: "support-notification-open",
           component: () => import("@/pages/SupportNotificationOpenPage.vue"),
@@ -576,7 +584,8 @@ router.beforeEach(async (to) => {
       to.name === "ai-analysis-detail" ||
       to.name === "ai-operation-detail" ||
       to.name === "ai-costs" ||
-      to.name === "users") &&
+      to.name === "users" ||
+      to.name === "support-workspace-rollout") &&
     typeof to.query.projectId === "string"
   ) {
     const target = auth.projects.find(

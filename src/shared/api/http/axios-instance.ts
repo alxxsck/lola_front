@@ -25,6 +25,7 @@ export const axiosInstance = axios.create({
 
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _authRetry?: boolean;
+  _noAuthRetry?: boolean;
 }
 
 interface AuthTeardownRequestConfig extends AxiosRequestConfig {
@@ -105,6 +106,11 @@ export function authTeardownRequestOptions(
   return { _authTeardownAccessToken: accessToken };
 }
 
+/** Keeps audited OCC mutations under the exact authority that confirmed them. */
+export function noAuthRetryRequestOptions(): AxiosRequestConfig {
+  return { _noAuthRetry: true } as AxiosRequestConfig;
+}
+
 axiosInstance.interceptors.request.use((config) => {
   const headers = AxiosHeaders.from(config.headers);
   if (!headers.has("x-request-id")) headers.set("x-request-id", requestId());
@@ -142,6 +148,7 @@ axiosInstance.interceptors.response.use(
       cause.response?.status === 401 &&
       config &&
       !config._authRetry &&
+      !config._noAuthRetry &&
       !isRefreshRequest &&
       !isCredentialProofRequest;
 

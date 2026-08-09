@@ -127,6 +127,7 @@ export const PROJECT_PERMISSION_CODES = [
   "project.support.content_retention.manage",
   "project.support.content_legal_hold.manage",
   "project.support.content_rollout.manage",
+  "project.support.workspace.rollout.manage",
   "project.ai_usage.read",
   "project.notifications.read",
   "project.notifications.manage",

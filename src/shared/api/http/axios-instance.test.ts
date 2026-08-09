@@ -15,6 +15,7 @@ import {
   beginAuthTeardown,
   endAuthTeardown,
   axiosInstance,
+  noAuthRetryRequestOptions,
   registerMfaRequirementHandler,
   registerRefreshHandler,
 } from "./axios-instance";
@@ -110,6 +111,28 @@ describe("axios auth lifecycle", () => {
 
     expect(refreshCount).toBe(1);
     expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
+  });
+
+  it("never refreshes or replays an audited Support Workspace rollout PUT", async () => {
+    storeAccessToken({ accessToken: "confirmed-authority", expiresIn: 60 });
+    const refresh = vi.fn();
+    registerRefreshHandler(refresh);
+    let attempts = 0;
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1;
+      return reject(config, 401);
+    };
+
+    await expect(
+      axiosInstance.put(
+        "/api/v1/admin/projects/project-1/support/workspace/rollout",
+        { enabled: true, shellEnabled: true, hardOff: false, reason: "Pilot" },
+        noAuthRetryRequestOptions(),
+      ),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(refresh).not.toHaveBeenCalled();
+    expect(attempts).toBe(1);
   });
 
   it("does not replay a protected request when logout invalidates its pending refresh", async () => {

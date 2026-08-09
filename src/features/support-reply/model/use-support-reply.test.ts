@@ -87,12 +87,14 @@ describe("support reply controller", () => {
   it("sends a reply only when the server selection allows it", async () => {
     const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
     const reconcile = vi.fn().mockResolvedValue(undefined);
+    const recordTelemetry = vi.fn();
     const controller = createSupportReplyController(
       {
         projectId: () => "project-1",
         actorId: () => "operator-1",
         selection: () => selection(),
         reconcile,
+        recordTelemetry,
       },
       replySource(sendAdminMessage),
     );
@@ -108,6 +110,45 @@ describe("support reply controller", () => {
     expect(controller.draft.value).toBe("");
     expect(controller.deliveryStatus.value).toBe("PENDING");
     expect(reconcile).toHaveBeenCalledTimes(1);
+    expect(recordTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "reply_send",
+        outcome: "accepted",
+        duplicate_prevented: false,
+      }),
+    );
+  });
+
+  it("reports a suppressed duplicate click from the real send lifecycle", async () => {
+    let release!: (value: AdminMessageResult) => void;
+    const sendAdminMessage = vi.fn(
+      () => new Promise<AdminMessageResult>((resolve) => { release = resolve; }),
+    );
+    const recordTelemetry = vi.fn();
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+        recordTelemetry,
+      },
+      replySource(sendAdminMessage),
+    );
+    controller.draft.value = "Один authoritative ответ";
+
+    const first = controller.send();
+    await controller.send();
+    release(delivered);
+    await first;
+
+    expect(sendAdminMessage).toHaveBeenCalledOnce();
+    expect(recordTelemetry).toHaveBeenCalledWith({
+      operation: "reply_send",
+      outcome: "suppressed",
+      duration_ms: 0,
+      duplicate_prevented: true,
+    });
   });
 
   it("sends an attachment-only reply and consumes the exact durable draft", async () => {

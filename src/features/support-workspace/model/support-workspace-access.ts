@@ -26,6 +26,8 @@ const supportInternalNotesWritePermission =
   "project.support.internal_notes.write" as const;
 const supportInternalNotesRedactPermission =
   "project.support.internal_notes.redact" as const;
+const supportWorkspaceRolloutManagePermission =
+  "project.support.workspace.rollout.manage" as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
@@ -52,6 +54,15 @@ export function canReadSupportControl(
   return hasProjectPermission(
     effectivePermissionCodes,
     supportLeadControlReadPermission,
+  );
+}
+
+export function canManageSupportWorkspaceRollout(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return hasProjectPermission(
+    effectivePermissionCodes,
+    supportWorkspaceRolloutManagePermission,
   );
 }
 

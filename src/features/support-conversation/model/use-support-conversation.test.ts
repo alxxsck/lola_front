@@ -232,6 +232,7 @@ describe("support conversation controller", () => {
     const first = deferred<SupportWorkspaceConversation["readState"]>();
     const second = deferred<SupportWorkspaceConversation["readState"]>();
     const onReadStateChange = vi.fn();
+    const recordTelemetry = vi.fn();
     const initial = selection("conversation-1", [
       message("first", 1),
       message("second", 2),
@@ -259,6 +260,7 @@ describe("support conversation controller", () => {
         projectId: () => "project-1",
         conversationId: () => "conversation-1",
         onReadStateChange,
+        recordTelemetry,
       },
       source,
     );
@@ -305,6 +307,12 @@ describe("support conversation controller", () => {
       "conversation-1",
       expect.objectContaining({ lastReadOrdinal: 4, unreadMessageCount: 0 }),
     );
+    expect(recordTelemetry).toHaveBeenLastCalledWith({
+      operation: "unread_ack",
+      outcome: "matched",
+      duration_ms: 0,
+      mismatch_count: 0,
+    });
   });
 
   it("ACKs the linked conversation while the workspace is selected by Case id", async () => {

@@ -58,6 +58,9 @@ interface SupportWorkspaceLiveOptions {
   currentMessageOrdinal?: () => number;
   hasDraft?: () => boolean;
   onAccessRevoked?(): void | Promise<void>;
+  recordTelemetry?(
+    payload: Record<string, string | number | boolean>,
+  ): void;
 }
 
 export type SupportWorkspaceRecoveryCause = "HINT" | "GAP" | "RECONNECT";
@@ -162,10 +165,22 @@ export function createSupportWorkspaceLiveController(
         return;
       const recoveryCause = pendingRecoveryCause;
       pendingRecoveryCause = "HINT";
+      const startedAt = performance.now();
       void Promise.allSettled([
         options.reconcile(recoveryCause),
         options.collaboration?.reconcile() ?? Promise.resolve(),
-      ]);
+      ]).then((results) => {
+        const failed = results.filter(
+          (result) => result.status === "rejected",
+        ).length;
+        options.recordTelemetry?.({
+          operation: "realtime_reconcile",
+          outcome: failed ? "failed" : "recovered",
+          duration_ms: Math.round(performance.now() - startedAt),
+          recovered: recoveryCause !== "HINT" && failed === 0,
+          mismatch_count: recoveryCause === "GAP" ? 1 : 0,
+        });
+      });
     }, 120);
   }
 
@@ -320,6 +335,12 @@ export function createSupportWorkspaceLiveController(
         options.currentMessageOrdinal?.() ?? 0,
       );
       await options.collaboration?.reconcile();
+      options.recordTelemetry?.({
+        operation: "draft_recovery",
+        outcome: "restored",
+        duration_ms: 0,
+        recovered: true,
+      });
     }
   }
 
@@ -332,6 +353,12 @@ export function createSupportWorkspaceLiveController(
       options.currentMessageOrdinal?.() ?? 0,
     );
     if (active) await options.collaboration?.reconcile();
+    options.recordTelemetry?.({
+      operation: "draft_state",
+      outcome: active ? "active" : "cleared",
+      duration_ms: 0,
+      recovered: false,
+    });
   }
 
   async function recordTypingActivity(active: boolean): Promise<void> {

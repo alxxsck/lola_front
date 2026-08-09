@@ -63,7 +63,7 @@ backend 31–35; legacy Case policy и raw JSON editor эти gates не сни�
 | 26  | Lead Control                                             | 03, 10, 18, 19 + backend partial | [Открыть](../../../.scratch/support-workspace/issues/26-finish-lead-control.md)                          |
 | 27  | Browser notification settings                            | 03, 09                           | [Открыть](../../../.scratch/support-workspace/issues/27-add-browser-notification-settings.md)            |
 | 28  | Cutover legacy entry points — frontend complete          | 07–20 + backend `4d82b6bd`       | [Открыть](../../../.scratch/support-workspace/issues/28-cut-over-legacy-entry-points.md)                 |
-| 29  | Hardening, pilot и rollback — backend ready              | 28 + backend `9f36796b`          | [Открыть](../../../.scratch/support-workspace/issues/29-harden-pilot-rollback-core-support.md)           |
+| 29  | Hardening, pilot и rollback — frontend complete          | 28 + backend `9f36796b`          | [Открыть](../../../.scratch/support-workspace/issues/29-harden-pilot-rollback-core-support.md)           |
 | 30  | JSM/HelpDesk-контракты                                   | backend full                     | [Открыть](../../../.scratch/support-workspace/issues/30-sync-jsm-helpdesk-contracts.md)                  |
 | 31  | Integration Settings и External Work                     | 30 + backend full                | [Открыть](../../../.scratch/support-workspace/issues/31-add-integration-settings-external-work.md)       |
 | 32  | JSM/HelpDesk actions в Case inspector                    | 16, 30, 31 + backend full        | [Открыть](../../../.scratch/support-workspace/issues/32-add-case-external-work-actions.md)               |

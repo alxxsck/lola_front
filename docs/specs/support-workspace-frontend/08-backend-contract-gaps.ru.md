@@ -37,6 +37,10 @@ proof. Router и navigation читают только server-owned admission и 
 `VITE_SUPPORT_WORKSPACE_ENABLED` удалён; `ProjectResponseDto.settings` не
 используется как authority. Lead Control и личные browser notifications
 сохраняют собственные permission/admission gates и не зависят от shell cutover.
+Отдельный `/support/settings/audit-rollout` использует exact permission
+`project.support.workspace.rollout.manage`, opaque quoted `actionEtag` и stable
+idempotency intent. UI предлагает только безопасные presets; manage-only роль не
+выводит admission из raw root flags.
 
 ## P1: аватары оператора и пользователя
 

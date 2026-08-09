@@ -553,12 +553,15 @@ describe("authentication routes", () => {
   });
 
   it("returns a direct Support URL to the legacy launcher when the Project shell is rolled back", async () => {
-    writeMockSupportWorkspaceRollout({
-      enabled: true,
-      shellEnabled: false,
-      hardOff: false,
-      version: 4,
-    });
+    writeMockSupportWorkspaceRollout(
+      {
+        enabled: true,
+        shellEnabled: false,
+        hardOff: false,
+        version: 4,
+      },
+      "project-1",
+    );
     clearSupportWorkspaceShellAdmission();
     const auth = useAuthStore();
     const project = {
@@ -640,12 +643,15 @@ describe("authentication routes", () => {
 
     await router.push("/support/inbox?projectId=project-1");
     expect(router.currentRoute.value.name).toBe("support-inbox");
-    writeMockSupportWorkspaceRollout({
-      enabled: true,
-      shellEnabled: false,
-      hardOff: true,
-      version: 5,
-    });
+    writeMockSupportWorkspaceRollout(
+      {
+        enabled: true,
+        shellEnabled: false,
+        hardOff: true,
+        version: 5,
+      },
+      "project-1",
+    );
 
     await router.push("/overview");
     await router.push("/support/inbox?projectId=project-1");
@@ -1043,5 +1049,18 @@ describe("authentication routes", () => {
 
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("overview");
+
+    await router.push("/support/settings/audit-rollout");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = [
+      "project.support.workspace.rollout.manage",
+    ];
+    expect(
+      typeof router.getRoutes().find((route) => route.name === "support-workspace-rollout")
+        ?.components?.default,
+    ).toBe("function");
+    await router.push("/support/settings/audit-rollout");
+    expect(router.currentRoute.value.name).toBe("support-workspace-rollout");
   });
 });

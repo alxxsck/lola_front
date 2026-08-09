@@ -111,6 +111,10 @@ import SupportConversationContext from "@/features/support-workspace/ui/SupportC
 import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
+import {
+  reportSupportWorkspaceTelemetry,
+  supportWorkspaceViewportBucket,
+} from "@/features/support-workspace/model/support-workspace-telemetry";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import type {
@@ -383,6 +387,14 @@ const requestedSelectionKey = computed(() =>
       ? `CONVERSATION:${routeConversationId.value}`
       : "",
 );
+function recordCoreFeedback(
+  payload: Record<string, string | number | boolean>,
+): void {
+  reportSupportWorkspaceTelemetry("support_workspace_core_feedback", {
+    ...payload,
+    viewport: supportWorkspaceViewportBucket(),
+  });
+}
 const conversation = createSupportConversationController(
   {
     projectId: () => auth.project?.id,
@@ -392,6 +404,7 @@ const conversation = createSupportConversationController(
     onReadStateChange(conversationId, state) {
       inbox.applyConversationReadState(conversationId, state);
     },
+    recordTelemetry: recordCoreFeedback,
   },
   supportWorkspaceSource,
 );
@@ -547,6 +560,7 @@ const reply = createSupportReplyController(
     },
     onMacroDraftRejected: handleSupportMacroRejected,
     onKnowledgeCitationRejected: handleSupportKnowledgeRejected,
+    recordTelemetry: recordCoreFeedback,
   },
   repository,
 );
@@ -1183,6 +1197,7 @@ const workspaceLive = createSupportWorkspaceLiveController(
     currentMessageOrdinal,
     hasDraft: () => Boolean(reply.draft.value.trim()),
     onAccessRevoked: handleCollaborationAccessRevoked,
+    recordTelemetry: recordCoreFeedback,
   },
   cmsRealtimeClient,
 );
@@ -3910,6 +3925,12 @@ onBeforeUnmount(() => {
 .header-actions {
   gap: 10px;
   flex-wrap: wrap;
+}
+.header-actions :deep(.p-tag-success) {
+  color: var(--status-success-text);
+}
+.header-actions :deep(.p-button-secondary.p-button-outlined) {
+  color: var(--text-primary);
 }
 .conversation-header__actions {
   gap: 8px;

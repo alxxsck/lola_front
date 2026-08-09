@@ -287,6 +287,29 @@ test("workspace shell cutover contract stays server-owned and reversible", async
         (parameter) => parameter.name === "Idempotency-Key",
       ).required = false;
     },
+    (contract) => {
+      contract.components.schemas.SupportWorkspaceRolloutResponseDto.properties.actionEtag.pattern =
+        "^[0-9]+$";
+    },
+    (contract) => {
+      contract.components.schemas.UpdateSupportWorkspaceRolloutDto.required =
+        contract.components.schemas.UpdateSupportWorkspaceRolloutDto.required.filter(
+          (field) => field !== "reason",
+        );
+    },
+    (contract) => {
+      contract.components.schemas.UpdateSupportWorkspaceRolloutDto.properties.reason.maxLength =
+        5_000;
+    },
+    (contract) => {
+      operation(contract, "SupportWorkspace_updateRollout").responses["409"] = {};
+    },
+    (contract) => {
+      contract.components.schemas.SupportWorkspaceErrorBodyDto.properties.code.enum =
+        contract.components.schemas.SupportWorkspaceErrorBodyDto.properties.code.enum.filter(
+          (value) => value !== "SUPPORT_WORKSPACE_REPLAY_OUTCOME_UNAVAILABLE",
+        );
+    },
   ];
 
   for (const mutate of mutations) {
