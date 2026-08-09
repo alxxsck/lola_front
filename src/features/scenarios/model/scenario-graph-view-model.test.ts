@@ -81,17 +81,34 @@ describe('scenario graph view model', () => {
 
   it('keeps parallel branch identity and label separate from the route target', () => {
     const model = build(choiceTimeoutParallelFixture.actions)
+    const question = model.nodes.find(({ id }) => id === 'question')!
     const edges = model.edges.filter(({ source }) => source === 'question')
 
+    expect(question.data.ports).toEqual([
+      { id: 'choice:yes', label: 'Да', position: 25 },
+      { id: 'choice:no', label: 'Нет', position: 50 },
+      { id: 'timeout', label: 'Тайм-аут', position: 75 },
+    ])
     expect(edges.map(({ id }) => id)).toEqual([
       'question-choice:yes',
       'question-choice:no',
       'question-timeout',
     ])
+    expect(edges.map(({ sourceHandle }) => sourceHandle)).toEqual([
+      'choice:yes',
+      'choice:no',
+      'timeout',
+    ])
+    expect(edges.map(({ type }) => type)).toEqual(['scenario', 'scenario', 'scenario'])
     expect(edges.map(({ data }) => data!).map(({ branchId, kind, label }) => ({ branchId, kind, label }))).toEqual([
       { branchId: 'choice:yes', kind: 'choice', label: 'Да' },
       { branchId: 'choice:no', kind: 'choice', label: 'Нет' },
       { branchId: 'timeout', kind: 'timeout', label: 'Тайм-аут' },
+    ])
+    expect(edges.map(({ data }) => data!).map(({ routeIndex, routeCount }) => ({ routeIndex, routeCount }))).toEqual([
+      { routeIndex: 0, routeCount: 3 },
+      { routeIndex: 1, routeCount: 3 },
+      { routeIndex: 2, routeCount: 3 },
     ])
     expect(new Set(edges.map(({ target }) => target))).toEqual(new Set(['finish']))
   })
@@ -145,7 +162,7 @@ describe('scenario graph view model', () => {
     })
 
     expect(model.layout.node).toEqual({ width: 240, height: 128 })
-    expect(model.layout.gaps).toEqual({ column: 60, row: 72 })
+    expect(model.layout.gaps).toEqual({ column: 60, row: 72, branchLane: 24 })
     expect(model.layout.label).toEqual({ fontSize: 12, paddingX: 7, paddingY: 5 })
     expect(model.viewport).toEqual({
       fitViewOnInit: false,
@@ -161,9 +178,10 @@ describe('scenario graph view model', () => {
       width: `${model.layout.trigger.width}px`,
       height: `${model.layout.trigger.height}px`,
     })
-    expect(model.edges.find(({ source }) => source === 'question')).toMatchObject({
-      labelStyle: { fontSize: 12 },
-      labelBgPadding: [7, 5],
+    expect(model.edges.find(({ source }) => source === 'question')?.data?.labelMetrics).toEqual({
+      fontSize: 12,
+      paddingX: 7,
+      paddingY: 5,
     })
     expect(overlappingPairs(model)).toEqual([])
   })

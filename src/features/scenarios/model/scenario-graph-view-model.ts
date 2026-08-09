@@ -35,6 +35,7 @@ export interface ScenarioGraphLayoutOptions {
   gaps: {
     column: number
     row: number
+    branchLane: number
   }
   origin: {
     trigger: ScenarioGraphPoint
@@ -54,7 +55,7 @@ type ScenarioGraphViewOverrides = {
   viewport?: Partial<ScenarioGraphViewportOptions>
 }
 
-export interface ScenarioGraphNodeData extends Record<string, unknown> {
+export interface ScenarioGraphActionPresentation extends Record<string, unknown> {
   label: string
   nodeKey: string
   icon: string
@@ -63,12 +64,24 @@ export interface ScenarioGraphNodeData extends Record<string, unknown> {
   issueCount: number
 }
 
-export type ScenarioGraphActionPresentation = ScenarioGraphNodeData
+export interface ScenarioGraphNodeData extends ScenarioGraphActionPresentation {
+  ports: ScenarioGraphPort[]
+}
+
+export interface ScenarioGraphPort {
+  id: string
+  label?: string
+  position: number
+}
 
 export interface ScenarioGraphEdgeData extends Record<string, unknown> {
   branchId: string
   kind: GraphTransition['kind'] | 'trigger'
   label?: string
+  routeIndex: number
+  routeCount: number
+  laneGap: number
+  labelMetrics: ScenarioGraphLabelMetrics
 }
 
 export interface ScenarioGraphViewModelInput {
@@ -89,7 +102,7 @@ export const DEFAULT_SCENARIO_GRAPH_LAYOUT: Readonly<ScenarioGraphLayoutOptions>
   node: { width: 228, height: 120 },
   trigger: { width: 205, height: 44 },
   label: { fontSize: 11, paddingX: 6, paddingY: 4 },
-  gaps: { column: 52, row: 70 },
+  gaps: { column: 52, row: 70, branchLane: 24 },
   origin: {
     trigger: { x: 332, y: 24 },
     actions: { x: 320, y: 180 },
@@ -158,6 +171,13 @@ export function buildScenarioGraphViewModel(
   const viewport = resolveViewport(overrides)
   const ordered = [...input.actions].sort((left, right) => left.position - right.position)
   const depths = actionDepths(ordered, input.transitions)
+  const outgoingBySource = new Map<string, GraphTransition[]>()
+  for (const transition of input.transitions) {
+    outgoingBySource.set(transition.source, [
+      ...(outgoingBySource.get(transition.source) ?? []),
+      transition,
+    ])
+  }
   const levels = new Map<number, ScenarioAction[]>()
   for (const action of ordered) {
     const level = depths.get(action.nodeKey ?? '') ?? action.position
@@ -181,18 +201,26 @@ export function buildScenarioGraphViewModel(
     data: { label: input.triggerLabel },
   }]
   const columnStep = layout.node.width + layout.gaps.column
-  const rowStep = layout.node.height + layout.gaps.row
+  let levelY = layout.origin.actions.y
 
-  for (const [level, levelActions] of [...levels.entries()].sort(([left], [right]) => left - right)) {
+  for (const [, levelActions] of [...levels.entries()].sort(([left], [right]) => left - right)) {
     const totalWidth = (levelActions.length - 1) * columnStep
     levelActions.forEach((action, column) => {
-      const data = input.presentAction(action)
+      const outgoing = outgoingBySource.get(action.nodeKey ?? '') ?? []
+      const data: ScenarioGraphNodeData = {
+        ...input.presentAction(action),
+        ports: outgoing.map((transition, index) => ({
+          id: transition.branchId,
+          label: transition.label,
+          position: Math.round(((index + 1) / (outgoing.length + 1)) * 100),
+        })),
+      }
       nodes.push({
         id: action.nodeKey ?? `step_${action.position}`,
         type: 'scenario',
         position: {
           x: layout.origin.actions.x - totalWidth / 2 + column * columnStep,
-          y: layout.origin.actions.y + level * rowStep,
+          y: levelY,
         },
         style: {
           width: `${layout.node.width}px`,
@@ -202,6 +230,13 @@ export function buildScenarioGraphViewModel(
         data,
       })
     })
+    const maxPorts = Math.max(
+      1,
+      ...levelActions.map((action) => outgoingBySource.get(action.nodeKey ?? '')?.length ?? 0),
+    )
+    levelY += layout.node.height
+      + layout.gaps.row
+      + (maxPorts - 1) * layout.gaps.branchLane
   }
 
   const edges: Edge<ScenarioGraphEdgeData>[] = ordered[0]?.nodeKey
@@ -211,22 +246,40 @@ export function buildScenarioGraphViewModel(
         target: ordered[0].nodeKey,
         type: 'smoothstep',
         animated: true,
-        data: { branchId: 'trigger', kind: 'trigger' },
+        data: {
+          branchId: 'trigger',
+          kind: 'trigger',
+          routeIndex: 0,
+          routeCount: 1,
+          laneGap: layout.gaps.branchLane,
+          labelMetrics: layout.label,
+        },
       }]
     : []
 
   for (const transition of input.transitions) {
+    const outgoing = outgoingBySource.get(transition.source) ?? []
+    const routeIndex = outgoing.findIndex(({ branchId }) => branchId === transition.branchId)
     edges.push({
       id: graphTransitionId(transition),
       source: transition.source,
       target: transition.target,
       label: transition.label,
-      type: 'smoothstep',
+      type: 'scenario',
+      sourceHandle: transition.branchId,
       animated: transition.kind === 'default',
+      class: `scenario-edge scenario-edge-${transition.kind}`,
+      ariaLabel: transition.label
+        ? `Переход «${transition.label}» из шага ${transition.source}`
+        : `Переход из шага ${transition.source}`,
       data: {
         branchId: transition.branchId,
         kind: transition.kind,
         label: transition.label,
+        routeIndex,
+        routeCount: outgoing.length,
+        laneGap: layout.gaps.branchLane,
+        labelMetrics: layout.label,
       },
       style: {
         stroke: transition.kind === 'timeout'
@@ -236,13 +289,6 @@ export function buildScenarioGraphViewModel(
             : 'var(--graph-selection)',
         strokeWidth: 2,
       },
-      labelStyle: {
-        fill: 'var(--text-secondary)',
-        fontSize: layout.label.fontSize,
-        fontWeight: 600,
-      },
-      labelBgPadding: [layout.label.paddingX, layout.label.paddingY],
-      labelBgStyle: { fill: 'var(--graph-node)', fillOpacity: 0.92 },
     })
   }
 

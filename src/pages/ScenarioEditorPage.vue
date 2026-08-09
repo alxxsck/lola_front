@@ -23,6 +23,7 @@ import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
+import ScenarioFlowEdge from "@/features/scenarios/ScenarioFlowEdge.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
@@ -802,6 +803,7 @@ const conversationPolicyOptions: {
   { label: "Продолжить текущий чат", value: "reuse_active" },
 ];
 const flowNodeTypes = markRaw({ scenario: ScenarioFlowNode });
+const flowEdgeTypes = markRaw({ scenario: ScenarioFlowEdge });
 
 const graphLocaleOptions = computed(
   () => (authoringContract.value?.localization?.locales ?? []).map((locale) => ({
@@ -1472,6 +1474,22 @@ function selectNode(event: { node: Node }) {
   graphExpanded.value = false;
   studioStage.value = "actions";
   focusActionInspector();
+}
+
+function activateGraphNodeFromKeyboard(event: KeyboardEvent) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const target = event.target as HTMLElement | null;
+  const nodeElement = target?.closest<HTMLElement>(
+    ".vue-flow__node[data-id]",
+  );
+  if (!nodeElement || target !== nodeElement) return;
+  const node = flowNodes.value.find(
+    (candidate) => candidate.id === nodeElement.dataset.id,
+  );
+  if (!node) return;
+  event.preventDefault();
+  event.stopPropagation();
+  selectNode({ node });
 }
 
 function openNode(nodeKey: string) {
@@ -2197,11 +2215,13 @@ function leave() {
             :nodes="flowNodes"
             :edges="flowEdges"
             :node-types="flowNodeTypes"
+            :edge-types="flowEdgeTypes"
             :fit-view-on-init="graphViewModel.viewport.fitViewOnInit"
             :min-zoom="graphViewModel.viewport.minZoom"
             :max-zoom="graphViewModel.viewport.maxZoom"
             :nodes-draggable="false"
             :nodes-connectable="false"
+            @keydown="activateGraphNodeFromKeyboard"
             @node-click="selectNode"
           >
             <Background

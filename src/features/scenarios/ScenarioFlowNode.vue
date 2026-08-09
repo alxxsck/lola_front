@@ -1,16 +1,8 @@
 <script setup lang="ts">
 import { Handle, Position, type NodeProps } from '@vue-flow/core'
+import type { ScenarioGraphNodeData } from './model/scenario-graph-view-model'
 
-interface FlowNodeData extends Record<string, unknown> {
-  label: string
-  nodeKey: string
-  icon: string
-  executor: string
-  summary: string
-  issueCount: number
-}
-
-defineProps<NodeProps<FlowNodeData>>()
+defineProps<NodeProps<ScenarioGraphNodeData>>()
 </script>
 
 <template>
@@ -22,7 +14,16 @@ defineProps<NodeProps<FlowNodeData>>()
       <span v-if="data.issueCount" class="issue-count">{{ data.issueCount }}</span>
     </div>
     <p class="node-summary">{{ data.summary }}</p>
-    <Handle type="source" :position="Position.Bottom" />
+    <Handle
+      v-for="port in data.ports"
+      :id="port.id"
+      :key="port.id"
+      type="source"
+      :position="Position.Bottom"
+      :style="{ left: `${port.position}%` }"
+      :data-branch-id="port.id"
+      :aria-label="port.label ? `Исход ${port.label}` : `Исход ${port.id}`"
+    />
   </div>
 </template>
 

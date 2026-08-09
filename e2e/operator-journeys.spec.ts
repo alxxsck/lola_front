@@ -922,6 +922,11 @@ test("scenario graph labels use the project default locale and stable branch ide
                 label: { zh: "是", ru: "Да" },
                 nextNodeKey: "finish",
               },
+              {
+                id: "no",
+                label: { zh: "否", ru: "Нет" },
+                nextNodeKey: "finish",
+              },
             ],
           },
         },
@@ -942,15 +947,80 @@ test("scenario graph labels use the project default locale and stable branch ide
   const graph = page.locator(".graph-canvas.graph-expanded .vue-flow");
   await expect(graph).toBeVisible();
   await expect(graph.getByText("Да", { exact: true })).toBeVisible();
+  await expect(graph.getByText("Нет", { exact: true })).toBeVisible();
   await expect(graph.getByText("Тайм-аут", { exact: true })).toBeVisible();
   await expect(graph.getByText("是", { exact: true })).toHaveCount(0);
   await expect(graph.getByText("Timeout", { exact: true })).toHaveCount(0);
+  const sourceHandles = graph.locator(
+    ".vue-flow__handle[data-branch-id]",
+  );
+  await expect(sourceHandles).toHaveCount(3);
+  expect(
+    await sourceHandles.evaluateAll((handles) => handles.map(
+      (handle) => handle.getAttribute("data-branch-id"),
+    )),
+  ).toEqual(["choice:yes", "choice:no", "timeout"]);
+  const handleCenters = await sourceHandles.evaluateAll((handles) => handles.map((handle) => {
+    const box = handle.getBoundingClientRect();
+    return box.x + box.width / 2;
+  }));
+  expect(handleCenters[0]).toBeLessThan(handleCenters[1]!);
+  expect(handleCenters[1]).toBeLessThan(handleCenters[2]!);
+
+  const labelChips = graph.locator(".scenario-edge-label");
+  await expect(labelChips).toHaveCount(3);
+  const labelBoxes = await labelChips.evaluateAll((labels) => labels.map((label) => {
+    const box = label.getBoundingClientRect();
+    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+  }));
+  for (let left = 0; left < labelBoxes.length; left += 1) {
+    for (let right = left + 1; right < labelBoxes.length; right += 1) {
+      const first = labelBoxes[left]!;
+      const second = labelBoxes[right]!;
+      const overlaps = first.left < second.right
+        && first.right > second.left
+        && first.top < second.bottom
+        && first.bottom > second.top;
+      expect(overlaps).toBe(false);
+    }
+  }
+  const protectedBoxes = await graph
+    .locator(".vue-flow__node-scenario, .vue-flow__handle")
+    .evaluateAll((elements) => elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    }));
+  for (const label of labelBoxes) {
+    for (const protectedBox of protectedBoxes) {
+      const overlaps = label.left < protectedBox.right
+        && label.right > protectedBox.left
+        && label.top < protectedBox.bottom
+        && label.bottom > protectedBox.top;
+      expect(overlaps).toBe(false);
+    }
+  }
+  const branchPaths = graph.locator(
+    '.vue-flow__edge[data-id^="question-"] .vue-flow__edge-path',
+  );
+  const pathData = await branchPaths.evaluateAll((paths) => paths.map(
+    (path) => path.getAttribute("d"),
+  ));
+  expect(new Set(pathData).size).toBe(3);
+  const timeoutEdge = graph.locator(
+    '.vue-flow__edge[data-id="question-timeout"] .vue-flow__edge-path',
+  );
+  expect(await timeoutEdge.evaluate((path) => getComputedStyle(path).strokeDasharray))
+    .not.toBe("none");
+  await expect(
+    graph.locator('.scenario-edge-label[data-branch-kind="timeout"] .pi-clock'),
+  ).toBeVisible();
   const edgeIdsBefore = await graph
     .locator(".vue-flow__edge")
     .evaluateAll((edges) => edges.map((edge) => edge.getAttribute("data-id")));
   await page.getByLabel("Язык подписей графа").click();
   await page.getByRole("option", { name: "китайский", exact: true }).click();
   await expect(graph.getByText("是", { exact: true })).toBeVisible();
+  await expect(graph.getByText("否", { exact: true })).toBeVisible();
   const edgeIdsAfter = await graph
     .locator(".vue-flow__edge")
     .evaluateAll((edges) => edges.map((edge) => edge.getAttribute("data-id")));
@@ -959,6 +1029,26 @@ test("scenario graph labels use the project default locale and stable branch ide
   await page.screenshot({
     path: testInfo.outputPath("scenario-graph-localized-branches.png"),
   });
+
+  const questionNode = graph
+    .locator(".vue-flow__node-scenario")
+    .filter({ hasText: "question" });
+  await questionNode.focus();
+  await expect(questionNode).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Задать вопрос с вариантами", level: 2 }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Закрыть инспектор узла" }).click();
+  await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
+  await page
+    .locator(".graph-canvas.graph-expanded .vue-flow__node-scenario")
+    .filter({ hasText: "question" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Задать вопрос с вариантами", level: 2 }),
+  ).toBeVisible();
 });
 
 test("scenario graph constrains long trigger, title and summary inside measured boxes", async ({
