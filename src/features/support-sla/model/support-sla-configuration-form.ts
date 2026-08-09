@@ -393,7 +393,7 @@ export function serializeSupportSlaConfiguration(
     issues.push({
       code: "RULE_REQUIRED",
       path: "policy.rules",
-      message: "Добавьте обязательное fallback-правило.",
+      message: "Добавьте обязательное правило для остальных обращений.",
     });
   }
   const ruleCodes = new Set<string>();
@@ -455,7 +455,7 @@ export function serializeSupportSlaConfiguration(
       issues.push({
         code: "FALLBACK_CONDITIONED",
         path,
-        message: "Последнее fallback-правило не может содержать условия.",
+        message: "Последнее правило для остальных обращений не может содержать условия.",
       });
     }
 

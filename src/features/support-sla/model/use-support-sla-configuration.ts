@@ -86,7 +86,7 @@ function validationMessage(code: string | undefined): string {
     SLA_CALENDAR_COVERAGE_INSUFFICIENT:
       "Рабочий календарь не покрывает минимально допустимый период.",
     SLA_CALENDAR_INTERVAL_OVERLAP: "Рабочие интервалы пересекаются.",
-    SLA_POLICY_FALLBACK_REQUIRED: "Добавьте обязательное fallback-правило.",
+    SLA_POLICY_FALLBACK_REQUIRED: "Добавьте обязательное правило для остальных обращений.",
     SLA_POLICY_FALLBACK_NOT_LAST: "Fallback-правило должно быть последним.",
     SLA_POLICY_TARGET_INVALID: "Проверьте сроки реакции и решения.",
   };

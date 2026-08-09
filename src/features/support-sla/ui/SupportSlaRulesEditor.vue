@@ -108,7 +108,7 @@ function dropRule(target: number): void {
           <span class="sla-rule__order">{{ index + 1 }}</span>
           <span class="sla-rule__summary">
             <strong>{{ rule.code || "Новое правило" }}</strong>
-            <small v-if="isFallback(index)">Обязательный fallback для остальных Cases</small>
+            <small v-if="isFallback(index)">Обязательное правило для остальных обращений</small>
             <small v-else>Условий: {{ rule.priorities.length + rule.caseTypes.length + (rule.groupCodesText.trim() ? 1 : 0) }}</small>
           </span>
           <span v-if="isFallback(index)" class="sla-rule__badge">Последнее</span>
@@ -166,7 +166,7 @@ function dropRule(target: number): void {
                 suffix=" %"
                 :aria-label="`Порог риска правила ${index + 1}`"
               />
-              <small>Case переходит в риск при таком остатке рабочего времени.</small>
+              <small>Обращение переходит в риск при таком остатке рабочего времени.</small>
             </label>
           </div>
 
@@ -190,7 +190,7 @@ function dropRule(target: number): void {
                 />
               </label>
               <label class="sla-field">
-                <span>Тип Case</span>
+                <span>Тип обращения</span>
                 <MultiSelect
                   v-model="rule.caseTypes"
                   :options="caseTypeOptions"
@@ -199,7 +199,7 @@ function dropRule(target: number): void {
                   display="chip"
                   :disabled="readonly"
                   placeholder="Любой тип"
-                  :aria-label="`Типы Case правила ${index + 1}`"
+                  :aria-label="`Типы обращений правила ${index + 1}`"
                 />
               </label>
               <label class="sla-field rule-groups-field">
@@ -211,7 +211,7 @@ function dropRule(target: number): void {
                   placeholder="VIP&#10;ENTERPRISE"
                   :aria-label="`Коды групп правила ${index + 1}`"
                 />
-                <small>По одному server-owned code на строку. Названия групп появятся после публикации каталога.</small>
+                <small>По одному серверному коду на строку. Названия групп появятся после публикации каталога.</small>
               </label>
             </div>
           </section>
@@ -261,7 +261,7 @@ function dropRule(target: number): void {
           <section class="rule-section">
             <header>
               <h3>Когда приостанавливать</h3>
-              <p>Каждый clock имеет независимый набор статусов ожидания.</p>
+              <p>Для каждого таймера задаётся независимый набор статусов ожидания.</p>
             </header>
             <div class="target-grid">
               <label class="sla-field">
