@@ -104,6 +104,19 @@ describe("Support External Work page", () => {
       itemId: "40000000-0000-4000-8000-000000000002",
     });
   });
+
+  it("does not reclaim the route after the operator leaves External Work", async () => {
+    authenticate();
+    const { router } = await mountPage(
+      "/support/external-work?mode=attention",
+    );
+    await flushPromises();
+
+    await router.push("/overview");
+    await flushPromises();
+
+    expect(router.currentRoute.value.name).toBe("overview");
+  });
 });
 
 async function mountPage(path = "/support/external-work") {
@@ -114,6 +127,11 @@ async function mountPage(path = "/support/external-work") {
         path: "/support/external-work",
         name: "support-external-work",
         component: SupportExternalWorkPage,
+      },
+      {
+        path: "/overview",
+        name: "overview",
+        component: { template: "<div />" },
       },
     ],
   });

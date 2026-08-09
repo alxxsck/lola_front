@@ -71,6 +71,11 @@ const controller = createSupportExternalInboxController(
 let reconciliationGeneration = 0;
 let loadedScope = "";
 let openedFromQueue = false;
+let disposed = false;
+
+function ownsCurrentRoute(): boolean {
+  return !disposed && route.name === "support-external-work";
+}
 
 function scalarQuery(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
@@ -94,6 +99,7 @@ function canonicalQuery(itemId = scalarQuery(route.query.itemId)) {
 
 async function reconcileRoute(forceList = false): Promise<void> {
   const run = ++reconciliationGeneration;
+  if (!ownsCurrentRoute()) return;
   if (!canReadInbox.value && !canReadLinked.value) {
     controller.reset();
     return;
@@ -101,7 +107,7 @@ async function reconcileRoute(forceList = false): Promise<void> {
   const expected = canonicalQuery();
   if (JSON.stringify(route.query) !== JSON.stringify(expected)) {
     await router.replace({ name: "support-external-work", query: expected });
-    if (run !== reconciliationGeneration) return;
+    if (run !== reconciliationGeneration || !ownsCurrentRoute()) return;
   }
   const nextMode = requestedMode();
   const scope = `${auth.user?.id ?? ""}\u0000${auth.project?.id ?? ""}\u0000${nextMode}`;
@@ -112,7 +118,7 @@ async function reconcileRoute(forceList = false): Promise<void> {
   ) {
     controller.mode.value = nextMode;
     await controller.load();
-    if (run !== reconciliationGeneration) return;
+    if (run !== reconciliationGeneration || !ownsCurrentRoute()) return;
     loadedScope = scope;
   }
   const itemId = scalarQuery(route.query.itemId);
@@ -187,12 +193,18 @@ watch(
 );
 
 watch(
-  () => [route.query.mode, route.query.itemId, route.query.projectId],
-  () => void reconcileRoute(false),
+  () => [route.name, route.query.mode, route.query.itemId, route.query.projectId],
+  () => {
+    if (ownsCurrentRoute()) void reconcileRoute(false);
+  },
   { flush: "sync" },
 );
 
-onBeforeUnmount(() => controller.reset());
+onBeforeUnmount(() => {
+  disposed = true;
+  reconciliationGeneration += 1;
+  controller.reset();
+});
 
 const providerOptions = [
   { label: "Все внешние системы", value: "ALL" },
