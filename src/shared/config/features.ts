@@ -6,6 +6,18 @@ export const conversationAISuspensionEnabled =
 export const canonicalIdentityPolicyEnabled =
   import.meta.env.VITE_CANONICAL_IDENTITY_POLICY_ENABLED !== "false";
 
+export function scenarioGraphWorkspaceEnabledFromEnv(value?: string) {
+  return value !== "false";
+}
+
+/**
+ * Presentation-only rollback switch. Disabling it never changes the saved
+ * scenario graph or the runtime contract.
+ */
+export const scenarioGraphWorkspaceEnabled = scenarioGraphWorkspaceEnabledFromEnv(
+  import.meta.env.VITE_SCENARIO_GRAPH_WORKSPACE_ENABLED,
+);
+
 /**
  * Temporary release switch until the backend publishes a typed,
  * permission-independent project rollout contract.

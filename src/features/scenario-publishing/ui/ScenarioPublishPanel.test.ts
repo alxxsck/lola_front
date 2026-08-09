@@ -65,14 +65,14 @@ describe('ScenarioPublishPanel', () => {
     expect(wrapper.text()).toContain('LOW')
     expect(wrapper.text()).toContain('page.opened · схема v1')
     expect(wrapper.text()).toContain('HISTORY_WINDOW_NOTICE')
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
 
     expect(mocks.publishScenario).toHaveBeenCalledWith('project-1', 'scenario-1', {
       catalogRevision: 'catalog-42', expectedCurrentRevisionId: null, deliveryPolicy: { kind: 'IMMEDIATE' },
       expectedDraftVersion: 1, rule: { version: 1, root: { kind: 'activityDayStreak', compare: { operator: 'gte', value: 2 } } },
     })
-    expect(wrapper.text()).toContain('Неизменяемая версия №1 опубликована')
+    expect(wrapper.text()).toContain('Версия №1 опубликована')
     expect(wrapper.text()).toContain('Новые запуски')
     expect(wrapper.emitted('published')?.at(-1)).toEqual(['revision-1', {
       ruleSnapshot: JSON.stringify(draft), deliverySnapshot: JSON.stringify({ kind: 'IMMEDIATE' }), authoringSnapshot: '',
@@ -91,7 +91,7 @@ describe('ScenarioPublishPanel', () => {
     expect(mocks.validateScenarioDraft).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({
       graph: { actions: [{ position: 0, nodeKey: 'step_1', nextNodeKey: null, type: 'SHOW_ASSISTANT', config: { visible: true } }] },
     }))
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).not.toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).not.toHaveProperty('disabled')
   })
 
   it('reviews and publishes Audience as a separate pinned contract', async () => {
@@ -113,7 +113,7 @@ describe('ScenarioPublishPanel', () => {
     expect(wrapper.text()).toContain('Зависимости аудитории')
     expect(wrapper.text()).toContain('1 атрибутов · 1 сегментов')
 
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
     expect(mocks.publishScenario).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({
       audience: { version: 1, root: { kind: 'locale', operator: 'eq', value: 'ru-RU' } },
@@ -144,7 +144,7 @@ describe('ScenarioPublishPanel', () => {
     expect(wrapper.emitted('focus-issue')).toEqual([[{
       code: 'AUDIENCE_VALUE_INVALID', path: 'audience.root.value', message: 'Выберите допустимый locale',
     }]])
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).toHaveProperty('disabled')
   })
 
   it('keeps technical identifiers compact in the operator review', () => {
@@ -170,7 +170,7 @@ describe('ScenarioPublishPanel', () => {
     } })
     await flushPromises()
 
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Каталог условий изменился')
 
@@ -182,7 +182,7 @@ describe('ScenarioPublishPanel', () => {
     expect(wrapper.text()).toContain('каталог catalog-43')
     expect(wrapper.text()).toContain('снова сохраните черновик')
     expect(wrapper.emitted('resave-required')).toEqual([[]])
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).toHaveProperty('disabled')
   })
 
   it('does not overwrite an unknown concurrent head automatically', async () => {
@@ -194,12 +194,12 @@ describe('ScenarioPublishPanel', () => {
     } })
     await flushPromises()
 
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.text()).toContain('Автоматическое объединение недоступно')
     expect(mocks.publishScenario).toHaveBeenCalledTimes(1)
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).toHaveProperty('disabled')
   })
 
   it('ignores an outdated successful review after the draft becomes locally invalid', async () => {
@@ -219,7 +219,7 @@ describe('ScenarioPublishPanel', () => {
     })
     await flushPromises()
 
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).toHaveProperty('disabled')
     expect(wrapper.text()).not.toContain('СтоимостьLOW')
   })
 
@@ -232,7 +232,7 @@ describe('ScenarioPublishPanel', () => {
     } })
     await flushPromises()
 
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
     await wrapper.setProps({ deliveryPolicy: { kind: 'SKIP_IF_OFFLINE' } })
     await flushPromises()
@@ -244,7 +244,7 @@ describe('ScenarioPublishPanel', () => {
       deliverySnapshot: JSON.stringify({ kind: 'IMMEDIATE' }),
       authoringSnapshot: '',
     }])
-    expect(wrapper.get('button[aria-label="Опубликовать immutable revision"]').attributes()).not.toHaveProperty('disabled')
+    expect(wrapper.get('button[aria-label="Опубликовать версию сценария"]').attributes()).not.toHaveProperty('disabled')
   })
 
   it('rechecks the document gate after the asynchronous backend review', async () => {
@@ -256,7 +256,7 @@ describe('ScenarioPublishPanel', () => {
     const pendingReview = deferred<Awaited<ReturnType<typeof mocks.validateScenarioDraft>>>()
     mocks.validateScenarioDraft.mockReturnValueOnce(pendingReview.promise)
 
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await wrapper.setProps({ blockedReason: 'Graph изменился' })
     pendingReview.resolve({ valid: true, issues: [], dependencies: [], cost: null, warnings: [] })
     await flushPromises()
@@ -273,7 +273,7 @@ describe('ScenarioPublishPanel', () => {
     await flushPromises()
 
     expect(mocks.validateScenarioDraft.mock.calls.at(-1)?.[2]).not.toHaveProperty('rule')
-    await wrapper.get('button[aria-label="Опубликовать immutable revision"]').trigger('click')
+    await wrapper.get('button[aria-label="Опубликовать версию сценария"]').trigger('click')
     await flushPromises()
     expect(mocks.publishScenario.mock.calls.at(-1)?.[2]).not.toHaveProperty('rule')
   })

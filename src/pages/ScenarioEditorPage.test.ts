@@ -1124,6 +1124,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       .toBe(false);
     expect(flow.attributes("pan-on-drag")).not.toBe("false");
     expect(flow.attributes("zoom-on-scroll")).not.toBe("false");
+    expect(wrapper.text()).toContain("У вас есть право просмотра");
     expect(wrapper.getComponent(ScenarioFlowControls).props("selectedNodeId"))
       .toBeNull();
     expect(wrapper.get('[aria-label="Найти действие"]').attributes("disabled"))
@@ -1691,6 +1692,10 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.text()).toContain("Опубликованная версия revision-9 не изменится");
     expect(wrapper.find('button-stub[label="Сохранить"]').attributes("disabled")).toBeDefined();
     expect(wrapper.find('[data-testid="scenario-first-action"]').exists()).toBe(false);
+    await stageButton(wrapper, "Доставка").trigger("click");
+    expect(wrapper.text()).toContain("Сначала создайте черновик изменений");
+    expect(wrapper.text()).not.toContain("Сначала выберите событие запуска");
+    await stageButton(wrapper, "Запуск").trigger("click");
     await wrapper.get('button-stub[label="Создать черновик изменений"]').trigger("click");
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain("Новые запуски перейдут на неё только после публикации");
@@ -2366,6 +2371,32 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     );
   });
 
+  it("uses a Russian semantic name when an action is absent from the catalog", async () => {
+    mocks.projectActions = [];
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "wait",
+        type: "WAIT_FOR_GOAL",
+        config: {},
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+
+    expect(
+      wrapper.get('[data-action-node-key="wait"] .action-outline-main strong').text(),
+    ).toBe("Ожидание");
+    expect(
+      wrapper
+        .getComponent({ name: "VueFlow" })
+        .props("nodes")
+        .find((node: { id: string }) => node.id === "wait")
+        ?.data.label,
+    ).toBe("Ожидание");
+  });
+
   it("keeps the desktop canvas mounted while outline search, error filter and centering drive one selection", async () => {
     setAuthoringActions([
       {
@@ -2386,11 +2417,13 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     const wrapper = mountPage();
     await flushPromises();
     await stageButton(wrapper, "Действия").trigger("click");
+    expect(wrapper.get(".studio-grid").classes()).toContain("graph-workspace-v2");
     const fitView = vi.fn().mockResolvedValue(true);
     wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", {
       fitView,
       getViewport: vi.fn(() => ({ x: 18, y: -24, zoom: 0.9 })),
     });
+    await new Promise((resolve) => setTimeout(resolve, 350));
     await flushPromises();
     const fitCallsBeforeSelection = fitView.mock.calls.length;
     const layoutCallsBeforeNavigation = mocks.layoutGraph.mock.calls.length;
@@ -2454,6 +2487,23 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.text()).toContain(
       "У вас нет права публиковать сценарии",
     );
+  });
+
+  it("explains split publish-only permissions without blaming the trigger", async () => {
+    mocks.permissions = [
+      "project.scenarios.read",
+      "project.scenarios.publish",
+      "project.actions.read",
+    ];
+    const wrapper = mountPage();
+    await flushPromises();
+
+    await stageButton(wrapper, "Доставка").trigger("click");
+    expect(wrapper.findComponent(ScenarioPublishPanel).exists()).toBe(false);
+    expect(wrapper.text()).toContain(
+      "есть право публикации, но нет права изменять сценарий",
+    );
+    expect(wrapper.text()).not.toContain("Сначала выберите событие запуска");
   });
 
   it("explains an unavailable source snapshot without exposing the backend code", async () => {

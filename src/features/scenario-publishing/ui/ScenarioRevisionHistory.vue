@@ -94,7 +94,7 @@ onMounted(() => void load())
 
 <template>
   <section class="revision-history" aria-labelledby="revision-history-title">
-    <header><div><span>Неизменяемая история</span><h2 id="revision-history-title">История публикаций</h2><p>Откат не переписывает прошлое — он создаёт новую версию-наследника.</p></div><Button icon="pi pi-refresh" text rounded aria-label="Обновить историю версий" :loading="loading" @click="load()" /></header>
+    <header><div><span>Версии сценария</span><h2 id="revision-history-title">История публикаций</h2><p>Возврат к прошлой публикации создаёт новую версию, а история остаётся без изменений.</p></div><Button icon="pi pi-refresh" text rounded aria-label="Обновить историю версий" :loading="loading" @click="load()" /></header>
     <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <div v-if="loading" class="revision-list"><Skeleton v-for="item in 3" :key="item" height="72px" /></div>
     <div v-else class="revision-list">

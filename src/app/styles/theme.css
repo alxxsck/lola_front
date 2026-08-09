@@ -173,7 +173,7 @@
   --sidebar-text-muted: #cbd5e1;
   --sidebar-text-subtle: #94a3b8;
   --sidebar-border: #334155;
-  --sidebar-project-avatar-background: var(--palette-blue-500);
+  --sidebar-project-avatar-background: var(--palette-blue-600);
   --sidebar-active-background: #eff6ff;
   --sidebar-active-text: #0f172a;
 
@@ -333,7 +333,7 @@
   --sidebar-text-muted: #cbd5e1;
   --sidebar-text-subtle: #94a3b8;
   --sidebar-border: #334155;
-  --sidebar-project-avatar-background: var(--palette-blue-500);
+  --sidebar-project-avatar-background: var(--palette-blue-600);
   --sidebar-active-background: #172554;
   --sidebar-active-text: #eff6ff;
 

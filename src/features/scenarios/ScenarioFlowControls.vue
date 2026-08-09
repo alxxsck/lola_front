@@ -195,4 +195,23 @@ function centerSelected() {
     min-width: 46px !important;
   }
 }
+@container scenario-graph (max-width: 400px) {
+  .scenario-flow-controls.vue-flow__panel.bottom.right {
+    top: 4px;
+    bottom: auto;
+  }
+  .scenario-flow-controls__group {
+    flex-direction: column;
+  }
+  .scenario-flow-controls__group + .scenario-flow-controls__group {
+    padding-top: 2px;
+    padding-left: 0;
+    border-top: 1px solid var(--border-default);
+  }
+  .scenario-flow-controls__zoom {
+    min-width: 44px !important;
+    font-size: 0.58rem;
+    white-space: nowrap;
+  }
+}
 </style>

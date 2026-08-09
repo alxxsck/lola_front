@@ -44,6 +44,83 @@ type AuthoringFixtureState = {
   };
 };
 
+async function makeDemoScenarioSessionReadOnly(page: Page) {
+  await page.evaluate(() => {
+    const key = "retenive-cms-demo-auth-v1";
+    const raw = sessionStorage.getItem(key);
+    if (!raw) throw new Error("Demo auth session is unavailable");
+    const context = JSON.parse(raw) as {
+      projects: Array<{ effectivePermissionCodes?: string[]; roleKeys?: string[] }>;
+    };
+    for (const project of context.projects) {
+      project.roleKeys = ["PROJECT_VIEWER"];
+      project.effectivePermissionCodes = (project.effectivePermissionCodes ?? [])
+        .filter((permission) => ![
+          "project.scenarios.write",
+          "project.scenarios.publish",
+          "project.scenarios.classify_security",
+        ].includes(permission));
+    }
+    sessionStorage.setItem(key, JSON.stringify(context));
+  });
+}
+
+function linearScenarioActions(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    position: index,
+    nodeKey: index === count - 1 ? "finish" : `step_${index + 1}`,
+    type: index === count - 1 ? "COMPLETE_SCENARIO" : "SAY",
+    nextNodeKey:
+      index < count - 2
+        ? `step_${index + 2}`
+        : index === count - 2
+          ? "finish"
+          : null,
+    config: index === count - 1 ? {} : { text: `Сообщение ${index + 1}` },
+  }));
+}
+
+function canonicalScenarioActions() {
+  return [
+    { position: 0, nodeKey: "intro", type: "SAY", nextNodeKey: "decision", config: { text: "Начало" } },
+    {
+      position: 1,
+      nodeKey: "decision",
+      type: "ASK_CHOICE",
+      config: {
+        message: "Продолжить?",
+        options: [
+          { id: "yes", label: "Да", nextNodeKey: "wait" },
+          { id: "no", label: "Нет", nextNodeKey: "decline" },
+        ],
+        timeoutMs: 30_000,
+        onTimeout: "timeout",
+      },
+    },
+    {
+      position: 2,
+      nodeKey: "wait",
+      type: "WAIT_FOR_GOAL",
+      config: {
+        goal: {
+          version: 1,
+          eventCode: "registration_completed",
+          measure: "count",
+          filters: [],
+          compare: { operator: "gte", value: "1" },
+        },
+        timeoutMs: 86_400_000,
+        onGoal: "success",
+        onTimeout: "timeout",
+      },
+    },
+    { position: 3, nodeKey: "decline", type: "SAY", nextNodeKey: "finish", config: { text: "Отказ" } },
+    { position: 4, nodeKey: "success", type: "SAY", nextNodeKey: "finish", config: { text: "Готово" } },
+    { position: 5, nodeKey: "timeout", type: "SAY", nextNodeKey: "finish", config: { text: "Время вышло" } },
+    { position: 6, nodeKey: "finish", type: "COMPLETE_SCENARIO", nextNodeKey: null, config: {} },
+  ];
+}
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
@@ -341,12 +418,16 @@ async function login(page: Page) {
   await expect(page).toHaveURL(/\/overview$/);
 }
 
-async function expectNoSeriousAccessibilityViolations(page: Page) {
-  // Color tokens are audited separately; this gate protects structural WCAG regressions in operator journeys.
-  const result = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa"])
-    .disableRules(["color-contrast"])
-    .analyze();
+async function expectNoSeriousAccessibilityViolations(
+  page: Page,
+  options: { includeContrast?: boolean } = {},
+) {
+  let audit = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
+  if (!options.includeContrast) {
+    // Most journeys protect structure while the release matrix below also audits rendered contrast.
+    audit = audit.disableRules(["color-contrast"]);
+  }
+  const result = await audit.analyze();
   expect(
     result.violations.filter(
       (item) => item.impact === "critical" || item.impact === "serious",
@@ -974,39 +1055,7 @@ test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinc
   fixture.savedDraft = {
     deliveryPolicy: { kind: "IMMEDIATE" },
     graph: {
-      actions: [
-        { position: 0, nodeKey: "intro", type: "SAY", nextNodeKey: "decision", config: { text: "Начало" } },
-        {
-          position: 1,
-          nodeKey: "decision",
-          type: "ASK_CHOICE",
-          config: {
-            message: "Продолжить?",
-            options: [
-              { id: "yes", label: "Да", nextNodeKey: "wait" },
-              { id: "no", label: "Нет", nextNodeKey: "decline" },
-            ],
-          },
-        },
-        {
-          position: 2,
-          nodeKey: "wait",
-          type: "WAIT_FOR_GOAL",
-          config: {
-            eventDefinitionRevisionId: "evt_1",
-            measure: "count",
-            operator: "gte",
-            threshold: 1,
-            windowMs: 86_400_000,
-            onGoal: "success",
-            onTimeout: "timeout",
-          },
-        },
-        { position: 3, nodeKey: "decline", type: "SAY", nextNodeKey: "finish", config: { text: "Отказ" } },
-        { position: 4, nodeKey: "success", type: "SAY", nextNodeKey: "finish", config: { text: "Готово" } },
-        { position: 5, nodeKey: "timeout", type: "SAY", nextNodeKey: "finish", config: { text: "Время вышло" } },
-        { position: 6, nodeKey: "finish", type: "COMPLETE_SCENARIO", nextNodeKey: null, config: {} },
-      ],
+      actions: canonicalScenarioActions(),
     },
   };
 
@@ -1028,13 +1077,7 @@ test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinc
   fixture.savedDraft = {
     deliveryPolicy: { kind: "IMMEDIATE" },
     graph: {
-      actions: Array.from({ length: 31 }, (_, index) => ({
-        position: index,
-        nodeKey: index === 30 ? "finish" : `step_${index + 1}`,
-        type: index === 30 ? "COMPLETE_SCENARIO" : "SAY",
-        nextNodeKey: index < 29 ? `step_${index + 2}` : index === 29 ? "finish" : null,
-        config: index === 30 ? {} : { text: `Сообщение ${index + 1}` },
-      })),
+      actions: linearScenarioActions(31),
     },
   };
   await page.goto("/scenarios/scn_1?graph-size=31");
@@ -1100,13 +1143,7 @@ test("large scenario search and minimap stay usable on mobile", async ({
   fixture.savedDraft = {
     deliveryPolicy: { kind: "IMMEDIATE" },
     graph: {
-      actions: Array.from({ length: 31 }, (_, index) => ({
-        position: index,
-        nodeKey: index === 30 ? "finish" : `step_${index + 1}`,
-        type: index === 30 ? "COMPLETE_SCENARIO" : "SAY",
-        nextNodeKey: index < 29 ? `step_${index + 2}` : index === 29 ? "finish" : null,
-        config: index === 30 ? {} : { text: `Сообщение ${index + 1}` },
-      })),
+      actions: linearScenarioActions(31),
     },
   };
 
@@ -1152,6 +1189,268 @@ test("large scenario search and minimap stay usable on mobile", async ({
   await page.getByRole("button", { name: "Скрыть мини-карту" }).click();
   await expect(minimap).toBeHidden();
   await expectNoSeriousAccessibilityViolations(page);
+});
+
+test("scenario graph hardening matrix covers desktop, tablet, themes and read-only", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Desktop and tablet hardening is covered on Chromium",
+  );
+  await makeDemoScenarioSessionReadOnly(page);
+  const fixture = await installScenarioAuthoringFixtures(page, {
+    localization: bilingualScenarioLocalization,
+  });
+  const cases = [
+    { name: "canonical-light-1440", width: 1440, theme: "light", actions: canonicalScenarioActions(), text200: false },
+    { name: "canonical-dark-1024-text200", width: 1024, theme: "dark", actions: canonicalScenarioActions(), text200: true },
+    { name: "large-light-1440", width: 1440, theme: "light", actions: linearScenarioActions(31), text200: false },
+    { name: "large-dark-1024-text200", width: 1024, theme: "dark", actions: linearScenarioActions(31), text200: true },
+  ] as const;
+
+  for (const item of cases) {
+    fixture.savedDraft = {
+      deliveryPolicy: { kind: "IMMEDIATE" },
+      graph: { actions: item.actions },
+    };
+    await page.setViewportSize({ width: item.width, height: 900 });
+    await page.evaluate((theme) => {
+      localStorage.setItem("retenive-theme", theme);
+    }, item.theme);
+    await page.goto(`/scenarios/scn_1?hardening=${item.name}`);
+    if (item.text200) {
+      await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+    }
+    await page.getByRole("button", { name: /Действия/ }).click();
+    await expect(page.getByText("У вас есть право просмотра")).toBeVisible();
+    await expect(page.locator("html")).toHaveClass(
+      item.theme === "dark" ? /retenive-dark/ : /^(?!.*retenive-dark)/,
+    );
+    const compactOutline = page.getByRole("region", {
+      name: "Линейный список действий и ожиданий",
+    });
+    const compact = await compactOutline.isVisible();
+    if (compact) {
+      await compactOutline.getByRole("button", { name: "Открыть схему" }).click();
+    }
+    const graph = page.locator(".graph-canvas .vue-flow");
+    await expect(graph).toBeVisible();
+    await expect(graph.locator(".vue-flow__node-scenario")).toHaveCount(item.actions.length);
+    await expect(page.getByRole("button", { name: "Показать всю схему" })).toBeEnabled();
+    expect(await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      studio: (() => {
+        const studio = document.querySelector<HTMLElement>(".scenario-studio");
+        return Boolean(studio && studio.scrollWidth <= studio.clientWidth);
+      })(),
+    }))).toEqual({ page: true, studio: true });
+    await expectNoSeriousAccessibilityViolations(page, { includeContrast: true });
+    await page.screenshot({
+      path: testInfo.outputPath(`scenario-hardening-${item.name}.png`),
+    });
+    if (!compact) {
+      const expand = page.getByRole("button", { name: "Развернуть схему сценария" });
+      await expand.focus();
+      await expand.click();
+      await page.keyboard.press("Escape");
+      await expect(expand).toBeFocused();
+    } else {
+      await page.keyboard.press("Escape");
+      await expect(compactOutline.getByRole("button", { name: "Открыть схему" }))
+        .toBeFocused();
+    }
+  }
+});
+
+test("scenario graph hardening keeps list-first navigation at 390 and 320 px", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "Narrow hardening is covered on the touch project",
+  );
+  await makeDemoScenarioSessionReadOnly(page);
+  const fixture = await installScenarioAuthoringFixtures(page, {
+    localization: bilingualScenarioLocalization,
+  });
+  for (const item of [
+    { name: "canonical-light-390", width: 390, theme: "light", actions: canonicalScenarioActions() },
+    { name: "large-dark-320", width: 320, theme: "dark", actions: linearScenarioActions(31) },
+  ] as const) {
+    fixture.savedDraft = {
+      deliveryPolicy: { kind: "IMMEDIATE" },
+      graph: { actions: item.actions },
+    };
+    await page.setViewportSize({ width: item.width, height: 844 });
+    await page.evaluate((theme) => localStorage.setItem("retenive-theme", theme), item.theme);
+    await page.goto(`/scenarios/scn_1?hardening=${item.name}`);
+    await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+    await page.getByRole("button", { name: /Действия/ }).click();
+    const outline = page.getByRole("region", {
+      name: "Линейный список действий и ожиданий",
+    });
+    await expect(outline).toBeVisible();
+    await expect(page.locator(".graph-canvas .vue-flow")).toBeHidden();
+    if (item.actions.length > 20) {
+      await outline.getByLabel("Найти действие").fill("step_30");
+      await outline.getByLabel("Найти действие").press("Enter");
+      await expect(page.locator(".graph-canvas.graph-expanded .vue-flow")).toBeVisible();
+      const minimap = page.getByLabel("Мини-карта большого сценария");
+      const controls = page.locator(".scenario-flow-controls");
+      await expect(minimap).toBeVisible();
+      await page.getByRole("button", { name: "Показать всю схему" }).click();
+      const zoomReset = page.getByRole("button", {
+        name: /Текущий масштаб .*Сбросить до 100%/,
+      });
+      await expect.poll(async () => Number.parseInt(await zoomReset.textContent() ?? "100", 10))
+        .toBeLessThan(25);
+      await expect.poll(async () => page.locator(
+        ".graph-canvas.graph-expanded .vue-flow",
+      ).evaluate((canvas) => {
+        const canvasBox = canvas.getBoundingClientRect();
+        const nodes = Array.from(
+          canvas.querySelectorAll<HTMLElement>(".vue-flow__node-scenario .flow-node"),
+        );
+        return {
+          count: nodes.length,
+          outside: nodes.flatMap((node) => {
+            const box = node.getBoundingClientRect();
+            const inside =
+              box.left >= canvasBox.left - 1 &&
+              box.right <= canvasBox.right + 1 &&
+              box.top >= canvasBox.top - 1 &&
+              box.bottom <= canvasBox.bottom + 1;
+            return inside
+              ? []
+              : [node.closest<HTMLElement>(".vue-flow__node")?.dataset.id ?? "unknown"];
+          }),
+        };
+      })).toEqual({ count: item.actions.length, outside: [] });
+      const [minimapBox, controlsBox] = await Promise.all([
+        minimap.boundingBox(),
+        controls.boundingBox(),
+      ]);
+      expect(Boolean(
+        minimapBox &&
+        controlsBox &&
+        (minimapBox.x + minimapBox.width <= controlsBox.x ||
+          controlsBox.x + controlsBox.width <= minimapBox.x ||
+          minimapBox.y + minimapBox.height <= controlsBox.y ||
+          controlsBox.y + controlsBox.height <= minimapBox.y),
+      )).toBe(true);
+      for (const [overlayName, overlay] of [
+        ["controls", controls],
+        ["minimap", minimap],
+      ] as const) {
+        expect(await overlay.evaluate((panel) => {
+          const panelBox = panel.getBoundingClientRect();
+          const canvasBox = panel.closest(".vue-flow")?.getBoundingClientRect();
+          if (!canvasBox) return ["canvas-unavailable"];
+          return Array.from(
+            panel.closest(".vue-flow")?.querySelectorAll<HTMLElement>(
+              ".vue-flow__node-scenario .flow-node",
+            ) ?? [],
+          ).flatMap((node) => {
+            const nodeBox = node.getBoundingClientRect();
+            const visible =
+              nodeBox.right > canvasBox.left &&
+              nodeBox.left < canvasBox.right &&
+              nodeBox.bottom > canvasBox.top &&
+              nodeBox.top < canvasBox.bottom;
+            const overlaps =
+              nodeBox.right > panelBox.left &&
+              nodeBox.left < panelBox.right &&
+              nodeBox.bottom > panelBox.top &&
+              nodeBox.top < panelBox.bottom;
+            return visible && overlaps
+              ? [{
+                  id: node.closest<HTMLElement>(".vue-flow__node")?.dataset.id ?? "unknown",
+                  node: {
+                    left: nodeBox.left,
+                    right: nodeBox.right,
+                    top: nodeBox.top,
+                    bottom: nodeBox.bottom,
+                  },
+                  panel: {
+                    left: panelBox.left,
+                    right: panelBox.right,
+                    top: panelBox.top,
+                    bottom: panelBox.bottom,
+                  },
+                }]
+              : [];
+          });
+        }), `${overlayName} must not cover painted graph nodes`).toEqual([]);
+      }
+      expect(await page.locator(".graph-canvas.graph-expanded").evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      )).toBe(true);
+      await expectNoSeriousAccessibilityViolations(page, { includeContrast: true });
+      await page.screenshot({
+        path: testInfo.outputPath(`scenario-hardening-${item.name}-graph.png`),
+      });
+      await page.keyboard.press("Escape");
+      await expect(outline).toBeVisible();
+      await expect(page.getByLabel("Действие только для просмотра")).toBeHidden();
+      await expect(outline.getByLabel("Найти действие")).toBeFocused();
+    } else {
+      const actionButton = outline.getByRole("button", { name: "Открыть узел decision" });
+      await actionButton.click();
+      await expect(page.getByLabel("Действие только для просмотра")).toBeVisible();
+      await page.getByRole("button", { name: "Закрыть просмотр действия" }).click();
+      await expect(actionButton).toBeFocused();
+    }
+    expect(await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      studio: (() => {
+        const studio = document.querySelector<HTMLElement>(".scenario-studio");
+        return Boolean(studio && studio.scrollWidth <= studio.clientWidth);
+      })(),
+    }))).toEqual({ page: true, studio: true });
+    await expectNoSeriousAccessibilityViolations(page, { includeContrast: true });
+    await page.screenshot({
+      path: testInfo.outputPath(`scenario-hardening-${item.name}.png`),
+    });
+  }
+});
+
+test("scenario graph rollout fallback keeps the domain payload unchanged", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium"
+      || process.env.VITE_SCENARIO_GRAPH_WORKSPACE_ENABLED !== "false",
+    "Fallback proof runs only with VITE_SCENARIO_GRAPH_WORKSPACE_ENABLED=false",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page);
+  await page.goto("/scenarios/new?graph-rollout=fallback");
+  await page.locator("#scenario-name").fill("Fallback proof");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await page.locator('.action-empty-picker [data-testid="action-picker-trigger"]').click();
+  await page.getByRole("option", { name: /Озвучить текст/ }).click();
+  await page.locator('[data-testid="action-picker-apply"]').click();
+  await page.getByLabel("Текст для озвучивания").fill("Проверка безопасного fallback");
+  await expect(page.locator(".studio-grid")).toHaveClass(/graph-workspace-fallback/);
+  const [graphBox, inspectorBox] = await Promise.all([
+    page.locator(".graph-canvas").boundingBox(),
+    page.locator(".scenario-action-inspector-dock").boundingBox(),
+  ]);
+  expect((graphBox?.y ?? 0) + (graphBox?.height ?? 0))
+    .toBeLessThanOrEqual(inspectorBox?.y ?? 0);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-graph-rollout-fallback.png"),
+  });
+  await page.getByRole("button", { name: "Сохранить" }).click();
+  await expect.poll(() => fixture.calls.draft).toBe(1);
+  expect(fixture.savedDraft).toMatchObject({
+    graph: {
+      actions: [{ position: 0, nodeKey: "step_1", type: "SPEAK_TEXT" }],
+    },
+  });
+  expect(JSON.stringify(fixture.savedDraft)).not.toMatch(
+    /viewport|position\.x|position\.y|graph-workspace|layout|pinned/,
+  );
 });
 
 test("scenario graph labels use the project default locale and stable branch identity", async ({
@@ -1918,6 +2217,7 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
   )).not.toBe(transformBeforeNudge);
   await page.getByRole("button", { name: "Вернуться к настройке действия" }).click();
   await expect(inspector).toBeVisible();
+  await expect(inspector).toBeFocused();
   await page.getByRole("button", { name: "Закрыть инспектор узла" }).click();
   await expect(outline).toBeVisible();
   await openGraphButton.click();
@@ -2007,12 +2307,12 @@ test("scenario author can save, validate, preview, publish and safely roll back 
   await expect(page.locator(".server-review")).toBeVisible();
   await expect(page.locator(".blocked-reason")).toHaveCount(0);
   const publish = page.getByRole("button", {
-    name: "Опубликовать immutable revision",
+    name: "Опубликовать версию сценария",
   });
   await expect(publish).toBeEnabled();
   await publish.click();
   await expect(
-    page.getByText(/Опубликована неизменяемая версия revision-e2e-2/),
+    page.getByText(/Опубликована версия revision-e2e-2/),
   ).toBeVisible();
 
   page.once("dialog", (dialog) => dialog.accept());

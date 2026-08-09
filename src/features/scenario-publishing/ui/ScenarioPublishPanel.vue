@@ -414,8 +414,8 @@ onBeforeUnmount(() => {
       <span>Проверка и публикация</span>
       <h2 id="publish-title">Проверка перед публикацией</h2>
       <p>
-        Публикация атомарно создаёт неизменяемую версию и активирует её для
-        новых запусков.
+        Публикация создаёт зафиксированную версию и включает её для новых
+        запусков. Уже начатые запуски продолжают исходную версию.
       </p>
     </header>
 
@@ -662,7 +662,7 @@ onBeforeUnmount(() => {
         <i class="pi pi-check-circle" />
         <div>
           <strong
-            >Неизменяемая версия №{{
+            >Версия №{{
               state.response.revision.revisionNumber
             }}
             опубликована</strong
@@ -716,7 +716,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="publish-button"
-      aria-label="Опубликовать immutable revision"
+      aria-label="Опубликовать версию сценария"
       :disabled="!canPublish"
       @click="publish()"
     >

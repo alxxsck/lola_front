@@ -41,6 +41,8 @@ describe('ScenarioRevisionHistory', () => {
     } })
     await flushPromises()
 
+    expect(wrapper.text()).toContain('Версии сценария')
+    expect(wrapper.text()).not.toContain('Неизменяемая история')
     expect(wrapper.text()).toContain('Версия №3')
     expect(wrapper.text()).toContain('admin-3')
     await wrapper.get('button[aria-label="Загрузить более ранние версии"]').trigger('click')

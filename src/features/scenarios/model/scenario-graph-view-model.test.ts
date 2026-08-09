@@ -171,6 +171,7 @@ describe('scenario graph view model', () => {
       viewport: {
         fitViewOnInit: false,
         minZoom: 0.3,
+        compactMinZoom: 0.12,
         maxZoom: 1.8,
         backgroundGap: 24,
       },
@@ -182,6 +183,7 @@ describe('scenario graph view model', () => {
     expect(model.viewport).toEqual({
       fitViewOnInit: false,
       minZoom: 0.3,
+      compactMinZoom: 0.12,
       maxZoom: 1.8,
       backgroundGap: 24,
     })

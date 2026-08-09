@@ -3,4 +3,5 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   readonly VITE_DATA_MODE?: 'api' | 'mock'
+  readonly VITE_SCENARIO_GRAPH_WORKSPACE_ENABLED?: 'true' | 'false'
 }

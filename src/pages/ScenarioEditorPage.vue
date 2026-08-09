@@ -115,6 +115,7 @@ import {
   useScenarioAuthoringDocument,
 } from "@/features/scenario-authoring/model/use-scenario-authoring-document";
 import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error";
+import { scenarioGraphWorkspaceEnabled } from "@/shared/config/features";
 import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
 import {
   projectScenarioActionCatalog,
@@ -320,10 +321,12 @@ const actionOutlineIssuesOnly = ref(false);
 const graphMinimapVisible = ref(true);
 const actionInspectorWidth = ref(380);
 const actionInspectorMaxWidth = ref(SCENARIO_ACTION_INSPECTOR_MAX_WIDTH);
+const actionWorkspaceWidth = ref(0);
 const studioGridElement = ref<HTMLElement | null>(null);
 const graphCanvasElement = ref<HTMLElement | null>(null);
 const actionInspector = ref<{ focus?: () => void } | null>(null);
 let actionViewReturnFocus: HTMLElement | null = null;
+let graphExpandedFromOutlineCenter = false;
 const publishPending = ref(false);
 const admissionSettings = ref<ScenarioAdmissionSettingsResponseDto | null>(
   null,
@@ -577,13 +580,14 @@ const actionOutlineItems = computed(() =>
       (issue) => issue.nodeKey === action.nodeKey,
     );
     const executor = definition?.executor ?? "SERVER";
+    const semantics = scenarioGraphNodePresentation(action.type, executor);
     return {
       action,
-      label: definition?.name ?? action.type,
+      label: definition?.name ?? semantics.kindLabel,
       summary: nodeSummary(action),
       issueCount: issues.length,
       executor,
-      ...scenarioGraphNodePresentation(action.type, executor),
+      ...semantics,
     };
   }),
 );
@@ -605,6 +609,13 @@ const actionOutlineIssueCount = computed(
 );
 const graphIsLarge = computed(() =>
   scenarioGraphShowsMinimap(form.actions.length),
+);
+const graphMinimapDimensions = computed(() =>
+  actionWorkspaceWidth.value > 0 && actionWorkspaceWidth.value <= 400
+    ? { width: 104, height: 76 }
+    : actionWorkspaceWidth.value > 0 && actionWorkspaceWidth.value <= 600
+      ? { width: 156, height: 116 }
+      : { width: 180, height: 116 },
 );
 const actionWorkspaceStyle = computed(() => ({
   "--action-outline-width": `${SCENARIO_ACTION_OUTLINE_WIDTH}px`,
@@ -689,7 +700,9 @@ const sourceSnapshotUnavailable = computed(
     authoringUnavailableReason.value === "SOURCE_SNAPSHOT_UNAVAILABLE",
 );
 const readonlyExplanation = computed(() =>
-  sourceSnapshotUnavailable.value
+  !canManage.value
+    ? "У вас есть право просмотра. Изменение и сохранение сценария недоступны для вашей роли."
+    : sourceSnapshotUnavailable.value
     ? "Сценарий продолжает работать как раньше. Но исходные настройки этой версии не сохранились, поэтому открыть её в редакторе без потерь нельзя. Чтобы изменить логику, восстановите исходник на сервере или создайте новый сценарий вручную."
     : "Сценарий продолжает работать как раньше. Сейчас его настройки можно только просматривать.",
 );
@@ -966,7 +979,7 @@ const baseGraphViewModel = computed(() =>
         definition?.executor ?? "SERVER",
       );
       return {
-        label: item?.label ?? definition?.name ?? action.type,
+        label: item?.label ?? definition?.name ?? semantics.kindLabel,
         nodeKey: action.nodeKey ?? "",
         icon: semantics.icon,
         executor: definition?.executor ?? "SERVER",
@@ -1329,7 +1342,7 @@ const selectedGraphNodeLabel = computed(() => {
   if (!action) return "";
   return (
     findScenarioActionCatalogItem(actionCatalog.value, action.type)?.name ??
-    action.type
+    scenarioGraphNodePresentation(action.type).kindLabel
   );
 });
 
@@ -1401,6 +1414,7 @@ watch(
 
 function syncActionWorkspaceWidth() {
   const workspaceWidth = studioGridElement.value?.clientWidth ?? 0;
+  actionWorkspaceWidth.value = workspaceWidth;
   compactActionLayout.value = workspaceWidth
     ? workspaceWidth <= SCENARIO_ACTION_COMPACT_MAX_WIDTH
     : Boolean(window.matchMedia?.("(max-width: 1100px)").matches);
@@ -1862,8 +1876,8 @@ function published(
   changeDraftStarted.value = !publishedStateUnchanged;
   saveNotice.value =
     publishedStateUnchanged
-      ? `Опубликована неизменяемая версия ${revisionId}. Новые запуски будут использовать её.`
-      : `Опубликована неизменяемая версия ${revisionId}, но в этой вкладке уже есть более новые изменения. Проверьте и опубликуйте их отдельно.`;
+      ? `Опубликована версия ${revisionId}. Новые запуски будут использовать её.`
+      : `Опубликована версия ${revisionId}, но в этой вкладке уже есть более новые изменения. Проверьте и опубликуйте их отдельно.`;
 }
 
 async function revisionHeadChanged(revisionId: string) {
@@ -1993,14 +2007,25 @@ function restoreActionViewFocus() {
 
 function toggleGraphExpanded() {
   if (graphExpanded.value) {
+    const openedFromOutlineCenter = graphExpandedFromOutlineCenter;
     graphExpanded.value = false;
-    if (compactActionLayout.value && selectedAction.value) {
+    if (openedFromOutlineCenter) {
+      selectedNodeKey.value = null;
+      inspectorMode.value = "settings";
+      graphExpandedFromOutlineCenter = false;
+    }
+    if (
+      compactActionLayout.value &&
+      selectedAction.value &&
+      !openedFromOutlineCenter
+    ) {
       focusActionInspector();
     } else {
       restoreActionViewFocus();
     }
     return;
   }
+  graphExpandedFromOutlineCenter = false;
   rememberActionViewFocus();
   graphExpanded.value = true;
   void nextTick(() => graphCanvasElement.value?.focus());
@@ -2038,6 +2063,7 @@ function selectNode(event: { node: Node }) {
     return;
   }
   rememberActionViewFocus();
+  graphExpandedFromOutlineCenter = false;
   selectedNodeKey.value = event.node.id;
   inspectorMode.value = "node";
   studioStage.value = "actions";
@@ -2095,6 +2121,7 @@ async function centerGraphNode(nodeKey: string) {
   pendingGraphCenterNodeKey = nodeKey;
   if (compactActionLayout.value) {
     rememberActionViewFocus();
+    graphExpandedFromOutlineCenter = true;
     selectedNodeKey.value = nodeKey;
     inspectorMode.value = "node";
     studioStage.value = "actions";
@@ -2651,7 +2678,7 @@ function leave() {
         >{{ saveNotice }}</Message
       >
       <section
-        v-if="!authoringEditable"
+        v-if="!canManage || !authoringEditable"
         class="readonly-notice"
         role="status"
         aria-label="Сценарий открыт для просмотра"
@@ -2703,6 +2730,9 @@ function leave() {
         :style="actionWorkspaceStyle"
         :class="[
           `stage-${studioStage}`,
+          scenarioGraphWorkspaceEnabled
+            ? 'graph-workspace-v2'
+            : 'graph-workspace-fallback',
           {
             'has-action-inspector':
               studioStage === 'actions' &&
@@ -3019,7 +3049,11 @@ function leave() {
             :node-types="flowNodeTypes"
             :edge-types="flowEdgeTypes"
             :fit-view-on-init="graphViewModel.viewport.fitViewOnInit"
-            :min-zoom="graphViewModel.viewport.minZoom"
+            :min-zoom="
+              compactActionLayout
+                ? graphViewModel.viewport.compactMinZoom
+                : graphViewModel.viewport.minZoom
+            "
             :max-zoom="graphViewModel.viewport.maxZoom"
             :nodes-draggable="canEdit && graphLayoutMode === 'manual'"
             :nodes-connectable="false"
@@ -3041,6 +3075,8 @@ function leave() {
               position="bottom-left"
               pannable
               zoomable
+              :width="graphMinimapDimensions.width"
+              :height="graphMinimapDimensions.height"
               :node-border-radius="6"
               node-color="var(--status-accent-text)"
               node-stroke-color="var(--status-accent-text)"
@@ -3274,7 +3310,7 @@ function leave() {
               ref="deliveryEditor"
               v-model="deliveryPolicy"
             />
-            <div v-else-if="!authoringEditable" class="readonly-stage-card">
+            <div v-else class="readonly-stage-card">
               <i class="pi pi-eye" />
               <div>
                 <h2>Настройки доставки только для просмотра</h2>
@@ -3322,11 +3358,23 @@ function leave() {
               :closable="false"
               >У вас нет права публиковать сценарии.</Message
             ><Message
+              v-else-if="!canManage"
+              severity="info"
+              :closable="false"
+              >У вас есть право публикации, но нет права изменять сценарий.
+              Попросите редактора подготовить и сохранить новую версию.</Message
+            ><Message
               v-else-if="!authoringEditable"
               severity="info"
               :closable="false"
               >Чтобы изменить настройки и выпустить новую версию, восстановите
               исходник редактора или создайте новый сценарий.</Message
+            ><Message
+              v-else-if="!canEdit"
+              severity="info"
+              :closable="false"
+              >Сначала создайте черновик изменений на основе опубликованной
+              версии. После сохранения его можно проверить и опубликовать.</Message
             ><Message v-else severity="warn" :closable="false"
               >Сначала выберите событие запуска из каталога сценариев.</Message
             ><ScenarioRevisionHistory
@@ -3460,8 +3508,11 @@ function leave() {
               </div>
             </dl>
             <p class="readonly-action-note">
-              Изменить этот шаг нельзя: исходные настройки опубликованной версии
-              не сохранились в формате редактора.
+              {{
+                sourceSnapshotUnavailable
+                  ? "Изменить этот шаг нельзя: исходные настройки опубликованной версии не сохранились в формате редактора."
+                  : "Изменение этого шага недоступно для вашей роли. Настройки показаны без возможности редактирования."
+              }}
             </p>
           </aside>
         </ScenarioActionInspectorDock>
@@ -3473,7 +3524,7 @@ function leave() {
           <div class="settings-head">
             <small>Режим просмотра</small>
             <h2>Настройки запуска</h2>
-            <p>Здесь показаны настройки опубликованной версии.</p>
+            <p>Здесь показаны сохранённые настройки сценария.</p>
           </div>
           <dl>
             <div>
@@ -3840,25 +3891,47 @@ function leave() {
   grid-template-columns: 208px minmax(0, 1fr);
   overflow: hidden;
 }
-.studio-grid.stage-actions.has-action-inspector {
+.studio-grid.graph-workspace-v2.stage-actions.has-action-inspector {
   grid-template-columns:
     var(--action-outline-width)
     minmax(var(--action-canvas-min-width), 1fr)
     minmax(var(--action-inspector-min-width), var(--action-inspector-width));
   grid-template-rows: minmax(0, 1fr);
 }
-.studio-grid.stage-actions.has-action-inspector > .studio-sidebar {
+.studio-grid.graph-workspace-v2.stage-actions.has-action-inspector > .studio-sidebar {
   grid-column: 1;
   grid-row: 1;
 }
-.studio-grid.stage-actions.has-action-inspector > .graph-canvas {
+.studio-grid.graph-workspace-v2.stage-actions.has-action-inspector > .graph-canvas {
   grid-column: 2;
   grid-row: 1;
 }
-.studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+.studio-grid.graph-workspace-v2.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
   grid-column: 3;
   grid-row: 1;
   min-width: 0;
+}
+.studio-grid.graph-workspace-fallback.stage-actions.has-action-inspector {
+  grid-template-columns: 208px minmax(0, 1fr);
+  grid-template-rows: minmax(260px, 34%) minmax(0, 66%);
+}
+.studio-grid.graph-workspace-fallback.stage-actions.has-action-inspector > .studio-sidebar {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+.studio-grid.graph-workspace-fallback.stage-actions.has-action-inspector > .graph-canvas {
+  grid-column: 2;
+  grid-row: 1;
+}
+.studio-grid.graph-workspace-fallback.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  border-left: 0;
+}
+.studio-grid.graph-workspace-fallback :deep(.scenario-action-inspector-resizer) {
+  display: none;
 }
 .studio-grid.stage-actions.graph-is-expanded {
   grid-template-columns: 240px minmax(0, 1fr);
@@ -4435,15 +4508,11 @@ function leave() {
   overflow: hidden;
 }
 .graph-canvas :deep(.scenario-graph-minimap) {
-  width: 180px;
-  height: 116px;
   margin: 12px;
   background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
 }
 @container scenario-graph (max-width: 600px) {
   .graph-canvas :deep(.scenario-graph-minimap) {
-    width: 156px;
-    height: 116px;
     margin: 8px;
   }
 }
@@ -5049,17 +5118,17 @@ function leave() {
     grid-template-columns: minmax(0, 1fr);
     overflow-y: auto;
   }
-  .studio-grid.stage-actions.has-action-inspector {
+  .studio-grid:is(.graph-workspace-v2, .graph-workspace-fallback).stage-actions.has-action-inspector {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: none;
   }
-  .studio-grid.stage-actions.has-action-inspector > .studio-sidebar,
-  .studio-grid.stage-actions.has-action-inspector > .graph-canvas,
-  .studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+  .studio-grid:is(.graph-workspace-v2, .graph-workspace-fallback).stage-actions.has-action-inspector > .studio-sidebar,
+  .studio-grid:is(.graph-workspace-v2, .graph-workspace-fallback).stage-actions.has-action-inspector > .graph-canvas,
+  .studio-grid:is(.graph-workspace-v2, .graph-workspace-fallback).stage-actions.has-action-inspector > .scenario-action-inspector-dock {
     grid-column: 1;
     grid-row: auto;
   }
-  .studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+  .studio-grid:is(.graph-workspace-v2, .graph-workspace-fallback).stage-actions.has-action-inspector > .scenario-action-inspector-dock {
     min-height: 320px;
   }
   .studio-grid.stage-trigger > .settings-panel,

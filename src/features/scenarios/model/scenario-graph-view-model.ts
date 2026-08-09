@@ -24,6 +24,7 @@ export interface ScenarioGraphLabelMetrics {
 export interface ScenarioGraphViewportOptions {
   fitViewOnInit: boolean
   minZoom: number
+  compactMinZoom: number
   maxZoom: number
   backgroundGap: number
 }
@@ -128,6 +129,7 @@ export const DEFAULT_SCENARIO_GRAPH_LAYOUT: Readonly<ScenarioGraphLayoutOptions>
 export const DEFAULT_SCENARIO_GRAPH_VIEWPORT: Readonly<ScenarioGraphViewportOptions> = {
   fitViewOnInit: false,
   minZoom: 0.25,
+  compactMinZoom: 0.05,
   maxZoom: 1.6,
   backgroundGap: 22,
 }
