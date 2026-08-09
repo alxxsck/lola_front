@@ -110,6 +110,10 @@ describe("EndUserCaseSettingsPage", () => {
     );
     expect(wrapper.get("textarea").element.value).not.toContain("UNMAPPED");
     expect(wrapper.text()).toContain("Версия 3");
+    expect(wrapper.get(".advanced-editor").attributes("open")).toBeDefined();
+    expect(wrapper.get(".advanced-editor summary").text()).toBe(
+      "Редактирование правил",
+    );
   });
 
   it("shows a project-level backlog warning without exposing technical reason codes", async () => {

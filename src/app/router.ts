@@ -324,6 +324,17 @@ export const router = createRouter({
           meta: { projectPermission: "project.support.macros.manage" },
         },
         {
+          path: "support/settings/sla-calendars",
+          name: "support-sla-settings",
+          component: () => import("@/pages/SupportSlaSettingsPage.vue"),
+          meta: {
+            projectPermissionsAny: [
+              "project.support.sla.read",
+              "project.support.sla.manage",
+            ],
+          },
+        },
+        {
           path: "support/settings/notifications",
           name: "support-notification-settings",
           component: () => import("@/pages/SupportNotificationSettingsPage.vue"),
@@ -586,6 +597,7 @@ router.beforeEach(async (to) => {
       to.name === "ai-costs" ||
       to.name === "users" ||
       to.name === "support-workspace-rollout" ||
+      to.name === "support-sla-settings" ||
       to.name === "support-external-settings" ||
       to.name === "support-external-work") &&
     typeof to.query.projectId === "string"

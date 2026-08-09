@@ -179,4 +179,45 @@ describe("SupportNotificationSettingsPage", () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(expected));
   });
+
+  it("explains why browser permission cannot be requested while device registration is disabled", async () => {
+    vi.mocked(supportNotificationsSource.readAdmission).mockResolvedValueOnce({
+      rolloutState: "DISABLED",
+      rolloutRevision: "0123456789abcdef",
+      evaluatedAt: "2026-08-09T10:00:00.000Z",
+      activeSubscriptionCount: 0,
+      capabilities: {
+        assignedToMe: "DISABLE_ONLY",
+        attention: "UNAVAILABLE",
+        deviceRegistration: "UNAVAILABLE",
+        deepLinkResolve: "UNAVAILABLE",
+      },
+      applicationServerKey: null,
+      applicationServerKeyRevision: null,
+    });
+    const wrapper = mount(SupportNotificationSettingsPage, {
+      global: {
+        plugins: [pinia],
+        stubs: {
+          Button: {
+            template: '<button :disabled="disabled"><slot />{{ label }}</button>',
+            props: ["label", "disabled"],
+          },
+          Message: { template: "<div><slot /></div>" },
+          Skeleton: { template: "<div />" },
+          Tag: { template: "<span>{{ value }}</span>", props: ["value"] },
+          ToggleSwitch: { template: "<input type='checkbox' />" },
+        },
+      },
+    });
+
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(
+        "Проект пока не принимает новые подключения браузеров",
+      ),
+    );
+    expect(wrapper.get("button[disabled]").text()).toContain(
+      "Подключить этот браузер",
+    );
+  });
 });

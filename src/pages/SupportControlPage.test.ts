@@ -343,6 +343,7 @@ describe("SupportControlPage", () => {
     expect(
       wrapper.get("button[aria-label='Управлять назначением лида']").text(),
     ).toContain("Назначить");
+    expect(wrapper.find(".risk-row__select .sr-only").exists()).toBe(false);
   });
 
   it("does not present disabled SLA as zero risk", async () => {

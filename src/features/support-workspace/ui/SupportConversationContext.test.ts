@@ -277,14 +277,20 @@ describe("support conversation inspector", () => {
   });
 
   it("keeps user context useful without rendering a product external id", async () => {
-    const wrapper = render();
+    const wrapper = render({
+      canManageTranslation: true,
+      translationLocale: "ru-RU",
+    });
     await wrapper.findAll('[role="tab"]')[1]!.trigger("click");
 
     const user = wrapper.get('[aria-label="Пользователь"]');
     expect(user.text()).toContain("Активный");
-    expect(user.text()).toContain("RU");
+    expect(user.text()).toContain("RU-RU");
     expect(user.text()).toContain("В диалоге и проекте");
     expect(user.text()).not.toContain("external");
+
+    await user.get("button").trigger("click");
+    expect(wrapper.emitted("manageTranslation")).toHaveLength(1);
   });
 
   it("loads Product Profile only when Data is opened and removes forbidden fields", async () => {
@@ -301,6 +307,20 @@ describe("support conversation inspector", () => {
     expect(data.text()).toContain("Телефон");
     expect(data.text()).toContain("Скрыто");
     expect(data.text()).not.toContain("Секретное поле");
+  });
+
+  it("does not blame the Project Owner role when the profile projection has no fields", async () => {
+    const { controller } = createInspector(selection, undefined, {
+      readProfile: vi.fn().mockResolvedValue({ ...profile(), fields: [] }),
+    });
+    const wrapper = render({ inspector: controller });
+
+    await wrapper.findAll('[role="tab"]')[2]!.trigger("click");
+    await flushPromises();
+
+    const data = wrapper.get('[aria-label="Данные пользователя"]');
+    expect(data.text()).toContain("Данные профиля не переданы");
+    expect(data.text()).not.toContain("доступных для вашей роли");
   });
 
   it("uses the server causal activity feed instead of a synthetic client log", async () => {

@@ -23,6 +23,7 @@ import ConversationAISuspensionDialog from "@/features/conversation-ai-suspensio
 import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
 import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
 import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
+import { hasConversationTranslationBoundary } from "@/features/conversation-translation/model/conversation-translation-visibility";
 import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
 import type {
   ConversationSurfaceAttachmentDownloadRequest,
@@ -792,13 +793,17 @@ const replyTranslationBusy = computed(
     translation.savingPreference.value,
 );
 const replyHasText = computed(() => Boolean(reply.draft.value.trim()));
+const hasSupportTranslationBoundary = computed(() =>
+  hasConversationTranslationBoundary({
+    workingLocale: translation.state.value?.preference.workingLocale,
+    conversationLocale: translation.targetLocale.value,
+  }),
+);
 const translationPolicyRequiresReviewedReply = computed(() => {
   const preference = translation.state.value?.preference;
-  const targetLocale = translation.targetLocale.value;
   return Boolean(
     preference?.enabled &&
-    preference.workingLocale &&
-    (!targetLocale || preference.workingLocale !== targetLocale),
+    (!translation.targetLocale.value || hasSupportTranslationBoundary.value),
   );
 });
 const replyPolicyChecking = computed(
@@ -1133,7 +1138,8 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
       modeSwitch,
       sendCapability,
       replyPreview,
-      translationAssist: canManageTranslation.value
+      translationAssist:
+        canManageTranslation.value && hasSupportTranslationBoundary.value
         ? {
             targetLocale: translation.targetLocale.value,
             busy,
@@ -1180,7 +1186,8 @@ const supportConversationHistory = computed<ConversationSurfaceHistory>(() => ({
 }));
 const supportConversationTranslation = computed<ConversationSurfaceTranslation>(
   () => ({
-    available: canManageTranslation.value,
+    available:
+      canManageTranslation.value && hasSupportTranslationBoundary.value,
     mode: messageViewMode.value,
     changing: translation.loading.value || translation.savingPreference.value,
     workingLocaleLabel: supportComposerWorkingLocale.value,
@@ -2449,10 +2456,17 @@ async function setTranslationTargetLocale(
 ): Promise<void> {
   if (!(await ensureReplyTranslationLoaded())) return;
   await translation.updatePreference({ endUserLocaleOverride: locale });
+  if (!hasSupportTranslationBoundary.value) messageViewMode.value = "ORIGINAL";
+}
+
+async function openTranslationSettings(): Promise<void> {
+  translationSettingsVisible.value = true;
+  await ensureReplyTranslationLoaded();
 }
 
 async function showTranslatedMessages(): Promise<void> {
   if (!(await ensureReplyTranslationLoaded())) return;
+  if (!hasSupportTranslationBoundary.value) return;
   if (!translation.state.value?.preference.enabled) {
     await translation.updatePreference({ enabled: true });
   }
@@ -2660,10 +2674,8 @@ async function prepareReplyTranslation(): Promise<void> {
   )
     return;
   if (!(await ensureReplyTranslationLoaded())) return;
-  const targetLocale = translation.targetLocale.value;
-  const workingLocale = translation.state.value?.preference.workingLocale;
-  if (!targetLocale || targetLocale === workingLocale) {
-    translationSettingsVisible.value = true;
+  if (!hasSupportTranslationBoundary.value) {
+    await openTranslationSettings();
     return;
   }
   replyTranslationRequested.value = true;
@@ -3761,11 +3773,15 @@ onBeforeUnmount(() => {
             >
               {{ translation.error.value }}
             </Message>
-            <div
-              v-if="canManageTranslation && translationSettingsVisible"
-              class="reply-translation-settings"
+            <Dialog
+              v-if="canManageTranslation"
+              v-model:visible="translationSettingsVisible"
+              modal
+              header="Язык диалога и перевод"
+              :style="{ width: 'min(760px, calc(100vw - 32px))' }"
             >
               <ConversationTranslationBanner
+                class="reply-translation-settings"
                 :state="translation.state.value"
                 :loading="translation.loading.value"
                 :saving="translation.savingPreference.value"
@@ -3775,7 +3791,7 @@ onBeforeUnmount(() => {
                 @update-enabled="setTranslationEnabled($event)"
                 @update-target-locale="setTranslationTargetLocale($event)"
               />
-            </div>
+            </Dialog>
             <Dialog
               :visible="sendWithoutTranslationVisible"
               modal
@@ -3916,8 +3932,11 @@ onBeforeUnmount(() => {
             :knowledge-controller="knowledge"
             :external-work-controller="externalWork"
             :external-work-permissions="externalWorkPermissions"
+            :can-manage-translation="canManageTranslation"
+            :translation-locale="translation.targetLocale.value"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
+            @manage-translation="openTranslationSettings"
             @reconcile-operations="reconcileCaseOperations"
           />
         </ResponsiveWorkspaceInspector>

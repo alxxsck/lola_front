@@ -1046,6 +1046,13 @@ describe("authentication routes", () => {
     await router.push("/support/settings/macros");
     expect(router.currentRoute.value.name).toBe("support-macro-settings");
 
+    await router.push("/support/settings/sla-calendars");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = ["project.support.sla.read"];
+    await router.push("/support/settings/sla-calendars");
+    expect(router.currentRoute.value.name).toBe("support-sla-settings");
+
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("overview");
 

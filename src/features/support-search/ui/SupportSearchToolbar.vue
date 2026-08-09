@@ -264,7 +264,7 @@ function submit(): void {
     </form>
 
     <div v-if="active && !locked" class="search-controls">
-      <label>
+      <label class="scope-control">
         <span class="sr-only">Область поиска</span>
         <select
           :value="modelValue.scope"
@@ -283,7 +283,8 @@ function submit(): void {
 
       <details v-if="modelValue.scope === 'CASES'" class="filter-popover">
         <summary>
-          <i class="pi pi-sliders-h" aria-hidden="true" /> Фильтры
+          <i class="pi pi-sliders-h" aria-hidden="true" />
+          <span>Фильтры</span>
         </summary>
         <div class="filter-grid">
           <div class="filter-grid-heading">
@@ -566,7 +567,8 @@ function submit(): void {
 
       <details class="filter-popover exact-filter-popover">
         <summary>
-          <i class="pi pi-hashtag" aria-hidden="true" /> Идентификаторы
+          <i class="pi pi-hashtag" aria-hidden="true" />
+          <span>Идентификаторы</span>
         </summary>
         <div class="filter-grid exact-filter-grid">
           <div class="filter-grid-heading">
@@ -745,8 +747,8 @@ function submit(): void {
   gap: 8px;
 }
 .search-form {
-  min-height: 40px;
-  padding: 0 8px 0 11px;
+  min-height: 44px;
+  padding: 0 2px 0 11px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -755,8 +757,8 @@ function submit(): void {
   background: var(--surface-card);
 }
 .search-form:focus-within {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
 }
 .search-form > i {
   width: 16px;
@@ -770,13 +772,22 @@ function submit(): void {
 }
 .search-form input {
   min-width: 0;
+  min-height: 0;
   flex: 1;
+  padding: 0;
   border: 0;
   outline: 0;
+  appearance: none;
   background: transparent;
+  box-shadow: none;
   color: var(--text-primary);
   font: inherit;
   font-size: 0.78rem;
+}
+.search-form input:focus,
+.search-form input:focus-visible {
+  outline: 0;
+  box-shadow: none;
 }
 .search-shortcut {
   padding: 2px 5px;
@@ -788,8 +799,8 @@ function submit(): void {
 }
 .search-submit,
 .direction-button {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   display: inline-grid;
   place-items: center;
@@ -812,19 +823,20 @@ function submit(): void {
 .search-controls {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-.search-controls > label:first-child {
+.scope-control {
   min-width: 0;
+  grid-column: 1 / -1;
 }
-.search-controls > label:first-child select {
+.scope-control select {
   width: 100%;
 }
 .search-controls select,
 .filter-grid input {
-  min-height: 34px;
+  min-height: 40px;
   max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -838,24 +850,34 @@ function submit(): void {
 }
 .sort-control {
   min-width: 0;
-  grid-column: 1 / span 2;
-  grid-row: 2;
+  grid-column: 1 / -1;
+  grid-row: 3;
+  padding-right: 48px;
 }
 .sort-control select {
   width: 100%;
 }
 .direction-button {
-  grid-column: 3;
-  grid-row: 2;
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: end;
 }
 .filter-popover {
-  position: relative;
+  min-width: 0;
+}
+.filter-popover:only-of-type {
+  grid-column: 1 / -1;
 }
 .filter-popover[open] {
   grid-column: 1 / -1;
 }
+.search-controls:has(.filter-popover[open]) .filter-popover:not([open]) {
+  display: none;
+}
 .filter-popover summary {
-  min-height: 34px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
   padding: 0 9px;
   display: flex;
   align-items: center;
@@ -868,18 +890,24 @@ function submit(): void {
   cursor: pointer;
   list-style: none;
 }
+.filter-popover summary::marker {
+  content: "";
+}
 .filter-popover summary::-webkit-details-marker {
   display: none;
 }
+.filter-popover summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .filter-grid {
-  position: absolute;
+  position: static;
   z-index: 15;
-  grid-column: 1 / -1;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  width: auto;
+  width: 100%;
   max-height: min(520px, 70vh);
+  margin-top: 8px;
   padding: 12px;
   display: grid;
   grid-template-columns: 1fr;
@@ -889,15 +917,6 @@ function submit(): void {
   border-radius: 10px;
   background: var(--surface-card);
   box-shadow: var(--shadow-elevated);
-}
-.filter-popover[open] .filter-grid {
-  position: static;
-  width: 100%;
-  margin-top: 6px;
-}
-.search-controls:has(.filter-popover[open]) .sort-control,
-.search-controls:has(.filter-popover[open]) .direction-button {
-  grid-row: auto;
 }
 .filter-grid label {
   min-width: 0;
@@ -960,9 +979,6 @@ function submit(): void {
   border: 0;
 }
 @media (max-width: 767px) {
-  .search-form {
-    min-height: 44px;
-  }
   .filter-popover[open] .filter-grid {
     position: fixed;
     inset: auto 8px 8px;

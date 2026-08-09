@@ -2,6 +2,7 @@
 
 Статус: planning / не является разрешением на реализацию без contract gate
 Дата: 7 августа 2026 года
+Последняя проверка SLA и локализации Macro: 10 августа 2026 года
 Область: `Lola_front`, с явными зависимостями от `Lola_backend`
 
 ## 1. Решение
@@ -59,8 +60,10 @@ Surface. «Переиспользовали repository/controller, но нари
   JSON policy для групп и priority floors.
 - `KnowledgePage.vue` уже даёт загрузку и редактирование **assistant
   knowledge**, а не закрытую операторскую базу знаний.
-- В generated OpenAPI есть только один новый project-wide support read:
-  `GET /api/v1/admin/projects/:projectId/support/conversations`.
+- В generated OpenAPI уже есть project-wide Support Workspace read, полный
+  lifecycle Support Macro и SLA settings: read, replace/discard draft и
+  publish. Для Macro локализация пока не закрыта: draft/revision содержат
+  только один `locale/title/body`.
 
 ### Реальные блокеры
 
@@ -77,14 +80,16 @@ Surface. «Переиспользовали repository/controller, но нари
 - В UI отсутствуют read position/unread, delivery `ACCEPTED/DELIVERED/READ/
 FAILED`, author snapshot, viewers/typing, version-conflict recovery,
   attachments и internal-note visibility.
-- Нынешние reply templates захардкожены в dialog; это не Support Macro с
-  catalog, revision, variables, provenance и usage.
+- Нынешние reply templates в dialog захардкожены и не подключены к уже
+  существующему Support Macro catalog; composer не сохраняет revision,
+  variables, provenance и usage.
 - Отдельные `/cases`, `/knowledge` и chat drawer заставляют оператора
   переключать контекст. Они не образуют Support workspace.
-- Во frontend OpenAPI сейчас нет contracts для availability, teams/skills,
-  queues, routing, assignment offers, SLA, search/saved views, macros/notes,
-  internal knowledge, lead control, alerts, QA и analytics. Нельзя заполнять
-  этот разрыв production mock-ами или угадыванием DTO.
+- Во frontend OpenAPI уже приняты settings contracts для SLA и lifecycle
+  Support Macro. Для availability, части teams/skills, assignment offers,
+  search/saved views, notes, lead alerts, QA и analytics покрытие остаётся
+  неполным. Нельзя заполнять оставшийся разрыв production mock-ами или
+  угадыванием DTO.
 - Публичный End User SDK/виджет отсутствует в этом repository как продуктовый
   frontend-контур. Без versioned SDK нельзя завершить identity responder-а,
   read/unread, bidirectional typing, attachments и rollout durable delivery.
@@ -102,8 +107,8 @@ FAILED`, author snapshot, viewers/typing, version-conflict recovery,
 | Workforce              | availability, capacity, teams, skills, offers/reservation                | Нет UI                                                   | Принять Tickets 05–07, 13–14 через OpenAPI и F3                                  |
 | Коллаборация           | viewers, typing, conflict notice, public/note modes                      | Presence смешан с online session; note нет               | Новые realtime/read contracts, F4                                                |
 | Вложения               | upload/scan/grants, public/note isolation                                | Нет support contract/UI                                  | Attachment contract и F4                                                         |
-| Контент                | macros, internal notes, Internal Knowledge в inspector                   | hardcoded templates; AI knowledge отдельно               | Tickets 15–16 OpenAPI и F5; не переиспользовать `/knowledge` как внутреннюю базу |
-| Настройки              | teams, queues, routing, SLA, detection/classification, macros, knowledge | Только raw JSON category/priority policy                 | Заменить по разделам после publishable revision contracts                        |
+| Контент                | macros, internal notes, Internal Knowledge в inspector                   | Macro authoring есть; один locale на Macro; AI knowledge отдельно | Локализованный Macro contract + F5; не переиспользовать `/knowledge` как внутреннюю базу |
+| Настройки              | teams, queues, routing, SLA, detection/classification, macros, knowledge | Macro UI есть; SLA API сгенерирован, route/UI нет; старый raw JSON policy | SLA guided editor по текущему contract; остальные разделы после publishable contracts |
 | Управление             | control center, alerts, causal timeline                                  | Нет route/UI                                             | Tickets 09–10 OpenAPI и F6                                                       |
 | QA/аналитика           | versioned review, scorecard, reports/drill-down                          | Нет contracts; старые Case counts не эквивалентны        | Отдельный backend/IAM discovery и F7; не считать в браузере                      |
 | Public End User chat   | claimant identity, readBy, typing, attachments, offline delivery         | SDK не является зависимостью/модулем этого repo          | Параллельный SDK track и version gate до delivery rollout                        |
@@ -314,6 +319,106 @@ Teams/skills/capacity, Queues/routing, SLA/calendar. Старый JSON editor
 оставить временным compatibility route, затем заменить guided versioned
 editor-ами с preview/publish/rollback и audit.
 
+#### F3.1 — создание и редактирование SLA/calendar
+
+**Проверенный current contract.** Generated client уже содержит
+`SupportSlaConfiguration_read`, `replaceDraft`, `discardDraft` и `publish` для
+`/api/v1/admin/projects/{projectId}/support/sla/settings`. Во frontend пока нет
+ни route `/support/settings/sla-calendars`, ни repository/controller/page. GET
+возвращает authoritative `rootVersion`, strong `actionEtag`, `rolloutState`
+(`DISABLED | SHADOW`), reconciliation checkpoint, опубликованные policy и
+calendar revisions. Draft возвращается только пользователю с
+`project.support.sla.manage`; пользователь только с
+`project.support.sla.read` видит опубликованную configuration без признаков и
+содержимого чужого черновика. `project.support.sla.correct` относится к
+коррекции clock конкретного Case и не даёт права редактировать settings.
+
+**Guided editor.** Страница состоит из общего status header и двух связанных
+секций — «Рабочий календарь» и «Правила SLA». Header явно разделяет:
+
+- Published revision и Draft `generation/version/contentHash`;
+- состояние расчёта `DISABLED/SHADOW` и reconciliation checkpoint;
+- локальные несохранённые изменения, сохранённый draft и опубликованную
+  configuration;
+- публикацию configuration и эксплуатационное включение SHADOW. Кнопки
+  «Включить SLA» на этой странице нет: settings API не выполняет rollout.
+
+Calendar editor принимает IANA timezone, семь ISO weekdays, до восьми
+непересекающихся интервалов на день и date exceptions. UI показывает время как
+`HH:mm`, а в DTO переводит его в `startMinute/endMinute`; `24:00` допустимо
+только как конец интервала. Ночной интервал разбивается на два дня, пустая
+exception означает закрытый день. До отправки UI повторяет bounded validation
+(duplicate weekdays/dates, overlap, invalid dates, максимум 730 exceptions),
+но backend остаётся источником нормализации, DST/tzdb и ошибок coverage.
+
+Rules editor показывает правила в фактическом first-match порядке и после
+drag-and-drop пересобирает непрерывный `order`. Для каждого правила доступны:
+
+- conditions по `priority`, `groupCode` и `caseType`;
+- три независимые цели: first human response, next human response и resolution
+  в business time (`60..2 592 000` секунд);
+- порог `AT_RISK` (`1..90%` оставшегося времени);
+- pause statuses отдельно для каждого clock; в V1 только
+  `WAITING_END_USER` и `WAITING_SYSTEM`.
+
+Последнее правило — обязательный unconditional fallback. UI создаёт его вместе
+с новым локальным draft, не даёт поставить условие или переместить выше, но не
+подставляет молча бизнес-цели: пользователь обязан подтвердить timezone,
+расписание и три target. Пустой draft можно держать только локально; backend
+принимает исключительно полную валидную пару `policy + calendar`.
+
+**Lifecycle и concurrency.** Один controller реализует следующий автомат:
+
+1. `GET` загружает Published, доступный Draft и свежий `actionEtag`. Если draft
+   отсутствует, «Создать черновик» копирует Published; при первой настройке
+   открывает обязательный guided form без выдуманных SLA-обязательств.
+2. Изменения живут локально и не называются «черновиком на сервере» до
+   успешного `PUT .../draft`. Save отправляет полную configuration с новым
+   `Idempotency-Key` и последним `If-Match`.
+3. После mutation frontend принимает новый `actionEtag/rootVersion`, затем
+   делает GET reconcile: mutation receipt содержит identity draft/revisions,
+   но не обязан возвращать нормализованную configuration.
+4. «Отменить изменения» сбрасывает только local dirty state. «Удалить
+   черновик» вызывает `POST .../draft/discard` с отдельным idempotency key и
+   свежим ETag; действие подтверждается, потому что восстановить draft через
+   текущий API нельзя.
+5. «Опубликовать» доступно только для сохранённого draft и вызывает
+   `POST .../publish` с `{}`, новым key и свежим ETag. Успех создаёт immutable
+   policy/calendar revisions и удаляет draft, но не обещает включение SLA.
+6. При `409 SLA_DRAFT_VERSION_CONFLICT`/`SLA_CONCURRENT_UPDATE` UI сохраняет
+   локальную форму, повторно читает server state и предлагает сравнить либо
+   вручную перенести изменения. Таймаут не повторяется с новым key: сначала
+   выполняется GET reconcile; если результат не доказан, повторяется ровно та
+   же mutation с теми же body, `Idempotency-Key` и `If-Match`, чтобы backend
+   вернул сохранённый receipt, а не создал новый intent.
+   `SLA_DRAFT_NOT_FOUND`, `SLA_CONFIGURATION_DUPLICATE` и
+   `SLA_CONFIGURATION_NOT_PUBLISHED` имеют отдельные outcomes, а не общий
+   toast «не удалось».
+
+**Backend gaps для полного target UX.** Текущий contract достаточен для
+создания, редактирования, discard и publish, но не закрывает обещанную в
+общем settings pattern функциональность:
+
+- нет side-effect-free validate/preview/impact endpoint: `PUT draft` уже
+  изменяет server state;
+- нет списка revisions, version diff, publish reason, audit projection и
+  rollback command, хотя published revisions внутри backend immutable;
+- нет authoring catalog с допустимыми `groupCode` и человекочитаемыми labels;
+  строковый input не является приемлемой заменой picker-а;
+- settings API не включает/выключает SHADOW и не сообщает operational
+  readiness для такого действия. Rollout остаётся отдельным runbook/cutover.
+
+До появления этих contracts V1 показывает локальное review summary и
+server-validated сохранённый draft, но не называет его «impact preview», не
+рисует фиктивную историю и не предлагает включить SLA.
+
+**Acceptance.** Покрыть first create, edit from Published, edit existing Draft,
+discard, publish, read-only mode, permission revoke/project switch, stale ETag,
+timeout after accepted mutation, duplicate publish, invalid timezone/DST,
+overnight split, fallback-last и calendar coverage. E2E проверяет, что
+публикация не меняет `rolloutState`, а UI нигде не рассчитывает Case countdown
+из policy и browser clock.
+
 **Exit.** Оператор отрабатывает Case lifecycle и понимает ответственность,
 ожидание, SLA и классификацию, не переходя в старые страницы.
 
@@ -354,6 +459,107 @@ evaluation и rollout выполняются отдельной F8 по
   не существующий AI knowledge.
 - Реализовать route-level content settings: macro draft/publish/archive,
   categories, permissions and retention only as supplied by backend.
+
+#### F5.1 — один Macro, несколько языков и AI translation
+
+**Проверенный current contract.** `SupportMacroSettingsPage.vue` уже реализует
+catalog, create/replace draft, preview, publish, archive, revisions и rollback.
+Но `SupportMacroDraftDto` и каждая compiled revision содержат скалярные
+`locale`, `title`, `body`, `shortcuts` и fallback переменных. Поэтому текущий
+backend способен хранить только один язык в одной stable Macro identity.
+Заводить одну и ту же фразу десять раз как десять независимых Macro нельзя:
+разойдутся `stableCode`, visibility, variables, revisions, archive/rollback и
+usage provenance.
+
+**Domain decision.** Один Support Macro остаётся stable Project-owned identity
+и в каждом draft/published revision владеет набором **Macro Locale Variant**.
+Общими для всех языков остаются `stableCode`, lifecycle, visibility,
+`teamIds/topicCodes` и schema переменных (`name/required`). В locale variant
+входят `title`, `body`, `shortcuts` и literal fallback необязательных
+переменных: это видимый пользователю текст, поэтому scalar fallback нельзя
+безопасно подставлять во все языки.
+
+Набор locale берётся из published Project Locale catalog, а не из frontend
+allowlist и не из ручного `InputText`. Project default locale — обязательный
+runtime fallback. V1 Macro имеет policy `ALL_PROJECT_LOCALES`: incomplete draft
+можно сохранить, но publish требует непустые `title/body` и, если literal
+fallback задан, его варианты для всех текущих project locale. Если позже нужен
+шаблон только для части аудиторий, это вводится явной content-locale policy, а
+не дубликатами Macro.
+Добавленный после публикации язык не ломает старую revision: runtime временно
+использует default fallback, а следующий publish требует заполнить новый
+variant. Удалённый locale остаётся в immutable старых revisions и показывается
+как archived variant при редактировании.
+
+**Frontend UX.** В editor удаляется свободное поле «Язык». Вместо него:
+
+- основной locale editor показывает сразу `title + body`; selector позволяет
+  просмотреть любой variant, а default отмечен явно;
+- «Переводы N/M» открывает компактную панель языков со статусами `не заполнен`,
+  `сгенерирован · не сохранён`, `изменён вручную`, `ошибка`, `устарел источник`
+  и `конфликт`;
+- основная кнопка «Перевести» batch-переводит `title/body` и literal variable
+  fallbacks только в незаполненные project locale; меню даёт «Выбрать языки»
+  и явное «Перевести заново» с подтверждением перезаписи;
+- locale-specific shortcuts остаются редактируемыми вручную. AI не переводит
+  их автоматически, пока не определена семантика поисковых aliases;
+- preview переключается по locale и показывает exact/fallback resolution,
+  coverage issues и одинаковый набор placeholders во всех вариантах;
+- AI result только заполняет local dirty form. Он не вызывает Macro save или
+  publish; после генерации человек может исправить текст и проходит обычные
+  Preview → Save draft → Publish.
+
+UI и controller переиспользуют interaction contract
+`LocalizedField.vue`/`translation-job-controller.ts`: async progress, batch
+units, polling, cancel, retry отдельных targets, session restore и защита от
+`STALE_SOURCE/TARGET_CONFLICT`. Для одного Macro job units имеют стабильные
+keys (`title`, `body`, `variables.<name>.fallback`). Macro adapter сначала
+проверяет snapshots всех units одного target locale и только затем применяет
+группу: частичное смешивание нового title со старым body запрещено.
+Статический текст и opaque placeholders отправляются только через backend;
+браузер не получает provider key и не отправляет runtime values/PII.
+
+**Backend blocker — приём и публикация Macro с переводами.** Frontend нельзя
+переключать на этот UX, пока pinned OpenAPI не закроет весь vertical:
+
+1. Create/replace/preview/read/revision DTO принимают dynamic BCP 47 map
+   `locale -> Macro Locale Variant` в одной Macro identity и возвращают
+   `defaultLocale`, locale coverage и compiled content hash. Старые scalar
+   Macro мигрируются в single-variant map без смены stable ID.
+2. Backend валидирует locale относительно Project catalog, размер каждого
+   variant, уникальность shortcuts, обязательный default/all-project coverage
+   на publish и одинаковую placeholder/variable schema. Draft разрешён
+   incomplete; published revision компилируется атомарно целиком.
+3. Publish, revision history и rollback работают со всем набором variants, а
+   не с одним языком. Нельзя получить published state, где title уже новый, а
+   body/другой locale остался от иной revision.
+4. Catalog/apply contract принимает requested working/recipient locale и
+   возвращает выбранный variant, `resolvedLocale`, `fallbackUsed` и pinned
+   Macro revision. Отправленное сообщение хранит эту provenance; browser не
+   выбирает fallback молча.
+5. Macro authoring projection возвращает Project locales, default locale,
+   translation capability и поддержанные provider targets. Страница не
+   должна зависеть от scenario-specific catalog или AI Allowance admin UI.
+6. Существующий `/translation-jobs` переиспользуется как provider-neutral
+   async helper, но backend фиксирует surface `SUPPORT_MACRO_AUTHORING`,
+   защищает Macro placeholders, считает quota/cost/audit и сохраняет только
+   job/provenance — не Macro content. Нужна явная permission composition:
+   Macro edit требует `project.support.macros.manage`, AI-кнопка дополнительно
+   требует `project.translation.create/read`, а cancel —
+   `project.translation.cancel`; без них ручной многоязычный editor продолжает
+   работать.
+7. Translation response остаётся suggestion, привязанной к source hash. При
+   смене source или непустого target frontend получает/вычисляет conflict и не
+   перезаписывает текст без подтверждения. Partial provider failure не
+   отменяет успешные target suggestions и никогда не публикует их.
+
+**Acceptance.** Один Macro создаётся на всех языках проекта, сохраняется
+incomplete, batch-переводится, редактируется вручную, preview-ится и
+публикуется одной revision. Проверить missing default/target, placeholder
+loss, filled-target confirmation, partial failure/retry/cancel, stale source,
+permission revoke, новый/удалённый Project locale, exact locale и default
+fallback при применении, rollback всей multilingual revision и отсутствие
+десяти дублей в catalog.
 
 **Exit.** Оператор готовит публичный ответ, note, macro и internal article в
 одном месте; внутренние данные не раскрываются End User или AI knowledge.
@@ -436,9 +642,11 @@ budget/pause; browser не исполняет policy и не считает ме
 Workspace read + message identity ─┬─> F0/F1 read-only inbox
 Durable delivery + read state ─────┴─> F2 ─> P2 SDK version gate
 Teams/availability + assignment + SLA ─> F3
+SLA preview/history/rollback/rollout ───> F3 full target UX
 Queues/search/routing/reservations ──────> F1/F3
 Attachments + presence ──────────────────> F4
-Macros/notes + Internal Knowledge ───────> F5
+Localized Macro DTO/runtime + translation capability ─> F5
+Notes + Internal Knowledge ──────────────> F5
 Lead control/alerts/notifications ───────> F6
 External-work adapter contracts ─────────> F6
 QA/analytics contracts ──────────────────> F7
@@ -489,12 +697,23 @@ approved budget and rollback exercised on pilot project.
 7. Зафиксировать, что V1 не обещает voice/telephony/social omnichannel parity:
    UI показывает только опубликованные channel capabilities и не рисует
    недоступные действия.
+8. Локализованный Support Macro — одна stable identity с locale variants, а не
+   набор независимых шаблонов. До изменения backend DTO/runtime frontend не
+   показывает AI-перевод, который невозможно сохранить и применить целиком.
 
 ## 9. Источники
 
 - [Целевая frontend-спецификация](./00-master.ru.md) и её документы 01–07.
 - [Master backend Support Platform](../../../../Lola_backend/docs/specs/support-platform/00-master.ru.md), Tickets 03–16 и 20.
 - [Аудит backend current state](../../../../Lola_backend/docs/research/support-platform-current-state-audit.ru.md).
+- [Проверка SLA semantics, API и rollout](../../../../Lola_backend/docs/research/support-sla-primary-sources-2026-08-08.ru.md).
+- [Backend SLA settings controller](../../../../Lola_backend/src/composition/support-workspace/support-sla-configuration.controller.ts)
+  и [DTO](../../../../Lola_backend/src/composition/support-workspace/support-sla-configuration.dto.ts).
+- [Архитектура multilingual content и AI suggestions](../../../../Lola_backend/docs/multilingual-content-architecture.ru.md).
+- [Текущие backend Macro DTO](../../../../Lola_backend/src/modules/support-operations/api/support-macro.dto.ts)
+  и [controller](../../../../Lola_backend/src/modules/support-operations/api/support-macro.controller.ts).
+- [Текущий Macro editor](../../../src/pages/SupportMacroSettingsPage.vue) и
+  переиспользуемый [LocalizedField](../../../src/features/scenario-localization/ui/LocalizedField.vue).
 - [Первичные UX-источники и их применимость](../../research/support-platform-operator-workspace-primary-sources-2026-08-07.ru.md) — дополняется отдельным исследовательским проходом.
 - [UI/UX remediation и visual acceptance](./09-ui-ux-remediation.ru.md).
 - [Full-tab workspace discovery](./10-full-tab-workspace-discovery.ru.md).

@@ -1,6 +1,7 @@
 # Backend-блокеры Support Workspace для frontend-задач 01–33
 
 Дата аудита: 7 августа 2026 года  
+Последнее уточнение frontend contract gates: 10 августа 2026 года
 Проверенный backend ref: `origin/main`  
 Backend commit: `0ca33c93e52d689de388187091e6aa2f6c05639b`  
 Commit time: `2026-08-07T11:10:25+02:00`  
@@ -42,6 +43,11 @@ notifications и External Work.
 Историческая карта ниже зафиксирована на backend commit `0ca33c9`. Готовность уже снятых блокеров
 учитывается по обновлениям в этом разделе.
 
+Новые SLA authoring и multilingual Macro gates добавлены после исходной декомпозиции 01–33.
+Они не относятся к backend-задаче 35: backend 35 уже закреплена за New Case Notification Policy
+для frontend-задачи 38. Для SLA settings и multilingual Macro нужны отдельные backend tickets и
+собственные OpenAPI contract gates.
+
 ### 10 — Server search, filters и sort
 
 **Сделано на backend `main`:** `9da7bc9` (`Support Platform: complete search and saved view contracts`).
@@ -82,11 +88,79 @@ actions`). Опубликованы Case-scoped authoritative eligible targets �
 single-command outcome lookup; safe Lead target catalog и полная Lead timeline evidence. **Блокер
 снят; проверено, можно брать задачу 18 в frontend-разработку.**
 
+### SLA Configuration authoring — отдельный settings vertical
+
+Это не повторное открытие frontend-задачи 19. Задача 19 показывает на Case server-owned SLA clock,
+routing и availability context. Новый vertical редактирует Project-scoped **SLA Configuration** —
+versioned пару Business Calendar и ordered SLA Policy — на отдельном route
+`/support/settings/sla-calendars`.
+
+**V1 не заблокирован backend.** Pinned OpenAPI уже публикует
+`SupportSlaConfiguration_read`, `replaceDraft`, `discardDraft` и `publish` для
+`/api/v1/admin/projects/{projectId}/support/sla/settings`. На этом контракте frontend может
+реализовать first create, edit from Published, edit existing Draft, локальный reset, server draft
+save/discard и publish. UI должен использовать returned strong `actionEtag`/`rootVersion`, новый
+`Idempotency-Key` на каждый новый intent, тот же key/body/`If-Match` при retry неизвестного исхода,
+GET reconcile после mutation и отдельные outcomes для stale `409`, missing draft, duplicate и
+not-published. `project.support.sla.read` даёт read-only Published projection;
+`project.support.sla.manage` открывает draft lifecycle; `project.support.sla.correct` относится к
+clock отдельного Case и не разрешает authoring settings.
+
+**Что backend должен опубликовать для полного target UX:**
+
+- side-effect-free validate/preview/impact operation: `PUT .../draft` изменяет server state и не
+  может называться preview;
+- revision list/detail, version diff, publish reason, audit projection и rollback command для
+  immutable policy/calendar revisions;
+- authoring catalog допустимых `groupCode` с безопасными человекочитаемыми labels вместо
+  свободного строкового поля;
+- отдельный versioned rollout/readiness contract для включения и выключения `SHADOW` с собственным
+  permission, OCC, idempotency, audit и typed failure outcomes. Publish configuration не должен
+  неявно менять `rolloutState`.
+
+До этого handoff frontend не рисует server impact preview/history/rollback, не обещает включение
+SLA и не вычисляет Case countdown из policy или browser clock. Полный lifecycle и acceptance
+зафиксированы в [remediation plan](../specs/support-workspace-frontend/08-remediation-plan.ru.md#f31--создание-и-редактирование-slacalendar).
+
+### 24 — Multilingual Support Macro authoring
+
+Снятие прежнего blocker-а `565762c4` остаётся верным только для одноязычного Macro lifecycle.
+Новая domain boundary требует одну stable **Support Macro** identity со всеми **Macro Locale
+Variant**, а не отдельный Macro на каждый язык. Поэтому текущий single-locale editor можно
+поддерживать, но включать multilingual UX или AI translation до нового контракта нельзя.
+
+**Что backend должен опубликовать одним vertical:**
+
+1. Create/replace/preview/read/revision DTO с dynamic BCP 47 map
+   `locale -> Macro Locale Variant`, `defaultLocale`, coverage и compiled content hash в одной
+   Macro identity; миграция scalar Macro в single-variant map не меняет stable ID.
+2. Server validation Project Locale catalog, размеров variants, уникальности shortcuts,
+   placeholder/variable schema и publish coverage. Incomplete draft допустим, published revision
+   компилируется только целиком.
+3. Атомарные publish, revision history и rollback всего набора языковых вариантов. Частичная
+   revision с новым title и старым body или другим locale недопустима.
+4. Catalog/apply locale resolution: requested working/recipient locale, `resolvedLocale`,
+   `fallbackUsed` и pinned Macro revision. Message provenance хранит это server-side; frontend не
+   выбирает fallback молча.
+5. Macro authoring projection с Project locales, default locale, translation capability и
+   поддержанными provider targets без зависимости от scenario-specific catalogs.
+6. Provider-neutral translation jobs с surface `SUPPORT_MACRO_AUTHORING`, защитой placeholders,
+   quota/cost/audit и permission composition: `project.support.macros.manage` плюс
+   `project.translation.create/read`, а для cancel — `project.translation.cancel`.
+7. Translation Suggestion, привязанную к source hash, с typed `STALE_SOURCE`/`TARGET_CONFLICT`,
+   partial failure/retry/cancel semantics. Job не сохраняет и не публикует Macro content.
+
+Handoff считается полным только когда новый OpenAPI позволяет атомарно создать, сохранить,
+preview-ить, опубликовать, применить и rollback-нуть одну multilingual revision, включая exact и
+default fallback. Подробный UX и acceptance зафиксированы в
+[remediation plan](../specs/support-workspace-frontend/08-remediation-plan.ru.md#f51--один-macro-несколько-языков-и-ai-translation).
+
 ## Итоговая карта
 
-Сводно с учётом оперативных обновлений: **20** задач не имеют прямого backend-блокера, **7** имеют
-полный blocker, **4** — частичный прямой blocker, ещё **2** (28–29) заблокированы транзитивно через
-core.
+Таблица сохраняет нумерацию исходных frontend-задач 01–33 и читается вместе с оперативными
+обновлениями выше. SLA Configuration authoring — новый отдельный settings vertical, поэтому он не
+подменяет статус задачи 19. Multilingual scope расширяет задачу 24: её прежний single-locale
+lifecycle готов, но новый multilingual target имеет полный contract gate.
 
 |   № | Задача                                   | Backend-статус                          | Что именно мешает полному завершению                                                |
 | --: | ---------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -113,7 +187,7 @@ core.
 |  21 | Viewers/typing/collision                 | **Полный**                              | Нет operator watch/viewer/typing TTL/generation contract                            |
 |  22 | Internal-note composer                   | **Частичный**                           | Нет Case-scoped note actions, reason catalog и typed conflict/lifecycle errors      |
 |  23 | Public/note attachments                  | **Полный**                              | Нет upload/scan/grant/attachment-send контрактов                                    |
-|  24 | Support Macros                           | Нет (снят `565762c4`); frontend complete | Preview/history/rollback, closed failures и CMS-only provenance опубликованы         |
+|  24 | Support Macros                           | **Частичный**: single-locale готов       | Для multilingual UX нет locale-map DTO, atomic lifecycle, resolution и authoring AI surface |
 |  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract    |
 |  26 | Lead Control                             | Нет (снят `0e3f35d9`)                  | Admission, capacity risks, investigation, Activity и alerts опубликованы              |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
@@ -493,20 +567,29 @@ attachment schemas.
 
 ### 24 — Support Macros
 
-**Статус: operator flow готов; admin recovery частично заблокирован.**
+**Статус: частичный backend-блокер; single-locale operator flow готов, multilingual target
+заблокирован.**
 
 Backend `565762c4` публикует typed catalog/detail/create/draft/preview/publish/archive,
 revision history/rollback, compiled variables, public/note macro drafts, closed failure
 bodies и CMS-only Message provenance. Atomic consumption идёт через
 `macroReplyDraftId`/`macroDraftId`; End User projection provenance не получает.
 
+Но `SupportMacroDraftDto` и compiled revision по-прежнему содержат один scalar
+`locale/title/body/shortcuts/fallback`. Этот контракт не может представить одну Support Macro со
+всеми Macro Locale Variant, атомарно опубликовать/rollback-нуть их или вернуть authoritative locale
+resolution. Полный handoff перечислен в оперативном обновлении «24 — Multilingual Support Macro
+authoring» выше.
+
 Frontend подключил route `/support/settings/macros`, server preview, OCC/rollback,
 поиск из canonical Conversation Surface и редактируемый public/note draft без
-автоматической отправки.
+автоматической отправки. Этот single-locale flow можно поддерживать. Нельзя создавать копию Macro
+на каждый язык, локально склеивать independent revisions или включать AI-перевод, который backend
+не способен сохранить и применить как одну revision.
 
 Evidence: `src/modules/support-operations/api/support-macro.controller.ts`,
-`SupportMacroResponseDto`, `SupportMacroReplyDraftResponseDto`, `SendAdminMessageDto`,
-`AdminConversationMessageResponseDto`.
+`SupportMacroDraftDto`, `SupportMacroResponseDto`, `SupportMacroReplyDraftResponseDto`,
+`SendAdminMessageDto`, `AdminConversationMessageResponseDto`.
 
 ### 25 — Support Internal Knowledge
 
@@ -675,13 +758,17 @@ schemas.
 3. **Case desk authority** — workflow/classification закрыты в `2113c99`, operator assignment — в
    `bdf8116`, Lead force/bulk/outcome/targets — в `9a93282`, selected-Case SLA/routing/load
    projection — в `442d185`. Задача 19 разблокирована; для 26 остаётся project rollout/admission.
-4. **Collaboration/files/content completion** — typing/viewers contract, Message/Note attachments,
-   note actions, Macro/Knowledge missing lifecycle/error/provenance contracts. Разблокирует 21–25.
-5. **Project rollout** — typed Support Workspace/Lead Control admission для 28–29.
-6. **Browser notifications** — полностью выполнить backend Ticket 20a и повторно экспортировать
+4. **SLA Configuration full authoring** — side-effect-free preview, revision history/diff/audit,
+   rollback, `groupCode` authoring catalog и отдельный versioned SHADOW rollout/readiness contract.
+   V1 create/edit/save/discard/publish этим не заблокирован.
+5. **Collaboration/files/content completion** — typing/viewers contract, Message/Note attachments,
+   note actions, Knowledge gaps и единый multilingual Macro DTO/runtime/translation vertical.
+   Разблокирует 21–25 и F5.1.
+6. **Project rollout** — typed Support Workspace/Lead Control admission для 28–29.
+7. **Browser notifications** — полностью выполнить backend Ticket 20a и повторно экспортировать
    OpenAPI. Разблокирует 27.
-7. **External Work** — foundation + JSM/HelpDesk adapters и typed API. Разблокирует 30–32.
-8. **Support QA/Analytics + IAM handoff** — отдельные domain/API/permission contracts. Разблокирует 33.
+8. **External Work** — foundation + JSM/HelpDesk adapters и typed API. Разблокирует 30–32.
+9. **Support QA/Analytics + IAM handoff** — отдельные domain/API/permission contracts. Разблокирует 33.
 
 До публикации этих slices frontend может продолжать задачи без backend-блокеров и независимые части
 partial tickets, но не должен компенсировать gaps локальными DTO, N+1 reads, socket inference или

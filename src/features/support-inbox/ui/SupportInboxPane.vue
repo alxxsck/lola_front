@@ -1300,19 +1300,25 @@ function unreadLabel(
   min-height: 0;
   flex: 1;
   display: grid;
+  grid-auto-rows: 72px;
   align-content: start;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .inbox-skeleton-row {
-  min-height: 72px;
+  height: 72px;
   padding: 12px 14px;
   display: flex;
+  align-items: flex-start;
   gap: 10px;
   border-bottom: 1px solid var(--line);
 }
 .inbox-skeleton-row > div {
+  min-width: 0;
   flex: 1;
   display: grid;
+  grid-template-rows: 14px 12px;
+  align-content: center;
   gap: 8px;
 }
 .inbox-state {

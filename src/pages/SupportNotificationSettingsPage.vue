@@ -82,6 +82,13 @@ function permissionLabel(): string {
 
 function browserRecoveryCopy(): string {
   const state = controller.browserState.value;
+  const registrationCapability =
+    controller.admission.value?.capabilities.deviceRegistration;
+  if (registrationCapability !== "AVAILABLE") {
+    if (controller.admission.value?.rolloutState === "DISABLED")
+      return "Проект пока не принимает новые подключения браузеров. Владелец серверной конфигурации должен сначала включить доставку уведомлений; после этого кнопка запросит разрешение браузера.";
+    return "Регистрация новых браузеров сейчас недоступна для этого проекта. Обратитесь к администратору проекта; после включения регистрации кнопка запросит разрешение браузера.";
+  }
   if (state.permission === "DENIED")
     return state.permissionRecoveryPath ??
       "Откройте разрешения сайта в настройках браузера и включите уведомления для Retenive CMS.";

@@ -47,6 +47,8 @@ const props = withDefaults(
     >;
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
+    canManageTranslation?: boolean;
+    translationLocale?: string | null;
     inspector: ReturnType<typeof createSupportInspectorController>;
     knowledgeController?: ReturnType<
       typeof createSupportInternalKnowledgeController
@@ -68,6 +70,8 @@ const props = withDefaults(
     leadAssignmentController: undefined,
     availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
+    canManageTranslation: false,
+    translationLocale: null,
     knowledgeController: undefined,
     externalWorkController: undefined,
     externalWorkPermissions: undefined,
@@ -77,6 +81,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   openInternalNotes: [];
   classifyCase: [];
+  manageTranslation: [];
   reconcileOperations: [expiresAt: string];
 }>();
 
@@ -146,6 +151,17 @@ function labelCasePriority(value: string): string {
 const visibleProfileFields = computed(
   () =>
     profile.value?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
+);
+const profileEmptyState = computed(() =>
+  profile.value?.fields.length
+    ? {
+        title: "Данные профиля недоступны",
+        copy: "Сервер не разрешил показать ни одного значения профиля.",
+      }
+    : {
+        title: "Данные профиля не переданы",
+        copy: "Для этого пользователя проект пока не передал опубликованные поля профиля.",
+      },
 );
 
 function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
@@ -502,8 +518,22 @@ defineExpose({ requestClassification });
           <dl class="user-facts">
             <div>
               <dt>Язык</dt>
-              <dd>
-                {{ selection.endUser.locale?.toUpperCase() ?? "Не указан" }}
+              <dd class="user-language">
+                <span>
+                  {{
+                    translationLocale?.toUpperCase() ??
+                    selection.endUser.locale?.toUpperCase() ??
+                    "Не указан"
+                  }}
+                </span>
+                <Button
+                  v-if="canManageTranslation"
+                  type="button"
+                  label="Изменить"
+                  size="small"
+                  text
+                  @click="emit('manageTranslation')"
+                />
               </dd>
             </div>
             <div>
@@ -588,8 +618,8 @@ defineExpose({ requestClassification });
             :empty="
               inspector.profile.loaded.value && !visibleProfileFields.length
             "
-            empty-title="Разрешённых данных нет"
-            empty-copy="Профиль продукта не содержит полей, доступных для вашей роли."
+            :empty-title="profileEmptyState.title"
+            :empty-copy="profileEmptyState.copy"
             empty-icon="pi pi-database"
             @retry="inspector.reloadActiveTab()"
           >
@@ -973,6 +1003,12 @@ defineExpose({ requestClassification });
   font-size: 0.78rem;
   font-weight: 700;
   text-align: right;
+}
+.user-language {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 .profile-heading {
   margin-top: 24px;

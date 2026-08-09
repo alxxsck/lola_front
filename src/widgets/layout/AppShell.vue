@@ -284,6 +284,18 @@ const navigationItems = computed(() => [
       supportSection: true,
     },
     {
+      label: "Календарь и SLA",
+      icon: "pi pi-clock",
+      to: "/support/settings/sla-calendars",
+      project: true,
+      projectPermissionsAny: [
+        "project.support.sla.read",
+        "project.support.sla.manage",
+      ],
+      nested: true,
+      supportSection: true,
+    },
+    {
       label: "Шаблоны ответов",
       icon: "pi pi-file-edit",
       to: "/support/settings/macros",

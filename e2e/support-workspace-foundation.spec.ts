@@ -34,6 +34,71 @@ test.beforeEach(async ({ page }) => {
   ).toBeVisible();
 });
 
+test("keeps the support search toolbar readable in the inbox rail", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const toolsTrigger = queue.locator(".inbox-tools__trigger");
+  if ((await toolsTrigger.getAttribute("aria-expanded")) !== "true")
+    await toolsTrigger.click();
+  await queue.getByRole("button", { name: "Новый поиск" }).click();
+
+  const searchInput = queue.getByRole("searchbox", {
+    name: "Поиск по поддержке",
+  });
+  await searchInput.fill("второй депозит");
+  await searchInput.focus();
+
+  const geometry = await queue.locator(".search-rail").evaluate((element) => {
+    const rect = (selector: string) => {
+      const target = element.querySelector<HTMLElement>(selector);
+      const bounds = target?.getBoundingClientRect();
+      return bounds
+        ? {
+            left: bounds.left,
+            top: bounds.top,
+            right: bounds.right,
+            bottom: bounds.bottom,
+            width: bounds.width,
+            height: bounds.height,
+          }
+        : null;
+    };
+    const input = element.querySelector<HTMLInputElement>(
+      "[data-support-search-input]",
+    );
+    return {
+      rail: rect(".search-rail"),
+      form: rect(".search-form"),
+      scope: rect('[aria-label="Область поиска"]'),
+      filter: rect(".filter-popover summary"),
+      exact: rect(".exact-filter-popover summary"),
+      sort: rect(".sort-control select"),
+      direction: rect(".direction-button"),
+      inputShadow: input ? getComputedStyle(input).boxShadow : null,
+      overflow: element.scrollWidth - element.clientWidth,
+    };
+  });
+
+  expect(geometry.inputShadow).toBe("none");
+  expect(geometry.form?.height).toBeGreaterThanOrEqual(44);
+  expect(geometry.scope?.width).toBeGreaterThanOrEqual(240);
+  expect(geometry.filter?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.exact?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.filter?.top).toBe(geometry.exact?.top);
+  expect(geometry.sort?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.sort?.width).toBeGreaterThanOrEqual(200);
+  expect(geometry.sort?.top).toBe(geometry.direction?.top);
+  expect(geometry.direction?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.overflow).toBeLessThanOrEqual(1);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".search-rail")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+});
+
 test("opens a project conversation as a deep link without horizontal overflow", async ({
   page,
 }) => {

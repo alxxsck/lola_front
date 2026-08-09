@@ -416,6 +416,7 @@ describe("AppShell", () => {
           "project.end_users.read",
           "project.conversations.read",
           "project.support.lead_control.read",
+          "project.support.sla.read",
           "project.support.workspace.rollout.manage",
           "project.support.external_work.inbox_read",
           "project.support.external_work.manage",
@@ -478,7 +479,7 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 24,
+      navigationLinks: 25,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
@@ -503,6 +504,7 @@ describe("AppShell", () => {
         "project.conversations.read",
         "project.support.lead_control.read",
         "project.cases.settings.manage",
+        "project.support.sla.read",
         "project.support.macros.manage",
         "project.support.workspace.rollout.manage",
         "project.support.external_work.inbox_read",
@@ -523,13 +525,14 @@ describe("AppShell", () => {
     const supportRootIndex = links.findIndex(
       (link) => link.text().trim() === "Поддержка",
     );
-    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 8);
+    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 9);
 
     expect(supportRootIndex).toBeGreaterThanOrEqual(0);
     expect(supportLinks.map((link) => link.text().trim())).toEqual([
       "Поддержка",
       "Операционный обзор",
       "Настройки обращений",
+      "Календарь и SLA",
       "Шаблоны ответов",
       "Уведомления",
       "Внешние задачи",

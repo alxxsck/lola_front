@@ -1333,7 +1333,6 @@ onBeforeUnmount(() => {
                 )
               "
             />
-            <span class="sr-only">Выбрать обращение</span>
           </label>
           <div>
             <span class="eyebrow">{{ labelRiskType(risk.riskType) }}</span>

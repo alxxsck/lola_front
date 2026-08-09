@@ -340,11 +340,12 @@ function toDraft(compiled: Record<string, unknown>) {
             {{ draftOverview.priorityRuleCount }}</span
           >
         </div>
-        <details class="advanced-editor">
-          <summary>Расширенное редактирование</summary>
+        <details class="advanced-editor" open>
+          <summary>Редактирование правил</summary>
           <p>
-            Технический формат предназначен для специалиста. Перед публикацией
-            Retenive проверит правила и покажет понятный итог справа.
+            Редактируйте категории, минимальные приоритеты и интервалы проверки
+            в техническом формате ниже. Перед публикацией Retenive проверит
+            правила и покажет понятный итог справа.
           </p>
           <Textarea
             v-model="editor"
