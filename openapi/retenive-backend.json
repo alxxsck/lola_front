@@ -27661,6 +27661,115 @@
         ],
         "type": "object"
       },
+      "PersonalSupportNotificationAdmissionCapabilitiesDto": {
+        "properties": {
+          "assignedToMe": {
+            "enum": [
+              "AVAILABLE",
+              "DISABLE_ONLY",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "attention": {
+            "enum": [
+              "AVAILABLE",
+              "DISABLE_ONLY",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "deepLinkResolve": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "deviceRegistration": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignedToMe",
+          "attention",
+          "deviceRegistration",
+          "deepLinkResolve"
+        ],
+        "type": "object"
+      },
+      "PersonalSupportNotificationAdmissionResponseDto": {
+        "properties": {
+          "activeSubscriptionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "applicationServerKey": {
+            "description": "Server-owned VAPID public key for PushManager.subscribe()",
+            "maxLength": 200,
+            "minLength": 1,
+            "nullable": true,
+            "type": "string"
+          },
+          "applicationServerKeyRevision": {
+            "nullable": true,
+            "pattern": "^[a-f0-9]{16}$",
+            "type": "string"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/PersonalSupportNotificationAdmissionCapabilitiesDto"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "rolloutRevision": {
+            "pattern": "^[a-f0-9]{16}$",
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "DISABLED",
+              "ASSIGNMENT_ONLY",
+              "ATTENTION_ENABLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "rolloutState",
+          "rolloutRevision",
+          "evaluatedAt",
+          "activeSubscriptionCount",
+          "capabilities",
+          "applicationServerKey",
+          "applicationServerKeyRevision"
+        ],
+        "type": "object"
+      },
+      "PersonalSupportNotificationCaseSelectionDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "CASE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId"
+        ],
+        "type": "object"
+      },
       "PersonalSupportNotificationDeepLinkTargetDto": {
         "properties": {
           "projectId": {
@@ -27668,8 +27777,7 @@
             "type": "string"
           },
           "selection": {
-            "additionalProperties": false,
-            "type": "object"
+            "$ref": "#/components/schemas/PersonalSupportNotificationCaseSelectionDto"
           },
           "target": {
             "enum": [
@@ -27682,6 +27790,57 @@
           "target",
           "projectId",
           "selection"
+        ],
+        "type": "object"
+      },
+      "PersonalSupportNotificationErrorBodyResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "BAD_REQUEST",
+              "NOT_FOUND_OR_FORBIDDEN",
+              "REQUEST_VALIDATION_FAILED",
+              "SECURITY_AUDIT_UNAVAILABLE",
+              "IDEMPOTENCY_KEY_REQUIRED",
+              "IDEMPOTENCY_KEY_CONFLICT",
+              "SUPPORT_NOTIFICATION_TOPIC_INVALID",
+              "SUPPORT_NOTIFICATION_TOPIC_NOT_AUTHORIZED",
+              "SUPPORT_NOTIFICATION_TOPIC_NOT_AVAILABLE",
+              "SUPPORT_NOTIFICATION_PREFERENCE_VERSION_CONFLICT",
+              "BROWSER_PUSH_SUBSCRIPTION_INPUT_INVALID",
+              "BROWSER_PUSH_SUBSCRIPTION_VERSION_CONFLICT",
+              "BROWSER_PUSH_SUBSCRIPTION_LIMIT_EXCEEDED",
+              "PERSONAL_SUPPORT_NOTIFICATION_LINK_NOT_FOUND"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "PersonalSupportNotificationErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/PersonalSupportNotificationErrorBodyResponseDto"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -98593,7 +98752,7 @@
     },
     "/api/v1/admin/projects/{projectId}/support/notification-preferences": {
       "get": {
-        "operationId": "PersonalSupportNotificationPreferences_get",
+        "operationId": "PersonalSupportNotification_readPreferences",
         "parameters": [
           {
             "in": "path",
@@ -98615,6 +98774,66 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -98622,6 +98841,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "Personal Support notifications"
         ],
@@ -98641,7 +98861,7 @@
         ]
       },
       "patch": {
-        "operationId": "PersonalSupportNotificationPreferences_update",
+        "operationId": "PersonalSupportNotification_updatePreference",
         "parameters": [
           {
             "in": "path",
@@ -98683,6 +98903,66 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -98690,6 +98970,118 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "Personal Support notifications"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.support.assignments.self_manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.assignments.override",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.lead_control.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/notification-preferences/admission": {
+      "get": {
+        "operationId": "PersonalSupportNotification_readAdmission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationAdmissionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "Personal Support notifications"
         ],
@@ -119758,7 +120150,7 @@
     },
     "/api/v1/auth/me/browser-push-notifications/{capability}": {
       "get": {
-        "operationId": "PersonalSupportNotificationDeepLink_resolve",
+        "operationId": "PersonalSupportNotification_resolveDeepLink",
         "parameters": [
           {
             "description": "43-character opaque capability",
@@ -119780,29 +120172,22 @@
               }
             },
             "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "Personal Support notifications"
-        ],
-        "x-iam-authenticated": true
-      }
-    },
-    "/api/v1/auth/me/browser-push-subscriptions": {
-      "get": {
-        "operationId": "PersonalBrowserPushSubscription_list",
-        "parameters": [],
-        "responses": {
-          "200": {
+          },
+          "401": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BrowserPushSubscriptionListResponseDto"
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
                 }
               }
             },
@@ -119814,13 +120199,82 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "Personal Support notifications"
+        ],
+        "x-iam-authenticated": true
+      }
+    },
+    "/api/v1/auth/me/browser-push-subscriptions": {
+      "get": {
+        "operationId": "PersonalBrowserPush_listSubscriptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserPushSubscriptionListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "Personal browser Push subscriptions"
         ],
         "x-iam-authenticated": true
       },
       "post": {
-        "operationId": "PersonalBrowserPushSubscription_register",
+        "operationId": "PersonalBrowserPush_registerSubscription",
         "parameters": [
           {
             "in": "header",
@@ -119853,6 +120307,46 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -119860,6 +120354,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "Personal browser Push subscriptions"
         ],
@@ -119868,7 +120363,7 @@
     },
     "/api/v1/auth/me/browser-push-subscriptions/{subscriptionId}": {
       "delete": {
-        "operationId": "PersonalBrowserPushSubscription_revoke",
+        "operationId": "PersonalBrowserPush_revokeSubscription",
         "parameters": [
           {
             "in": "path",
@@ -119910,6 +120405,46 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalSupportNotificationErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -119917,6 +120452,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "Personal browser Push subscriptions"
         ],

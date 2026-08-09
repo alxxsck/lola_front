@@ -563,7 +563,9 @@ describe("CMS User authentication state", () => {
     expect(auth.isAuthenticated).toBe(false);
     expect(auth.user).toBeNull();
     expect(getAccessToken()).toBeNull();
-    expect(authApi.logout).toHaveBeenCalledWith("access-before-logout");
+    await vi.waitFor(() =>
+      expect(authApi.logout).toHaveBeenCalledWith("access-before-logout"),
+    );
 
     resolveLogout();
     await logout;

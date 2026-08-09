@@ -397,6 +397,7 @@ import type {
   PasswordSetupRequestDto,
   PatchEventQueryPolicyItemDto,
   PatchEventQueryProjectPolicyDto,
+  PersonalSupportNotificationAdmissionResponseDto,
   PersonalSupportNotificationDeepLinkTargetDto,
   PersonalSupportNotificationSettingsResponseDto,
   PlatformCreateProject201,
@@ -7579,7 +7580,7 @@ export const supportMacroPreview = (
   );
 };
 
-export const personalSupportNotificationPreferencesGet = (
+export const personalSupportNotificationReadPreferences = (
   projectId: string,
   options?: SecondParameter<
     typeof request<PersonalSupportNotificationSettingsResponseDto>
@@ -7594,7 +7595,7 @@ export const personalSupportNotificationPreferencesGet = (
   );
 };
 
-export const personalSupportNotificationPreferencesUpdate = (
+export const personalSupportNotificationUpdatePreference = (
   projectId: string,
   updatePersonalSupportNotificationPreferenceDto: BodyType<UpdatePersonalSupportNotificationPreferenceDto>,
   options?: SecondParameter<
@@ -7607,6 +7608,21 @@ export const personalSupportNotificationPreferencesUpdate = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updatePersonalSupportNotificationPreferenceDto,
+    },
+    options,
+  );
+};
+
+export const personalSupportNotificationReadAdmission = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<PersonalSupportNotificationAdmissionResponseDto>
+  >,
+) => {
+  return request<PersonalSupportNotificationAdmissionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/notification-preferences/admission`,
+      method: "GET",
     },
     options,
   );
@@ -10616,7 +10632,7 @@ export const cmsSessionContextMe = (
   );
 };
 
-export const personalSupportNotificationDeepLinkResolve = (
+export const personalSupportNotificationResolveDeepLink = (
   capability: string,
   options?: SecondParameter<
     typeof request<PersonalSupportNotificationDeepLinkTargetDto>
@@ -10631,7 +10647,7 @@ export const personalSupportNotificationDeepLinkResolve = (
   );
 };
 
-export const personalBrowserPushSubscriptionList = (
+export const personalBrowserPushListSubscriptions = (
   options?: SecondParameter<
     typeof request<BrowserPushSubscriptionListResponseDto>
   >,
@@ -10642,7 +10658,7 @@ export const personalBrowserPushSubscriptionList = (
   );
 };
 
-export const personalBrowserPushSubscriptionRegister = (
+export const personalBrowserPushRegisterSubscription = (
   registerBrowserPushSubscriptionDto: BodyType<RegisterBrowserPushSubscriptionDto>,
   options?: SecondParameter<typeof request<BrowserPushSubscriptionResponseDto>>,
 ) => {
@@ -10657,7 +10673,7 @@ export const personalBrowserPushSubscriptionRegister = (
   );
 };
 
-export const personalBrowserPushSubscriptionRevoke = (
+export const personalBrowserPushRevokeSubscription = (
   subscriptionId: string,
   revokeBrowserPushSubscriptionDto: BodyType<RevokeBrowserPushSubscriptionDto>,
   options?: SecondParameter<typeof request<BrowserPushSubscriptionResponseDto>>,
@@ -13003,11 +13019,14 @@ export type SupportMacroAuthoringCatalogResult = NonNullable<
 export type SupportMacroPreviewResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroPreview>>
 >;
-export type PersonalSupportNotificationPreferencesGetResult = NonNullable<
-  Awaited<ReturnType<typeof personalSupportNotificationPreferencesGet>>
+export type PersonalSupportNotificationReadPreferencesResult = NonNullable<
+  Awaited<ReturnType<typeof personalSupportNotificationReadPreferences>>
 >;
-export type PersonalSupportNotificationPreferencesUpdateResult = NonNullable<
-  Awaited<ReturnType<typeof personalSupportNotificationPreferencesUpdate>>
+export type PersonalSupportNotificationUpdatePreferenceResult = NonNullable<
+  Awaited<ReturnType<typeof personalSupportNotificationUpdatePreference>>
+>;
+export type PersonalSupportNotificationReadAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof personalSupportNotificationReadAdmission>>
 >;
 export type SupportRoutingOfferListResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingOfferList>>
@@ -13553,17 +13572,17 @@ export type CmsSecuritySettingsLogoutAllResult = NonNullable<
 export type CmsSessionContextMeResult = NonNullable<
   Awaited<ReturnType<typeof cmsSessionContextMe>>
 >;
-export type PersonalSupportNotificationDeepLinkResolveResult = NonNullable<
-  Awaited<ReturnType<typeof personalSupportNotificationDeepLinkResolve>>
+export type PersonalSupportNotificationResolveDeepLinkResult = NonNullable<
+  Awaited<ReturnType<typeof personalSupportNotificationResolveDeepLink>>
 >;
-export type PersonalBrowserPushSubscriptionListResult = NonNullable<
-  Awaited<ReturnType<typeof personalBrowserPushSubscriptionList>>
+export type PersonalBrowserPushListSubscriptionsResult = NonNullable<
+  Awaited<ReturnType<typeof personalBrowserPushListSubscriptions>>
 >;
-export type PersonalBrowserPushSubscriptionRegisterResult = NonNullable<
-  Awaited<ReturnType<typeof personalBrowserPushSubscriptionRegister>>
+export type PersonalBrowserPushRegisterSubscriptionResult = NonNullable<
+  Awaited<ReturnType<typeof personalBrowserPushRegisterSubscription>>
 >;
-export type PersonalBrowserPushSubscriptionRevokeResult = NonNullable<
-  Awaited<ReturnType<typeof personalBrowserPushSubscriptionRevoke>>
+export type PersonalBrowserPushRevokeSubscriptionResult = NonNullable<
+  Awaited<ReturnType<typeof personalBrowserPushRevokeSubscription>>
 >;
 export type IamEmailIdentityCancelChangeResult = NonNullable<
   Awaited<ReturnType<typeof iamEmailIdentityCancelChange>>

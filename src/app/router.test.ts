@@ -7,6 +7,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "@/features/auth/auth.api";
 import { useAuthStore } from "@/features/auth/auth.store";
+import { takeSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
 import { axiosInstance } from "@/shared/api/http/axios-instance";
 import { appScrollBehavior, router } from "./router";
 
@@ -65,6 +66,21 @@ describe("authentication routes", () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     await router.replace("/login");
+  });
+
+  it("captures a Support notification capability before an anonymous login redirect", async () => {
+    const auth = useAuthStore();
+    auth.$patch({ restored: true, phase: "ANONYMOUS", user: null, project: null, projects: [] });
+    const capability = "N".repeat(43);
+
+    await router.push(`/support/notifications/open#capability=${capability}`);
+
+    expect(router.currentRoute.value.name).toBe("login");
+    expect(String(router.currentRoute.value.query.redirect)).toBe(
+      "/support/notifications/open",
+    );
+    expect(router.currentRoute.value.fullPath).not.toContain(capability);
+    expect(takeSupportNotificationCapability()).toBe(capability);
   });
 
   it("allows the memory-bound setup state to enter the dedicated route", async () => {
@@ -868,11 +884,17 @@ describe("authentication routes", () => {
     await router.push("/support/control");
     expect(router.currentRoute.value.name).toBe("support-control");
 
+    await router.push("/support/settings/notifications");
+    expect(router.currentRoute.value.name).toBe("support-notification-settings");
+
     await router.push("/support/settings/macros");
     expect(router.currentRoute.value.name).toBe("overview");
 
     auth.project!.effectivePermissionCodes = ["project.support.macros.manage"];
     await router.push("/support/settings/macros");
     expect(router.currentRoute.value.name).toBe("support-macro-settings");
+
+    await router.push("/support/settings/notifications");
+    expect(router.currentRoute.value.name).toBe("overview");
   });
 });

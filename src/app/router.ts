@@ -20,10 +20,12 @@ import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance"
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 import {
   canReadSupportControl,
+  canManagePersonalSupportNotifications,
   canReadSupportWorkspace,
   isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportWorkspaceShellEnabled } from "@/shared/config/features";
+import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -306,6 +308,17 @@ export const router = createRouter({
           meta: { projectPermission: "project.support.macros.manage" },
         },
         {
+          path: "support/settings/notifications",
+          name: "support-notification-settings",
+          component: () => import("@/pages/SupportNotificationSettingsPage.vue"),
+          meta: { supportNotificationSettingsAccess: true },
+        },
+        {
+          path: "support/notifications/open",
+          name: "support-notification-open",
+          component: () => import("@/pages/SupportNotificationOpenPage.vue"),
+        },
+        {
           path: "ai-analyses",
           name: "ai-analyses",
           component: () => import("@/pages/AIAnalysesPage.vue"),
@@ -475,6 +488,10 @@ registerMfaRequirementHandler((code) => {
 });
 
 router.beforeEach(async (to) => {
+  if (to.name === "support-notification-open" && to.hash) {
+    captureSupportNotificationCapability(to.hash);
+    return { path: to.path, query: to.query, hash: "", replace: true };
+  }
   const emailAction = to.meta.emailAction;
   if (isEmailAction(emailAction)) {
     if (to.hash) {
@@ -536,6 +553,15 @@ router.beforeEach(async (to) => {
     (!auth.project ||
       !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
       !canReadSupportControl(auth.project.effectivePermissionCodes ?? []))
+  )
+    return auth.authenticatedLandingPath;
+  if (
+    to.meta.supportNotificationSettingsAccess &&
+    (!auth.project ||
+      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
+      !canManagePersonalSupportNotifications(
+        auth.project.effectivePermissionCodes ?? [],
+      ))
   )
     return auth.authenticatedLandingPath;
   if (

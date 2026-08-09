@@ -6,7 +6,12 @@ import {
   type AuthContext,
   type MfaChallenge,
 } from "./auth.api";
-import { registerUnauthorizedHandler } from "@/shared/api/http/axios-instance";
+import { runLogoutCleanups } from "./logout-cleanup";
+import {
+  beginAuthTeardown,
+  endAuthTeardown,
+  registerUnauthorizedHandler,
+} from "@/shared/api/http/axios-instance";
 import {
   clearAuthSession,
   getAccessToken,
@@ -382,10 +387,18 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function logout(allDevices = false) {
     const accessToken = getAccessToken();
+    const actorId = user.value?.id;
     requireInteractiveLogin();
+    beginAuthTeardown();
+    const supportCleanup = runLogoutCleanups(actorId, accessToken);
     resetAuthentication();
-    if (allDevices) await authApi.logoutAll(accessToken);
-    else await authApi.logout(accessToken);
+    try {
+      await supportCleanup;
+      if (allDevices) await authApi.logoutAll(accessToken);
+      else await authApi.logout(accessToken);
+    } finally {
+      endAuthTeardown();
+    }
   }
 
   registerUnauthorizedHandler(resetAuthentication);

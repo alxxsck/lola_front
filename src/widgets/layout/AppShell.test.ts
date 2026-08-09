@@ -315,6 +315,10 @@ describe("AppShell", () => {
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Операционный обзор"))
         ?.attributes("href"),
+      supportNotificationsLink: wrapper
+        .findAll(".sidebar-scroll nav a")
+        .find((link) => link.text().includes("Уведомления поддержки"))
+        ?.attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -323,10 +327,11 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 20,
+      navigationLinks: 21,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
+      supportNotificationsLink: "/support/settings/notifications",
       themeSwitchVisible: true,
       profileInFooter: true,
       modeInFooter: true,

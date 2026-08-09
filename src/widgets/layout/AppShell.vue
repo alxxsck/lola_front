@@ -19,6 +19,7 @@ import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import {
   canReadSupportControl as canReadSupportControlAccess,
+  canManagePersonalSupportNotifications,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
   isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
@@ -75,6 +76,13 @@ const canReadSupportControl = computed(
   () =>
     isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) &&
     canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
+);
+const canReadSupportNotificationSettings = computed(
+  () =>
+    isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) &&
+    canManagePersonalSupportNotifications(
+      auth.project?.effectivePermissionCodes ?? [],
+    ),
 );
 
 const navigation = computed(() =>
@@ -199,6 +207,13 @@ const navigation = computed(() =>
       projectPermission: "project.support.macros.manage",
     },
     {
+      label: "Уведомления поддержки",
+      icon: "pi pi-bell",
+      to: "/support/settings/notifications",
+      project: true,
+      supportNotificationSettings: true,
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",
@@ -309,7 +324,8 @@ const navigation = computed(() =>
       (!item.projectMemberships || canReadMemberships.value) &&
       (!item.projectRoles || canReadRoles.value) &&
       (!item.supportWorkspace || canReadSupportWorkspace.value) &&
-      (!item.supportLeadControl || canReadSupportControl.value),
+      (!item.supportLeadControl || canReadSupportControl.value) &&
+      (!item.supportNotificationSettings || canReadSupportNotificationSettings.value),
   ),
 );
 

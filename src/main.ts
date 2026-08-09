@@ -11,8 +11,10 @@ import { router } from '@/app/router'
 import { RetenivePrimePreset } from '@/app/theme/retenive-prime-preset'
 import { primeVueRussianLocale } from '@/app/primevue-ru'
 import { initializeTheme } from '@/shared/theme/theme'
+import { registerSupportNotificationLogoutCleanup } from '@/features/support-notifications/model/support-notification-logout'
 
 initializeTheme()
+registerSupportNotificationLogoutCleanup()
 
 createApp(App)
   .use(createPinia())

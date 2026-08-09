@@ -548,27 +548,26 @@ Evidence: backend `src/modules/support-operations/api/support-lead.controller.ts
 
 ### 27 — Browser notification settings
 
-**Статус: полный backend-блокер на `origin/main`.**
+**Статус: разблокирован backend `8758358e`, frontend завершён.**
 
-В fresh OpenAPI отсутствуют:
+Опубликованы и синхронизированы в pinned OpenAPI:
 
-- `GET/PATCH /admin/projects/:projectId/support/notification-preferences`;
-- `POST/DELETE /auth/me/browser-push-subscriptions` и device list/status;
+- Project-scoped admission и `GET/PATCH notification-preferences`;
+- self-scoped list/register/revoke browser Push subscriptions с version/OCC/idempotency;
 - topics `SUPPORT_CASE_ATTENTION`, `SUPPORT_CASE_ASSIGNED_TO_ME`;
-- safe signed Support deep-link payload/resolve contract;
-- project rollout/admission и typed preference/subscription revisions.
+- actor-bound, одноразовый, concealed Support deep-link resolve;
+- rollout `DISABLED / ASSIGNMENT_ONLY / ATTENTION_ENABLED` и per-topic capability.
 
-В main есть policy/intent-writer код и tests, а нормативная спека описывает будущий interface, но
-backend task 20a остаётся `ready-for-agent`; controller и OpenAPI отсутствуют. Legacy email
-preferences и `NotificationDestination_*` не являются заменой.
+Frontend разделяет permission, локальную subscription и backend registration, сверяет VAPID
+revision/endpoint, восстанавливает rotation, делает logout revoke/unsubscribe и не объявляет
+delivery active без всех трёх состояний и server rollout. Capability передаётся через URL fragment
+и удаляется до login redirect, поэтому bearer не попадает в path/query.
 
-Что может frontend сейчас: только локально определить browser capability/permission для будущего
-UI; нельзя показывать enabled, devices или регистрировать service worker subscription как server
-accepted.
+Ограничение не является blocker: `SUPPORT_CASE_CREATED` и Project-wide editor относятся к
+backend 35/frontend 38 и не подменяются текущим attention topic.
 
-Evidence: `docs/specs/support-platform/20-personal-browser-notifications.ru.md`,
-`.scratch/support-platform/issues/20a-support-personal-browser-notifications-backend.md`,
-`src/modules/notifications/personal/*`; в OpenAPI browser Push paths = 0.
+Evidence: `src/features/support-notifications/`, `src/pages/SupportNotificationSettingsPage.vue`,
+`public/support-push-sw.js`, backend `docs/specs/support-platform/20-personal-browser-notifications.ru.md`.
 
 ### 28 — Cutover legacy entry points
 

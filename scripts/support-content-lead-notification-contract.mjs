@@ -85,27 +85,31 @@ function requireInlineErrorEnum(operationValue, status, values) {
 function requireBrowserNotificationsPublished(document) {
   const preferencesRead = operation(
     document,
-    "PersonalSupportNotificationPreferences_get",
+    "PersonalSupportNotification_readPreferences",
   );
   const preferencesUpdate = operation(
     document,
-    "PersonalSupportNotificationPreferences_update",
+    "PersonalSupportNotification_updatePreference",
+  );
+  const admissionRead = operation(
+    document,
+    "PersonalSupportNotification_readAdmission",
   );
   const subscriptionsList = operation(
     document,
-    "PersonalBrowserPushSubscription_list",
+    "PersonalBrowserPush_listSubscriptions",
   );
   const subscriptionsRegister = operation(
     document,
-    "PersonalBrowserPushSubscription_register",
+    "PersonalBrowserPush_registerSubscription",
   );
   const subscriptionsRevoke = operation(
     document,
-    "PersonalBrowserPushSubscription_revoke",
+    "PersonalBrowserPush_revokeSubscription",
   );
   const deepLinkResolve = operation(
     document,
-    "PersonalSupportNotificationDeepLink_resolve",
+    "PersonalSupportNotification_resolveDeepLink",
   );
 
   requireHeader(preferencesUpdate, "Idempotency-Key");
@@ -132,6 +136,11 @@ function requireBrowserNotificationsPublished(document) {
     preferencesUpdate,
     "200",
     "PersonalSupportNotificationSettingsResponseDto",
+  );
+  requireResponseSchema(
+    admissionRead,
+    "200",
+    "PersonalSupportNotificationAdmissionResponseDto",
   );
   requireResponseSchema(
     subscriptionsList,

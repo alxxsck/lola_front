@@ -39,7 +39,7 @@ let refreshHandler: RefreshHandler | undefined;
 let unauthorizedHandler: (() => void) | undefined;
 let mfaRequirementHandler: MfaRequirementHandler | undefined;
 let refreshPromise: Promise<void> | null = null;
-let authTeardown = false;
+let authTeardownDepth = 0;
 
 export function registerRefreshHandler(handler: RefreshHandler): void {
   refreshHandler = handler;
@@ -92,11 +92,11 @@ export function refreshAccessToken(): Promise<void> {
 }
 
 export function beginAuthTeardown(): void {
-  authTeardown = true;
+  authTeardownDepth += 1;
 }
 
 export function endAuthTeardown(): void {
-  authTeardown = false;
+  authTeardownDepth = Math.max(0, authTeardownDepth - 1);
 }
 
 export function authTeardownRequestOptions(
@@ -113,7 +113,7 @@ axiosInstance.interceptors.request.use((config) => {
   delete (config as Partial<AuthTeardownRequestConfig>)
     ._authTeardownAccessToken;
   const token =
-    authTeardown && teardownToken ? teardownToken : getAccessToken();
+    authTeardownDepth > 0 && teardownToken ? teardownToken : getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
   else headers.delete("Authorization");
   config.headers = headers;
@@ -138,7 +138,7 @@ axiosInstance.interceptors.response.use(
         Boolean(config.url?.includes("/api/v1/auth/me/email-change"))) ||
       Boolean(config?.url?.includes("/api/v1/auth/mfa/"));
     const canRetry =
-      !authTeardown &&
+      authTeardownDepth === 0 &&
       cause.response?.status === 401 &&
       config &&
       !config._authRetry &&
@@ -172,7 +172,7 @@ axiosInstance.interceptors.response.use(
     }
 
     if (
-      !authTeardown &&
+      authTeardownDepth === 0 &&
       cause.response?.status === 401 &&
       !isRefreshRequest &&
       !isCredentialProofRequest

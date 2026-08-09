@@ -6,13 +6,12 @@
 
 Дата: 7 августа 2026 года
 
-Pinned contract: `sha256:ed5a4f68e0594348f3d3b708ad7e85ca94099242d20835550d87af9f12412a40`
+Pinned contract: `sha256:0dd3e0813d772df946354c2a64ecbffbb07e6ef2eff8b9a0b977ca4696718c8c`
 
-Backend docs/source review: `565762c42654ba789470648d76d26d3d5747d294`
+Backend docs/source review: `8758358e`
 
-Frontend реализует только то, что опубликовано в pinned OpenAPI. Backend main
-содержит internal browser-notification policy/intent slices, но не публикует
-preference/subscription/device controllers; vertical остаётся `NOT_PUBLISHED`.
+Frontend реализует только то, что опубликовано в pinned OpenAPI. Personal browser
+notification controllers и admission опубликованы backend `8758358e`.
 `READY` означает typed transport и достаточную authority. `RELEASE_GATED`
 требует server rollout/admission. `PARTIAL` означает, что часть projection или
 ошибок не типизирована. Нельзя подменять пробел локальным DTO или legacy
@@ -90,22 +89,16 @@ contract: `NEW / ACKNOWLEDGED / RESOLVED`; тексты старых докум�
 override используют отдельные команды из Task 02; Lead frontend не создаёт
 свои mutation endpoints. Bulk/partial receipts отсутствуют.
 
-## 5. Browser notifications — отдельная заблокированная vertical
+## 5. Browser notifications — published personal vertical
 
-Pinned contract содержит только legacy email Case Escalation preferences. Он
-не содержит:
-
-- Project-scoped Support browser preferences;
-- browser Push subscription register/list/revoke;
-- registered devices/status/revision;
-- topics `SUPPORT_CASE_ATTENTION` и `SUPPORT_CASE_ASSIGNED_TO_ME`;
-- безопасный Support deep-link payload/resolve contract;
-- browser notification permission/rollout projection.
-
-`NotificationDestination_*`, platform notification operations и email
-preference не являются заменой. В проверенном backend main публичных browser
-notification controllers нет. До их публикации Task 27 не показывает enabled
-toggle, devices или fake deep link.
+| Capability | Published contract / frontend rule | Status |
+| --- | --- | --- |
+| Admission | Project rollout, per-topic capability, VAPID key revision, active device count | `READY`; читается до effective delivery state |
+| Preferences | Project-scoped GET/PATCH, version, Idempotency-Key | `READY`; только Attention и Assigned-to-me |
+| Devices | self-scoped list/register/revoke, write-only secrets, version/OCC | `READY`; local subscription не считается server registration |
+| Rotation/logout | endpoint + VAPID revision reconciliation, old-device revoke, logout cleanup | `READY`; local authority purged immediately |
+| Deep link | opaque 43-char single-use capability, backend re-authorization | `READY`; fragment-only handoff, scrub до login redirect |
+| Push copy | closed payload version/topics, generic title/body | `READY`; Case/Message/Note content не принимается |
 
 ### Planned New Case policy
 
@@ -123,7 +116,7 @@ UI не показывает toggle «Все новые обращения».
 | Internal Knowledge         | Project admission; docs flags `SUPPORT_INTERNAL_KNOWLEDGE_*`                          | Knowledge/Content → Task 25                    |
 | Lead Control               | typed disabled/not-ready errors; отдельный project rollout contract отсутствует       | Lead projection/rollout → Task 26              |
 | Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
-| Browser notifications      | в pin ничего нет; source flags `PERSONAL_SUPPORT_BROWSER_PUSH_*` не frontend contract | Notifications/Auth/deep-link backend → Task 27 |
+| Browser notifications      | typed personal admission/preferences/devices/deep-link; server rollout              | `READY` → Task 27 complete                    |
 | New Case notification      | нет Project policy/topic `SUPPORT_CASE_CREATED`                                       | Backend 35 → Frontend 38                       |
 | Whole Support shell        | временный `VITE_SUPPORT_WORKSPACE_ENABLED`                                            | backend rollout → cutover tasks                |
 
@@ -139,9 +132,8 @@ purged Note, Macro Reply Draft revision, Knowledge search, partial content
 panel, stale Lead summary, degraded alerts, alert receipt, typed Lead 403 и
 alert timeout 503.
 
-Content 403, revoked browser subscription, bulk/partial Lead result и общий
-command outcome lookup помечены `NOT_PUBLISHED`. Additive неизвестный
-projection state хранится отдельно и не трактуется как success.
+Content 403 и revoked/rotated browser subscription проверяются fail-closed.
+Bulk/partial Lead result и общий command outcome lookup не выдумываются frontend.
 
 Task 03 не реализует UI. Визуальные и screenshot acceptance начинаются в
 Tasks 22, 24–27.

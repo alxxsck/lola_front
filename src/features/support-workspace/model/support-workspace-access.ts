@@ -55,6 +55,18 @@ export function canReadSupportControl(
   );
 }
 
+export function canManagePersonalSupportNotifications(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return [
+    supportAssignmentSelfManagePermission,
+    supportAssignmentOverridePermission,
+    supportLeadControlReadPermission,
+  ].some((permission) =>
+    hasProjectPermission(effectivePermissionCodes, permission),
+  );
+}
+
 export function canReadSupportAvailability(
   effectivePermissionCodes: readonly string[],
 ): boolean {

@@ -245,18 +245,18 @@ test("retention and notification boundaries stay explicit and fail closed", asyn
     (contract) => {
       delete operation(
         contract,
-        "PersonalSupportNotificationPreferences_update",
+        "PersonalSupportNotification_updatePreference",
       ).parameters.find((parameter) => parameter.name === "Idempotency-Key")
         .required;
     },
     (contract) => {
-      delete operation(contract, "PersonalBrowserPushSubscription_register")
+      delete operation(contract, "PersonalBrowserPush_registerSubscription")
         .requestBody;
     },
     (contract) => {
       delete operation(
         contract,
-        "PersonalSupportNotificationDeepLink_resolve",
+        "PersonalSupportNotification_resolveDeepLink",
       ).responses["200"];
     },
   ];
