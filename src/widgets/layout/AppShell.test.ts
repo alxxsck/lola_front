@@ -80,6 +80,7 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 
 describe("AppShell", () => {
   beforeEach(() => {
+    localStorage.clear();
     resetMockSupportWorkspaceRollout();
     clearSupportWorkspaceShellAdmission();
   });
@@ -175,9 +176,69 @@ describe("AppShell", () => {
 
     const wrapper = mountProjectMenu(pinia, router);
 
-    expect(wrapper.get(".shell").classes()).toContain("shell--support-focus");
+    expect(wrapper.get(".shell").classes()).toContain(
+      "shell--sidebar-collapsed",
+    );
     expect(wrapper.get(".sidebar").attributes("aria-label")).toBe(
       "Основная навигация CMS",
+    );
+
+    await wrapper
+      .get('button[aria-label="Развернуть боковое меню"]')
+      .trigger("click");
+    expect(wrapper.get(".shell").classes()).not.toContain(
+      "shell--sidebar-collapsed",
+    );
+  });
+
+  it("lets a desktop user collapse and restore the sidebar from every page", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [project("project-1", "Project One")]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    let wrapper = mountProjectMenu(pinia, router);
+
+    expect(wrapper.get(".shell").classes()).not.toContain(
+      "shell--sidebar-collapsed",
+    );
+    const collapse = wrapper.get(
+      'button[aria-label="Свернуть боковое меню"]',
+    );
+    await collapse.trigger("click");
+
+    expect(wrapper.get(".shell").classes()).toContain(
+      "shell--sidebar-collapsed",
+    );
+    expect(localStorage.getItem("retenive-cms-sidebar-collapsed-v1")).toBe(
+      "true",
+    );
+    expect(
+      wrapper
+        .get('button[aria-label="Развернуть боковое меню"]')
+        .attributes("aria-expanded"),
+    ).toBeUndefined();
+
+    wrapper.unmount();
+    wrapper = mountProjectMenu(pinia, router);
+    expect(wrapper.get(".shell").classes()).toContain(
+      "shell--sidebar-collapsed",
+    );
+
+    await wrapper
+      .get('button[aria-label="Развернуть боковое меню"]')
+      .trigger("click");
+    expect(wrapper.get(".shell").classes()).not.toContain(
+      "shell--sidebar-collapsed",
+    );
+    expect(localStorage.getItem("retenive-cms-sidebar-collapsed-v1")).toBe(
+      "false",
     );
   });
 
@@ -396,9 +457,8 @@ describe("AppShell", () => {
         .find((link) => link.text().includes("Операционный обзор"))
         ?.attributes("href"),
       supportNotificationsLink: wrapper
-        .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Уведомления поддержки"))
-        ?.attributes("href"),
+        .find('a[href="/support/settings/notifications"]')
+        .attributes("href"),
       supportRolloutLink: wrapper
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Запуск и возврат"))
@@ -408,9 +468,8 @@ describe("AppShell", () => {
         .find((link) => link.text().includes("Внешние задачи"))
         ?.attributes("href"),
       externalSettingsLink: wrapper
-        .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Интеграции поддержки"))
-        ?.attributes("href"),
+        .find('a[href="/support/settings/integrations"]')
+        .attributes("href"),
       themeSwitchVisible: wrapper.find(".theme-switch").exists(),
       profileInFooter: wrapper
         .find(".sidebar-footer .sidebar-profile")
@@ -433,6 +492,84 @@ describe("AppShell", () => {
       analysesVisible: true,
       operationsVisible: true,
     });
+  });
+
+  it("keeps every Support destination together under one navigation group", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", [
+        "project.conversations.read",
+        "project.support.lead_control.read",
+        "project.cases.settings.manage",
+        "project.support.macros.manage",
+        "project.support.workspace.rollout.manage",
+        "project.support.external_work.inbox_read",
+        "project.support.external_work.manage",
+      ]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    const links = wrapper.findAll(".sidebar-scroll nav a");
+    const supportRootIndex = links.findIndex(
+      (link) => link.text().trim() === "Поддержка",
+    );
+    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 8);
+
+    expect(supportRootIndex).toBeGreaterThanOrEqual(0);
+    expect(supportLinks.map((link) => link.text().trim())).toEqual([
+      "Поддержка",
+      "Операционный обзор",
+      "Настройки обращений",
+      "Шаблоны ответов",
+      "Уведомления",
+      "Внешние задачи",
+      "Интеграции",
+      "Запуск и возврат",
+    ]);
+    expect(supportLinks[0]?.classes()).not.toContain("nav-item--nested");
+    expect(
+      supportLinks.slice(1).every((link) =>
+        link.classes().includes("nav-item--nested"),
+      ),
+    ).toBe(true);
+  });
+
+  it("shows a non-clickable Support heading when only a nested setting is allowed", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", [
+        "project.support.macros.manage",
+      ]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    expect(
+      wrapper.get('[role="heading"][aria-label="Поддержка"]').text(),
+    ).toContain("Поддержка");
+    expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(false);
+    expect(wrapper.get('a[href="/support/settings/macros"]').classes()).toContain(
+      "nav-item--nested",
+    );
   });
 
   it("shows Integrations to a product-integration reader without notification access", async () => {

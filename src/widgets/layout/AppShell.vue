@@ -42,6 +42,34 @@ const projectActions = useProjectActionsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
+const sidebarCollapsedStorageKey = "retenive-cms-sidebar-collapsed-v1";
+
+function readSidebarCollapsedPreference(): boolean | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(sidebarCollapsedStorageKey);
+    return value === "true" ? true : value === "false" ? false : null;
+  } catch {
+    return null;
+  }
+}
+
+const sidebarCollapsedPreference = ref<boolean | null>(
+  readSidebarCollapsedPreference(),
+);
+const sidebarCollapsed = computed(
+  () => sidebarCollapsedPreference.value ?? supportFocus.value,
+);
+
+function toggleSidebarCollapsed() {
+  const next = !sidebarCollapsed.value;
+  sidebarCollapsedPreference.value = next;
+  try {
+    window.localStorage.setItem(sidebarCollapsedStorageKey, String(next));
+  } catch {
+    // The visible preference remains active for this session.
+  }
+}
 const canReadProjectSettings = computed(() =>
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS.some((permission) =>
     hasProjectPermission(
@@ -108,7 +136,6 @@ const canReadSupportNotificationSettings = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
   ),
 );
-
 watch(
   () => [
     auth.user?.id ?? "",
@@ -130,8 +157,7 @@ watch(
   { immediate: true },
 );
 
-const navigation = computed(() =>
-  [
+const navigationItems = computed(() => [
     {
       label: "CMS Users",
       icon: "pi pi-users",
@@ -236,6 +262,8 @@ const navigation = computed(() =>
       to: supportWorkspacePath.value,
       project: true,
       supportWorkspace: true,
+      supportSectionRoot: true,
+      supportSection: true,
     },
     {
       label: "Операционный обзор",
@@ -243,6 +271,17 @@ const navigation = computed(() =>
       to: "/support/control",
       project: true,
       supportLeadControl: true,
+      nested: true,
+      supportSection: true,
+    },
+    {
+      label: "Настройки обращений",
+      icon: "pi pi-sliders-h",
+      to: "/cases/settings",
+      project: true,
+      projectPermission: "project.cases.settings.manage",
+      nested: true,
+      supportSection: true,
     },
     {
       label: "Шаблоны ответов",
@@ -250,20 +289,17 @@ const navigation = computed(() =>
       to: "/support/settings/macros",
       project: true,
       projectPermission: "project.support.macros.manage",
+      nested: true,
+      supportSection: true,
     },
     {
-      label: "Уведомления поддержки",
+      label: "Уведомления",
       icon: "pi pi-bell",
       to: "/support/settings/notifications",
       project: true,
       supportNotificationSettings: true,
-    },
-    {
-      label: "Запуск и возврат",
-      icon: "pi pi-shield",
-      to: "/support/settings/audit-rollout",
-      project: true,
-      projectPermission: "project.support.workspace.rollout.manage",
+      nested: true,
+      supportSection: true,
     },
     {
       label: "Внешние задачи",
@@ -274,13 +310,26 @@ const navigation = computed(() =>
         "project.support.external_work.inbox_read",
         "project.support.external_work.read_linked",
       ],
+      nested: true,
+      supportSection: true,
     },
     {
-      label: "Интеграции поддержки",
+      label: "Интеграции",
       icon: "pi pi-link",
       to: "/support/settings/integrations",
       project: true,
       projectPermission: "project.support.external_work.manage",
+      nested: true,
+      supportSection: true,
+    },
+    {
+      label: "Запуск и возврат",
+      icon: "pi pi-shield",
+      to: "/support/settings/audit-rollout",
+      project: true,
+      projectPermission: "project.support.workspace.rollout.manage",
+      nested: true,
+      supportSection: true,
     },
     {
       label: "AI-анализы",
@@ -366,7 +415,10 @@ const navigation = computed(() =>
       project: true,
       projectPermission: "project.end_users.read",
     },
-  ].filter(
+  ]);
+
+const navigation = computed(() => {
+  const visibleItems = navigationItems.value.filter(
     (item) =>
       (!item.project || Boolean(auth.project)) &&
       (!item.projectSectionRoot ||
@@ -392,12 +444,41 @@ const navigation = computed(() =>
         )) &&
       (!item.projectMemberships || canReadMemberships.value) &&
       (!item.projectRoles || canReadRoles.value) &&
-      (!item.supportWorkspace || canReadSupportWorkspace.value) &&
+      (!item.supportWorkspace ||
+        item.supportSectionRoot ||
+        canReadSupportWorkspace.value) &&
       (!item.supportLeadControl || canReadSupportControl.value) &&
       (!item.supportNotificationSettings ||
         canReadSupportNotificationSettings.value),
-  ),
-);
+  );
+  const hasVisibleSupportChild = visibleItems.some(
+    (item) => item.supportSection && !item.supportSectionRoot,
+  );
+  return visibleItems.filter(
+    (item) =>
+      !item.supportSectionRoot ||
+      canReadSupportWorkspace.value ||
+      hasVisibleSupportChild,
+  );
+});
+
+const navigationGroups = computed(() => {
+  const groups: Array<{
+    key: string;
+    label?: string;
+    items: typeof navigation.value;
+  }> = [];
+  for (const item of navigation.value) {
+    if (item.supportSection) {
+      const supportGroup = groups.find((group) => group.key === "support");
+      if (supportGroup) supportGroup.items.push(item);
+      else groups.push({ key: "support", label: "Поддержка", items: [item] });
+      continue;
+    }
+    groups.push({ key: item.to, items: [item] });
+  }
+  return groups;
+});
 
 function isNavigationItemActive(to: string): boolean {
   const targetPath = to.split("?", 1)[0] ?? to;
@@ -495,7 +576,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="shell" :class="{ 'shell--support-focus': supportFocus }">
+  <div
+    class="shell"
+    :class="{ 'shell--sidebar-collapsed': sidebarCollapsed }"
+  >
     <aside
       class="sidebar"
       :class="{ open: sidebarOpen }"
@@ -506,10 +590,27 @@ onBeforeUnmount(() => {
           <div class="brand-mark">
             <span>{{ productBrand.mark }}</span>
           </div>
-          <div>
+          <div class="brand-copy">
             <strong>{{ productBrand.name }}</strong
             ><small>Центр управления</small>
           </div>
+          <button
+            type="button"
+            class="sidebar-collapse-toggle"
+            :aria-label="
+              sidebarCollapsed
+                ? 'Развернуть боковое меню'
+                : 'Свернуть боковое меню'
+            "
+            :title="
+              sidebarCollapsed
+                ? 'Развернуть боковое меню'
+                : 'Свернуть боковое меню'
+            "
+            @click="toggleSidebarCollapsed"
+          >
+            <i class="pi pi-angle-double-left" aria-hidden="true" />
+          </button>
         </div>
 
         <div class="project-pill">
@@ -530,14 +631,25 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="sidebar-scroll">
-        <nav>
-          <template v-for="item in navigation" :key="item.to">
+        <nav id="cms-primary-navigation">
+          <div
+            v-for="group in navigationGroups"
+            :key="group.key"
+            class="nav-group"
+            :role="group.label ? 'group' : undefined"
+            :aria-label="group.label"
+          >
+            <template v-for="item in group.items" :key="item.to">
             <div
-              v-if="item.projectSectionRoot && !canReadProjectSettings"
+              v-if="
+                (item.projectSectionRoot && !canReadProjectSettings) ||
+                (item.supportSectionRoot && !canReadSupportWorkspace)
+              "
               class="nav-item nav-item--section"
               role="heading"
               aria-level="2"
-              aria-label="Проект"
+              :aria-label="item.label"
+              :title="sidebarCollapsed ? item.label : undefined"
             >
               <i :class="item.icon" />
               <span>{{ item.label }}</span>
@@ -546,8 +658,8 @@ onBeforeUnmount(() => {
               v-else
               :to="item.to"
               class="nav-item"
-              :title="supportFocus ? item.label : undefined"
-              :aria-label="supportFocus ? item.label : undefined"
+              :title="sidebarCollapsed ? item.label : undefined"
+              :aria-label="sidebarCollapsed ? item.label : undefined"
               :class="{
                 active: isNavigationItemActive(item.to),
                 'nav-item--nested': item.nested,
@@ -556,6 +668,7 @@ onBeforeUnmount(() => {
             >
               <i
                 :class="item.icon"
+                aria-hidden="true"
                 :style="
                   item.live
                     ? 'font-size:.55rem;color:var(--status-success)'
@@ -565,7 +678,8 @@ onBeforeUnmount(() => {
               <span>{{ item.label }}</span>
               <span v-if="item.live" class="live-pulse" />
             </RouterLink>
-          </template>
+            </template>
+          </div>
         </nav>
       </div>
 
@@ -666,56 +780,99 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
+  transition: grid-template-columns 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.shell--support-focus {
+.shell--sidebar-collapsed {
   grid-template-columns: 64px minmax(0, 1fr);
 }
-.shell--support-focus .sidebar {
+.shell--sidebar-collapsed .sidebar {
   padding: 14px 8px 12px;
 }
-.shell--support-focus .brand {
+.shell--sidebar-collapsed .brand {
+  flex-direction: column;
   justify-content: center;
+  gap: 8px;
   padding: 0 0 14px;
 }
-.shell--support-focus .brand > div:last-child,
-.shell--support-focus .project-copy,
-.shell--support-focus .project-pill > i,
-.shell--support-focus .nav-item > span:not(.live-pulse),
-.shell--support-focus .sidebar-note,
-.shell--support-focus .sidebar-profile > div,
-.shell--support-focus .sidebar-profile > i {
-  display: none;
+.shell--sidebar-collapsed .brand-copy,
+.shell--sidebar-collapsed .project-copy,
+.shell--sidebar-collapsed .project-pill > i,
+.shell--sidebar-collapsed .nav-item > span:not(.live-pulse),
+.shell--sidebar-collapsed .live-pulse,
+.shell--sidebar-collapsed .sidebar-profile > div,
+.shell--sidebar-collapsed .sidebar-profile > i {
+  max-width: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transform: translateX(-6px);
+  transition:
+    max-width 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 80ms linear,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 180ms;
 }
-.shell--support-focus .project-pill {
+.shell--sidebar-collapsed .sidebar-note {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-6px);
+  transition:
+    max-height 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 80ms linear,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 180ms;
+}
+.shell--sidebar-collapsed .sidebar-collapse-toggle {
+  margin-left: 0;
+}
+.shell--sidebar-collapsed .sidebar-collapse-toggle > i {
+  transform: rotate(180deg);
+}
+.shell--sidebar-collapsed .project-pill {
   justify-content: center;
   padding: 7px;
   margin-bottom: 12px;
 }
-.shell--support-focus .nav-item,
-.shell--support-focus .nav-item--nested {
+.shell--sidebar-collapsed .nav-item,
+.shell--sidebar-collapsed .nav-item--nested {
   width: 100%;
   min-height: 40px;
   justify-content: center;
   margin-left: 0;
   padding: 10px;
 }
-.shell--support-focus .nav-item--nested::after {
+.shell--sidebar-collapsed .nav-item--nested::after {
   display: none;
 }
-.shell--support-focus .nav-item.active::before {
+.shell--sidebar-collapsed .nav-item.active::before {
   left: -8px;
 }
-.shell--support-focus .sidebar-profile {
+.shell--sidebar-collapsed .sidebar-profile {
   justify-content: center;
   padding: 4px 0;
 }
-.shell--support-focus :deep(.theme-switch) {
+.shell--sidebar-collapsed :deep(.theme-switch) {
   justify-content: center;
   padding: 10px;
 }
-.shell--support-focus :deep(.theme-copy),
-.shell--support-focus :deep(.theme-track) {
-  display: none;
+.shell--sidebar-collapsed :deep(.theme-copy),
+.shell--sidebar-collapsed :deep(.theme-track) {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transform: translateX(-6px);
+  transition:
+    max-width 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 80ms linear,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 180ms;
 }
 .sidebar {
   position: sticky;
@@ -738,6 +895,73 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 11px;
   padding: 0 8px 24px;
+}
+.brand-copy {
+  min-width: 0;
+}
+.brand-copy,
+.project-copy,
+.project-pill > i,
+.nav-item > span:not(.live-pulse),
+.live-pulse,
+.sidebar-profile > div,
+.sidebar-profile > i {
+  max-width: 180px;
+  max-height: 48px;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition:
+    max-width 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 120ms linear 80ms,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1) 60ms,
+    visibility 0s linear;
+}
+.sidebar-footer :deep(.theme-copy),
+.sidebar-footer :deep(.theme-track) {
+  max-width: 180px;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition:
+    max-width 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 120ms linear 80ms,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1) 60ms,
+    visibility 0s linear;
+}
+.sidebar-collapse-toggle {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 11px;
+  background: var(--sidebar-surface);
+  color: var(--sidebar-text-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.sidebar-collapse-toggle:hover,
+.sidebar-collapse-toggle:focus-visible {
+  background: var(--sidebar-surface-hover);
+  color: var(--sidebar-text);
+}
+.sidebar-collapse-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.sidebar-collapse-toggle:active {
+  transform: scale(0.97);
+}
+.sidebar-collapse-toggle > i {
+  font-size: 0.78rem;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .brand-mark {
   width: 39px;
@@ -826,6 +1050,11 @@ nav {
   flex-direction: column;
   gap: 4px;
 }
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .nav-item {
   position: relative;
   display: flex;
@@ -836,7 +1065,9 @@ nav {
   color: var(--sidebar-text-muted);
   font-size: 0.88rem;
   font-weight: 500;
-  transition: 0.18s ease;
+  transition:
+    background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .nav-item > i {
   width: 17px;
@@ -910,10 +1141,21 @@ nav {
 .sidebar-note {
   display: flex;
   gap: 10px;
+  max-height: 80px;
   padding: 12px;
+  overflow: hidden;
   background: var(--sidebar-surface-hover);
   border-radius: 12px;
   color: var(--sidebar-text-muted);
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition:
+    max-height 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 120ms linear 80ms,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1) 60ms,
+    visibility 0s linear;
 }
 .sidebar-note > i {
   color: var(--brand);
@@ -1039,57 +1281,107 @@ nav {
     background: var(--overlay-backdrop);
     z-index: 19;
   }
-  .shell--support-focus .sidebar {
+  .sidebar-collapse-toggle {
+    display: none;
+  }
+  .shell--sidebar-collapsed .sidebar {
     padding: 24px 16px 18px;
   }
-  .shell--support-focus .brand {
+  .shell--sidebar-collapsed .brand {
+    flex-direction: row;
     justify-content: flex-start;
+    gap: 11px;
     padding: 0 8px 24px;
   }
-  .shell--support-focus .brand > div:last-child,
-  .shell--support-focus .project-copy,
-  .shell--support-focus .sidebar-profile > div {
+  .shell--sidebar-collapsed .brand-copy,
+  .shell--sidebar-collapsed .project-copy,
+  .shell--sidebar-collapsed .project-pill > i,
+  .shell--sidebar-collapsed .nav-item > span:not(.live-pulse),
+  .shell--sidebar-collapsed .live-pulse,
+  .shell--sidebar-collapsed .sidebar-profile > div,
+  .shell--sidebar-collapsed .sidebar-profile > i {
+    max-width: 180px;
+    max-height: 48px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition: none;
     display: block;
   }
-  .shell--support-focus .project-pill > i,
-  .shell--support-focus .sidebar-profile > i {
+  .shell--sidebar-collapsed .project-pill > i,
+  .shell--sidebar-collapsed .sidebar-profile > i {
     display: inline-block;
   }
-  .shell--support-focus .nav-item > span:not(.live-pulse) {
+  .shell--sidebar-collapsed .nav-item > span:not(.live-pulse) {
     display: inline;
   }
-  .shell--support-focus .sidebar-note {
+  .shell--sidebar-collapsed .live-pulse {
+    display: block;
+  }
+  .shell--sidebar-collapsed .sidebar-note {
+    max-height: 80px;
+    padding: 12px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition: none;
     display: flex;
   }
-  .shell--support-focus .project-pill {
+  .shell--sidebar-collapsed .project-pill {
     justify-content: flex-start;
     padding: 11px;
     margin-bottom: 20px;
   }
-  .shell--support-focus .nav-item {
+  .shell--sidebar-collapsed .nav-item {
     width: 100%;
     justify-content: flex-start;
     padding: 10px 12px;
   }
-  .shell--support-focus .nav-item--nested {
+  .shell--sidebar-collapsed .nav-item--nested {
     width: calc(100% - 22px);
     margin-left: 22px;
     padding: 8px 11px;
   }
-  .shell--support-focus .nav-item--nested::after {
+  .shell--sidebar-collapsed .nav-item--nested::after {
     display: block;
   }
-  .shell--support-focus .sidebar-profile {
+  .shell--sidebar-collapsed .nav-item.active::before {
+    left: -16px;
+  }
+  .shell--sidebar-collapsed .sidebar-profile {
     justify-content: flex-start;
     padding: 6px 8px 2px;
   }
-  .shell--support-focus :deep(.theme-switch) {
+  .shell--sidebar-collapsed :deep(.theme-switch) {
     justify-content: flex-start;
     padding: 10px 11px;
   }
-  .shell--support-focus :deep(.theme-copy),
-  .shell--support-focus :deep(.theme-track) {
+  .shell--sidebar-collapsed :deep(.theme-copy),
+  .shell--sidebar-collapsed :deep(.theme-track) {
+    max-width: 180px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition: none;
     display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell,
+  .sidebar-collapse-toggle,
+  .sidebar-collapse-toggle > i,
+  .nav-item,
+  .brand-copy,
+  .project-copy,
+  .project-pill > i,
+  .nav-item > span,
+  .sidebar-note,
+  .sidebar-profile > div,
+  .sidebar-profile > i,
+  .sidebar-footer :deep(.theme-copy),
+  .sidebar-footer :deep(.theme-track) {
+    transition-duration: 0.01ms;
   }
 }
 </style>
