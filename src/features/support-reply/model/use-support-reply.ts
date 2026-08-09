@@ -559,7 +559,7 @@ export function createSupportReplyController(
         forgetAttempt(scope);
         outcomeState.value = "IDLE";
         await context.onMacroDraftRejected?.(caught);
-        error.value = "Macro изменился или больше недоступен. Текст сохранён — выберите актуальный macro.";
+        error.value = "Шаблон изменился или больше недоступен. Текст сохранён — выберите актуальный шаблон.";
       } else if (
         attempt.supportKnowledgeCitationDraftId &&
         isKnowledgeCitationFailure(caught)

@@ -402,7 +402,7 @@ export function createSupportInternalNotesController(
         if (isCurrentMutation(scope, generation)) {
           await context.onMacroDraftRejected?.(cause);
           mutationError.value =
-            "Macro изменился или больше недоступен. Текст заметки сохранён — выберите актуальный macro.";
+            "Шаблон изменился или больше недоступен. Текст заметки сохранён — выберите актуальный шаблон.";
         }
         return false;
       }

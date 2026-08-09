@@ -237,7 +237,7 @@ function runOutcomeAction(): void {
       <span>
         <strong>{{ composer.knowledgeSource.title }}</strong>
         <small>
-          Источник · v{{ composer.knowledgeSource.revisionNumber }} ·
+          Источник · версия {{ composer.knowledgeSource.revisionNumber }} ·
           {{ composer.knowledgeSource.mode === "QUOTE" ? "цитата" : "ссылка" }}
           {{ composer.knowledgeSource.edited ? " · изменён" : "" }}
         </small>

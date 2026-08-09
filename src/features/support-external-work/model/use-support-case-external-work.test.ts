@@ -528,10 +528,10 @@ describe("Support Case External Work controller", () => {
     };
 
     await controller.create();
-    expect(controller.validationError.value).toContain("email requester");
+    expect(controller.validationError.value).toContain("эл. почту заявителя");
     controller.createDraft.value.requesterEmail = "ops@example.test";
     await controller.create();
-    expect(controller.validationError.value).toContain("имя requester");
+    expect(controller.validationError.value).toContain("имя заявителя");
     controller.createDraft.value.requesterName = "Support Ops";
     await controller.create();
     expect(controller.validationError.value).toContain("environment");
@@ -712,7 +712,7 @@ describe("Support Case External Work controller", () => {
       decision: "LINK_EXISTING",
     });
     expect(resolve).not.toHaveBeenCalled();
-    expect(controller.validationError.value).toContain("Remote item ID");
+    expect(controller.validationError.value).toContain("идентификатор внешней задачи");
 
     await controller.resolveCommand(unknownCreate.commandId, {
       decision: "LINK_EXISTING",

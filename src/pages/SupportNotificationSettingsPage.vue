@@ -50,21 +50,21 @@ const topics: ReadonlyArray<{
     topic: "SUPPORT_CASE_ATTENTION",
     icon: "pi pi-exclamation-circle",
     title: "Обращения, требующие внимания",
-    description: "Сигнал, когда Case перешёл в состояние, где нужен ответ или вмешательство поддержки.",
+    description: "Сигнал, когда обращение перешло в состояние, где нужен ответ или вмешательство поддержки.",
     defaultLabel: "По умолчанию выключено",
   },
   {
     topic: "SUPPORT_CASE_ASSIGNED_TO_ME",
     icon: "pi pi-user-plus",
     title: "Назначенные мне обращения",
-    description: "Персональный сигнал, когда именно вы стали ответственным оператором Case.",
+    description: "Персональный сигнал, когда именно вы стали ответственным оператором обращения.",
     defaultLabel: "По умолчанию включено",
   },
 ];
 
 const rolloutLabel = computed(() => {
   const state = controller.admission.value?.rolloutState;
-  if (state === "ATTENTION_ENABLED") return "Attention + назначения";
+  if (state === "ATTENTION_ENABLED") return "Требующие внимания и назначения";
   if (state === "ASSIGNMENT_ONLY") return "Только назначения";
   return "Доставка выключена";
 });
@@ -77,7 +77,7 @@ function permissionLabel(): string {
   if (state.permission === "GRANTED") return "Разрешено браузером";
   if (state.permission === "DENIED") return "Заблокировано браузером";
   if (state.permission === "DEFAULT") return "Разрешение ещё не запрошено";
-  return state.requiresInstalledApp ? "Нужно установить на экран «Домой»" : "Push API не поддерживается";
+  return state.requiresInstalledApp ? "Нужно установить на экран «Домой»" : "Веб-уведомления не поддерживаются";
 }
 
 function browserRecoveryCopy(): string {
@@ -89,14 +89,14 @@ function browserRecoveryCopy(): string {
     return "На iOS/iPadOS сначала добавьте Retenive CMS на экран «Домой», затем откройте установленное приложение.";
   if (state.permission === "UNSUPPORTED")
     return state.unsupportedMessage ??
-      "Этот браузер или режим не поддерживает Web Push. Обновите браузер и проверьте снова.";
+      "Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер и проверьте снова.";
   return "Запрос системного разрешения появляется только после вашего нажатия.";
 }
 
 function preferenceStatus(topic: SupportNotificationTopic): string {
   const item = controller.preference(topic);
   if (!item?.subscribed) return "Выключено";
-  if (controller.capability(topic) !== "AVAILABLE") return "Сохранено, но rollout не доставляет";
+  if (controller.capability(topic) !== "AVAILABLE") return "Сохранено, но доставка ещё не запущена";
   if (!controller.browserReady.value) return "Выбрано, но нет подтверждённого устройства";
   return "Доставка активна";
 }
@@ -109,8 +109,8 @@ function preferenceSeverity(topic: SupportNotificationTopic) {
 
 function capabilityCopy(topic: SupportNotificationTopic): string {
   const value = controller.capability(topic);
-  if (value === "DISABLE_ONLY") return "Можно только отключить: rollout больше не принимает новые opt-in.";
-  if (value === "UNAVAILABLE") return "Этот тип недоступен для текущей роли или rollout.";
+  if (value === "DISABLE_ONLY") return "Можно только отключить: новые подписки больше не принимаются.";
+  if (value === "UNAVAILABLE") return "Этот тип недоступен для текущей роли или этапа запуска.";
   return "Настройка доступна для выбранного проекта.";
 }
 
@@ -140,11 +140,11 @@ onBeforeUnmount(controller.dispose);
   <section class="page support-notification-settings">
     <header class="page-header notification-header">
       <div>
-        <div class="eyebrow"><i class="pi pi-bell" /> Support settings</div>
+        <div class="eyebrow"><i class="pi pi-bell" /> Настройки поддержки</div>
         <h1>Уведомления поддержки</h1>
         <p class="subtitle">
-          Персональные browser notifications для выбранного проекта. Разрешение браузера,
-          подписка на тип события и регистрация устройства проверяются отдельно.
+          Личные уведомления для выбранного проекта. Разрешение браузера, выбранные
+          события и регистрация устройства проверяются отдельно.
         </p>
       </div>
       <div class="header-actions">
@@ -193,7 +193,7 @@ onBeforeUnmount(controller.dispose);
             <span class="step-number">1</span>
             <i class="pi pi-globe" />
             <div>
-              <small>Browser permission</small>
+              <small>Разрешение браузера</small>
               <strong>{{ permissionLabel() }}</strong>
               <span>Системное разрешение сайта показывать уведомления.</span>
             </div>
@@ -202,16 +202,16 @@ onBeforeUnmount(controller.dispose);
             <span class="step-number">2</span>
             <i class="pi pi-wifi" />
             <div>
-              <small>Локальная Push-подписка</small>
+              <small>Подписка этого браузера</small>
               <strong>{{ controller.browserState.value.locallySubscribed ? "Создана" : "Не создана" }}</strong>
-              <span>Зашифрованный канал этого браузера до Push provider.</span>
+              <span>Зашифрованный канал доставки уведомлений в этот браузер.</span>
             </div>
           </article>
           <article :class="['readiness-card', { ready: controller.browserReady.value }]">
             <span class="step-number">3</span>
             <i class="pi pi-shield" />
             <div>
-              <small>Backend registration</small>
+              <small>Регистрация на сервере</small>
               <strong>{{ controller.currentDeviceId.value ? "Подтверждена" : "Не подтверждена" }}</strong>
               <span>Только это состояние разрешает считать устройство подключённым.</span>
             </div>
@@ -291,7 +291,7 @@ onBeforeUnmount(controller.dispose);
           <i class="pi pi-info-circle" />
           <span>
             Уведомления о каждом новом обычном обращении здесь не настраиваются. Это отдельная
-            Project-политика будущего rollout, а не подмена «требует внимания».
+            политика проекта для будущего запуска, а не подмена состояния «требует внимания».
           </span>
         </div>
       </section>

@@ -39,7 +39,7 @@ const emit = defineEmits<{
         @click="emit('closeMobile')"
       />
       <div>
-        <span class="eyebrow">Инспектор</span>
+        <span class="eyebrow">Сведения</span>
         <h2>Контекст диалога</h2>
       </div>
     </header>

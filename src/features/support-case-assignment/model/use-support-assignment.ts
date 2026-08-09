@@ -420,7 +420,7 @@ export function createSupportAssignmentController(
         receipt.caseId !== action.intent.snapshot.caseId ||
         receipt.intent !== expectedIntent
       ) {
-        error.value = "Сервер вернул результат другого действия. Обновите Case.";
+        error.value = "Сервер вернул результат другого действия. Обновите обращение.";
         return;
       }
       commandKnown = true;

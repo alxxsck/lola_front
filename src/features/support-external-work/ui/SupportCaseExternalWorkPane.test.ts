@@ -218,7 +218,7 @@ describe("Support Case External Work pane", () => {
     const wrapper = render(current);
     await wrapper
       .findAll("button")
-      .find((button) => button.text() === "Разобрать UNKNOWN")!
+      .find((button) => button.text() === "Разобрать неизвестный результат")!
       .trigger("click");
 
     expect(wrapper.text()).toContain("Связать найденный объект");

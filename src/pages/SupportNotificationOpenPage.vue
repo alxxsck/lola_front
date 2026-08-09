@@ -59,7 +59,7 @@ onBeforeUnmount(() => abort.abort());
     <div v-if="!failed" class="open-card" aria-live="polite">
       <span class="open-icon"><i class="pi pi-spin pi-spinner" /></span>
       <h1>Открываем обращение</h1>
-      <p>Проверяем доступ и восстанавливаем точный Support context.</p>
+      <p>Проверяем доступ и открываем нужное обращение поддержки.</p>
     </div>
     <div v-else class="open-card" role="alert">
       <span class="open-icon muted"><i class="pi pi-link" /></span>

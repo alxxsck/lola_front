@@ -143,7 +143,7 @@ export function createSupportLeadControlController(
       admission.value = null;
       capacity.value = null;
       resetSelection();
-      error.value = "Lead Control временно недоступен. Повторите загрузку.";
+      error.value = "Панель руководителя временно недоступна. Повторите загрузку.";
     } finally {
       if (generation === projectGeneration) {
         loadingAdmission.value = false;
@@ -209,7 +209,7 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      investigationError.value = "Не удалось собрать причинную историю Case.";
+      investigationError.value = "Не удалось собрать историю причин по обращению.";
     } else {
       investigation.value = investigationResult.value;
     }
@@ -220,7 +220,7 @@ export function createSupportLeadControlController(
       activity.value = null;
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
         await context.onActivityForbidden?.();
-      else activityError.value = "Не удалось загрузить protected Activity.";
+      else activityError.value = "Не удалось загрузить защищённые действия.";
     } else activity.value = activityResult.value;
     if (generation === selectionGeneration) {
       loadingInvestigation.value = false;
@@ -257,7 +257,7 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить следующую страницу capacity risks.";
+      error.value = "Не удалось загрузить следующую страницу рисков нагрузки.";
     } finally {
       if (generation === projectGeneration) {
         loadingCapacity.value = false;
@@ -373,7 +373,7 @@ export function createSupportLeadControlController(
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         activity.value = null;
         await context.onActivityForbidden?.();
-      } else activityError.value = "Не удалось загрузить следующую страницу Activity.";
+      } else activityError.value = "Не удалось загрузить следующую страницу действий.";
     } finally {
       if (
         selection === selectionGeneration &&

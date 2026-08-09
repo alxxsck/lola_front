@@ -257,7 +257,7 @@ describe("SupportControlPage", () => {
   it("marks the authoritative SLA counts as shadow-mode data", async () => {
     const { wrapper } = await render(summary);
 
-    expect(wrapper.text()).toContain("SLA в shadow-режиме");
+    expect(wrapper.text()).toContain("SLA рассчитывается в фоновом режиме");
     expect(wrapper.text()).toContain("Под риском");
   });
 
@@ -283,7 +283,7 @@ describe("SupportControlPage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Lead Control ещё не включён");
+    expect(wrapper.text()).toContain("Панель руководителя ещё не включена");
     expect(api.readSummary).not.toHaveBeenCalled();
     expect(api.readCaseRisks).not.toHaveBeenCalled();
     expect(wrapper.text()).not.toContain("Без назначения");
@@ -369,9 +369,11 @@ describe("SupportControlPage", () => {
   it("mounts active alerts only for the exact alert-read permission", async () => {
     const { wrapper } = await render(summary, { allowAlerts: true });
 
-    expect(wrapper.text()).toContain("Активные alerts");
+    expect(wrapper.text()).toContain("Активные сигналы");
     expect(wrapper.text()).toContain("Давно без назначения");
-    expect(wrapper.text()).toContain("project.support.alerts.manage");
+    expect(wrapper.text()).toContain(
+      "отдельным разрешением на управление сигналами",
+    );
   });
 
   it("does not request alerts for an account without support-control access", async () => {
@@ -381,7 +383,7 @@ describe("SupportControlPage", () => {
     });
 
     expect(api.readAlerts).not.toHaveBeenCalled();
-    expect(wrapper.text()).not.toContain("Активные alerts");
+    expect(wrapper.text()).not.toContain("Активные сигналы");
   });
 
   it("keeps an available operator lease alive while viewing support control", async () => {
@@ -413,8 +415,8 @@ describe("SupportControlPage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("отсутствие Cases не подтверждено");
-    expect(wrapper.text()).not.toContain("Сервер не нашёл Cases с этим риском");
+    expect(wrapper.text()).toContain("отсутствие обращений не подтверждено");
+    expect(wrapper.text()).not.toContain("Сервер не нашёл обращений с этим риском");
   });
 
   it("does not treat a degraded alert materialization as no active alerts", async () => {
@@ -423,7 +425,7 @@ describe("SupportControlPage", () => {
       alertsPage: { ...alertPage, materializationState: "DEGRADED", items: [] },
     });
 
-    expect(wrapper.text()).toContain("отсутствие active alerts не подтверждено");
-    expect(wrapper.text()).not.toContain("Активных alerts нет");
+    expect(wrapper.text()).toContain("сервер не подтвердил, что активных сигналов нет");
+    expect(wrapper.text()).not.toContain("Активных сигналов нет");
   });
 });

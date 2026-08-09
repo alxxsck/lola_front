@@ -331,7 +331,7 @@ function submitTombstone(noteId: string): void {
             aria-label="Подтверждение удаления заметки"
           >
             <strong>Удалить текст заметки?</strong>
-            <p>Текст будет скрыт, но audit trail и факт удаления сохранятся.</p>
+            <p>Текст будет скрыт, но запись и причина удаления сохранятся в журнале.</p>
             <label>
               <span>Код причины</span>
               <select

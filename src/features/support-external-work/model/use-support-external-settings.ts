@@ -114,28 +114,28 @@ function retainedScope(context: SupportExternalSettingsContext): string | null {
 function attemptLabel(attempt: SettingsAttempt): string {
   switch (attempt.kind) {
     case "TEST_CONNECTION":
-      return "Проверка connection";
+      return "Проверка подключения";
     case "START_OAUTH":
     case "RECONNECT_CONNECTION":
       return "OAuth-подключение";
     case "SELECT_OAUTH_TENANT":
-      return "Выбор site/account";
+      return "Выбор сайта или учётной записи";
     case "DISABLE_CONNECTION":
-      return "Отключение connection";
+      return "Отключение подключения";
     case "REVOKE_CONNECTION":
-      return "Отзыв connection";
+      return "Отзыв доступа";
     case "REFRESH_CATALOG":
-      return "Обновление destinations";
+      return "Обновление назначений";
     case "CREATE_MAPPING":
-      return "Создание mapping draft";
+      return "Создание черновика правил";
     case "SAVE_MAPPING":
-      return "Сохранение mapping draft";
+      return "Сохранение черновика правил";
     case "BEGIN_MAPPING_DRAFT":
-      return "Новый mapping draft";
+      return "Новый черновик правил";
     case "PUBLISH_MAPPING":
-      return "Публикация mapping";
+      return "Публикация правил";
     case "ROLLBACK_MAPPING":
-      return "Rollback mapping";
+      return "Возврат прежних правил";
   }
 }
 
@@ -284,7 +284,7 @@ export function createSupportExternalSettingsController(
     pendingReceiptId = retained.receiptId ?? null;
     recovery.value = retained.state;
     error.value = retained.receiptId
-      ? `${attemptLabel(retained.attempt)} ожидает authoritative receipt. Разрешена только проверка статуса.`
+      ? `${attemptLabel(retained.attempt)} ожидает подтверждения сервера. Разрешена только проверка статуса.`
       : `${attemptLabel(retained.attempt)} не подтверждена. Разрешён только точный повтор.`;
   }
 
@@ -308,7 +308,7 @@ export function createSupportExternalSettingsController(
     if (value.status === 403 || value.status === 404) {
       if (attemptScope) retainedAttempts.delete(attemptScope);
       purge();
-      error.value = "External Work недоступен для текущего Project или роли.";
+      error.value = "Внешние системы недоступны для текущего проекта или роли.";
       await context.onForbidden?.();
       return true;
     }
@@ -320,7 +320,7 @@ export function createSupportExternalSettingsController(
     ) {
       if (attemptScope) retainedAttempts.delete(attemptScope);
       purge();
-      error.value = "Нужна свежая аутентификация. Команда не будет повторена.";
+      error.value = "Нужно войти заново. Команда не будет повторена.";
       await context.onAuthenticationRequired?.();
       return true;
     }
@@ -370,7 +370,7 @@ export function createSupportExternalSettingsController(
       if (requestGeneration !== detailGeneration || scopeKey() !== scope) return;
       if (normalizeApiError(cause).name === "AbortError") return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Catalog пока недоступен. Connection state сохранён.";
+      error.value = "Каталог пока недоступен. Состояние подключения сохранено.";
     } finally {
       if (requestGeneration === detailGeneration) {
         loadingDetail.value = false;
@@ -417,7 +417,7 @@ export function createSupportExternalSettingsController(
       if (requestGeneration !== detailGeneration || scopeKey() !== scope) return;
       if (normalizeApiError(cause).name === "AbortError") return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Не удалось загрузить mapping evidence.";
+      error.value = "Не удалось загрузить данные для проверки правил.";
     } finally {
       if (requestGeneration === detailGeneration) {
         loadingDetail.value = false;
@@ -467,7 +467,7 @@ export function createSupportExternalSettingsController(
       if (normalizeApiError(cause).name === "AbortError") return false;
       if (await handleAccessFailure(cause)) return false;
       purge();
-      error.value = "Не удалось загрузить authoritative External Work settings.";
+      error.value = "Не удалось загрузить подтверждённые настройки внешних систем.";
       return false;
     } finally {
       if (current(scope, requestGeneration)) {
@@ -673,7 +673,7 @@ export function createSupportExternalSettingsController(
         pendingAttempt = attempt;
         pendingAttemptScope = scope;
         recovery.value = "RETRYABLE_FAILURE";
-        error.value = `${attemptLabel(attempt)} получила receipt, но authoritative state не перечитан. Разрешён только точный повтор.`;
+        error.value = `${attemptLabel(attempt)} принята, но состояние на сервере не перечитано. Разрешён только точный повтор.`;
         return;
       }
       pendingAttempt = null;
@@ -694,7 +694,7 @@ export function createSupportExternalSettingsController(
         const receiptId = receiptIdFrom(value);
         if (!receiptId) {
           recovery.value = "UNKNOWN_OUTCOME";
-          error.value = "Mutation receipt повреждён. Новые intent заблокированы до ручной сверки.";
+          error.value = "Подтверждение команды повреждено. Новые команды заблокированы до ручной сверки.";
           return;
         }
         pendingReceiptId = receiptId;
@@ -718,7 +718,7 @@ export function createSupportExternalSettingsController(
             : null;
         await loadAuthoritative(true);
         conflict.value = true;
-        error.value = "Состояние изменилось на сервере. Draft сохранён; подтвердите действие заново.";
+        error.value = "Состояние изменилось на сервере. Черновик сохранён; подтвердите действие заново.";
         return;
       }
       if (value.status === 0) {
@@ -730,7 +730,7 @@ export function createSupportExternalSettingsController(
       if (value.status === 503 || value.status === 429) {
         retainedAttempts.set(scope, { attempt, state: "RETRYABLE_FAILURE" });
         recovery.value = "RETRYABLE_FAILURE";
-        error.value = `${attemptLabel(attempt)} временно недоступна. Повтор сохранит тот же intent.`;
+        error.value = `${attemptLabel(attempt)} временно недоступна. Повтор использует ту же команду.`;
         return;
       }
       retainedAttempts.delete(scope);
@@ -738,7 +738,7 @@ export function createSupportExternalSettingsController(
       pendingAttemptScope = null;
       pendingReceiptId = null;
       recovery.value = null;
-      error.value = `${attemptLabel(attempt)} отклонена. Проверьте authoritative state.`;
+      error.value = `${attemptLabel(attempt)} отклонена. Проверьте состояние на сервере.`;
     } finally {
       if (mutationAbort === abort) {
         mutationAbort = null;
@@ -762,7 +762,7 @@ export function createSupportExternalSettingsController(
         outcome.operation !== attemptOperation(attempt)
       ) {
         recovery.value = "UNKNOWN_OUTCOME";
-        error.value = "Mutation receipt не соответствует сохранённому intent. Нужна ручная сверка.";
+        error.value = "Подтверждение не соответствует сохранённой команде. Нужна ручная сверка.";
         return;
       }
       if (outcome.status !== "SUCCEEDED") {
@@ -774,8 +774,8 @@ export function createSupportExternalSettingsController(
         recovery.value = "UNKNOWN_OUTCOME";
         error.value =
           outcome.status === "PENDING"
-            ? "Mutation ещё выполняется. Новые intent заблокированы; проверьте статус позже."
-            : "Backend не может доказать outcome. Новые intent заблокированы до ручной сверки.";
+            ? "Команда ещё выполняется. Новые команды заблокированы; проверьте статус позже."
+            : "Сервер не может подтвердить результат. Новые команды заблокированы до ручной сверки.";
         return;
       }
       retainedAttempts.delete(scope);
@@ -788,13 +788,13 @@ export function createSupportExternalSettingsController(
           receiptId,
         });
         recovery.value = "RETRYABLE_FAILURE";
-        error.value = "Receipt подтверждён, но authoritative state не перечитан. Проверьте статус снова.";
+        error.value = "Команда подтверждена, но состояние на сервере не перечитано. Проверьте статус снова.";
         return;
       }
       pendingAttempt = null;
       pendingAttemptScope = null;
       pendingReceiptId = null;
-      success.value = `${attemptLabel(attempt)} подтверждена receipt и authoritative state.`;
+      success.value = `${attemptLabel(attempt)} подтверждена сервером.`;
     } catch (cause) {
       if (scopeKey() !== scope) return;
       if (normalizeApiError(cause).name === "AbortError") return;
@@ -805,7 +805,7 @@ export function createSupportExternalSettingsController(
         receiptId,
       });
       recovery.value = "RETRYABLE_FAILURE";
-      error.value = "Mutation receipt пока недоступен. Новые intent остаются заблокированы.";
+      error.value = "Подтверждение команды пока недоступно. Новые команды остаются заблокированы.";
     }
   }
 
@@ -942,7 +942,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         validation.value = value;
       },
-      "Не удалось проверить mapping draft.",
+      "Не удалось проверить черновик правил.",
     );
   }
 
@@ -954,7 +954,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         preview.value = value;
       },
-      "Не удалось построить безопасный preview.",
+      "Не удалось построить безопасный предварительный просмотр.",
     );
   }
 
@@ -966,7 +966,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         diff.value = value;
       },
-      "Не удалось перечитать version diff.",
+      "Не удалось перечитать сравнение версий.",
     );
   }
 
@@ -1005,7 +1005,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         oauthTenants.value = value.items;
       },
-      "Не удалось перечитать доступные site/account.",
+      "Не удалось перечитать доступные сайты и учётные записи.",
     );
   }
 

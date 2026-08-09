@@ -40,7 +40,7 @@ export interface SupportExternalInboxContext {
   onForbidden?(): void | Promise<void>;
 }
 
-/** Owns one bounded External Work list, selection and exact recovery command. */
+/** Owns one bounded external-work list, selection and exact recovery command. */
 export function createSupportExternalInboxController(
   context: SupportExternalInboxContext,
   source: SupportExternalWorkSource,
@@ -150,7 +150,7 @@ export function createSupportExternalInboxController(
     pendingAttempt = null;
     pendingAttemptScope = null;
     reset();
-    error.value = "External Work queue недоступна для текущего Project или роли.";
+    error.value = "Очередь внешних задач недоступна для текущего проекта или роли.";
     await context.onForbidden?.();
     return true;
   }
@@ -222,14 +222,14 @@ export function createSupportExternalInboxController(
         pendingAttempt = retained.attempt;
         pendingAttemptScope = scope;
         recovery.value = retained.state;
-        error.value = "Recovery-команда не подтверждена. Разрешён только точный повтор.";
+        error.value = "Команда восстановления не подтверждена. Разрешён только точный повтор.";
       }
     } catch (cause) {
       if (!current(scope, requestGeneration)) return;
       if (normalizeApiError(cause).name === "AbortError") return;
       if (await handleAccessFailure(cause)) return;
       items.value = [];
-      error.value = "Не удалось загрузить External Work queue.";
+      error.value = "Не удалось загрузить очередь внешних задач.";
     } finally {
       if (current(scope, requestGeneration)) {
         loading.value = false;
@@ -327,7 +327,7 @@ export function createSupportExternalInboxController(
       detail.value = null;
       timeline.value = [];
       commands.value = [];
-      error.value = "Не удалось собрать causal detail External Work.";
+      error.value = "Не удалось загрузить подробности и историю внешней задачи.";
     } finally {
       if (sameSelection()) {
         loadingDetail.value = false;
@@ -381,7 +381,7 @@ export function createSupportExternalInboxController(
         return;
       if (normalizeApiError(cause).name === "AbortError") return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Следующая страница timeline пока недоступна.";
+      error.value = "Следующая страница истории пока недоступна.";
     } finally {
       if (detailAbort === abort) {
         detailAbort = null;
@@ -424,7 +424,7 @@ export function createSupportExternalInboxController(
         return;
       if (normalizeApiError(cause).name === "AbortError") return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Следующая страница command receipts пока недоступна.";
+      error.value = "Следующая страница команд пока недоступна.";
     } finally {
       if (detailAbort === abort) {
         detailAbort = null;
@@ -480,7 +480,7 @@ export function createSupportExternalInboxController(
       recovery.value = null;
       const selected = selectedItemId.value;
       if (selected) await selectItem(selected);
-      success.value = "Recovery-команда подтверждена authoritative receipt.";
+      success.value = "Команда восстановления подтверждена сервером.";
     } catch (cause) {
       const value = normalizeApiError(cause);
       const terminal =
@@ -499,20 +499,20 @@ export function createSupportExternalInboxController(
           state: "UNKNOWN_OUTCOME",
         });
         recovery.value = "UNKNOWN_OUTCOME";
-        error.value = "Результат recovery-команды неизвестен. Разрешён только точный повтор.";
+        error.value = "Результат команды восстановления неизвестен. Разрешён только точный повтор.";
       } else if (value.status === 429 || value.status === 503) {
         retainedCommandAttempts.set(scope, {
           attempt,
           state: "RETRYABLE_FAILURE",
         });
         recovery.value = "RETRYABLE_FAILURE";
-        error.value = "Provider временно недоступен. Точный recovery intent сохранён.";
+        error.value = "Внешняя система временно недоступна. Исходная команда восстановления сохранена.";
       } else {
         retainedCommandAttempts.delete(scope);
         pendingAttempt = null;
         pendingAttemptScope = null;
         recovery.value = null;
-        error.value = "Recovery-команда отклонена; authoritative status перечитан.";
+        error.value = "Команда восстановления отклонена; состояние на сервере перечитано.";
         const selected = selectedItemId.value;
         if (selected) await selectItem(selected);
       }

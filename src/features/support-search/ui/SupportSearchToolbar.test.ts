@@ -9,6 +9,10 @@ const state: SupportSearchRouteState = {
   filters: {
     statuses: ["OPEN"],
     priorities: ["HIGH"],
+    slaStates: ["ON_TRACK"],
+    waitingSides: ["END_USER"],
+    channels: ["TEXT"],
+    categoryCodes: ["INFORMATION_REQUEST"],
   },
   sort: { field: "SLA_DUE_AT", direction: "ASC" as const },
 };
@@ -22,6 +26,11 @@ describe("SupportSearchToolbar", () => {
     expect(wrapper.text()).toContain("Статус: Открыто");
     expect(wrapper.text()).toContain("Приоритет: Высокий");
     expect(wrapper.text()).toContain("Срок SLA");
+    expect(wrapper.text()).toContain("SLA: В норме");
+    expect(wrapper.text()).toContain("Ожидаем: пользователя");
+    expect(wrapper.text()).toContain("Канал: Текст");
+    expect(wrapper.text()).toContain("Категория: Информация");
+    expect(wrapper.text()).not.toContain("ON_TRACK");
     await wrapper.get("form").trigger("submit");
 
     expect(wrapper.emitted("submit")?.[0]?.[0]).toMatchObject({
@@ -36,7 +45,9 @@ describe("SupportSearchToolbar", () => {
       props: { modelValue: state, active: true, loading: false },
     });
 
-    await wrapper.get('select[aria-label="Область поиска"]').setValue("MESSAGES");
+    await wrapper
+      .get('select[aria-label="Область поиска"]')
+      .setValue("MESSAGES");
     expect(wrapper.emitted("update:modelValue")?.at(-1)?.[0]).toMatchObject({
       scope: "MESSAGES",
       filters: {},

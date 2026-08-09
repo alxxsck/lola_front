@@ -112,7 +112,7 @@ const claimantLabel = computed(() => {
     );
   return active?.claimant
     ? `${active.claimant.displayName} · эскалация`
-    : "Нет активного claimant";
+    : "Никто не взял эскалацию в работу";
 });
 
 function labelCaseStatus(value: string): string {
@@ -127,7 +127,7 @@ function labelCaseStatus(value: string): string {
       RESOLVED: "Решён",
       UNRESOLVED: "Не решён",
       CANCELLED: "Отменён",
-    }[value] ?? value
+    }[value] ?? "Состояние снимка не распознано"
   );
 }
 
@@ -139,7 +139,7 @@ function labelCasePriority(value: string): string {
       HIGH: "Высокий",
       URGENT: "Срочный",
       CRITICAL: "Критический",
-    }[value] ?? value
+    }[value] ?? "Приоритет не распознан"
   );
 }
 
@@ -161,12 +161,14 @@ function profileSyncStatusLabel(value: string): string {
       VALID: "Снимок проверен",
       VALID_WITH_WARNINGS: "Снимок с предупреждениями",
       NO_VALID_SNAPSHOT: "Нет проверенного снимка",
-    }[value] ?? value
+    }[value] ?? "Состояние снимка не распознано"
   );
 }
 
 function profileProvenanceLabel(value: string): string {
-  return value === "PRODUCT_PROFILE" ? "Профиль продукта" : value;
+  if (value === "PRODUCT_PROFILE") return "Профиль продукта";
+  if (value === "SUPPORT_OVERRIDE") return "Уточнено поддержкой";
+  return "Источник не распознан";
 }
 
 function profileClassificationLabel(
@@ -177,7 +179,7 @@ function profileClassificationLabel(
       INTERNAL: "Внутреннее",
       PERSONAL: "Персональное",
       SENSITIVE: "Чувствительное",
-    }[value] ?? value
+    }[value] ?? "Класс данных не распознан"
   );
 }
 
@@ -301,17 +303,17 @@ function activityReasonLabel(
     END_USER_CASE_SPLIT: "Обращение разделено",
     OTHER: "Другая причина",
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "Причина не распознана";
 }
 
 function eventSourceLabel(value: string): string {
   return (
     {
-      SERVER: "Backend продукта",
+      SERVER: "Серверная часть продукта",
       FRONTEND: "Интерфейс продукта",
       INTERNAL: "Lola",
       INTEGRATION: "Интеграция",
-    }[value] ?? value
+    }[value] ?? "Источник события не распознан"
   );
 }
 
@@ -319,7 +321,7 @@ function eventStatusLabel(value: string): string {
   return (
     { RECEIVED: "Получено", PROCESSED: "Обработано", FAILED: "Ошибка" }[
       value
-    ] ?? value
+    ] ?? "Состояние события не распознано"
   );
 }
 
@@ -444,7 +446,7 @@ defineExpose({ requestClassification });
                 :controller="assignmentController"
                 :assignment="selection.case.assignment"
                 :claimant-label="claimantLabel"
-                viewers-label="Presence ещё не подключён"
+                viewers-label="Список наблюдателей ещё не подключён"
                 :availability-label="availabilityLabel"
               />
               <SupportLeadAssignmentDesk
@@ -526,8 +528,8 @@ defineExpose({ requestClassification });
             </div>
           </dl>
           <p class="privacy-copy">
-            В рабочем месте используется внутренний идентификатор. Внешний ID
-            продукта здесь не раскрывается.
+            В рабочем месте используется внутренний идентификатор. Внешний
+            идентификатор продукта здесь не раскрывается.
           </p>
         </section>
 
@@ -587,7 +589,7 @@ defineExpose({ requestClassification });
               inspector.profile.loaded.value && !visibleProfileFields.length
             "
             empty-title="Разрешённых данных нет"
-            empty-copy="Product Profile не содержит доступных полей для вашей роли."
+            empty-copy="Профиль продукта не содержит полей, доступных для вашей роли."
             empty-icon="pi pi-database"
             @retry="inspector.reloadActiveTab()"
           >
@@ -658,7 +660,7 @@ defineExpose({ requestClassification });
               !inspector.events.data.value?.items.length
             "
             empty-title="Событий пока нет"
-            empty-copy="В безопасном рецепте для этого обращения ничего не найдено."
+            empty-copy="В защищённом наборе данных для этого обращения ничего не найдено."
             empty-icon="pi pi-bolt"
             @retry="inspector.reloadActiveTab()"
           >

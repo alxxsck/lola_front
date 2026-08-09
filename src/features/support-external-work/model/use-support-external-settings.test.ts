@@ -147,7 +147,7 @@ describe("Support External Work settings controller", () => {
     await controller.testSelectedConnection();
 
     expect(controller.recovery.value).toBe("RETRYABLE_FAILURE");
-    expect(controller.error.value).toContain("authoritative state не перечитан");
+    expect(controller.error.value).toContain("состояние на сервере не перечитано");
     await controller.testSelectedConnection();
     expect(source.testConnection).toHaveBeenCalledOnce();
 

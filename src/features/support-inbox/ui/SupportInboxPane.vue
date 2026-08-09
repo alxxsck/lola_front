@@ -108,8 +108,8 @@ const searchToolsTitle = computed(() => {
   if (props.viewSelection?.kind === "SAVED") {
     const selectedId = props.viewSelection.id;
     return (
-      props.viewSaved.find((item) => item.id === selectedId)?.draft.displayName ??
-      "Сохранённое представление"
+      props.viewSaved.find((item) => item.id === selectedId)?.draft
+        .displayName ?? "Сохранённое представление"
     );
   }
   if (props.searchState.phrase.trim())
@@ -129,8 +129,7 @@ function filterCountLabel(count: number): string {
 
 const searchToolsDescription = computed(() => {
   if (props.viewSelection?.kind === "SYSTEM") return "Системное представление";
-  if (props.viewSelection?.kind === "SAVED")
-    return "Сохранённое представление";
+  if (props.viewSelection?.kind === "SAVED") return "Сохранённое представление";
   if (props.searchActive) {
     const count = activeFilterCount.value;
     const filters = count ? ` · ${filterCountLabel(count)}` : "";
@@ -214,7 +213,7 @@ function caseStatus(value: string): string {
       RESOLVED: "Решено",
       UNRESOLVED: "Не решено",
       CANCELLED: "Отменено",
-    }[value] ?? value
+    }[value] ?? "Состояние не распознано"
   );
 }
 
@@ -230,7 +229,7 @@ const casePriorityPresentation: Record<
 };
 
 function casePriority(value: string): string {
-  return casePriorityPresentation[value]?.label ?? value;
+  return casePriorityPresentation[value]?.label ?? "Приоритет не распознан";
 }
 
 function isPriorityEmphasized(value: string): boolean {
@@ -363,10 +362,7 @@ function unreadLabel(
           aria-hidden="true"
           >⌘ K</span
         >
-        <i
-          class="pi pi-chevron-down inbox-tools__chevron"
-          aria-hidden="true"
-        />
+        <i class="pi pi-chevron-down inbox-tools__chevron" aria-hidden="true" />
       </button>
 
       <Transition name="inbox-tools-panel">
@@ -601,7 +597,9 @@ function unreadLabel(
             item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
         }"
         :aria-current="selectedKey === itemKey(item) ? 'true' : undefined"
-        :aria-label="item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined"
+        :aria-label="
+          item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined
+        "
         :aria-describedby="
           item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE'
             ? slaDescriptionId(item.id)
@@ -667,7 +665,9 @@ function unreadLabel(
           </span>
           <template v-if="item.kind === 'CASE'">
             <span class="inbox-row__meta case-row__metadata">
-              <span class="case-row__status">{{ caseStatus(item.status) }}</span>
+              <span class="case-row__status">{{
+                caseStatus(item.status)
+              }}</span>
               <span class="case-row__separator" aria-hidden="true">·</span>
               <span
                 :class="[
@@ -698,11 +698,9 @@ function unreadLabel(
             >
               <i class="pi pi-stopwatch" aria-hidden="true" />
               <span>{{ slaSignalCompactLabel(item.slaSignal) }}</span>
-              <span
-                :id="slaDescriptionId(item.id)"
-                class="sr-only"
-                >{{ shadowSlaExplanation }}</span
-              >
+              <span :id="slaDescriptionId(item.id)" class="sr-only">{{
+                shadowSlaExplanation
+              }}</span>
             </span>
           </template>
           <span v-else class="inbox-row__meta">

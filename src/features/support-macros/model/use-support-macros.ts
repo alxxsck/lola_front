@@ -55,12 +55,12 @@ function receiptMatchesTarget(
 }
 
 function errorCopy(cause: unknown): string {
-  if (!(cause instanceof ApiError)) return "Не удалось загрузить macros. Повторите попытку.";
+  if (!(cause instanceof ApiError)) return "Не удалось загрузить шаблоны. Повторите попытку.";
   if (cause.status === 409)
-    return "Каталог или macro изменился. Список обновлён — выберите актуальную версию.";
+    return "Каталог или шаблон изменился. Список обновлён — выберите актуальную версию.";
   if (cause.status === 503)
-    return "Macros временно недоступны для этого проекта.";
-  return "Не удалось загрузить macros. Повторите попытку.";
+    return "Шаблоны временно недоступны для этого проекта.";
+  return "Не удалось загрузить шаблоны. Повторите попытку.";
 }
 
 /** Owns the operator Macro catalog and exactly one editable draft for the selected Surface. */
@@ -114,7 +114,7 @@ export function createSupportMacroController(
     await context.onForbidden?.();
   }
 
-  function requireRecovery(message = "Macro изменился или больше недоступен. Выберите актуальный macro перед отправкой."): void {
+  function requireRecovery(message = "Шаблон изменился или больше недоступен. Выберите актуальный шаблон перед отправкой."): void {
     activeDraft.value = null;
     recoveryRequired.value = true;
     error.value = message;
@@ -194,7 +194,7 @@ export function createSupportMacroController(
     if (!canOpen.value || applyingId.value) return null;
     const target = currentTarget(macro);
     if (!target) {
-      error.value = "Macro больше не опубликован. Обновите каталог.";
+      error.value = "Шаблон больше не опубликован. Обновите каталог.";
       return null;
     }
     const requestGeneration = generation;
@@ -285,8 +285,8 @@ export function createSupportMacroController(
       }
       const message =
         cause instanceof ApiError && cause.status === 409
-          ? "Macro draft изменился или истёк. Ваш текст сохранён — примените macro заново."
-          : "Не удалось сохранить изменения macro. Ваш текст не потерян.";
+          ? "Черновик шаблона изменился или истёк. Ваш текст сохранён — примените шаблон заново."
+          : "Не удалось сохранить изменения шаблона. Ваш текст не потерян.";
       requireRecovery(message);
       return null;
     } finally {

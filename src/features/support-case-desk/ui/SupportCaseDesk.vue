@@ -9,6 +9,7 @@ import Textarea from "primevue/textarea";
 import type {
   ClassifyEndUserCaseDto,
   EndUserCaseDetailResponseDto,
+  EndUserCaseClassificationEvidenceResponseDtoKind,
 } from "@/shared/api/generated/models";
 import {
   createSupportCaseDeskController,
@@ -47,7 +48,9 @@ const classificationBaseline = ref<{
 } | null>(null);
 
 const value = computed(() => props.controller.exactCase.value);
-const allowedActions = computed(() => new Set(value.value?.allowedActions ?? []));
+const allowedActions = computed(
+  () => new Set(value.value?.allowedActions ?? []),
+);
 
 const statusLabels: Record<string, string> = {
   OPEN: "Открыт",
@@ -66,6 +69,11 @@ const priorityLabels: Record<string, string> = {
   URGENT: "Срочный",
   CRITICAL: "Критический",
 };
+const evidenceKindLabels = {
+  MESSAGE: "сообщение",
+  CASE_EVIDENCE: "данные обращения",
+  CMS_ACTION: "действие оператора",
+} satisfies Record<EndUserCaseClassificationEvidenceResponseDtoKind, string>;
 const typeOptions = [
   { value: "INFORMATION_REQUEST", label: "Информационный запрос" },
   { value: "PROBLEM_RESOLUTION", label: "Решение проблемы" },
@@ -116,7 +124,10 @@ const statusOptions = computed(() =>
       const action = statusAction[status];
       return action ? allowedActions.value.has(action as never) : false;
     })
-    .map((status) => ({ value: status, label: statusLabels[status] ?? status })),
+    .map((status) => ({
+      value: status,
+      label: statusLabels[status] ?? "Состояние не распознано",
+    })),
 );
 const priorityOptions = computed(() => {
   const current = value.value;
@@ -163,19 +174,27 @@ const canEscalate = computed(() =>
 );
 const confidence = computed(() => {
   const raw = value.value?.classification.confidence;
-  return raw === null || raw === undefined ? "Не определена" : `${Math.round(raw * 100)}%`;
+  return raw === null || raw === undefined
+    ? "Не определена"
+    : `${Math.round(raw * 100)}%`;
 });
 const classificationSource = computed(() =>
-  value.value?.classification.source === "AI" ? "AI-классификация" : "Уточнено оператором",
+  value.value?.classification.source === "AI"
+    ? "AI-классификация"
+    : "Уточнено оператором",
 );
 const optionLabel = (
   options: Array<{ value: string; label: string }>,
   current: string,
-): string => options.find((item) => item.value === current)?.label ?? current;
+): string =>
+  options.find((item) => item.value === current)?.label ??
+  "Значение не распознано";
 const categoryLabel = computed(
   () =>
     categoryOptions.value.find((item) => item.code === value.value?.groupCode)
-      ?.label ?? value.value?.groupCode ?? "—",
+      ?.label ??
+    value.value?.groupCode ??
+    "—",
 );
 const hasConflict = computed(() => Boolean(props.controller.conflict.value));
 const classificationDraftChanged = computed(() => {
@@ -258,7 +277,10 @@ async function submitClassification(): Promise<void> {
 async function submitWorkflow(): Promise<void> {
   if (!selectedStatus.value) return;
   try {
-    await props.controller.transition(selectedStatus.value, workflowReason.value);
+    await props.controller.transition(
+      selectedStatus.value,
+      workflowReason.value,
+    );
     workflowVisible.value = false;
   } catch {
     // Keep the draft open so the operator can reconcile a conflict.
@@ -300,8 +322,8 @@ defineExpose({ requestClassification });
       {{ controller.error.value }}
     </Message>
     <Message v-if="hasConflict" severity="warn" :closable="false">
-      Кейс уже изменился. Показано актуальное состояние сервера; ваш черновик
-      сохранён в открытом окне.
+      Обращение уже изменилось. Показано актуальное состояние сервера; ваш
+      черновик сохранён в открытом окне.
     </Message>
     <Message
       v-if="controller.reconciling.value"
@@ -313,11 +335,16 @@ defineExpose({ requestClassification });
         <strong v-if="controller.reconciliationReason.value === 'ACCEPTED'">
           Команда принята, но актуальное состояние ещё не получено.
         </strong>
-        <strong v-else-if="controller.reconciliationReason.value === 'CONFLICT'">
-          Состояние кейса изменилось параллельно.
+        <strong
+          v-else-if="controller.reconciliationReason.value === 'CONFLICT'"
+        >
+          Состояние обращения изменилось параллельно.
         </strong>
         <strong v-else>Результат команды пока неизвестен.</strong>
-        <span>Новые действия временно недоступны, чтобы не повторить операцию.</span>
+        <span
+          >Новые действия временно недоступны, чтобы не повторить
+          операцию.</span
+        >
       </div>
       <Button
         label="Обновить состояние"
@@ -330,21 +357,30 @@ defineExpose({ requestClassification });
     </Message>
 
     <div v-if="controller.loading.value && !value" class="case-desk-loading">
-      Загружаем актуальное состояние кейса…
+      Загружаем актуальное состояние обращения…
     </div>
     <template v-else-if="value">
       <header class="case-desk-header">
-        <span class="case-desk-kicker">Кейс #{{ value.projectSequence }}</span>
+        <span class="case-desk-kicker"
+          >Обращение #{{ value.projectSequence }}</span
+        >
         <h3>{{ value.title }}</h3>
         <div class="case-desk-state-line">
-          <span>{{ statusLabels[value.status] ?? value.status }}</span>
+          <span>{{
+            statusLabels[value.status] ?? "Состояние не распознано"
+          }}</span>
           <i aria-hidden="true" />
-          <strong>{{ priorityLabels[value.priority] ?? value.priority }}</strong>
+          <strong>{{
+            priorityLabels[value.priority] ?? "Приоритет не распознан"
+          }}</strong>
           <small>v{{ value.version }}</small>
         </div>
       </header>
 
-      <section class="case-desk-classification" aria-labelledby="case-classification-title">
+      <section
+        class="case-desk-classification"
+        aria-labelledby="case-classification-title"
+      >
         <div class="case-desk-section-heading">
           <div>
             <span class="case-desk-kicker">Классификация</span>
@@ -353,16 +389,31 @@ defineExpose({ requestClassification });
           <span class="confidence-indicator">{{ confidence }}</span>
         </div>
         <dl class="case-desk-grid">
-          <div><dt>Тип</dt><dd>{{ optionLabel(typeOptions, value.type) }}</dd></div>
-          <div><dt>Влияние</dt><dd>{{ optionLabel(impactOptions, value.impact) }}</dd></div>
-          <div><dt>Срочность</dt><dd>{{ optionLabel(urgencyOptions, value.urgency) }}</dd></div>
-          <div><dt>Источник</dt><dd>{{ classificationSource }}</dd></div>
+          <div>
+            <dt>Тип</dt>
+            <dd>{{ optionLabel(typeOptions, value.type) }}</dd>
+          </div>
+          <div>
+            <dt>Влияние</dt>
+            <dd>{{ optionLabel(impactOptions, value.impact) }}</dd>
+          </div>
+          <div>
+            <dt>Срочность</dt>
+            <dd>{{ optionLabel(urgencyOptions, value.urgency) }}</dd>
+          </div>
+          <div>
+            <dt>Источник</dt>
+            <dd>{{ classificationSource }}</dd>
+          </div>
         </dl>
         <div class="case-desk-evidence">
           <span>Основания</span>
           <ul v-if="value.classification.evidence.length">
-            <li v-for="item in value.classification.evidence" :key="`${item.kind}:${item.id}`">
-              {{ item.kind.toLowerCase() }} · {{ item.id }}
+            <li
+              v-for="item in value.classification.evidence"
+              :key="`${item.kind}:${item.id}`"
+            >
+              {{ evidenceKindLabels[item.kind] }} · {{ item.id }}
             </li>
           </ul>
           <p v-else>Ссылки на основания не переданы</p>
@@ -375,13 +426,17 @@ defineExpose({ requestClassification });
           <span class="case-desk-kicker">Порог приоритета</span>
           <h4 id="case-policy-title">
             Не ниже {{ priorityLabels[value.priorityPolicy.effectiveFloor] }}
-            <small>policy v{{ value.priorityPolicy.policyVersion }}</small>
+            <small
+              >правила · версия {{ value.priorityPolicy.policyVersion }}</small
+            >
           </h4>
-          <p>{{ value.priorityPolicy.reasons.join(" · ") || "Ограничений нет" }}</p>
+          <p>
+            {{ value.priorityPolicy.reasons.join(" · ") || "Ограничений нет" }}
+          </p>
         </div>
       </section>
 
-      <div class="case-desk-actions" aria-label="Действия с кейсом">
+      <div class="case-desk-actions" aria-label="Действия с обращением">
         <Button
           v-if="canClassify"
           :label="classificationActionLabel"
@@ -423,39 +478,94 @@ defineExpose({ requestClassification });
       <div class="case-desk-form classification-form">
         <label>
           <span>Категория</span>
-          <Select v-model="groupCode" :options="categoryOptions" option-label="label" option-value="code" :disabled="!canChangeClassification" fluid />
+          <Select
+            v-model="groupCode"
+            :options="categoryOptions"
+            option-label="label"
+            option-value="code"
+            :disabled="!canChangeClassification"
+            fluid
+          />
         </label>
         <label>
           <span>Тип обращения</span>
-          <Select v-model="type" :options="typeOptions" option-label="label" option-value="value" :disabled="!canChangeClassification" fluid />
+          <Select
+            v-model="type"
+            :options="typeOptions"
+            option-label="label"
+            option-value="value"
+            :disabled="!canChangeClassification"
+            fluid
+          />
         </label>
         <label>
           <span>Влияние</span>
-          <Select v-model="impact" :options="impactOptions" option-label="label" option-value="value" :disabled="!canChangeClassification" fluid />
+          <Select
+            v-model="impact"
+            :options="impactOptions"
+            option-label="label"
+            option-value="value"
+            :disabled="!canChangeClassification"
+            fluid
+          />
         </label>
         <label>
           <span>Срочность</span>
-          <Select v-model="urgency" :options="urgencyOptions" option-label="label" option-value="value" :disabled="!canChangeClassification" fluid />
+          <Select
+            v-model="urgency"
+            :options="urgencyOptions"
+            option-label="label"
+            option-value="value"
+            :disabled="!canChangeClassification"
+            fluid
+          />
         </label>
         <label class="form-wide">
           <span>Приоритет</span>
-          <Select v-model="priority" :options="priorityOptions" option-label="label" option-value="value" :disabled="!canChangePriority" fluid />
-          <small>Серверный порог: {{ priorityLabels[value?.priorityPolicy.effectiveFloor ?? ""] }}</small>
+          <Select
+            v-model="priority"
+            :options="priorityOptions"
+            option-label="label"
+            option-value="value"
+            :disabled="!canChangePriority"
+            fluid
+          />
+          <small
+            >Серверный порог:
+            {{
+              priorityLabels[value?.priorityPolicy.effectiveFloor ?? ""]
+            }}</small
+          >
         </label>
         <label class="form-wide">
           <span>Причина изменения</span>
-          <Textarea v-model="classificationReason" rows="3" maxlength="2000" fluid />
-          <small>Попадёт в журнал действий и будет видна следующему оператору.</small>
+          <Textarea
+            v-model="classificationReason"
+            rows="3"
+            maxlength="2000"
+            fluid
+          />
+          <small
+            >Попадёт в журнал действий и будет видна следующему
+            оператору.</small
+          >
         </label>
       </div>
       <template #footer>
-        <Button label="Отмена" severity="secondary" text @click="classificationVisible = false" />
+        <Button
+          label="Отмена"
+          severity="secondary"
+          text
+          @click="classificationVisible = false"
+        />
         <Button
           class="classification-submit"
           label="Сохранить изменение"
           icon="pi pi-check"
           :loading="controller.mutating.value"
-          :disabled="!classificationReason.trim() || !classificationDraftChanged"
+          :disabled="
+            !classificationReason.trim() || !classificationDraftChanged
+          "
           @click="submitClassification"
         />
       </template>
@@ -464,7 +574,7 @@ defineExpose({ requestClassification });
     <Dialog
       v-model:visible="workflowVisible"
       modal
-      header="Изменить статус кейса"
+      header="Изменить статус обращения"
       :style="{ width: 'min(520px, calc(100vw - 24px))' }"
       :draggable="false"
     >
@@ -474,7 +584,13 @@ defineExpose({ requestClassification });
       <div class="case-desk-form">
         <label>
           <span>Новый статус</span>
-          <Select v-model="selectedStatus" :options="statusOptions" option-label="label" option-value="value" fluid />
+          <Select
+            v-model="selectedStatus"
+            :options="statusOptions"
+            option-label="label"
+            option-value="value"
+            fluid
+          />
         </label>
         <label>
           <span>Причина изменения</span>
@@ -482,79 +598,288 @@ defineExpose({ requestClassification });
         </label>
       </div>
       <template #footer>
-        <Button label="Отмена" severity="secondary" text @click="workflowVisible = false" />
-        <Button label="Изменить статус" :loading="controller.mutating.value" :disabled="controller.reconciling.value || !selectedStatus || !workflowReason.trim()" @click="submitWorkflow" />
+        <Button
+          label="Отмена"
+          severity="secondary"
+          text
+          @click="workflowVisible = false"
+        />
+        <Button
+          label="Изменить статус"
+          :loading="controller.mutating.value"
+          :disabled="
+            controller.reconciling.value ||
+            !selectedStatus ||
+            !workflowReason.trim()
+          "
+          @click="submitWorkflow"
+        />
       </template>
     </Dialog>
 
     <Dialog
       v-model:visible="escalationVisible"
       modal
-      header="Эскалировать кейс"
+      header="Передать обращение специалисту"
       :style="{ width: 'min(520px, calc(100vw - 24px))' }"
       :draggable="false"
     >
       <div class="case-desk-form">
         <label>
           <span>Код причины</span>
-          <InputText v-model="escalationReasonCode" maxlength="100" placeholder="PAYMENT_REVIEW" fluid />
+          <InputText
+            v-model="escalationReasonCode"
+            maxlength="100"
+            placeholder="PAYMENT_REVIEW"
+            fluid
+          />
           <small>Латинские заглавные буквы, цифры и подчёркивание.</small>
         </label>
         <label>
           <span>Что должен проверить специалист</span>
-          <Textarea v-model="escalationSummary" rows="4" maxlength="1000" fluid />
+          <Textarea
+            v-model="escalationSummary"
+            rows="4"
+            maxlength="1000"
+            fluid
+          />
         </label>
       </div>
       <template #footer>
-        <Button label="Отмена" severity="secondary" text @click="escalationVisible = false" />
-        <Button label="Передать специалисту" icon="pi pi-arrow-up-right" :loading="controller.mutating.value" :disabled="controller.reconciling.value || !escalationReasonCode.trim() || !escalationSummary.trim()" @click="submitEscalation" />
+        <Button
+          label="Отмена"
+          severity="secondary"
+          text
+          @click="escalationVisible = false"
+        />
+        <Button
+          label="Передать специалисту"
+          icon="pi pi-arrow-up-right"
+          :loading="controller.mutating.value"
+          :disabled="
+            controller.reconciling.value ||
+            !escalationReasonCode.trim() ||
+            !escalationSummary.trim()
+          "
+          @click="submitEscalation"
+        />
       </template>
     </Dialog>
   </div>
 </template>
 
 <style scoped>
-.support-case-desk { display: grid; gap: 14px; color: var(--text-primary); }
-.case-desk-loading { padding: 28px 16px; color: var(--text-muted); font-size: .8rem; text-align: center; }
-.case-desk-header { padding-bottom: 14px; border-bottom: 1px solid var(--line); }
-.case-desk-header h3 { margin: 5px 0 10px; font-size: 1rem; line-height: 1.35; }
-.case-desk-kicker { color: var(--text-muted); font-size: .64rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.case-desk-state-line { display: flex; align-items: center; gap: 7px; font-size: .76rem; }
-.case-desk-state-line i { width: 4px; height: 4px; border-radius: 50%; background: var(--line); }
-.case-desk-state-line strong { color: var(--status-warning-text); }
-.case-desk-state-line small { margin-left: auto; color: var(--text-muted); }
-.case-desk-classification { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-muted); }
-.case-desk-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.case-desk-section-heading h4, .case-desk-policy h4 { margin: 4px 0 0; font-size: .84rem; }
-.confidence-indicator { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--text-muted); font-size: .68rem; font-weight: 700; }
-.case-desk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 14px 0 0; }
-.case-desk-grid dt { color: var(--text-muted); font-size: .65rem; }
-.case-desk-grid dd { margin: 3px 0 0; font-size: .72rem; font-weight: 700; overflow-wrap: anywhere; }
-.case-desk-evidence { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
-.case-desk-evidence > span { color: var(--text-muted); font-size: .65rem; }
-.case-desk-evidence ul { display: grid; gap: 4px; margin: 7px 0 0; padding: 0; list-style: none; }
-.case-desk-evidence li, .case-desk-evidence p { margin: 0; color: var(--text-secondary); font-size: .68rem; overflow-wrap: anywhere; }
-.case-desk-policy { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--status-warning-text); border-radius: 12px; background: var(--status-warning-soft); }
-.case-desk-policy > i { display: grid; place-items: center; width: 30px; height: 30px; color: var(--status-warning-text); }
-.case-desk-policy h4 small { margin-left: 4px; color: var(--text-muted); font-weight: 600; }
-.case-desk-policy p { margin: 5px 0 0; color: var(--text-secondary); font-size: .68rem; line-height: 1.4; }
-.case-desk-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.case-desk-actions :deep(.p-button) { min-height: 44px; justify-content: flex-start; padding-inline: 10px; font-size: .72rem; }
-.case-desk-actions :deep(.p-button:last-child) { grid-column: 1 / -1; }
-.case-desk-reconcile :deep(.p-message-content) { align-items: flex-start; }
-.case-desk-reconcile :deep(.p-message-text) { display: grid; gap: 10px; width: 100%; }
-.case-desk-reconcile :deep(.p-message-text > div) { display: grid; gap: 3px; }
-.case-desk-reconcile :deep(.p-message-text span) { font-size: .7rem; font-weight: 400; line-height: 1.4; }
-.case-desk-reconcile :deep(.p-button) { min-height: 44px; justify-content: center; }
-.case-desk-form { display: grid; gap: 14px; padding-top: 4px; }
-.classification-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.case-desk-form label { display: grid; gap: 6px; min-width: 0; color: var(--text-primary); font-size: .76rem; font-weight: 700; }
-.case-desk-form label > small { color: var(--text-muted); font-size: .66rem; font-weight: 400; line-height: 1.4; }
-.form-wide { grid-column: 1 / -1; }
+.support-case-desk {
+  display: grid;
+  gap: 14px;
+  color: var(--text-primary);
+}
+.case-desk-loading {
+  padding: 28px 16px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+.case-desk-header {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.case-desk-header h3 {
+  margin: 5px 0 10px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.case-desk-kicker {
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.case-desk-state-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.76rem;
+}
+.case-desk-state-line i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.case-desk-state-line strong {
+  color: var(--status-warning-text);
+}
+.case-desk-state-line small {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+.case-desk-classification {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+.case-desk-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.case-desk-section-heading h4,
+.case-desk-policy h4 {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+}
+.confidence-indicator {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.case-desk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 14px 0 0;
+}
+.case-desk-grid dt {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+.case-desk-grid dd {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.case-desk-evidence {
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.case-desk-evidence > span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+.case-desk-evidence ul {
+  display: grid;
+  gap: 4px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.case-desk-evidence li,
+.case-desk-evidence p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+.case-desk-policy {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--status-warning-text);
+  border-radius: 12px;
+  background: var(--status-warning-soft);
+}
+.case-desk-policy > i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--status-warning-text);
+}
+.case-desk-policy h4 small {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.case-desk-policy p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+.case-desk-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.case-desk-actions :deep(.p-button) {
+  min-height: 44px;
+  justify-content: flex-start;
+  padding-inline: 10px;
+  font-size: 0.72rem;
+}
+.case-desk-actions :deep(.p-button:last-child) {
+  grid-column: 1 / -1;
+}
+.case-desk-reconcile :deep(.p-message-content) {
+  align-items: flex-start;
+}
+.case-desk-reconcile :deep(.p-message-text) {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+.case-desk-reconcile :deep(.p-message-text > div) {
+  display: grid;
+  gap: 3px;
+}
+.case-desk-reconcile :deep(.p-message-text span) {
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.case-desk-reconcile :deep(.p-button) {
+  min-height: 44px;
+  justify-content: center;
+}
+.case-desk-form {
+  display: grid;
+  gap: 14px;
+  padding-top: 4px;
+}
+.classification-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.case-desk-form label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.case-desk-form label > small {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+.form-wide {
+  grid-column: 1 / -1;
+}
 @media (max-width: 520px) {
-  .classification-form { grid-template-columns: 1fr; }
-  .form-wide { grid-column: auto; }
-  .case-desk-actions { grid-template-columns: 1fr; }
-  .case-desk-actions :deep(.p-button:last-child) { grid-column: auto; }
+  .classification-form {
+    grid-template-columns: 1fr;
+  }
+  .form-wide {
+    grid-column: auto;
+  }
+  .case-desk-actions {
+    grid-template-columns: 1fr;
+  }
+  .case-desk-actions :deep(.p-button:last-child) {
+    grid-column: auto;
+  }
 }
 </style>

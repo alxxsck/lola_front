@@ -38,10 +38,10 @@ describe("EndUserCaseFilters", () => {
     expect(wrapper.find('[aria-label="Статус"]').exists()).toBe(true);
     expect(wrapper.find('[aria-label="Приоритет"]').exists()).toBe(true);
     expect(wrapper.find('[aria-label="Сортировка"]').exists()).toBe(true);
-    expect(wrapper.find('[aria-label="ID пользователя"]').exists()).toBe(false);
+    expect(wrapper.find('[aria-label="Идентификатор пользователя"]').exists()).toBe(false);
 
     await wrapper.get('[data-test="advanced-toggle"]').trigger("click");
-    expect(wrapper.find('[aria-label="ID пользователя"]').exists()).toBe(true);
+    expect(wrapper.find('[aria-label="Идентификатор пользователя"]').exists()).toBe(true);
     expect(wrapper.text()).toContain("Скрыть фильтры");
   });
 
@@ -112,8 +112,8 @@ describe("EndUserCaseFilters", () => {
     field("Оценка решения").vm.$emit("update:modelValue", ["LIKELY_RESOLVED"]);
     field("Источник решения").vm.$emit("update:modelValue", ["AI_INFERENCE"]);
     field("Код категории").vm.$emit("update:modelValue", "DEPOSIT");
-    field("ID исполнителя").vm.$emit("update:modelValue", "admin-id");
-    field("ID пользователя").vm.$emit("update:modelValue", "user-id");
+    field("Идентификатор исполнителя").vm.$emit("update:modelValue", "admin-id");
+    field("Идентификатор пользователя").vm.$emit("update:modelValue", "user-id");
     field("Назначение").vm.$emit("update:modelValue", "ASSIGNED");
     field("Основной язык").vm.$emit("update:modelValue", "es");
     field("Эскалация обращения").vm.$emit("update:modelValue", "OPEN");

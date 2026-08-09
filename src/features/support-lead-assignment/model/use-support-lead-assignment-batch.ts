@@ -122,7 +122,7 @@ export function createSupportLeadAssignmentBatchController(
               error:
                 snapshot.assignmentState === "UNASSIGNED"
                   ? ""
-                  : "Case уже назначен или зарезервирован",
+                  : "Обращение уже назначено или зарезервировано",
             };
             if (!row.error) selectInitialTarget(row);
             return row;
@@ -136,14 +136,14 @@ export function createSupportLeadAssignmentBatchController(
                 snapshot: null,
                 teamId: "",
                 operatorId: "",
-                error: "Case недоступен или скрыт",
+                error: "Обращение недоступно или скрыто",
               } satisfies SupportLeadAssignmentBatchRow;
             return {
               caseId,
               snapshot: null,
               teamId: "",
               operatorId: "",
-              error: "Не удалось проверить Case",
+              error: "Не удалось проверить обращение",
             } satisfies SupportLeadAssignmentBatchRow;
           }
         }),
@@ -186,7 +186,7 @@ export function createSupportLeadAssignmentBatchController(
       return null;
     }
     if (!rows.value.length || rows.value.some((row) => !row.snapshot || row.error)) {
-      error.value = "Разрешите ошибки по каждому Case перед отправкой пакета";
+      error.value = "Исправьте ошибки по каждому обращению перед отправкой пакета";
       return null;
     }
     const items = rows.value.map((row, index) => {
@@ -215,7 +215,7 @@ export function createSupportLeadAssignmentBatchController(
       } satisfies SupportCaseAssignmentBatchItemRequestDto;
     });
     if (items.some((item) => item === null)) {
-      error.value = "Серверный catalog назначения изменился. Обновите пакет.";
+      error.value = "Серверный список назначений изменился. Обновите пакет.";
       return null;
     }
     return items as SupportCaseAssignmentBatchItemRequestDto[];

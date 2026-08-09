@@ -552,17 +552,17 @@ export function createSupportCaseExternalWorkController(
     ].filter(Boolean);
     if (!title || !contextParts.length) {
       validationError.value =
-        "Заполните заголовок и редактируемый safe-context preview.";
+        "Заполните заголовок и редактируемый безопасный контекст.";
       return null;
     }
     const requesterEmail = draft.requesterEmail.trim();
     const requesterName = draft.requesterName.trim();
     if (option.requester?.emailRequired && !requesterEmail) {
-      validationError.value = "Укажите email requester для выбранной формы.";
+      validationError.value = "Укажите эл. почту заявителя для выбранной формы.";
       return null;
     }
     if (option.requester?.nameRequired && !requesterName) {
-      validationError.value = "Укажите имя requester для выбранной формы.";
+      validationError.value = "Укажите имя заявителя для выбранной формы.";
       return null;
     }
     const missingField = option.fields.find((field) => {
@@ -756,7 +756,7 @@ export function createSupportCaseExternalWorkController(
         [0, 429, 502, 503, 504].includes(cause.status)
       ) {
         error.value =
-          "Результат команды неизвестен. Доступен только точный повтор с тем же ключом и payload.";
+          "Результат команды неизвестен. Доступен только точный повтор с тем же ключом и данными.";
         pendingAttempt.value = attempt;
         return;
       }
@@ -928,7 +928,7 @@ export function createSupportCaseExternalWorkController(
       resolution.decision === "LINK_EXISTING" &&
       !resolution.remoteItemId?.trim()
     ) {
-      validationError.value = "Укажите Remote item ID из server evidence.";
+      validationError.value = "Укажите идентификатор внешней задачи из подтверждённых данных сервера.";
       return;
     }
     if (
@@ -936,7 +936,7 @@ export function createSupportCaseExternalWorkController(
       !resolution.providerCorrelation?.trim()
     ) {
       validationError.value =
-        "Укажите provider correlation из server evidence.";
+        "Укажите идентификатор подтверждения из данных внешней системы.";
       return;
     }
     validationError.value = "";

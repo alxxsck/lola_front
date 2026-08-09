@@ -124,7 +124,7 @@ export function createSupportOperationalAlertsController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить operational alerts";
+      error.value = "Не удалось загрузить операционные сигналы";
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -193,7 +193,7 @@ export function createSupportOperationalAlertsController(
         await context.onForbidden?.();
         return;
       }
-      detailError.value = "Не удалось загрузить историю alert";
+      detailError.value = "Не удалось загрузить историю сигнала";
     } finally {
       if (requestGeneration === detailGeneration) {
         detailLoading.value = false;
@@ -316,7 +316,7 @@ export function createSupportOperationalAlertsController(
         >[2]);
       const expectedState = kind === "ACKNOWLEDGE" ? "ACKNOWLEDGED" : "RESOLVED";
       if (receipt.alertId !== alertId || receipt.state !== expectedState || receipt.version <= current.alert.version)
-        throw new ApiError(0, "Некорректная command receipt от сервера");
+        throw new ApiError(0, "Сервер вернул некорректное подтверждение команды");
       appliedReceiptVersion.value = receipt.version;
       if (
         detailRequestGeneration !== detailGeneration ||
@@ -347,8 +347,8 @@ export function createSupportOperationalAlertsController(
       }
       mutationError.value =
         cause instanceof ApiError && cause.status === 409
-          ? "Alert уже изменился на сервере. Обновите его перед следующим действием."
-          : "Не удалось выполнить команду alert. Ничего не считается подтверждённым.";
+          ? "Сигнал уже изменился на сервере. Обновите его перед следующим действием."
+          : "Не удалось выполнить действие с сигналом. Ничего не считается подтверждённым.";
       if (cause instanceof ApiError && cause.status === 409)
         await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
       return false;
@@ -413,7 +413,7 @@ export function createSupportOperationalAlertsController(
         receipt.ownerCmsUserId !== ownerCmsUserId ||
         receipt.version <= current.alert.version
       )
-        throw new ApiError(0, "Некорректная owner command receipt от сервера");
+        throw new ApiError(0, "Сервер вернул некорректное подтверждение смены владельца");
       appliedReceiptVersion.value = receipt.version;
       if (!isCurrentDetail(projectId, requestGeneration) || !canManage()) return false;
       attempts.delete(identity);
@@ -430,8 +430,8 @@ export function createSupportOperationalAlertsController(
       }
       mutationError.value =
         cause instanceof ApiError && cause.status === 409
-          ? "Владелец alert уже изменился. Данные обновлены — выберите владельца заново."
-          : "Не удалось изменить владельца alert.";
+          ? "Владелец сигнала уже изменился. Данные обновлены — выберите владельца заново."
+          : "Не удалось изменить владельца сигнала.";
       if (cause instanceof ApiError && cause.status === 409) await loadDetail(alertId);
       return false;
     } finally {

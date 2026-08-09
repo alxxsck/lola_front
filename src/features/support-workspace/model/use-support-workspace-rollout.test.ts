@@ -94,7 +94,7 @@ describe("Support Workspace rollout controller", () => {
     );
     expect(controller.rollout.value?.version).toBe(2);
     expect(ctx.refreshAdmission).toHaveBeenCalledTimes(2);
-    expect(controller.success.value).toContain("подтверждено сервером");
+    expect(controller.success.value).toContain("подтверждено и перечитано с сервера");
   });
 
   it("retries an unknown outcome with the exact same key, ETag and body", async () => {
@@ -267,7 +267,7 @@ describe("Support Workspace rollout controller", () => {
 
     expect(controller.success.value).toBe("");
     expect(controller.recovery.value).toBe("RETRYABLE_FAILURE");
-    expect(controller.error.value).toContain("authoritative root");
+    expect(controller.error.value).toContain("сервер ещё не подтвердил изменение");
   });
 
   it("blocks a fresh intent when a valid receipt cannot be authoritatively reread", async () => {
@@ -289,7 +289,7 @@ describe("Support Workspace rollout controller", () => {
 
     expect(controller.recovery.value).toBe("RETRYABLE_FAILURE");
     expect(update).toHaveBeenCalledOnce();
-    expect(controller.error.value).toContain("authoritative root");
+    expect(controller.error.value).toContain("состояние на сервере не перечитано");
   });
 
   it.each(["resolve", "reject"] as const)(
@@ -382,7 +382,7 @@ describe("Support Workspace rollout controller", () => {
     await controller.submit("ENABLE_PILOT", "Enable pilot safely");
 
     expect(api.update).not.toHaveBeenCalled();
-    expect(controller.error.value).toContain("Сначала снимите hard-off");
+    expect(controller.error.value).toContain("Сначала снимите аварийное отключение");
   });
 
   it("quarantines a typed replay failure without exposing backend text", async () => {

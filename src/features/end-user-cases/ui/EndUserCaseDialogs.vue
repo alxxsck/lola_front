@@ -9,6 +9,10 @@ import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
+import type {
+  EndUserCaseMessageResponseDtoRole,
+  EndUserCaseSplitEvidenceResponseDtoKind,
+} from "@/shared/api/generated/models";
 import { endUserCasesRepository } from "../api/end-user-cases-repository";
 import type {
   EndUserCasePriority,
@@ -70,6 +74,41 @@ const priorityOptions: EndUserCasePriority[] = [
   "URGENT",
   "CRITICAL",
 ];
+
+const messageRoleLabels = {
+  USER: "Пользователь",
+  ASSISTANT: "Ассистент",
+  ADMIN: "Оператор",
+  SCENARIO: "Сценарий",
+  SYSTEM: "Система",
+} satisfies Record<EndUserCaseMessageResponseDtoRole, string>;
+
+function messageRoleLabel(value: EndUserCaseMessageResponseDtoRole): string {
+  return messageRoleLabels[value];
+}
+
+const splitEvidenceKindLabels = {
+  AI_ACTION_INVOCATION: "Вызов действия AI",
+  LEGACY_AI_RESULT: "Результат прежней версии AI",
+  TRUSTED_VERIFICATION: "Подтверждённая проверка",
+} satisfies Record<EndUserCaseSplitEvidenceResponseDtoKind, string>;
+
+function splitEvidenceKindLabel(
+  value: EndUserCaseSplitEvidenceResponseDtoKind,
+): string {
+  return splitEvidenceKindLabels[value];
+}
+
+function splitEvidenceContributionLabel(value: string): string {
+  return (
+    {
+      ACTION_COMPLETED: "действие завершено",
+      ACTION_FAILED: "действие завершилось ошибкой",
+      CASE_CREATED: "обращение создано",
+      CLASSIFICATION_EVIDENCE: "учтено при классификации",
+    }[value] ?? "результат не распознан"
+  );
+}
 
 function requestTransition(status: EndUserCaseStatus): void {
   transitionStatus.value = status;
@@ -427,7 +466,7 @@ defineExpose({
         :options="
           store.selected?.messages.items.map((link) => ({
             id: link.message.id,
-            label: `${link.message.role}: ${link.message.text.slice(0, 90)}`,
+            label: `${messageRoleLabel(link.message.role)}: ${link.message.text.slice(0, 90)}`,
           })) ?? []
         "
         option-label="label"
@@ -446,7 +485,7 @@ defineExpose({
         :options="
           store.selected.case.splitEvidence.map((evidence) => ({
             id: evidence.id,
-            label: `${evidence.kind}: ${evidence.contribution}`,
+            label: `${splitEvidenceKindLabel(evidence.kind)}: ${splitEvidenceContributionLabel(evidence.contribution)}`,
           }))
         "
         option-label="label"

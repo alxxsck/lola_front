@@ -123,7 +123,7 @@ function labelReason(value: string | null): string {
       WRAP_UP: "Завершение работы",
       SHIFT_END: "Конец смены",
       LEAD_INTERVENTION: "Решение лида",
-      LEASE_EXPIRED: "Истёк lease",
+      LEASE_EXPIRED: "Истёк срок подтверждения",
     }[value ?? ""] ?? "Причина не указана"
   );
 }
@@ -133,7 +133,7 @@ function labelSource(value: string | null): string {
     {
       SELF: "Вы выбрали",
       LEAD_OVERRIDE: "Изменил лид",
-      LEASE_EXPIRY: "Истёк lease",
+      LEASE_EXPIRY: "Истёк срок подтверждения",
     }[value ?? ""] ?? "Источник не указан"
   );
 }

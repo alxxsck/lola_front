@@ -10,15 +10,21 @@ import {
 import { ApiError } from "@/shared/api/http/api-error";
 import SupportExternalSettingsPage from "./SupportExternalSettingsPage.vue";
 
-vi.mock("@/features/support-external-work/api/support-external-work-source", async () => {
-  const actual = await vi.importActual<typeof import("@/features/support-external-work/api/support-external-work-source")>(
-    "@/features/support-external-work/api/support-external-work-source",
-  );
-  const mock = await vi.importActual<typeof import("@/features/support-external-work/api/support-external-work-mock-source")>(
-    "@/features/support-external-work/api/support-external-work-mock-source",
-  );
-  return { ...actual, supportExternalWorkSource: mock.mockSupportExternalWorkSource };
-});
+vi.mock(
+  "@/features/support-external-work/api/support-external-work-source",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("@/features/support-external-work/api/support-external-work-source")
+    >("@/features/support-external-work/api/support-external-work-source");
+    const mock = await vi.importActual<
+      typeof import("@/features/support-external-work/api/support-external-work-mock-source")
+    >("@/features/support-external-work/api/support-external-work-mock-source");
+    return {
+      ...actual,
+      supportExternalWorkSource: mock.mockSupportExternalWorkSource,
+    };
+  },
+);
 
 function authenticate(permissions = ["project.support.external_work.manage"]) {
   const auth = useAuthStore();
@@ -51,25 +57,25 @@ describe("Support External settings page", () => {
     const { wrapper } = await mountPage();
     await flushPromises();
 
-    expect(wrapper.get("h1").text()).toBe("Интеграции External Work");
-    expect(wrapper.text()).toContain("JSM · Support cloud");
+    expect(wrapper.get("h1").text()).toBe("Интеграции с внешними системами");
+    expect(wrapper.text()).toContain("JSM · Облако поддержки");
     expect(wrapper.text()).toContain("Требуется повторный вход");
     expect(wrapper.text()).toContain("Последняя успешная синхронизация");
-    expect(wrapper.text()).toContain("Support routing");
-    expect(wrapper.text()).toContain("Draft #4");
+    expect(wrapper.text()).toContain("Маршрутизация поддержки");
+    expect(wrapper.text()).toContain("Черновик №4");
   });
 
   it("purges protected settings when manage permission is revoked", async () => {
     const auth = authenticate();
     const { wrapper } = await mountPage();
     await flushPromises();
-    expect(wrapper.text()).toContain("JSM · Support cloud");
+    expect(wrapper.text()).toContain("JSM · Облако поддержки");
 
     auth.project!.effectivePermissionCodes = [];
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("JSM · Support cloud");
-    expect(wrapper.text()).toContain("Нет доступа к настройкам External Work");
+    expect(wrapper.text()).not.toContain("JSM · Облако поддержки");
+    expect(wrapper.text()).toContain("нет доступа к настройкам внешних систем");
   });
 
   it("offers a connection-scoped mapping draft for the second provider", async () => {
@@ -80,10 +86,10 @@ describe("Support External settings page", () => {
     await wrapper.findAll("button.connection-card")[1]!.trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("HelpDesk · Tier 2");
-    expect(wrapper.text()).toContain("Published mapping отсутствует");
-    expect(wrapper.text()).not.toContain("Draft #4");
-    expect(wrapper.text()).toContain("Создать mapping draft");
+    expect(wrapper.text()).toContain("HelpDesk · Вторая линия");
+    expect(wrapper.text()).toContain("Опубликованных правил пока нет");
+    expect(wrapper.text()).not.toContain("Черновик №4");
+    expect(wrapper.text()).toContain("Создать черновик правил");
   });
 
   it("forgets a 428 command and routes through a fresh login", async () => {
@@ -103,7 +109,7 @@ describe("Support External settings page", () => {
     const { router, wrapper } = await mountPage();
     const button = wrapper
       .findAll("button")
-      .find((candidate) => candidate.text().includes("Проверить connection"))!;
+      .find((candidate) => candidate.text().includes("Проверить подключение"))!;
 
     await button.trigger("click");
     await flushPromises();
@@ -113,14 +119,15 @@ describe("Support External settings page", () => {
     expect(router.currentRoute.value.fullPath).toBe(
       "/login?redirect=/support/settings/integrations",
     );
-    expect(wrapper.text()).not.toContain("JSM · Support cloud");
+    expect(wrapper.text()).not.toContain("JSM · Облако поддержки");
     await button.trigger("click");
     expect(testConnection).toHaveBeenCalledOnce();
   });
 
   it("renders every same-provider site and keeps an explicit add action", async () => {
     authenticate();
-    const base = await mockSupportExternalWorkSource.listConnections("project-1");
+    const base =
+      await mockSupportExternalWorkSource.listConnections("project-1");
     const jsm = base.items.find((item) => item.provider === "JSM")!;
     const secondJsm = {
       ...jsm,
@@ -129,11 +136,13 @@ describe("Support External settings page", () => {
       displayName: "JSM · EMEA",
     };
     const originalReadCatalog = mockSupportExternalWorkSource.readCatalog;
-    vi.spyOn(mockSupportExternalWorkSource, "listConnections").mockImplementation(
-      async (_projectId, cursor) =>
-        cursor
-          ? { items: [secondJsm], nextCursor: null }
-          : { items: base.items, nextCursor: "next-site" },
+    vi.spyOn(
+      mockSupportExternalWorkSource,
+      "listConnections",
+    ).mockImplementation(async (_projectId, cursor) =>
+      cursor
+        ? { items: [secondJsm], nextCursor: null }
+        : { items: base.items, nextCursor: "next-site" },
     );
     vi.spyOn(mockSupportExternalWorkSource, "readCatalog").mockImplementation(
       (projectId, connectionId, params, signal) =>
@@ -155,7 +164,7 @@ describe("Support External settings page", () => {
     await emea.trigger("click");
     await flushPromises();
     expect(wrapper.get("h2").text()).not.toBe("");
-    expect(wrapper.text()).toContain("Published mapping отсутствует");
+    expect(wrapper.text()).toContain("Опубликованных правил пока нет");
   });
 });
 
@@ -181,12 +190,20 @@ async function mountPage() {
 }
 
 const stubs = {
-  Button: { props: ["label"], emits: ["click"], template: '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>' },
+  Button: {
+    props: ["label"],
+    emits: ["click"],
+    template:
+      '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
   Checkbox: { template: '<input type="checkbox" />' },
   Dialog: { template: '<div><slot /><slot name="footer" /></div>' },
-  InputText: { template: '<input />' },
-  Message: { template: '<div><slot /></div>' },
-  Select: { props: ["modelValue"], template: '<div><slot />{{ modelValue }}</div>' },
-  Skeleton: { template: '<span />' },
-  Tag: { props: ["value"], template: '<span>{{ value }}</span>' },
+  InputText: { template: "<input />" },
+  Message: { template: "<div><slot /></div>" },
+  Select: {
+    props: ["modelValue"],
+    template: "<div><slot />{{ modelValue }}</div>",
+  },
+  Skeleton: { template: "<span />" },
+  Tag: { props: ["value"], template: "<span>{{ value }}</span>" },
 };

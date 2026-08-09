@@ -73,9 +73,13 @@ const canReadProjectIntegrations = computed(() =>
 );
 const canReadSupportWorkspace = computed(
   () =>
-    canReadSupportWorkspaceAccess(auth.project?.effectivePermissionCodes ?? []) &&
-    supportWorkspaceShellAdmissionState.value.scope?.actorId === auth.user?.id &&
-    supportWorkspaceShellAdmissionState.value.scope?.projectId === auth.project?.id &&
+    canReadSupportWorkspaceAccess(
+      auth.project?.effectivePermissionCodes ?? [],
+    ) &&
+    supportWorkspaceShellAdmissionState.value.scope?.actorId ===
+      auth.user?.id &&
+    supportWorkspaceShellAdmissionState.value.scope?.projectId ===
+      auth.project?.id &&
     (isCanonicalSupportWorkspaceAdmission(
       supportWorkspaceShellAdmissionState.value.admission,
       "CASES",
@@ -96,15 +100,13 @@ const supportWorkspacePath = computed(() => {
     ? "/support/inbox?mode=cases"
     : "/support/inbox";
 });
-const canReadSupportControl = computed(
-  () =>
-    canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
+const canReadSupportControl = computed(() =>
+  canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
 );
-const canReadSupportNotificationSettings = computed(
-  () =>
-    canManagePersonalSupportNotifications(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+const canReadSupportNotificationSettings = computed(() =>
+  canManagePersonalSupportNotifications(
+    auth.project?.effectivePermissionCodes ?? [],
+  ),
 );
 
 watch(
@@ -115,11 +117,7 @@ watch(
   ],
   ([actorId, projectId]) => {
     const permissions = auth.project?.effectivePermissionCodes ?? [];
-    if (
-      !actorId ||
-      !projectId ||
-      !canReadSupportWorkspaceAccess(permissions)
-    ) {
+    if (!actorId || !projectId || !canReadSupportWorkspaceAccess(permissions)) {
       clearSupportWorkspaceShellAdmission();
       return;
     }
@@ -247,7 +245,7 @@ const navigation = computed(() =>
       supportLeadControl: true,
     },
     {
-      label: "Macros поддержки",
+      label: "Шаблоны ответов",
       icon: "pi pi-file-edit",
       to: "/support/settings/macros",
       project: true,
@@ -261,14 +259,14 @@ const navigation = computed(() =>
       supportNotificationSettings: true,
     },
     {
-      label: "Pilot и rollback",
+      label: "Запуск и возврат",
       icon: "pi pi-shield",
       to: "/support/settings/audit-rollout",
       project: true,
       projectPermission: "project.support.workspace.rollout.manage",
     },
     {
-      label: "External Work",
+      label: "Внешние задачи",
       icon: "pi pi-directions",
       to: "/support/external-work",
       project: true,
@@ -396,7 +394,8 @@ const navigation = computed(() =>
       (!item.projectRoles || canReadRoles.value) &&
       (!item.supportWorkspace || canReadSupportWorkspace.value) &&
       (!item.supportLeadControl || canReadSupportControl.value) &&
-      (!item.supportNotificationSettings || canReadSupportNotificationSettings.value),
+      (!item.supportNotificationSettings ||
+        canReadSupportNotificationSettings.value),
   ),
 );
 
@@ -523,7 +522,7 @@ onBeforeUnmount(() => {
             <strong>{{ auth.project?.name ?? "Управление платформой" }}</strong
             ><span>{{
               auth.project?.organization?.name ??
-              (auth.project ? "Текущий Project" : "Control plane")
+              (auth.project ? "Текущий проект" : "Управление платформой")
             }}</span>
           </div>
           <i class="pi pi-lock" />

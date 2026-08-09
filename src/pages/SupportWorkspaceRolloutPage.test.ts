@@ -112,10 +112,10 @@ describe("SupportWorkspaceRolloutPage", () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Project rollout");
-    expect(wrapper.text()).toContain("LEGACY_LAUNCHER · DISABLED");
-    expect(wrapper.text()).toContain("Включить pilot");
-    expect(wrapper.text()).toContain("Emergency hard-off");
+    expect(wrapper.text()).toContain("Запуск в проекте");
+    expect(wrapper.text()).toContain("Прежний интерфейс · доступ закрыт");
+    expect(wrapper.text()).toContain("Включить пробный запуск");
+    expect(wrapper.text()).toContain("Аварийно выключить");
     expect(wrapper.text()).not.toContain(root.actionEtag);
     expect(wrapper.text()).not.toContain("Idempotency-Key");
   });
@@ -135,11 +135,11 @@ describe("SupportWorkspaceRolloutPage", () => {
     await wrapper.get("textarea").setValue("Emergency rollback rehearsal");
     await wrapper
       .findAll("button")
-      .find((button) => button.text() === "Emergency hard-off")!
+      .find((button) => button.text() === "Аварийно выключить")!
       .trigger("click");
     await wrapper
       .findAll("button")
-      .find((button) => button.text() === "Подтвердить hard-off")!
+      .find((button) => button.text() === "Подтвердить аварийное отключение")!
       .trigger("click");
     await flushPromises();
 
@@ -157,7 +157,7 @@ describe("SupportWorkspaceRolloutPage", () => {
       }),
       expect.any(AbortSignal),
     );
-    expect(wrapper.text()).toContain("подтверждено сервером");
+    expect(wrapper.text()).toContain("подтверждено и перечитано с сервера");
   });
 
   it("does not infer admission for a manage-only actor", async () => {
@@ -166,7 +166,7 @@ describe("SupportWorkspaceRolloutPage", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain(
-      "Не читается этой ролью — вывод по rollout-флагам не делается",
+      "Недоступно для этой роли. По отдельным переключателям вывод не делаем",
     );
     expect(ensureSupportWorkspaceShellAdmission).not.toHaveBeenCalled();
   });
@@ -182,10 +182,10 @@ describe("SupportWorkspaceRolloutPage", () => {
 
     const enable = wrapper
       .findAll("button")
-      .find((button) => button.text() === "Включить pilot");
+      .find((button) => button.text() === "Включить пробный запуск");
     const clear = wrapper
       .findAll("button")
-      .find((button) => button.text() === "Снять hard-off безопасно");
+      .find((button) => button.text() === "Снять аварийное отключение");
 
     expect(enable?.attributes("disabled")).toBeDefined();
     expect(clear?.attributes("disabled")).toBeUndefined();
@@ -195,12 +195,12 @@ describe("SupportWorkspaceRolloutPage", () => {
     const auth = authenticate();
     const wrapper = mountPage();
     await flushPromises();
-    expect(wrapper.text()).toContain("Project rollout");
+    expect(wrapper.text()).toContain("Запуск в проекте");
 
     auth.project!.effectivePermissionCodes = [];
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Version 1");
-    expect(wrapper.text()).toContain("Rollout недоступен");
+    expect(wrapper.text()).toContain("Управление запуском недоступно");
   });
 });

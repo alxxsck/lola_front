@@ -225,7 +225,7 @@ export function createSupportMacroAuthoringController(
           conflict.value = "Каталог изменился. Список обновлён с первой страницы.";
         return;
       }
-      error.value = "Не удалось загрузить настройки macros.";
+      error.value = "Не удалось загрузить настройки шаблонов.";
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -277,7 +277,7 @@ export function createSupportMacroAuthoringController(
         await forbidden();
         return;
       }
-      error.value = "Не удалось открыть macro.";
+      error.value = "Не удалось открыть шаблон.";
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -326,7 +326,7 @@ export function createSupportMacroAuthoringController(
         }
         return;
       }
-      error.value = "Не удалось загрузить следующую страницу revisions.";
+      error.value = "Не удалось загрузить следующую страницу версий.";
     } finally {
       if (requestGeneration === generation) loading.value = false;
     }
@@ -359,7 +359,7 @@ export function createSupportMacroAuthoringController(
         await forbidden();
         return false;
       }
-      error.value = "Macro не прошёл серверную проверку. Проверьте текст, locale и visibility.";
+      error.value = "Шаблон не прошёл проверку сервера. Проверьте текст, язык и область видимости.";
       return false;
     } finally {
       if (mutationToken === token) {
@@ -382,7 +382,7 @@ export function createSupportMacroAuthoringController(
         return;
       selected.value = next;
       form.value = local;
-      conflict.value = "Macro изменился на сервере. Ваш текст сохранён — проверьте новую версию и повторите.";
+      conflict.value = "Шаблон изменился на сервере. Ваш текст сохранён — проверьте новую версию и повторите.";
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
         return;
@@ -424,7 +424,7 @@ export function createSupportMacroAuthoringController(
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
-      else conflict.value = "Macro сохранён, а новые правки остались в форме. Сохраните их отдельно.";
+      else conflict.value = "Шаблон сохранён, а новые правки остались в форме. Сохраните их отдельно.";
       preview.value = null;
       await load();
       return true;
@@ -437,7 +437,7 @@ export function createSupportMacroAuthoringController(
       }
       if (cause instanceof ApiError && cause.status === 409 && current)
         await refreshConflict(local, projectId, current.id, requestGeneration, token);
-      else error.value = "Не удалось сохранить draft macro.";
+      else error.value = "Не удалось сохранить черновик шаблона.";
       return false;
     } finally {
       if (mutationToken === token) {
@@ -472,7 +472,7 @@ export function createSupportMacroAuthoringController(
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
-      else conflict.value = "Статус Macro обновлён, а новые правки остались в форме.";
+      else conflict.value = "Статус шаблона обновлён, а новые правки остались в форме.";
       await load();
       return true;
     } catch (cause) {
@@ -484,7 +484,7 @@ export function createSupportMacroAuthoringController(
       }
       if (cause instanceof ApiError && cause.status === 409)
         await refreshConflict(local, projectId, current.id, requestGeneration, token);
-      else error.value = kind === "PUBLISH" ? "Не удалось опубликовать macro." : "Не удалось архивировать macro.";
+      else error.value = kind === "PUBLISH" ? "Не удалось опубликовать шаблон." : "Не удалось архивировать шаблон.";
       return false;
     } finally {
       if (mutationToken === token) {
@@ -519,7 +519,7 @@ export function createSupportMacroAuthoringController(
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
-      else conflict.value = "Rollback выполнен, а новые правки остались в форме.";
+      else conflict.value = "Прежняя версия возвращена, а новые правки остались в форме.";
       const history = await source.revisions(projectId, current.id);
       if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
@@ -536,7 +536,7 @@ export function createSupportMacroAuthoringController(
       }
       if (cause instanceof ApiError && cause.status === 409)
         await refreshConflict(local, projectId, current.id, requestGeneration, token);
-      else error.value = "Не удалось выполнить rollback macro.";
+      else error.value = "Не удалось вернуть прежнюю версию шаблона.";
       return false;
     } finally {
       if (mutationToken === token) {

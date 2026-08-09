@@ -1118,7 +1118,8 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         },
         improveWithAI: {
           visibility: "DISABLED",
-          reason: "Backend-команда улучшения ответа с AI ещё не опубликована.",
+          reason:
+            "Серверная команда улучшения ответа с AI ещё не опубликована.",
         },
         sendWithoutTranslation: {
           visibility:
@@ -1652,7 +1653,7 @@ const assignmentAvailabilityLabel = computed(() => {
       AWAY: "Отошёл",
       DRAINING: "Завершает текущую работу",
       OFFLINE: "Офлайн",
-    }[snapshot.effectiveState] ?? snapshot.effectiveState;
+    }[snapshot.effectiveState] ?? "Состояние доступности не распознано";
   return snapshot.acceptsNewWork
     ? state
     : `${state} · новую работу не принимает`;

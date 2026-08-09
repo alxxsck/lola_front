@@ -150,7 +150,7 @@ export function createSupportWorkspaceRolloutController(
       quarantined.value = true;
       recovery.value = null;
       error.value =
-        "Сохранённая команда требует ручной проверки. Новый intent заблокирован.";
+        "Сохранённая команда требует ручной проверки. Новая команда заблокирована.";
       return;
     }
     recovery.value =
@@ -161,7 +161,7 @@ export function createSupportWorkspaceRolloutController(
       retained.state === "IN_FLIGHT"
         ? "Предыдущая команда была прервана локально. Разрешён только её точный повтор."
         : retained.state === "RETRYABLE_FAILURE"
-          ? "Сохранён точный retryable intent. Новый ключ не будет создан."
+          ? "Сохранена исходная попытка для повтора. Новая команда не будет создана."
           : "Результат предыдущей команды неизвестен. Разрешён только её точный повтор.";
   }
 
@@ -209,7 +209,7 @@ export function createSupportWorkspaceRolloutController(
     if (cause.status === 403 || cause.status === 404) {
       terminalAccessFailure = true;
       purge();
-      error.value = "Rollout недоступен для текущего Project или роли.";
+      error.value = "Управление запуском недоступно для текущего проекта или роли.";
       await context.onForbidden?.();
       return true;
     }
@@ -246,7 +246,7 @@ export function createSupportWorkspaceRolloutController(
       if (!current(scope, requestGeneration)) return false;
       if (!validRoot(value)) {
         purge();
-        error.value = "Сервер вернул неподтверждённое состояние rollout.";
+        error.value = "Сервер вернул неподтверждённое состояние запуска.";
         return false;
       }
       rollout.value = value;
@@ -256,7 +256,7 @@ export function createSupportWorkspaceRolloutController(
       const apiError = normalizeApiError(cause);
       if (apiError.name === "AbortError") return false;
       if (await handleAccessError(apiError)) return false;
-      error.value = "Не удалось загрузить authoritative rollout. Повторите чтение.";
+      error.value = "Не удалось загрузить подтверждённое состояние запуска. Повторите чтение.";
       return false;
     }
   }
@@ -343,7 +343,7 @@ export function createSupportWorkspaceRolloutController(
       pendingCommand = command;
       recovery.value = "RETRYABLE_FAILURE";
       error.value =
-        "Receipt принят, но authoritative root не перечитан. Разрешён только exact replay/reconcile.";
+        "Команда принята, но состояние на сервере не перечитано. Разрешены только повтор той же попытки или сверка.";
       return;
     }
     const authoritative = rollout.value;
@@ -365,7 +365,7 @@ export function createSupportWorkspaceRolloutController(
           "RETRYABLE_FAILURE",
         );
       error.value =
-        "Receipt принят, но authoritative root ещё не подтвердил его. Повтор использует ту же попытку.";
+        "Команда принята, но сервер ещё не подтвердил изменение. Повтор использует ту же попытку.";
       return;
     }
     await refreshAdmission(scope, requestGeneration);
@@ -377,7 +377,7 @@ export function createSupportWorkspaceRolloutController(
     recovery.value = null;
     conflict.value = false;
     quarantined.value = false;
-    success.value = "Изменение подтверждено сервером и перечитано из authoritative rollout.";
+    success.value = "Изменение подтверждено и перечитано с сервера.";
   }
 
   async function handleMutationError(
@@ -408,7 +408,7 @@ export function createSupportWorkspaceRolloutController(
       forgetRetainedSupportWorkspaceRolloutAttempt(retainedScope);
       recovery.value = null;
       conflict.value = true;
-      error.value = "Rollout уже изменён. Состояние обновлено; подтвердите новую команду отдельно.";
+      error.value = "Настройки запуска уже изменились. Состояние обновлено; подтвердите новую команду отдельно.";
       await readRoot(scope, requestGeneration, mutationAbort?.signal);
       return;
     }
@@ -453,7 +453,7 @@ export function createSupportWorkspaceRolloutController(
     pendingCommand = null;
     forgetRetainedSupportWorkspaceRolloutAttempt(retainedScope);
     recovery.value = null;
-    error.value = "Команда отклонена. Проверьте причину и текущее состояние rollout.";
+    error.value = "Команда отклонена. Проверьте причину и текущее состояние запуска.";
   }
 
   async function run(command: SupportWorkspaceRolloutCommand): Promise<void> {
@@ -518,9 +518,9 @@ export function createSupportWorkspaceRolloutController(
       error.value =
         preset === "ENABLE_PILOT" && (!currentRoot.enabled || currentRoot.hardOff)
           ? currentRoot.hardOff
-            ? "Сначала снимите hard-off безопасным отдельным preset."
-            : "Global rollout выключен: pilot нельзя включить из этой поверхности."
-          : "Этот preset не меняет текущее состояние rollout.";
+            ? "Сначала снимите аварийное отключение отдельным безопасным действием."
+            : "Глобальный запуск выключен: пробный запуск нельзя включить на этом экране."
+          : "Это действие не меняет текущее состояние запуска.";
       return;
     }
     conflict.value = false;

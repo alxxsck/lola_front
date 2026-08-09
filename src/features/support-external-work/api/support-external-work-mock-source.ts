@@ -61,10 +61,7 @@ let mappingDraft: SupportExternalMappingDraftResponseDto;
 let publishedRevisions: SupportExternalMappingPublishedRevisionResponseDto[];
 let commands: SupportExternalCommandStatusResponseDto[];
 const settingsAttempts = new Map<string, unknown>();
-const commandAttempts = new Map<
-  string,
-  SupportExternalWorkCommandReceiptDto
->();
+const commandAttempts = new Map<string, SupportExternalWorkCommandReceiptDto>();
 
 const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
   [ids.jsm]: {
@@ -81,16 +78,18 @@ const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
         {
           id: "jsm-service-desk-1",
           key: "SUP",
-          label: "Support Operations",
+          label: "Операционная поддержка",
           fields: [],
           forms: [
-            { id: "incident", label: "Incident", fields: [] },
-            { id: "request", label: "Service request", fields: [] },
+            { id: "incident", label: "Инцидент", fields: [] },
+            { id: "request", label: "Запрос на обслуживание", fields: [] },
           ],
         },
       ],
-      agents: [{ id: "agent-1", label: "Support lead", kind: "AGENT" }],
-      tags: [{ id: "tag-sync", label: "sync", kind: "TAG" }],
+      agents: [
+        { id: "agent-1", label: "Руководитель поддержки", kind: "AGENT" },
+      ],
+      tags: [{ id: "tag-sync", label: "синхронизация", kind: "TAG" }],
     },
     nextCursor: null,
   },
@@ -107,7 +106,7 @@ const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
       destinations: [
         {
           id: "helpdesk-team-1",
-          label: "Tier 2",
+          label: "Вторая линия",
           fields: [],
           forms: [],
         },
@@ -126,13 +125,13 @@ const attentionItem: SupportExternalProjectItemResponseDto = {
   remoteItemId: "HD-2048",
   remoteKey: "2048",
   remoteUrl: "https://helpdesk.example/tickets/2048",
-  summary: "Webhook принят, authoritative refresh требует внимания",
+  summary: "Уведомление принято, но сверка с внешней системой требует внимания",
   status: "OPEN",
   priority: "HIGH",
-  team: { id: "helpdesk-team-1", label: "Tier 2" },
+  team: { id: "helpdesk-team-1", label: "Вторая линия" },
   assignee: null,
-  requester: { label: "Customer" },
-  tags: ["sync"],
+  requester: { label: "Клиент" },
+  tags: ["синхронизация"],
   latestMessageAt: "2026-08-09T14:10:00.000Z",
   freshness: "STALE",
   remoteUpdatedAt: "2026-08-09T14:10:00.000Z",
@@ -150,13 +149,14 @@ const linkedItem: SupportExternalProjectItemResponseDto = {
   remoteItemId: "JSM-731",
   remoteKey: "SUP-731",
   remoteUrl: "https://jsm.example/browse/SUP-731",
-  summary: "Provider outcome неизвестен после timeout",
+  summary:
+    "После превышения времени ожидания результат внешней системы неизвестен",
   status: "IN_PROGRESS",
   priority: "URGENT",
-  team: { id: "jsm-service-desk-1", label: "Support Operations" },
-  assignee: { id: "agent-1", label: "Support lead" },
-  requester: { label: "Customer" },
-  tags: ["unknown-outcome"],
+  team: { id: "jsm-service-desk-1", label: "Операционная поддержка" },
+  assignee: { id: "agent-1", label: "Руководитель поддержки" },
+  requester: { label: "Клиент" },
+  tags: ["результат-неизвестен"],
   latestMessageAt: "2026-08-09T15:41:00.000Z",
   freshness: "FRESH",
   remoteUpdatedAt: "2026-08-09T15:41:00.000Z",
@@ -180,7 +180,7 @@ const timeline: SupportExternalTimelineMessageResponseDto[] = [
     remoteUpdatedAt: null,
     tombstonedAt: null,
     audience: "INTERNAL",
-    body: "Reconciliation requested after provider timeout.",
+    body: "После превышения времени ожидания запрошена сверка с внешней системой.",
   },
   {
     messageId: "message-1",
@@ -198,7 +198,7 @@ function resetState(): void {
     {
       id: ids.jsm,
       provider: "JSM",
-      displayName: "JSM · Support cloud",
+      displayName: "JSM · Облако поддержки",
       lifecycle: "ACTIVE",
       tenantIdentity: "support-cloud",
       capabilities: {
@@ -214,7 +214,7 @@ function resetState(): void {
     {
       id: ids.helpdesk,
       provider: "HELPDESK",
-      displayName: "HelpDesk · Tier 2",
+      displayName: "HelpDesk · Вторая линия",
       lifecycle: "REAUTH_REQUIRED",
       tenantIdentity: "tier-2",
       capabilities: {
@@ -231,7 +231,7 @@ function resetState(): void {
   mappingRoot = {
     id: ids.mapping,
     connectionId: ids.jsm,
-    displayName: "Support routing",
+    displayName: "Маршрутизация поддержки",
     version: 3,
     draftRevisionId: ids.draft,
     publishedRevisionId: ids.published,
@@ -340,9 +340,9 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
           mappingRevisionId: ids.published,
           formRevision: "form-v8",
           destinationId: "jsm-service-desk-1",
-          destinationLabel: "Support Operations",
+          destinationLabel: "Операционная поддержка",
           formId: "incident",
-          formLabel: "Incident",
+          formLabel: "Инцидент",
           matchedBy: "RULE",
           allowedActions: ["CREATE"],
           fields: [
@@ -362,7 +362,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
           mappingRevisionId: ids.published,
           formRevision: "helpdesk-v3",
           destinationId: "helpdesk-team-1",
-          destinationLabel: "Tier 2",
+          destinationLabel: "Вторая линия",
           matchedBy: "FALLBACK",
           allowedActions: ["CREATE"],
           fields: [],
@@ -520,12 +520,12 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
       items: [
         {
           id: "support-cloud",
-          label: "Support cloud",
+          label: "Облако поддержки",
           siteUrl: "https://support.example",
         },
         {
           id: "second-cloud",
-          label: "Second cloud",
+          label: "Резервное облако",
           siteUrl: "https://second.example",
         },
       ],

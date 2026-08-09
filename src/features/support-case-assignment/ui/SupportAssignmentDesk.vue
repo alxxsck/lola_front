@@ -32,7 +32,7 @@ const canTransfer = computed(() => props.controller.canTransfer.value);
 
 const assignmentStateLabel = computed(() => {
   if (snapshot.value?.assignmentState === "RESERVED")
-    return "Зарезервировано routing-системой";
+    return "Зарезервировано системой маршрутизации";
   if (snapshot.value?.assignmentState === "UNASSIGNED") return "Не назначено";
   const current = snapshot.value?.currentAssignment;
   if (
@@ -209,7 +209,7 @@ async function confirmTransfer(): Promise<void> {
         <dd>{{ assignmentStateLabel }}</dd>
       </div>
       <div data-claimant-state class="assignment-rail__row">
-        <dt><i class="pi pi-flag" aria-hidden="true" />Claimant</dt>
+        <dt><i class="pi pi-flag" aria-hidden="true" />Взял в работу</dt>
         <dd>{{ claimantLabel }}</dd>
       </div>
       <div data-viewers-state class="assignment-rail__row">
@@ -279,11 +279,11 @@ async function confirmTransfer(): Promise<void> {
     <Dialog
       v-model:visible="claimVisible"
       modal
-      header="Взять Case в работу"
+      header="Взять обращение в работу"
       :style="{ width: 'min(430px, calc(100vw - 32px))' }"
     >
       <p class="assignment-dialog__lead">
-        Назначение будет создано на вас в выбранной доступной Team.
+        Обращение будет назначено на вас в выбранной доступной команде.
       </p>
       <label class="assignment-dialog__field">
         <span>Команда</span>
@@ -323,7 +323,7 @@ async function confirmTransfer(): Promise<void> {
       :style="{ width: 'min(460px, calc(100vw - 32px))' }"
     >
       <p class="assignment-dialog__lead">
-        Case вернётся в очередь. Причина попадёт в audit trail.
+        Обращение вернётся в очередь. Причина попадёт в журнал действий.
       </p>
       <label class="assignment-dialog__field">
         <span>Причина</span>
@@ -376,7 +376,7 @@ async function confirmTransfer(): Promise<void> {
       :style="{ width: 'min(520px, calc(100vw - 32px))' }"
     >
       <p class="assignment-dialog__lead">
-        Доступны только Team и операторы из актуального Case-каталога сервера.
+        Доступны только команды и операторы из актуального серверного списка для этого обращения.
       </p>
       <div class="assignment-dialog__grid">
         <label class="assignment-dialog__field">

@@ -125,7 +125,7 @@ function commandStatusLabel(status: string): string {
       FAILED: "Требует внимания",
       UNKNOWN: "Результат неизвестен",
       CANCELLED: "Отменено",
-    }[status] ?? status
+    }[status] ?? "Состояние команды не распознано"
   );
 }
 
@@ -136,7 +136,7 @@ function commandIntentLabel(intent: string): string {
       COMMENT: "Внешний комментарий",
       REFRESH: "Обновление данных",
       UNLINK: "Отвязка от обращения",
-    }[intent] ?? intent
+    }[intent] ?? "Действие не распознано"
   );
 }
 
@@ -146,7 +146,7 @@ function freshnessLabel(value: string): string {
       FRESH: "Актуально",
       STALE: "Требует обновления",
       TOMBSTONED: "Удалено во внешней системе",
-    }[value] ?? value
+    }[value] ?? "Состояние данных не распознано"
   );
 }
 
@@ -287,7 +287,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
   <section class="external-case-pane" aria-label="Интеграции обращения">
     <header class="external-case-pane__header">
       <div>
-        <span class="external-case-pane__kicker">External Work</span>
+        <span class="external-case-pane__kicker">Внешние задачи</span>
         <h3>Передача работы во внешнюю систему</h3>
         <p>Только выбранный контекст и подтверждённые сервером действия.</p>
       </div>
@@ -355,8 +355,8 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         class="unknown-attempt"
       >
         <strong>Результат запроса неизвестен.</strong>
-        Новый intent заблокирован. Можно повторить только тот же payload с тем
-        же ключом.
+        Новая команда заблокирована. Можно повторить только тот же запрос с теми
+        же данными и ключом.
         <Button
           label="Повторить тот же запрос"
           severity="secondary"
@@ -420,7 +420,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           ><i class="pi pi-link"
         /></span>
         <h4>Внешних заявок нет</h4>
-        <p>Создайте новую заявку или свяжите доступный HelpDesk ticket.</p>
+        <p>Создайте новую заявку или свяжите доступную заявку HelpDesk.</p>
       </div>
 
       <section
@@ -430,7 +430,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
       >
         <header>
           <span>Команды</span
-          ><small>HTTP 202 остаётся pending до подтверждения</small>
+          ><small>Принятая команда ожидает подтверждения внешней системы</small>
         </header>
         <ol>
           <li
@@ -455,7 +455,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
                   permissions.resolveUnknown &&
                   command.allowedActions.includes('REFRESH_EVIDENCE')
                 "
-                label="Обновить evidence"
+                label="Проверить результат"
                 severity="secondary"
                 outlined
                 @click="openEvidence(command.commandId)"
@@ -482,7 +482,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
                   command.allowedActions.includes('RESOLVE_UNKNOWN') &&
                   command.intent !== 'UNLINK'
                 "
-                label="Разобрать UNKNOWN"
+                label="Разобрать неизвестный результат"
                 severity="warn"
                 outlined
                 @click="openUnknown(command.commandId)"
@@ -651,7 +651,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
       <div class="external-form">
         <Message severity="info" :closable="false">
           История чата не копируется автоматически. Проверьте каждый фрагмент
-          safe context ниже.
+          безопасный контекст ниже.
         </Message>
         <label>
           <span>Назначение</span>
@@ -664,7 +664,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           />
         </label>
         <label v-if="selectedCreateOption?.requester?.emailRequired">
-          <span>Email requester *</span>
+          <span>Эл. почта заявителя *</span>
           <InputText
             v-model="createDraft.requesterEmail"
             type="email"
@@ -673,7 +673,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           />
         </label>
         <label v-if="selectedCreateOption?.requester?.nameRequired">
-          <span>Имя requester *</span>
+          <span>Имя заявителя *</span>
           <InputText
             v-model="createDraft.requesterName"
             maxlength="255"
@@ -685,7 +685,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           <InputText v-model="createDraft.title" maxlength="500" />
         </label>
         <fieldset class="safe-context">
-          <legend>Safe context</legend>
+          <legend>Безопасный контекст</legend>
           <label
             ><Checkbox v-model="createDraft.includeCaseTitle" binary /><span
               >Тема обращения</span
@@ -784,7 +784,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
     <Dialog
       v-model:visible="linkVisible"
       modal
-      header="Связать существующий HelpDesk ticket"
+      header="Связать существующую заявку HelpDesk"
       :style="{ width: 'min(520px, calc(100vw - 24px))' }"
     >
       <div class="external-form">
@@ -797,7 +797,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
             option-value="value"
         /></label>
         <label
-          ><span>Mapping</span
+          ><span>Правила сопоставления</span
           ><Select
             v-model="selectedMappingOptionId"
             :options="createOptionChoices"
@@ -825,23 +825,23 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
       modal
       :header="
         unknownMode === 'EVIDENCE'
-          ? 'Обновить evidence'
+          ? 'Проверить результат'
           : 'Разобрать неизвестный результат'
       "
       :style="{ width: 'min(560px, calc(100vw - 24px))' }"
     >
       <div class="external-form">
         <Message severity="warn" :closable="false"
-          >Решение проверяется по текущей revision и попадёт в audit. Новый
-          blind retry не выполняется.</Message
+          >Решение проверяется по текущей версии и попадёт в журнал. Команда не
+          отправляется повторно без проверки.</Message
         >
         <template v-if="unknownMode === 'EVIDENCE'">
           <Message severity="info" :closable="false">
-            Remote item ID проверяется сервером. Команда не считается успешной
-            до нового authoritative evidence.
+            Идентификатор внешней задачи проверяется сервером. Команда не
+            считается успешной, пока сервер не подтвердит результат.
           </Message>
           <label>
-            <span>Remote item ID</span>
+            <span>Идентификатор внешней задачи</span>
             <InputText v-model="evidenceRemoteItemId" maxlength="255" />
           </label>
         </template>
@@ -855,15 +855,15 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
               option-value="value"
           /></label>
           <label v-if="unknownDecision === 'LINK_EXISTING'"
-            ><span>Remote item ID</span
+            ><span>Идентификатор внешней задачи</span
             ><InputText v-model="unknownRemoteItemId" maxlength="255"
           /></label>
           <label v-if="unknownDecision === 'CONFIRM_DELIVERED'"
-            ><span>Provider correlation</span
+            ><span>Идентификатор подтверждения системы</span
             ><InputText v-model="unknownProviderCorrelation" maxlength="255"
           /></label>
           <label
-            ><span>Audit note</span
+            ><span>Комментарий для журнала</span
             ><Textarea v-model="unknownEvidenceNote" rows="4" maxlength="2000"
           /></label>
         </template>
@@ -877,7 +877,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           <Button
             :label="
               unknownMode === 'EVIDENCE'
-                ? 'Проверить evidence'
+                ? 'Проверить результат'
                 : 'Подтвердить решение'
             "
             :loading="controller.mutating.value"

@@ -6,15 +6,21 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { resetMockSupportExternalWork } from "@/features/support-external-work/api/support-external-work-mock-source";
 import SupportExternalWorkPage from "./SupportExternalWorkPage.vue";
 
-vi.mock("@/features/support-external-work/api/support-external-work-source", async () => {
-  const actual = await vi.importActual<typeof import("@/features/support-external-work/api/support-external-work-source")>(
-    "@/features/support-external-work/api/support-external-work-source",
-  );
-  const mock = await vi.importActual<typeof import("@/features/support-external-work/api/support-external-work-mock-source")>(
-    "@/features/support-external-work/api/support-external-work-mock-source",
-  );
-  return { ...actual, supportExternalWorkSource: mock.mockSupportExternalWorkSource };
-});
+vi.mock(
+  "@/features/support-external-work/api/support-external-work-source",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("@/features/support-external-work/api/support-external-work-source")
+    >("@/features/support-external-work/api/support-external-work-source");
+    const mock = await vi.importActual<
+      typeof import("@/features/support-external-work/api/support-external-work-mock-source")
+    >("@/features/support-external-work/api/support-external-work-mock-source");
+    return {
+      ...actual,
+      supportExternalWorkSource: mock.mockSupportExternalWorkSource,
+    };
+  },
+);
 
 function authenticate() {
   const auth = useAuthStore();
@@ -50,20 +56,22 @@ describe("Support External Work page", () => {
     const { router, wrapper } = await mountPage();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Webhook принят");
+    expect(wrapper.text()).toContain(
+      "Уведомление принято, но сверка с внешней системой требует внимания",
+    );
     await wrapper.get('[data-testid="external-item"]').trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Correlation");
+    expect(wrapper.text()).toContain("Идентификатор во внешней системе");
     expect(wrapper.text()).toContain("HD-2048");
-    expect(wrapper.text()).toContain("Причинная история");
+    expect(wrapper.text()).toContain("История событий");
     expect(wrapper.text()).toContain("Содержимое недоступно");
     expect(router.currentRoute.value.query.itemId).toBeTruthy();
 
     router.back();
     await flushPromises();
     expect(router.currentRoute.value.query.itemId).toBeUndefined();
-    expect(wrapper.text()).toContain("Выберите External Work object");
+    expect(wrapper.text()).toContain("Выберите внешнюю задачу");
   });
 
   it("shows an exact unknown-outcome recovery action for linked work", async () => {
@@ -77,7 +85,7 @@ describe("Support External Work page", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Результат неизвестен");
-    expect(wrapper.text()).toContain("Проверить доказательства");
+    expect(wrapper.text()).toContain("Проверить результат");
     expect(wrapper.text()).toContain("60000000-0000-4000-8000-000000000001");
   });
 
@@ -88,7 +96,9 @@ describe("Support External Work page", () => {
     );
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Provider outcome неизвестен после timeout");
+    expect(wrapper.text()).toContain(
+      "После превышения времени ожидания результат внешней системы неизвестен",
+    );
     expect(router.currentRoute.value.query).toEqual({
       mode: "linked",
       itemId: "40000000-0000-4000-8000-000000000002",
@@ -117,10 +127,18 @@ async function mountPage(path = "/support/external-work") {
 }
 
 const stubs = {
-  Button: { props: ["label"], emits: ["click"], template: '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>' },
-  InputText: { template: '<input />' },
-  Message: { template: '<div><slot /></div>' },
-  Select: { props: ["modelValue"], template: '<div><slot />{{ modelValue }}</div>' },
-  Skeleton: { template: '<span />' },
-  Tag: { props: ["value"], template: '<span>{{ value }}</span>' },
+  Button: {
+    props: ["label"],
+    emits: ["click"],
+    template:
+      '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
+  },
+  InputText: { template: "<input />" },
+  Message: { template: "<div><slot /></div>" },
+  Select: {
+    props: ["modelValue"],
+    template: "<div><slot />{{ modelValue }}</div>",
+  },
+  Skeleton: { template: "<span />" },
+  Tag: { props: ["value"], template: "<span>{{ value }}</span>" },
 };

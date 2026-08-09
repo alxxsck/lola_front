@@ -95,7 +95,7 @@ export function createSupportLeadRisksController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить Case-риски";
+      error.value = "Не удалось загрузить риски обращений";
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;

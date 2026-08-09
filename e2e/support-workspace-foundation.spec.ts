@@ -271,13 +271,15 @@ test("lets a lead assign a Case through the shared responsive assignment desk", 
   await expect(dialog).toBeVisible();
   await dialog.getByRole("combobox", { name: "Оператор назначения" }).click();
   await page.getByRole("option", { name: /Максим Орлов/ }).click();
-  await expect(dialog.getByText(/Override обойдёт/)).toBeVisible();
+  await expect(
+    dialog.getByText(/Назначение с исключением обойдёт/),
+  ).toBeVisible();
   const submit = dialog.getByRole("button", {
     name: "Подтвердить назначение лидом",
   });
   await expect(submit).toBeDisabled();
   await dialog
-    .getByRole("textbox", { name: "Обоснование override" })
+    .getByRole("textbox", { name: "Обоснование исключения" })
     .fill("Экстренное покрытие критичного обращения");
   await submit.click();
   await expect(dialog).toBeHidden();
@@ -731,9 +733,9 @@ test("changes Case classification through exact server authority and records the
         ? page.getByRole("dialog", { name: "Контекст диалога" })
         : page.locator(".context-pane");
   await context.getByRole("tab", { name: "Обращение" }).click();
-  await expect(context).toContainText("Кейс #48");
+  await expect(context).toContainText("Обращение #48");
   await expect(context).toContainText("AI-классификация");
-  await expect(context).toContainText("policy v7");
+  await expect(context).toContainText("правила · версия 7");
 
   await context.getByRole("button", { name: "Изменить классификацию" }).click();
   const dialog = page.getByRole("dialog", {
@@ -986,7 +988,7 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
 
   await expect(desk).toBeVisible();
   await expect(desk).toContainText("Назначение");
-  await expect(desk).toContainText("Claimant");
+  await expect(desk).toContainText("Взял в работу");
   await expect(desk).toContainText("Наблюдатели");
   await expect(desk).toContainText("Доступность");
   await expect(
@@ -1001,14 +1003,16 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
     name: "Подтвердить назначение на себя",
   });
   await confirmClaim.click();
-  const claimDialog = page.getByRole("dialog", { name: "Взять Case в работу" });
+  const claimDialog = page.getByRole("dialog", {
+    name: "Взять обращение в работу",
+  });
   await expect(claimDialog).toBeVisible();
   await expect(
     claimDialog.getByText(/Назначение уже изменилось/),
   ).toBeVisible();
   await confirmClaim.click();
   await expect(
-    page.getByRole("dialog", { name: "Взять Case в работу" }),
+    page.getByRole("dialog", { name: "Взять обращение в работу" }),
   ).toBeHidden();
   await expect(desk).toContainText("Алексей · Игры");
   await expect(

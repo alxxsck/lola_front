@@ -24,6 +24,18 @@ const store = vi.hoisted(() => ({
           contribution: "ACTION_COMPLETED",
           observedAt: "2026-07-26T10:00:00.000Z",
         },
+        {
+          id: "evidence-2",
+          kind: "LEGACY_AI_RESULT",
+          contribution: "ACTION_COMPLETED",
+          observedAt: "2026-07-26T10:01:00.000Z",
+        },
+        {
+          id: "evidence-3",
+          kind: "TRUSTED_VERIFICATION",
+          contribution: "ACTION_COMPLETED",
+          observedAt: "2026-07-26T10:02:00.000Z",
+        },
       ],
     },
     messages: {
@@ -252,6 +264,19 @@ describe("EndUserCaseDialogs", () => {
     api(wrapper).requestSplit();
     await wrapper.vm.$nextTick();
     const splitInputs = wrapper.findAll("input");
+    const splitSelectors = wrapper.findAllComponents({ name: "MultiSelect" });
+    expect(splitSelectors[0]!.props("options")[0].label).toBe(
+      "Пользователь: first",
+    );
+    expect(
+      splitSelectors[1]!
+        .props("options")
+        .map(({ label }: { label: string }) => label),
+    ).toEqual([
+      "Вызов действия AI: действие завершено",
+      "Результат прежней версии AI: действие завершено",
+      "Подтверждённая проверка: действие завершено",
+    ]);
     wrapper
       .findAllComponents({ name: "MultiSelect" })[0]!
       .vm.$emit("update:modelValue", ["message-2"]);

@@ -401,11 +401,11 @@ describe("AppShell", () => {
         ?.attributes("href"),
       supportRolloutLink: wrapper
         .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Pilot и rollback"))
+        .find((link) => link.text().includes("Запуск и возврат"))
         ?.attributes("href"),
       externalWorkLink: wrapper
         .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("External Work"))
+        .find((link) => link.text().includes("Внешние задачи"))
         ?.attributes("href"),
       externalSettingsLink: wrapper
         .findAll(".sidebar-scroll nav a")

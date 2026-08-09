@@ -53,15 +53,15 @@ const visibilityOptions = [
   { label: "Только команды", value: "TEAMS" },
 ];
 const rollbackReasons = [
-  { label: "Регресс контента", value: "CONTENT_REGRESSION" },
+  { label: "Ошибка в содержимом", value: "CONTENT_REGRESSION" },
   { label: "Восстановление после инцидента", value: "INCIDENT_RECOVERY" },
   { label: "Откат политики", value: "POLICY_ROLLBACK" },
 ];
 const variableOptions: { label: string; value: SupportMacroVariableDtoName }[] = [
   { label: "Имя пользователя", value: "endUser.displayName" },
-  { label: "ID обращения", value: "case.id" },
+  { label: "Идентификатор обращения", value: "case.id" },
   { label: "Тема обращения", value: "case.topicLabel" },
-  { label: "ID диалога", value: "conversation.id" },
+  { label: "Идентификатор диалога", value: "conversation.id" },
   { label: "Имя оператора", value: "operator.displayName" },
 ];
 
@@ -77,7 +77,11 @@ function removeVariable(index: number): void {
 
 function macroTitle(index: number): string {
   const macro = controller.items.value[index];
-  return macro?.draft?.configuration.title ?? macro?.publishedRevision?.configuration.title ?? macro?.stableCode ?? "Macro";
+  return macro?.draft?.configuration.title ?? macro?.publishedRevision?.configuration.title ?? macro?.stableCode ?? "Шаблон";
+}
+
+function publicationKindLabel(value: string): string {
+  return value === "ROLLBACK" ? "возврат версии" : "публикация";
 }
 
 function openRollback(revision: SupportMacroRevisionResponseDto): void {
@@ -113,15 +117,15 @@ onBeforeUnmount(controller.reset);
   <section class="page macro-settings-page">
     <header class="page-header macro-settings-header">
       <div>
-        <div class="eyebrow"><i class="pi pi-file-edit" /> Support content</div>
-        <h1>Macros поддержки</h1>
+        <div class="eyebrow"><i class="pi pi-file-edit" /> Материалы поддержки</div>
+        <h1>Шаблоны ответов</h1>
         <p class="subtitle">
-          Версионируемые ответы для операторов. Публикация создаёт неизменяемую revision,
-          а выбор в чате всегда оставляет текст редактируемым.
+          Готовые ответы для операторов с историей публикаций. В диалог шаблон
+          вставляется как обычный редактируемый текст.
         </p>
       </div>
       <Button
-        label="Новый macro"
+        label="Новый шаблон"
         icon="pi pi-plus"
         :disabled="!canManage"
         @click="controller.createNew"
@@ -129,7 +133,7 @@ onBeforeUnmount(controller.reset);
     </header>
 
     <Message v-if="!canManage" severity="warn" :closable="false">
-      Управление macros недоступно для текущего проекта или роли.
+      Управление шаблонами недоступно для текущего проекта или роли.
     </Message>
     <Message v-if="controller.error.value" severity="error" :closable="false">
       {{ controller.error.value }}
@@ -139,7 +143,7 @@ onBeforeUnmount(controller.reset);
     </Message>
 
     <div v-if="canManage" class="macro-authoring-shell">
-      <aside class="macro-catalog" aria-label="Macros проекта">
+      <aside class="macro-catalog" aria-label="Шаблоны проекта">
         <header>
           <div>
             <span>Каталог</span>
@@ -147,7 +151,7 @@ onBeforeUnmount(controller.reset);
           </div>
           <Button
             icon="pi pi-refresh"
-            aria-label="Обновить macros"
+            aria-label="Обновить шаблоны"
             severity="secondary"
             text
             :loading="controller.loading.value"
@@ -158,7 +162,7 @@ onBeforeUnmount(controller.reset);
           <Skeleton v-for="index in 4" :key="index" height="72px" border-radius="12px" />
         </div>
         <p v-else-if="!controller.items.value.length" class="macro-catalog__empty">
-          Опубликованных и draft macros пока нет.
+          Опубликованных шаблонов и черновиков пока нет.
         </p>
         <button
           v-for="(macro, index) in controller.items.value"
@@ -173,7 +177,7 @@ onBeforeUnmount(controller.reset);
             <small>{{ macro.stableCode }}</small>
           </span>
           <Tag
-            :value="macro.lifecycle === 'ACTIVE' ? `v${macro.publishedRevision?.revisionNumber ?? 'draft'}` : 'Архив'"
+            :value="macro.lifecycle === 'ACTIVE' ? `Версия ${macro.publishedRevision?.revisionNumber ?? 'черновик'}` : 'Архив'"
             :severity="macro.lifecycle === 'ACTIVE' ? 'secondary' : 'contrast'"
           />
         </button>
@@ -190,7 +194,7 @@ onBeforeUnmount(controller.reset);
       <main class="macro-editor card">
         <header class="macro-editor__header">
           <div>
-            <span>{{ controller.selected.value ? "Редактирование" : "Новый macro" }}</span>
+            <span>{{ controller.selected.value ? "Редактирование" : "Новый шаблон" }}</span>
             <h2>{{ controller.form.value.title || "Без названия" }}</h2>
           </div>
           <div class="macro-editor__state">
@@ -199,7 +203,7 @@ onBeforeUnmount(controller.reset);
               :value="controller.selected.value.lifecycle === 'ACTIVE' ? 'Активен' : 'Архивирован'"
               :severity="controller.selected.value.lifecycle === 'ACTIVE' ? 'success' : 'secondary'"
             />
-            <span v-if="controller.selected.value?.draft">Есть неопубликованный draft</span>
+            <span v-if="controller.selected.value?.draft">Есть неопубликованный черновик</span>
           </div>
         </header>
 
@@ -215,9 +219,9 @@ onBeforeUnmount(controller.reset);
               <small>Не меняется после создания и используется для поиска.</small>
             </label>
             <label>
-              <span>Locale</span>
+              <span>Язык</span>
               <InputText v-model="controller.form.value.locale" placeholder="ru" />
-              <small>BCP 47 locale исходного текста.</small>
+              <small>Код языка исходного текста по BCP 47.</small>
             </label>
           </div>
           <label>
@@ -233,7 +237,7 @@ onBeforeUnmount(controller.reset);
               auto-resize
               placeholder="Текст, который оператор сможет отредактировать перед отправкой"
             />
-            <small>{{ controller.form.value.body.length }} / 10 240 · переменные проверяет серверный compiler</small>
+            <small>{{ controller.form.value.body.length }} / 10 240 · переменные проверяет сервер</small>
           </label>
           <div class="macro-form__row">
             <label>
@@ -244,7 +248,7 @@ onBeforeUnmount(controller.reset);
             <label>
               <span>Темы обращения</span>
               <Textarea v-model="controller.form.value.topicCodesText" rows="4" placeholder="PAYMENTS" />
-              <small>Пусто — macro доступен для любой темы.</small>
+              <small>Оставьте пустым, чтобы шаблон был доступен для любой темы.</small>
             </label>
           </div>
           <div class="macro-form__row">
@@ -258,9 +262,9 @@ onBeforeUnmount(controller.reset);
               />
             </label>
             <label v-if="controller.form.value.visibility === 'TEAMS'">
-              <span>Team IDs</span>
+              <span>Идентификаторы команд</span>
               <Textarea v-model="controller.form.value.teamIdsText" rows="3" />
-              <small>Exact server-owned Team IDs, по одному на строку.</small>
+              <small>Точные идентификаторы команд с сервера, по одному на строку.</small>
             </label>
           </div>
 
@@ -268,7 +272,7 @@ onBeforeUnmount(controller.reset);
             <header>
               <div>
                 <span id="macro-variables-title">Переменные</span>
-                <small>Только server-owned поля. Скрытые данные клиент не подставляет.</small>
+                <small>Только поля, разрешённые сервером. Скрытые данные не подставляются.</small>
               </div>
               <Button
                 type="button"
@@ -281,7 +285,7 @@ onBeforeUnmount(controller.reset);
               />
             </header>
             <p v-if="!controller.form.value.variables.length">
-              В этом macro нет динамических значений.
+              В этом шаблоне нет динамических значений.
             </p>
             <div
               v-for="(variable, index) in controller.form.value.variables"
@@ -297,8 +301,8 @@ onBeforeUnmount(controller.reset);
               />
               <InputText
                 v-model="variable.fallback"
-                :aria-label="`Fallback для ${variable.name}`"
-                placeholder="Fallback, если значения нет"
+                :aria-label="`Запасной текст для ${variable.name}`"
+                placeholder="Текст, если значения нет"
               />
               <label class="macro-variable-required">
                 <ToggleSwitch v-model="variable.required" />
@@ -317,14 +321,14 @@ onBeforeUnmount(controller.reset);
 
           <section v-if="controller.preview.value" class="macro-preview" aria-live="polite">
             <header>
-              <span>Server preview</span>
+              <span>Проверенный просмотр</span>
               <Tag value="Проверено" severity="success" />
             </header>
             <strong>{{ controller.preview.value.draft.title }}</strong>
             <p>{{ controller.preview.value.draft.body }}</p>
             <small>
-              Compiler v{{ controller.preview.value.compilerRevision }} ·
-              {{ controller.preview.value.warningCodes.length ? controller.preview.value.warningCodes.join(", ") : "без предупреждений" }}
+              Проверка сервера, версия {{ controller.preview.value.compilerRevision }} ·
+              {{ controller.preview.value.warningCodes.length ? `предупреждений: ${controller.preview.value.warningCodes.length}` : "без предупреждений" }}
             </small>
           </section>
 
@@ -341,7 +345,7 @@ onBeforeUnmount(controller.reset);
               />
               <Button
                 type="submit"
-                label="Сохранить draft"
+                label="Сохранить черновик"
                 icon="pi pi-save"
                 :loading="controller.saving.value"
                 :disabled="!controller.canSubmit.value"
@@ -375,8 +379,8 @@ onBeforeUnmount(controller.reset);
           </header>
           <article v-for="revision in controller.revisions.value" :key="revision.id">
             <div>
-              <strong>v{{ revision.revisionNumber }} · {{ revision.configuration.title }}</strong>
-              <small>{{ new Date(revision.publishedAt).toLocaleString('ru-RU') }} · {{ revision.publicationKind }}</small>
+              <strong>Версия {{ revision.revisionNumber }} · {{ revision.configuration.title }}</strong>
+              <small>{{ new Date(revision.publishedAt).toLocaleString('ru-RU') }} · {{ publicationKindLabel(revision.publicationKind) }}</small>
             </div>
             <Button
               label="Откатить"
@@ -388,7 +392,7 @@ onBeforeUnmount(controller.reset);
           </article>
           <Button
             v-if="controller.revisionsNextCursor.value"
-            label="Показать более ранние revisions"
+            label="Показать более ранние версии"
             severity="secondary"
             text
             :loading="controller.loading.value"
@@ -401,11 +405,11 @@ onBeforeUnmount(controller.reset);
     <Dialog
       v-model:visible="rollbackVisible"
       modal
-      header="Создать rollback revision"
+      header="Вернуть прежнюю версию"
       :style="{ width: 'min(460px, calc(100vw - 32px))' }"
     >
       <div class="rollback-dialog">
-        <p>Старая revision не изменится. Сервер создаст новую публикацию на её основе.</p>
+        <p>Старая версия не изменится. Сервер создаст на её основе новую публикацию.</p>
         <label>
           <span>Причина</span>
           <Select
@@ -418,7 +422,7 @@ onBeforeUnmount(controller.reset);
       </div>
       <template #footer>
         <Button label="Отмена" severity="secondary" text @click="rollbackVisible = false" />
-        <Button label="Создать rollback" :loading="controller.saving.value" @click="confirmRollback" />
+        <Button label="Вернуть эту версию" :loading="controller.saving.value" @click="confirmRollback" />
       </template>
     </Dialog>
   </section>

@@ -20,13 +20,17 @@ async function openCaseIntegrations(page: Page): Promise<void> {
 
 async function resolveInitialUnknown(page: Page): Promise<void> {
   const pane = page.locator(".integrations-section");
-  const action = pane.getByRole("button", { name: "Разобрать UNKNOWN" });
+  const action = pane.getByRole("button", {
+    name: "Разобрать неизвестный результат",
+  });
   if (!(await action.isVisible())) return;
   await action.click();
   const dialog = page.getByRole("dialog", {
     name: "Разобрать неизвестный результат",
   });
-  await dialog.getByRole("textbox", { name: "Remote item ID" }).fill("SUP-731");
+  await dialog
+    .getByRole("textbox", { name: "Идентификатор внешней задачи" })
+    .fill("SUP-731");
   await dialog.getByRole("button", { name: "Подтвердить решение" }).click();
   await expect(dialog).toBeHidden();
   await expect(pane.getByText("Создано.", { exact: true })).toBeVisible();
@@ -39,29 +43,32 @@ test("admin verifies connection and completes the versioned mapping evidence loo
   await page.goto("/support/settings/integrations");
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Интеграции External Work" }),
+    page.getByRole("heading", {
+      level: 1,
+      name: "Интеграции с внешними системами",
+    }),
   ).toBeVisible();
   await expect(
-    page.getByText("JSM · Support cloud", { exact: true }).first(),
+    page.getByText("JSM · Облако поддержки", { exact: true }).first(),
   ).toBeVisible();
   await expect(
-    page.getByText("HelpDesk · Tier 2", { exact: true }).first(),
+    page.getByText("HelpDesk · Вторая линия", { exact: true }).first(),
   ).toBeVisible();
   await expect(page.getByText("Требуется повторный вход")).toBeVisible();
 
-  await page.getByRole("button", { name: "Проверить connection" }).click();
+  await page.getByRole("button", { name: "Проверить подключение" }).click();
   await expect(
-    page.getByText(/Проверка connection подтверждена сервером/),
+    page.getByText(/Проверка подключения подтверждена сервером/),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Проверить", exact: true }).click();
   await expect(page.getByText(/Пройдено · 1 правил/)).toBeVisible();
-  await page.getByRole("button", { name: "Preview" }).click();
+  await page.getByRole("button", { name: "Предварительный просмотр" }).click();
   await expect(
-    page.getByText(/Schema и destination подтверждены сервером/),
+    page.getByText(/Структура и назначение подтверждены сервером/),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Показать diff" }).click();
-  await expect(page.getByText(/Draft #/).last()).toBeVisible();
+  await page.getByRole("button", { name: "Сравнить версии" }).click();
+  await expect(page.getByText(/Черновик №/).last()).toBeVisible();
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])
@@ -81,18 +88,22 @@ test("operator reconstructs compatibility and UNKNOWN command causality without 
   await page.goto("/support/external-work");
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "External Work" }),
+    page.getByRole("heading", { level: 1, name: "Внешние задачи" }),
   ).toBeVisible();
   await page.getByTestId("external-item").first().click();
-  await expect(page.getByText("Correlation", { exact: true })).toBeVisible();
-  await expect(page.getByText("Причинная история")).toBeVisible();
+  await expect(
+    page.getByText("Идентификатор во внешней системе", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("История событий")).toBeVisible();
   await expect(page.getByText(/содержимое недоступно/i)).toBeVisible();
 
   await page.getByRole("button", { name: "Связанные объекты" }).click();
   await page.getByTestId("external-item").first().click();
   await expect(page.getByText("Результат неизвестен")).toBeVisible();
-  await page.getByRole("button", { name: "Проверить доказательства" }).click();
-  await expect(page.getByText(/Recovery-команда подтверждена/)).toBeVisible();
+  await page.getByRole("button", { name: "Проверить результат" }).click();
+  await expect(
+    page.getByText(/Команда восстановления подтверждена/),
+  ).toBeVisible();
   await expect(page.getByText("Создано")).toBeVisible();
 
   const accessibility = await new AxeBuilder({ page })
@@ -117,7 +128,9 @@ test("route-owned selection supports keyboard, Back and tablet geometry", async 
   await item.focus();
   await item.press("Enter");
   await expect(page).toHaveURL(/mode=linked.*itemId=/);
-  await expect(page.getByText("Correlation", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Идентификатор во внешней системе", { exact: true }),
+  ).toBeVisible();
 
   await page.goBack();
   await expect(page).toHaveURL(/mode=linked/);
@@ -139,7 +152,9 @@ test("Case inspector creates governed external work and copies remote text only 
   const pane = page.locator(".integrations-section");
   await resolveInitialUnknown(page);
 
-  await expect(pane.getByText("HTTP 202 остаётся pending")).toBeVisible();
+  await expect(
+    pane.getByText("Принятая команда ожидает подтверждения внешней системы"),
+  ).toBeVisible();
   await pane.getByTestId(/external-link-/).click();
   await expect(pane.getByText("В JSM").first()).toBeVisible();
   await expect(
@@ -152,7 +167,7 @@ test("Case inspector creates governed external work and copies remote text only 
     .click();
   const replyDraft = page.getByRole("textbox", { name: "Ответ пользователю" });
   await expect(replyDraft).toHaveValue(
-    "Reconciliation requested after provider timeout.",
+    "После превышения времени ожидания запрошена сверка с внешней системой.",
   );
 
   if ((page.viewportSize()?.width ?? 1280) < 768) {
@@ -166,12 +181,12 @@ test("Case inspector creates governed external work and copies remote text only 
     .getByText("Заголовок во внешней системе")
     .locator("..")
     .getByRole("textbox")
-    .fill("Provider timeout evidence");
+    .fill("Проверка результата после превышения времени ожидания");
   await dialog
     .getByText("Редактируемое описание")
     .locator("..")
     .getByRole("textbox")
-    .fill("Только проверенный safe context");
+    .fill("Только проверенные данные обращения");
   await dialog.getByRole("button", { name: "Принять в очередь" }).click();
   await expect(dialog).toBeHidden();
   await expect(pane.getByText(/В очереди\. Ждём подтверждения/)).toBeVisible();

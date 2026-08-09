@@ -276,8 +276,8 @@ const advancedVisible = ref(false);
         <InputText
           :model-value="modelValue.assignedCmsUserId"
           maxlength="36"
-          placeholder="ID исполнителя"
-          aria-label="ID исполнителя"
+          placeholder="Идентификатор исполнителя"
+          aria-label="Идентификатор исполнителя"
           @update:model-value="
             update({ assignedCmsUserId: $event || undefined })
           "
@@ -285,8 +285,8 @@ const advancedVisible = ref(false);
         <InputText
           :model-value="modelValue.endUserId"
           maxlength="36"
-          placeholder="ID пользователя"
-          aria-label="ID пользователя"
+          placeholder="Идентификатор пользователя"
+          aria-label="Идентификатор пользователя"
           @update:model-value="update({ endUserId: $event || undefined })"
         />
         <InputText

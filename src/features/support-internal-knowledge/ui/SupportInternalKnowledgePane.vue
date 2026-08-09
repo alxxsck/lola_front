@@ -83,7 +83,7 @@ async function open(item: SupportKnowledgeSearchItemResponseDto): Promise<void> 
       </div>
       <p v-if="controller.activeCitation.value" class="knowledge-edit-note">Источник уже добавлен в ответ. Чтобы выбрать другой, сначала удалите текущий источник вместе с производным текстом.</p>
       <p v-else-if="!controller.canInsert.value" class="knowledge-edit-note">Материал доступен для чтения, но добавлять источник в ответ сейчас нельзя.</p>
-      <p class="knowledge-edit-note">Сам материал видит только Support. Вставленный фрагмент попадёт в публичный черновик; источник и точная редакция сохранятся в истории сообщения.</p>
+      <p class="knowledge-edit-note">Сам материал видит только команда поддержки. Вставленный фрагмент попадёт в публичный черновик; источник и точная редакция сохранятся в истории сообщения.</p>
     </div>
 
     <template v-else>

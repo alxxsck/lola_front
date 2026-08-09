@@ -20,7 +20,7 @@ const entryLabel = computed(() => {
 
 const selectionLabel = computed(() => {
   if (!props.selectionId) return "Список проекта";
-  if (props.selectionKind === "CASE") return `Case · ${props.selectionId}`;
+  if (props.selectionKind === "CASE") return `Обращение · ${props.selectionId}`;
   if (props.selectionKind === "CONVERSATION")
     return `Диалог · ${props.selectionId}`;
   return `Пользователь · ${props.selectionId}`;
@@ -70,11 +70,10 @@ async function recheckWorkspace(): Promise<void> {
       </div>
       <div class="legacy-launcher__copy">
         <span class="legacy-launcher__kicker">Безопасный режим</span>
-        <h1 id="legacy-launcher-title">Support Workspace временно выключен</h1>
+        <h1 id="legacy-launcher-title">Рабочее место поддержки временно выключено</h1>
         <p>
-          Сервер вернул этот Project в launcher-only режим. Рабочие действия
-          здесь недоступны, поэтому ответ, заметка или изменение Case не могут
-          быть отправлены из второй поверхности.
+          Для этого проекта доступен только переход в прежний интерфейс.
+          Отвечать, добавлять заметки и изменять обращения на этом экране нельзя.
         </p>
       </div>
 

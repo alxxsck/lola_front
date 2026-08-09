@@ -42,7 +42,9 @@ function controller(requiredOverrides: string[] = []) {
               id: "operator-1",
               displayName: "Анна Смирнова",
               availableCapacityUnits: requiredOverrides.length ? 0 : 200,
-              effectiveAvailability: requiredOverrides.length ? "OFFLINE" : "AVAILABLE",
+              effectiveAvailability: requiredOverrides.length
+                ? "OFFLINE"
+                : "AVAILABLE",
               requiredOverrides,
               actions: {
                 claim: false,
@@ -106,12 +108,20 @@ describe("SupportLeadAssignmentDesk", () => {
       global: { plugins: [PrimeVue], stubs },
     });
 
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
 
     expect(assignment.open).toHaveBeenCalledWith("case-1");
-    expect(wrapper.get("[role='dialog']").text()).toContain("Бонус не начислен");
-    expect(wrapper.get("select[aria-label='Команда назначения']").text()).toContain("Платежи");
-    expect(wrapper.get("select[aria-label='Оператор назначения']").text()).toContain("Анна Смирнова");
+    expect(wrapper.get("[role='dialog']").text()).toContain(
+      "Бонус не начислен",
+    );
+    expect(
+      wrapper.get("select[aria-label='Команда назначения']").text(),
+    ).toContain("Платежи");
+    expect(
+      wrapper.get("select[aria-label='Оператор назначения']").text(),
+    ).toContain("Анна Смирнова");
     expect(wrapper.html()).not.toContain("sc1.private");
   });
 
@@ -126,12 +136,24 @@ describe("SupportLeadAssignmentDesk", () => {
       global: { plugins: [PrimeVue], stubs },
     });
 
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
 
-    expect(wrapper.get("[data-force-warning]").text()).toContain("недоступность");
-    expect(wrapper.get("[data-force-warning]").text()).toContain("capacity");
-    expect(wrapper.get("textarea[aria-label='Обоснование override']")).toBeDefined();
-    expect(wrapper.get("button[aria-label='Подтвердить назначение лидом']").attributes("disabled")).toBeDefined();
+    expect(wrapper.get("[data-force-warning]").text()).toContain(
+      "недоступность",
+    );
+    expect(wrapper.get("[data-force-warning]").text()).toContain(
+      "лимит нагрузки",
+    );
+    expect(
+      wrapper.get("textarea[aria-label='Обоснование исключения']"),
+    ).toBeDefined();
+    expect(
+      wrapper
+        .get("button[aria-label='Подтвердить назначение лидом']")
+        .attributes("disabled"),
+    ).toBeDefined();
   });
 
   it("shows safe assignment audit facts without protected free-form notes", async () => {
@@ -157,7 +179,7 @@ describe("SupportLeadAssignmentDesk", () => {
         occurredAt: "2026-08-08T10:00:00.000Z",
         operatorCmsUserId: "operator-1",
         ownerVersion: 1,
-        reasonCode: "INCIDENT_RESPONSE",
+        reasonCode: "ROUTING_AUTO_ASSIGN",
         schemaVersion: 1,
         targetTeamId: "team-1",
       },
@@ -171,11 +193,16 @@ describe("SupportLeadAssignmentDesk", () => {
       global: { plugins: [PrimeVue], stubs },
     });
 
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
 
     expect(wrapper.text()).toContain("История ответственности");
-    expect(wrapper.text()).toContain("Override: доступность да, capacity нет");
-    expect(wrapper.text()).toContain("outcome APPLIED");
+    expect(wrapper.text()).toContain(
+      "Исключение: доступность да, лимит нагрузки нет",
+    );
+    expect(wrapper.text()).toContain("применено");
+    expect(wrapper.text()).toContain("Автоматическое назначение");
     expect(wrapper.text()).toContain("Платежи · Анна Смирнова");
     expect(wrapper.text()).not.toContain("team-1");
     expect(wrapper.text()).not.toContain("operator-1");
@@ -192,7 +219,9 @@ describe("SupportLeadAssignmentDesk", () => {
       },
       global: { plugins: [PrimeVue], stubs },
     });
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
 
     assignment.hasAuthority.value = false;
     await wrapper.vm.$nextTick();
@@ -212,7 +241,9 @@ describe("SupportLeadAssignmentDesk", () => {
       },
       global: { plugins: [PrimeVue], stubs },
     });
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
 
     expect(wrapper.find("option[value='operator-1']").exists()).toBe(false);
     expect(wrapper.find("[data-force-warning]").exists()).toBe(false);
@@ -228,7 +259,9 @@ describe("SupportLeadAssignmentDesk", () => {
       },
       global: { plugins: [PrimeVue], stubs },
     });
-    await wrapper.get("button[aria-label='Управлять назначением лида']").trigger("click");
+    await wrapper
+      .get("button[aria-label='Управлять назначением лида']")
+      .trigger("click");
     expect(wrapper.find("[role='dialog']").exists()).toBe(true);
 
     assignment.hasForceAuthority.value = false;

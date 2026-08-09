@@ -29,7 +29,11 @@ function controller() {
     classification: {
       source: "AI",
       confidence: 0.91,
-      evidence: [{ id: "message-1", kind: "MESSAGE" }],
+      evidence: [
+        { id: "message-1", kind: "MESSAGE" },
+        { id: "case-evidence-1", kind: "CASE_EVIDENCE" },
+        { id: "cms-action-1", kind: "CMS_ACTION" },
+      ],
     },
     priorityPolicy: {
       effectiveFloor: "NORMAL",
@@ -43,7 +47,9 @@ function controller() {
   });
   return {
     exactCase,
-    detail: ref({ timeline: { events: [], revisions: [] } } as unknown as EndUserCaseDetailBundle),
+    detail: ref({
+      timeline: { events: [], revisions: [] },
+    } as unknown as EndUserCaseDetailBundle),
     loading: ref(false),
     mutating: ref(false),
     error: ref<string | null>(null),
@@ -109,8 +115,14 @@ describe("SupportCaseDesk", () => {
     );
     expect(wrapper.get(".case-desk-classification").text()).toContain("91%");
     expect(wrapper.get(".case-desk-evidence").text()).toContain("message-1");
+    expect(wrapper.get(".case-desk-evidence").text()).toContain(
+      "данные обращения",
+    );
+    expect(wrapper.get(".case-desk-evidence").text()).toContain(
+      "действие оператора",
+    );
     expect(wrapper.get(".case-desk-policy").text()).toContain("Обычный");
-    expect(wrapper.get(".case-desk-policy").text()).toContain("v7");
+    expect(wrapper.get(".case-desk-policy").text()).toContain("версия 7");
   });
 
   it("shows only server-authorized actions and requires an operator reason", async () => {
@@ -131,7 +143,9 @@ describe("SupportCaseDesk", () => {
     expect(wrapper.get('[role="dialog"]').text()).toContain(
       "Причина изменения",
     );
-    expect(wrapper.get(".classification-submit").attributes("disabled")).toBeDefined();
+    expect(
+      wrapper.get(".classification-submit").attributes("disabled"),
+    ).toBeDefined();
   });
 
   it("submits only fields touched against the dialog baseline after a concurrent refresh", async () => {
@@ -199,7 +213,11 @@ describe("SupportCaseDesk", () => {
     wrapper.vm.requestClassification();
     await nextTick();
     const selects = wrapper.findAll("select");
-    expect(selects.slice(0, 4).every((item) => item.attributes("disabled") !== undefined)).toBe(true);
+    expect(
+      selects
+        .slice(0, 4)
+        .every((item) => item.attributes("disabled") !== undefined),
+    ).toBe(true);
     expect(selects[4]!.attributes("disabled")).toBeUndefined();
   });
 });

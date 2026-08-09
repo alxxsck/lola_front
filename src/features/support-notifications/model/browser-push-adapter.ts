@@ -58,8 +58,8 @@ function permissionRecoveryPath(): string {
 
 function unsupportedMessage(): string {
   if (isIos())
-    return "На iOS/iPadOS обновите систему до версии с Web Push и откройте установленный Retenive CMS с экрана «Домой».";
-  return "Этот браузер или режим не поддерживает Web Push. Обновите браузер или откройте Retenive CMS в актуальном Chrome, Edge, Firefox или Safari.";
+    return "На iOS/iPadOS обновите систему до версии с веб-уведомлениями и откройте установленный Retenive CMS с экрана «Домой».";
+  return "Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер или откройте Retenive CMS в актуальном Chrome, Edge, Firefox или Safari.";
 }
 
 function base64Url(bytes: ArrayBuffer): string {

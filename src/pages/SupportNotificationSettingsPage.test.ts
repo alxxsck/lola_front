@@ -94,10 +94,12 @@ describe("SupportNotificationSettingsPage", () => {
         },
       },
     });
-    await vi.waitFor(() => expect(wrapper.text()).toContain("Browser permission"));
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain("Подписка этого браузера"),
+    );
 
-    expect(wrapper.text()).toContain("Локальная Push-подписка");
-    expect(wrapper.text()).toContain("Backend registration");
+    expect(wrapper.text()).toContain("Подписка этого браузера");
+    expect(wrapper.text()).toContain("Регистрация на сервере");
     expect(wrapper.text()).toContain("Обращения, требующие внимания");
     expect(wrapper.text()).toContain("Назначенные мне обращения");
     expect(wrapper.text()).not.toContain("Все новые обращения");

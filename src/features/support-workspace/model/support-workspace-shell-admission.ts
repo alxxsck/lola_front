@@ -76,7 +76,7 @@ export async function ensureSupportWorkspaceShellAdmission(
         error:
           cause instanceof Error
             ? cause.message
-            : "Не удалось проверить доступность Support Workspace",
+            : "Не удалось проверить доступность рабочего места поддержки",
       };
       return null;
     })

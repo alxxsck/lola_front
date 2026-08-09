@@ -95,41 +95,51 @@ const controller = createSupportWorkspaceRolloutController(
 
 const rolloutState = computed(() => {
   const root = controller.rollout.value;
-  if (!root) return { label: "Нет authoritative state", severity: "secondary" as const };
-  if (root.hardOff) return { label: "Emergency hard-off", severity: "danger" as const };
-  if (root.shellEnabled) return { label: "Pilot включён", severity: "success" as const };
-  return { label: "Legacy launcher", severity: "warn" as const };
+  if (!root) return { label: "Нет подтверждённого состояния", severity: "secondary" as const };
+  if (root.hardOff) return { label: "Аварийно выключено", severity: "danger" as const };
+  if (root.shellEnabled) return { label: "Пробный запуск включён", severity: "success" as const };
+  return { label: "Прежний интерфейс", severity: "warn" as const };
 });
 const admissionState = computed(() => {
   const value = controller.admission.value;
   if (!canReadAdmission.value)
-    return "Не читается этой ролью — вывод по rollout-флагам не делается";
+    return "Недоступно для этой роли. По отдельным переключателям вывод не делаем";
   if (!value) return "Не подтверждён";
-  return `${value.entryPointMode} · ${value.rolloutState}`;
+  const entryPoint =
+    value.entryPointMode === "CANONICAL_SUPPORT"
+      ? "Новое рабочее место"
+      : "Прежний интерфейс";
+  const state =
+    value.rolloutState === "ENABLED"
+      ? "доступ разрешён"
+      : value.rolloutState === "HARD_OFF"
+        ? "аварийно выключено"
+        : "доступ закрыт";
+  return `${entryPoint} · ${state}`;
 });
 const presetCopy: Record<
   SupportWorkspaceRolloutPreset,
   { title: string; description: string; icon: string; danger?: boolean }
 > = {
   ENABLE_PILOT: {
-    title: "Включить pilot",
-    description: "Открыть canonical shell, только если глобальный rollout уже разрешён.",
+    title: "Включить пробный запуск",
+    description: "Открыть новое рабочее место, только если глобальный запуск уже разрешён.",
     icon: "pi pi-play",
   },
   ROLLBACK_SHELL: {
-    title: "Вернуть launcher",
-    description: "Закрыть shell без изменения hard-off и без отката domain records.",
+    title: "Вернуть прежний интерфейс",
+    description: "Закрыть новое рабочее место, не меняя обращения, сообщения и назначения.",
     icon: "pi pi-replay",
   },
   EMERGENCY_HARD_OFF: {
-    title: "Emergency hard-off",
-    description: "Немедленно закрыть shell и оставить только read-only launcher.",
+    title: "Аварийно выключить",
+    description: "Немедленно закрыть новое рабочее место и оставить только переход в прежний интерфейс.",
     icon: "pi pi-ban",
     danger: true,
   },
   CLEAR_HARD_OFF: {
-    title: "Снять hard-off безопасно",
-    description: "Снять аварийный запрет, но не включать shell автоматически.",
+    title: "Снять аварийное отключение",
+    description: "Снять аварийный запрет, но не включать новое рабочее место автоматически.",
     icon: "pi pi-lock-open",
   },
 };
@@ -193,11 +203,11 @@ onBeforeUnmount(controller.reset);
   <main class="rollout-page">
     <header class="rollout-header">
       <div>
-        <div class="eyebrow"><i class="pi pi-shield" /> Support operations</div>
-        <h1>Pilot и rollback</h1>
+        <div class="eyebrow"><i class="pi pi-shield" /> Управление поддержкой</div>
+        <h1>Запуск и возврат</h1>
         <p>
-          Управление canonical Support shell для текущего Project. Команды меняют
-          только routing admission и не откатывают сообщения, назначения или SLA.
+          Управление рабочим местом поддержки для текущего проекта. Эти команды
+          меняют только доступ к интерфейсу и не откатывают сообщения, назначения или SLA.
         </p>
       </div>
       <div class="header-actions">
@@ -219,7 +229,7 @@ onBeforeUnmount(controller.reset);
     </header>
 
     <Message v-if="!canManage" severity="warn" :closable="false">
-      Rollout недоступен для текущего Project или роли.
+      Управление запуском недоступно для текущего проекта или роли.
     </Message>
     <div class="live-region" aria-live="polite" aria-atomic="true">
       <Message v-if="controller.error.value" severity="error" :closable="false">
@@ -231,41 +241,41 @@ onBeforeUnmount(controller.reset);
     </div>
 
     <template v-if="controller.loading.value && !controller.rollout.value">
-      <section class="state-grid" aria-label="Загрузка authoritative rollout">
+      <section class="state-grid" aria-label="Загрузка состояния запуска">
         <Skeleton v-for="index in 2" :key="index" height="164px" border-radius="14px" />
       </section>
       <Skeleton height="312px" border-radius="14px" />
     </template>
 
     <template v-else-if="controller.rollout.value">
-      <section class="state-grid" aria-label="Authoritative rollout state">
+      <section class="state-grid" aria-label="Подтверждённое состояние запуска">
         <article class="state-panel">
           <div class="panel-heading">
             <div>
-              <span class="section-kicker">Server root</span>
-              <h2>Project rollout</h2>
+              <span class="section-kicker">Данные сервера</span>
+              <h2>Запуск в проекте</h2>
             </div>
-            <span class="version">Version {{ controller.rollout.value.version }}</span>
+            <span class="version">Версия {{ controller.rollout.value.version }}</span>
           </div>
           <dl class="state-list">
-            <div><dt>Global eligibility</dt><dd>{{ controller.rollout.value.enabled ? "Enabled" : "Disabled" }}</dd></div>
-            <div><dt>Canonical shell</dt><dd>{{ controller.rollout.value.shellEnabled ? "Enabled" : "Launcher only" }}</dd></div>
-            <div><dt>Emergency gate</dt><dd>{{ controller.rollout.value.hardOff ? "Hard-off" : "Clear" }}</dd></div>
+            <div><dt>Глобальный запуск</dt><dd>{{ controller.rollout.value.enabled ? "Разрешён" : "Запрещён" }}</dd></div>
+            <div><dt>Новое рабочее место</dt><dd>{{ controller.rollout.value.shellEnabled ? "Включено" : "Только прежний интерфейс" }}</dd></div>
+            <div><dt>Аварийное отключение</dt><dd>{{ controller.rollout.value.hardOff ? "Включено" : "Снято" }}</dd></div>
           </dl>
         </article>
 
         <article class="state-panel">
           <div class="panel-heading">
             <div>
-              <span class="section-kicker">Separate authority</span>
-              <h2>Admission</h2>
+              <span class="section-kicker">Отдельная проверка</span>
+              <h2>Решение о доступе</h2>
             </div>
             <i class="pi pi-verified" aria-hidden="true" />
           </div>
           <p class="admission-value">{{ admissionState }}</p>
           <p class="panel-note">
-            Canonical route определяется admission contract, а не локальной
-            интерпретацией трёх rollout-флагов.
+            Итоговый маршрут определяет серверная проверка доступа, а не локальное
+            сочетание трёх переключателей.
           </p>
         </article>
       </section>
@@ -273,8 +283,8 @@ onBeforeUnmount(controller.reset);
       <section class="command-panel" aria-labelledby="safe-action-title">
         <div class="command-intro">
           <div>
-            <span class="section-kicker">One audited OCC command</span>
-            <h2 id="safe-action-title">Выберите безопасный preset</h2>
+            <span class="section-kicker">Одна защищённая команда</span>
+            <h2 id="safe-action-title">Выберите безопасное действие</h2>
           </div>
           <p>
             Каждое действие требует причины и отдельного подтверждения. После
@@ -288,10 +298,10 @@ onBeforeUnmount(controller.reset);
             v-model="reason"
             rows="3"
             maxlength="500"
-            placeholder="Например: Pilot window approved by release owner"
+            placeholder="Например: согласовано окно пробного запуска"
             :disabled="controller.mutating.value"
           />
-          <small>3–500 символов; не добавляйте имена, End User ID или content.</small>
+          <small>3–500 символов; не добавляйте имена, идентификаторы пользователей или содержимое обращений.</small>
         </label>
 
         <div class="preset-grid">
@@ -323,11 +333,11 @@ onBeforeUnmount(controller.reset);
         aria-labelledby="recovery-title"
       >
         <div>
-          <span class="section-kicker">Exact attempt retained for this session</span>
-          <h2 id="recovery-title">Нужна authoritative recovery</h2>
+          <span class="section-kicker">Исходная попытка сохранена для этого сеанса</span>
+          <h2 id="recovery-title">Нужно проверить результат</h2>
           <p>
-            Новый ключ не создаётся. Разрешён только точный повтор прежних ETag,
-            body и idempotency intent.
+            Новая команда не создаётся. Можно только безопасно повторить прежнюю
+            попытку с теми же данными.
           </p>
         </div>
         <Button
@@ -339,15 +349,15 @@ onBeforeUnmount(controller.reset);
       </section>
 
       <Message v-if="controller.quarantined.value" severity="warn" :closable="false">
-        Команда помещена в ручную проверку. Не включайте pilot до сверки audit и
-        authoritative root.
+        Команда отправлена на ручную проверку. Не включайте пробный запуск, пока
+        состояние на сервере не будет подтверждено.
       </Message>
     </template>
 
     <Dialog
       v-model:visible="confirmationVisible"
       modal
-      :header="confirmation?.title ?? 'Подтверждение rollout'"
+      :header="confirmation?.title ?? 'Подтверждение запуска'"
       class="rollout-confirmation"
       :style="{ width: 'min(520px, calc(100vw - 24px))' }"
       @hide="restoreConfirmationFocus"
@@ -368,7 +378,7 @@ onBeforeUnmount(controller.reset);
       <template #footer>
         <Button label="Отмена" severity="secondary" text @click="confirmationVisible = false" />
         <Button
-          :label="confirmation?.danger ? 'Подтвердить hard-off' : 'Подтвердить команду'"
+          :label="confirmation?.danger ? 'Подтвердить аварийное отключение' : 'Подтвердить команду'"
           :severity="confirmation?.danger ? 'danger' : undefined"
           :disabled="reason.trim().length < 3"
           @click="confirmPreset"

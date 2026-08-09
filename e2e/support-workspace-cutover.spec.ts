@@ -59,21 +59,31 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
 
   await page.goto(`/cases/case-demo-deposit?projectId=${projectId}`);
   await expectPath(page, "/support/inbox/cases/case-demo-deposit");
-  await expect(page.getByRole("heading", { level: 1, name: "Поддержка" })).toBeVisible();
-  await expect.poll(() => new URL(page.url()).searchParams.get("projectId")).toBe(projectId);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Поддержка" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("projectId"))
+    .toBe(projectId);
 
-  await page.goto(
-    `/users/usr_1?projectId=${projectId}&conversationId=conv_3`,
-  );
+  await page.goto(`/users/usr_1?projectId=${projectId}&conversationId=conv_3`);
   await expectPath(page, "/support/inbox/conversations/conv_3");
 
   await page.goto(`/live?projectId=${projectId}&endUserId=usr_1`);
   await expectPath(page, "/support/inbox");
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_1");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_1");
   const inbox = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Знакомство с Retenive", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Бонусы и программа лояльности", { exact: true })).toHaveCount(0);
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inbox.getByText("Знакомство с Retenive", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inbox.getByText("Бонусы и программа лояльности", { exact: true }),
+  ).toHaveCount(0);
 
   await page.evaluate(() => {
     history.pushState(
@@ -83,13 +93,23 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_2");
-  await expect(inbox.getByText("Бонусы и программа лояльности", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_2");
+  await expect(
+    inbox.getByText("Бонусы и программа лояльности", { exact: true }),
+  ).toBeVisible();
+  await expect(inbox.getByText("Первый депозит", { exact: true })).toHaveCount(
+    0,
+  );
 
   await page.goBack();
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_1");
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_1");
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
 
   await page.evaluate(() => {
     history.pushState(
@@ -99,19 +119,37 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
-  await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBe("game");
-  await expect(inbox.getByRole("searchbox", { name: "Поиск по поддержке" })).toHaveCount(0);
-  await expect(inbox.getByText("Мои обращения", { exact: true })).toHaveCount(0);
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Бонусы и программа лояльности", { exact: true })).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("search"))
+    .toBe("game");
+  await expect(
+    inbox.getByRole("searchbox", { name: "Поиск по поддержке" }),
+  ).toHaveCount(0);
+  await expect(inbox.getByText("Мои обращения", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inbox.getByText("Бонусы и программа лояльности", { exact: true }),
+  ).toHaveCount(0);
 
   await page.reload();
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Бонусы и программа лояльности", { exact: true })).toHaveCount(0);
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inbox.getByText("Бонусы и программа лояльности", { exact: true }),
+  ).toHaveCount(0);
 
   await page.goBack();
-  await expect.poll(() => new URL(page.url()).searchParams.get("search")).toBeNull();
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("search"))
+    .toBeNull();
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
 
   await page.evaluate((nextProjectId) => {
     const url = new URL(location.href);
@@ -122,18 +160,32 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
   await expect
     .poll(() => new URL(page.url()).searchParams.get("projectId"))
     .toBe(secondProjectId);
-  await expect.poll(() => new URL(page.url()).searchParams.get("entry")).toBe("live");
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_1");
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
-  await expect(inbox.getByText("Бонусы и программа лояльности", { exact: true })).toHaveCount(0);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("entry"))
+    .toBe("live");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_1");
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inbox.getByText("Бонусы и программа лояльности", { exact: true }),
+  ).toHaveCount(0);
 
   await page.goBack();
   await expect
     .poll(() => new URL(page.url()).searchParams.get("projectId"))
     .toBe(projectId);
-  await expect.poll(() => new URL(page.url()).searchParams.get("entry")).toBe("live");
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_1");
-  await expect(inbox.getByText("Первый депозит", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("entry"))
+    .toBe("live");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_1");
+  await expect(
+    inbox.getByText("Первый депозит", { exact: true }),
+  ).toBeVisible();
 
   await page.goBack();
   await expectPath(page, "/support/inbox/conversations/conv_3");
@@ -149,7 +201,9 @@ test("restores a protected legacy deep link after login and cuts it over", async
 
   await page.getByRole("button", { name: "Продолжить" }).click();
   await expectPath(page, "/support/inbox/cases/case-demo-deposit");
-  await expect.poll(() => new URL(page.url()).searchParams.get("projectId")).toBe(projectId);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("projectId"))
+    .toBe(projectId);
 });
 
 test("returns canonical deep links to the legacy launchers after project rollback", async ({
@@ -169,23 +223,27 @@ test("returns canonical deep links to the legacy launchers after project rollbac
   });
   await page.goto("/overview");
 
-  await page.goto(
-    `/support/inbox/conversations/conv_3?projectId=${projectId}`,
-  );
+  await page.goto(`/support/inbox/conversations/conv_3?projectId=${projectId}`);
   await expectPath(page, "/users");
-  await expect.poll(() => new URL(page.url()).searchParams.get("conversationId")).toBe("conv_3");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("conversationId"))
+    .toBe("conv_3");
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Support Workspace временно выключен",
+      name: "Рабочее место поддержки временно выключено",
     }),
   ).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Ответ пользователю" })).toHaveCount(0);
+  await expect(
+    page.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Назначить/ })).toHaveCount(0);
 
   await page.goto(`/users/usr_1?projectId=${projectId}`);
   await expectPath(page, "/users/usr_1");
-  await expect(page.getByText("Пользователь · usr_1", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Пользователь · usr_1", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Проверить доступ снова" }).click();
   await expectPath(page, "/users/usr_1");
 
@@ -193,8 +251,12 @@ test("returns canonical deep links to the legacy launchers after project rollbac
     `/support/inbox/cases/case-demo-deposit?projectId=${projectId}`,
   );
   await expectPath(page, "/cases/case-demo-deposit");
-  await expect(page.getByText("Case · case-demo-deposit", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Изменить статус/ })).toHaveCount(0);
+  await expect(
+    page.getByText("Обращение · case-demo-deposit", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Изменить статус/ }),
+  ).toHaveCount(0);
 
   await setRollout(page, {
     enabled: true,
@@ -209,8 +271,12 @@ test("returns canonical deep links to the legacy launchers after project rollbac
     `/support/inbox?projectId=${projectId}&endUserId=usr_2&entry=live`,
   );
   await expectPath(page, "/live");
-  await expect(page.getByText("Пользователь · usr_2", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Пользователь · usr_2", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Проверить доступ снова" }).click();
   await expectPath(page, "/live");
-  await expect.poll(() => new URL(page.url()).searchParams.get("endUserId")).toBe("usr_2");
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("endUserId"))
+    .toBe("usr_2");
 });

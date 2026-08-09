@@ -61,7 +61,7 @@ describe("SupportLeadAssignmentBatchDesk", () => {
     });
 
     await wrapper
-      .get("button[aria-label='Пакетное назначение выбранных Cases']")
+      .get("button[aria-label='Пакетное назначение выбранных обращений']")
       .trigger("click");
 
     expect(wrapper.get("[role='dialog']").text()).toContain(
@@ -69,7 +69,7 @@ describe("SupportLeadAssignmentBatchDesk", () => {
     );
     expect(wrapper.get("[role='dialog']").text()).toContain("Назначен");
     expect(wrapper.get("[role='dialog']").text()).toContain(
-      "Недостаточно capacity",
+      "Недостаточно свободной нагрузки",
     );
     expect(wrapper.get("[role='dialog']").text()).toContain("Платёжный риск");
     expect(wrapper.get("[role='dialog']").text()).not.toContain("case-1");
@@ -148,7 +148,7 @@ describe("SupportLeadAssignmentBatchDesk", () => {
     });
 
     await wrapper
-      .get("button[aria-label='Пакетное назначение выбранных Cases']")
+      .get("button[aria-label='Пакетное назначение выбранных обращений']")
       .trigger("click");
     expect(wrapper.get("[role='dialog']").text()).toContain("Анна");
     expect(wrapper.html()).toContain("Команда для Платёжный риск");

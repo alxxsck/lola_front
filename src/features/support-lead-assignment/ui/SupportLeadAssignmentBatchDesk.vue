@@ -60,7 +60,7 @@ function requiredOverrides(row: SupportLeadAssignmentBatchRow): string[] {
 }
 
 function caseLabel(value: string): string {
-  return props.caseLabels[value] ?? "Выбранный Case";
+  return props.caseLabels[value] ?? "Выбранное обращение";
 }
 
 function rowRequiresForce(row: SupportLeadAssignmentBatchRow): boolean {
@@ -73,18 +73,19 @@ function rowRequiresForce(row: SupportLeadAssignmentBatchRow): boolean {
 }
 
 function caseCountLabel(value: number): string {
-  return `${value} ${value === 1 ? "Case" : "Cases"} в пакете`;
+  return `${value} ${value === 1 ? "обращение" : "обращений"} в пакете`;
 }
 
 function errorLabel(code?: string): string {
   return (
     {
-      OPERATOR_CAPACITY_EXCEEDED: "Недостаточно capacity",
+      OPERATOR_CAPACITY_EXCEEDED: "Недостаточно свободной нагрузки",
       OPERATOR_NOT_AVAILABLE: "Оператор недоступен",
-      CASE_VERSION_CONFLICT: "Case уже изменился",
-      CASE_NOT_ACTIONABLE: "Case больше не доступен для назначения",
+      CASE_VERSION_CONFLICT: "Обращение уже изменилось",
+      CASE_NOT_ACTIONABLE: "Обращение больше нельзя назначить",
       IDEMPOTENCY_KEY_REUSED: "Ключ команды уже использован с другим пакетом",
-    }[code ?? ""] ?? code ?? "Неизвестная ошибка"
+    }[code ?? ""] ??
+    "Ошибка не распознана. Обновите данные; если она повторится, передайте идентификатор обращения администратору."
   );
 }
 
@@ -140,7 +141,7 @@ watch(
     icon="pi pi-users"
     :badge="String(caseIds.length)"
     :disabled="caseIds.length === 0"
-    aria-label="Пакетное назначение выбранных Cases"
+    aria-label="Пакетное назначение выбранных обращений"
     @click="openDesk"
   />
 
@@ -156,18 +157,23 @@ watch(
   >
     <div class="batch-intro">
       <div>
-        <span class="section-kicker">Lead Control</span>
+        <span class="section-kicker">Панель руководителя</span>
         <strong>{{ caseCountLabel(caseIds.length) }}</strong>
       </div>
       <Tag
         v-if="controller.rows.value.length"
         :value="`${controller.readyCount.value} готовы`"
-        :severity="controller.readyCount.value === controller.rows.value.length ? 'success' : 'warn'"
+        :severity="
+          controller.readyCount.value === controller.rows.value.length
+            ? 'success'
+            : 'warn'
+        "
       />
     </div>
 
     <Message severity="info" :closable="false">
-      Каждый Case проверяется отдельно. Частичный результат останется видимым по строкам.
+      Каждое обращение проверяется отдельно. Частичный результат останется
+      видимым по строкам.
     </Message>
     <Message v-if="controller.error.value" severity="error" :closable="false">
       {{ controller.error.value }}
@@ -175,19 +181,23 @@ watch(
 
     <div v-if="controller.preparing.value" class="batch-loading">
       <i class="pi pi-spin pi-spinner" aria-hidden="true" />
-      Проверяем серверные catalogs…
+      Проверяем доступные команды и операторов…
     </div>
 
     <div v-else-if="!controller.result.value" class="batch-rows">
-      <article v-for="row in controller.rows.value" :key="row.caseId" class="batch-row">
+      <article
+        v-for="row in controller.rows.value"
+        :key="row.caseId"
+        class="batch-row"
+      >
         <header>
           <div>
-            <span class="section-kicker">Case</span>
+            <span class="section-kicker">Обращение</span>
             <strong>{{ caseLabel(row.caseId) }}</strong>
           </div>
           <Tag
             v-if="requiredOverrides(row).length"
-            value="Требуется override"
+            value="Нужно исключение"
             severity="warn"
           />
         </header>
@@ -216,14 +226,16 @@ watch(
               option-value="id"
               :aria-label="`Оператор для ${caseLabel(row.caseId)}`"
               fluid
-              @update:model-value="controller.setTarget(row.caseId, row.teamId, $event)"
+              @update:model-value="
+                controller.setTarget(row.caseId, row.teamId, $event)
+              "
             />
           </label>
         </div>
       </article>
 
       <label class="batch-reason">
-        <span>Общее обоснование · обязательно для каждой строки audit</span>
+        <span>Общее обоснование · попадёт в журнал по каждому обращению</span>
         <Textarea
           :model-value="controller.reasonNote.value"
           rows="3"
@@ -241,22 +253,53 @@ watch(
         <div>
           <span class="section-kicker">Результат</span>
           <h3>
-            {{ controller.result.value.outcome === 'PENDING' ? 'Пакет обрабатывается' : controller.result.value.outcome === 'SUCCEEDED' ? 'Пакет выполнен' : controller.result.value.outcome === 'PARTIAL' ? 'Пакет выполнен частично' : 'Пакет не выполнен' }}
+            {{
+              controller.result.value.outcome === "PENDING"
+                ? "Пакет обрабатывается"
+                : controller.result.value.outcome === "SUCCEEDED"
+                  ? "Пакет выполнен"
+                  : controller.result.value.outcome === "PARTIAL"
+                    ? "Пакет выполнен частично"
+                    : "Пакет не выполнен"
+            }}
           </h3>
         </div>
         <Tag
           :value="`${controller.result.value.succeededCount} успешно · ${controller.result.value.failedCount} ошибок`"
-          :severity="controller.result.value.outcome === 'PENDING' ? 'info' : controller.result.value.outcome === 'SUCCEEDED' ? 'success' : controller.result.value.outcome === 'PARTIAL' ? 'warn' : 'danger'"
+          :severity="
+            controller.result.value.outcome === 'PENDING'
+              ? 'info'
+              : controller.result.value.outcome === 'SUCCEEDED'
+                ? 'success'
+                : controller.result.value.outcome === 'PARTIAL'
+                  ? 'warn'
+                  : 'danger'
+          "
         />
       </header>
       <ol>
-        <li v-for="item in controller.result.value.items" :key="item.clientItemId">
+        <li
+          v-for="item in controller.result.value.items"
+          :key="item.clientItemId"
+        >
           <div>
             <strong>{{ caseLabel(item.caseId) }}</strong>
           </div>
           <Tag
-            :value="item.status === 'SUCCEEDED' ? 'Назначен' : item.status === 'FAILED' ? errorLabel(item.error?.code) : 'В обработке'"
-            :severity="item.status === 'SUCCEEDED' ? 'success' : item.status === 'FAILED' ? 'danger' : 'info'"
+            :value="
+              item.status === 'SUCCEEDED'
+                ? 'Назначен'
+                : item.status === 'FAILED'
+                  ? errorLabel(item.error?.code)
+                  : 'В обработке'
+            "
+            :severity="
+              item.status === 'SUCCEEDED'
+                ? 'success'
+                : item.status === 'FAILED'
+                  ? 'danger'
+                  : 'info'
+            "
           />
         </li>
       </ol>
@@ -283,7 +326,11 @@ watch(
           label="Назначить пакет"
           icon="pi pi-check"
           :loading="controller.mutating.value"
-          :disabled="controller.preparing.value || controller.readyCount.value !== controller.rows.value.length || !controller.reasonNote.value.trim()"
+          :disabled="
+            controller.preparing.value ||
+            controller.readyCount.value !== controller.rows.value.length ||
+            !controller.reasonNote.value.trim()
+          "
           @click="controller.submit"
         />
       </div>

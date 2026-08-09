@@ -40,9 +40,9 @@ describe("SupportLegacyLauncherPage", () => {
     const wrapper = mountPage("CASES", { kind: "CASE", id: "case-42" });
 
     expect(wrapper.get("h1").text()).toBe(
-      "Support Workspace временно выключен",
+      "Рабочее место поддержки временно выключено",
     );
-    expect(wrapper.text()).toContain("Case · case-42");
+    expect(wrapper.text()).toContain("Обращение · case-42");
     expect(wrapper.text()).not.toContain("Ответ пользователю");
     expect(wrapper.text()).not.toContain("Изменить статус");
     expect(wrapper.text()).not.toContain("Назначить оператора");

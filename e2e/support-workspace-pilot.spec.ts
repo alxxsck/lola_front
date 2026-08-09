@@ -57,12 +57,15 @@ async function runPreset(
   await page
     .getByRole("dialog")
     .getByRole("button", {
-      name: label === "Emergency hard-off"
-        ? "Подтвердить hard-off"
-        : "Подтвердить команду",
+      name:
+        label === "Аварийно выключить"
+          ? "Подтвердить аварийное отключение"
+          : "Подтвердить команду",
     })
     .click();
-  await expect(page.getByText(/подтверждено сервером/i)).toBeVisible();
+  await expect(
+    page.getByText(/Изменение подтверждено и перечитано с сервера/i),
+  ).toBeVisible();
 }
 
 test("runs one-Project enable and rollback through authoritative admission", async ({
@@ -72,27 +75,47 @@ test("runs one-Project enable and rollback through authoritative admission", asy
   await setLauncherRollout(page);
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
 
-  await expect(page.getByRole("heading", { name: "Pilot и rollback" })).toBeVisible();
-  await expect(page.getByText("Legacy launcher", { exact: true })).toBeVisible();
-  await expect(page.getByText("LEGACY_LAUNCHER · DISABLED")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Запуск и возврат" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Прежний интерфейс", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Прежний интерфейс · доступ закрыт"),
+  ).toBeVisible();
   await expect(page.locator("body")).not.toContainText("swr1.");
   await expect(page.locator("body")).not.toContainText("Idempotency-Key");
 
-  await runPreset(page, "Включить pilot", "Pilot window approved");
-  await expect(page.getByText("Pilot включён", { exact: true })).toBeVisible();
-  await expect(page.getByText("CANONICAL_SUPPORT · ENABLED")).toBeVisible();
+  await runPreset(page, "Включить пробный запуск", "Окно запуска согласовано");
+  await expect(
+    page.getByText("Пробный запуск включён", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Новое рабочее место · доступ разрешён"),
+  ).toBeVisible();
 
   await page.goto(`/support/inbox?projectId=${projectId}`);
-  await expect(page.getByRole("heading", { level: 1, name: "Поддержка" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Поддержка" }),
+  ).toBeVisible();
 
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
-  await runPreset(page, "Вернуть launcher", "Rollback rehearsal complete");
-  await expect(page.getByText("Legacy launcher", { exact: true })).toBeVisible();
+  await runPreset(
+    page,
+    "Вернуть прежний интерфейс",
+    "Проверка возврата завершена",
+  );
+  await expect(
+    page.getByText("Прежний интерфейс", { exact: true }),
+  ).toBeVisible();
 
   await page.goto(`/support/inbox?projectId=${projectId}`);
   await expect(page).toHaveURL(/\/users\?/);
   await expect(
-    page.getByRole("heading", { name: "Support Workspace временно выключен" }),
+    page.getByRole("heading", {
+      name: "Рабочее место поддержки временно выключено",
+    }),
   ).toBeVisible();
 });
 
@@ -103,7 +126,9 @@ test("fences Project switch, browser Back and live permission revoke", async ({
   await installSecondProject(page);
   await setLauncherRollout(page);
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
-  await expect(page.getByText("Legacy launcher", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Прежний интерфейс", { exact: true }),
+  ).toBeVisible();
 
   await page.evaluate((nextProjectId) => {
     const url = new URL(location.href);
@@ -114,14 +139,18 @@ test("fences Project switch, browser Back and live permission revoke", async ({
   await expect
     .poll(() => new URL(page.url()).searchParams.get("projectId"))
     .toBe(secondProjectId);
-  await expect(page.getByText("Pilot включён", { exact: true })).toBeVisible();
-  await expect(page.getByText("Version 1", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Пробный запуск включён", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Версия 1", { exact: true })).toBeVisible();
 
   await page.goBack();
   await expect
     .poll(() => new URL(page.url()).searchParams.get("projectId"))
     .toBe(projectId);
-  await expect(page.getByText("Legacy launcher", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Прежний интерфейс", { exact: true }),
+  ).toBeVisible();
 
   await page.evaluate((authKey) => {
     const raw = sessionStorage.getItem(authKey);
@@ -140,7 +169,9 @@ test("fences Project switch, browser Back and live permission revoke", async ({
   }, demoAuthStorageKey);
   await page.reload();
   await expect(page).toHaveURL(/\/overview$/);
-  await expect(page.getByRole("heading", { name: "Pilot и rollback" })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Запуск и возврат" }),
+  ).toHaveCount(0);
 });
 
 test("keeps the selected conversation and draft through an offline reconnect", async ({
@@ -148,7 +179,8 @@ test("keeps the selected conversation and draft through an offline reconnect", a
   context,
 }) => {
   await page.addInitScript(() => {
-    const events: Array<{ name?: string; payload?: Record<string, unknown> }> = [];
+    const events: Array<{ name?: string; payload?: Record<string, unknown> }> =
+      [];
     Object.assign(window, { __supportWorkspacePilotEvents: events });
     window.addEventListener("retenive:analytics", (event) => {
       const detail = (event as CustomEvent).detail as {
@@ -159,9 +191,7 @@ test("keeps the selected conversation and draft through an offline reconnect", a
     });
   });
   await login(page);
-  await page.goto(
-    `/support/inbox/conversations/conv_3?projectId=${projectId}`,
-  );
+  await page.goto(`/support/inbox/conversations/conv_3?projectId=${projectId}`);
   const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
   await composer.fill("Draft survives reconnect");
 
@@ -173,25 +203,34 @@ test("keeps the selected conversation and draft through an offline reconnect", a
   await expect(page).toHaveURL(/\/support\/inbox\/conversations\/conv_3/);
   await expect(composer).toHaveValue("Draft survives reconnect");
   await expect(
-    page.getByRole("heading", {
-      level: 2,
-      name: "Бонусы и программа лояльности",
-    }).first(),
+    page
+      .getByRole("heading", {
+        level: 2,
+        name: "Бонусы и программа лояльности",
+      })
+      .first(),
   ).toBeVisible();
-  await expect.poll(() => page.evaluate(() => {
-    const events = (window as typeof window & {
-      __supportWorkspacePilotEvents?: Array<{
-        name?: string;
-        payload?: Record<string, unknown>;
-      }>;
-    }).__supportWorkspacePilotEvents ?? [];
-    return events.some(
-      (event) =>
-        event.name === "support_workspace_core_feedback" &&
-        event.payload?.operation === "draft_state" &&
-        event.payload?.outcome === "active",
-    );
-  })).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const events =
+          (
+            window as typeof window & {
+              __supportWorkspacePilotEvents?: Array<{
+                name?: string;
+                payload?: Record<string, unknown>;
+              }>;
+            }
+          ).__supportWorkspacePilotEvents ?? [];
+        return events.some(
+          (event) =>
+            event.name === "support_workspace_core_feedback" &&
+            event.payload?.operation === "draft_state" &&
+            event.payload?.outcome === "active",
+        );
+      }),
+    )
+    .toBe(true);
 });
 
 test("has no critical or serious axe violations on rollout and core workspace", async ({
@@ -201,18 +240,16 @@ test("has no critical or serious axe violations on rollout and core workspace", 
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
   const rolloutResults = await new AxeBuilder({ page }).analyze();
   expect(
-    rolloutResults.violations.filter((item) =>
-      item.impact === "critical" || item.impact === "serious"
+    rolloutResults.violations.filter(
+      (item) => item.impact === "critical" || item.impact === "serious",
     ),
   ).toEqual([]);
 
-  await page.goto(
-    `/support/inbox/conversations/conv_3?projectId=${projectId}`,
-  );
+  await page.goto(`/support/inbox/conversations/conv_3?projectId=${projectId}`);
   const workspaceResults = await new AxeBuilder({ page }).analyze();
   expect(
-    workspaceResults.violations.filter((item) =>
-      item.impact === "critical" || item.impact === "serious"
+    workspaceResults.violations.filter(
+      (item) => item.impact === "critical" || item.impact === "serious",
     ),
   ).toEqual([]);
 });
@@ -224,10 +261,10 @@ test("completes rollout confirmation with keyboard-only focus recovery", async (
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
   const reason = page.getByRole("textbox", { name: "Причина изменения" });
   const rollback = page.getByRole("button", {
-    name: "Вернуть launcher",
+    name: "Вернуть прежний интерфейс",
     exact: true,
   });
-  await reason.fill("Keyboard rollback rehearsal");
+  await reason.fill("Проверка возврата с клавиатуры");
   await reason.focus();
   await page.keyboard.press("Tab");
   await expect(rollback).toBeFocused();
@@ -257,11 +294,16 @@ test("captures the rollout visual matrix and mobile keyboard composition", async
     { width: 320, height: 568 },
   ];
   for (const theme of ["light", "dark"] as const) {
-    await page.evaluate((value) => localStorage.setItem("retenive-theme", value), theme);
+    await page.evaluate(
+      (value) => localStorage.setItem("retenive-theme", value),
+      theme,
+    );
     for (const viewport of viewports) {
       await page.setViewportSize(viewport);
       await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
-      await expect(page.getByRole("heading", { name: "Pilot и rollback" })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Запуск и возврат" }),
+      ).toBeVisible();
       const geometry = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         innerWidth: window.innerWidth,
@@ -276,17 +318,21 @@ test("captures the rollout visual matrix and mobile keyboard composition", async
 
   await page.setViewportSize({ width: 640, height: 900 });
   await page.goto(`/support/settings/audit-rollout?projectId=${projectId}`);
-  await page.evaluate(() => { document.documentElement.style.zoom = "2"; });
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "2";
+  });
   await page.screenshot({
     path: "docs/evidence/support-workspace/ticket-29-rollout-200-percent.png",
     fullPage: true,
   });
-  await page.evaluate(() => { document.documentElement.style.zoom = ""; });
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "";
+  });
 
   await page.setViewportSize({ width: 390, height: 520 });
-  await page.getByRole("textbox", { name: "Причина изменения" }).fill(
-    "Long_unbroken_RTL-ready_reason_1234567890_مرحبا",
-  );
+  await page
+    .getByRole("textbox", { name: "Причина изменения" })
+    .fill("Long_unbroken_RTL-ready_reason_1234567890_مرحبا");
   await page.getByRole("textbox", { name: "Причина изменения" }).focus();
   const focused = page.getByRole("textbox", { name: "Причина изменения" });
   await expect(focused).toBeInViewport();

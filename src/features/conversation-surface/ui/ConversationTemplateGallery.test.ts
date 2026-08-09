@@ -27,7 +27,12 @@ const macro = {
     },
   },
   actionEtag: '"sm1.test"',
-  applicability: { visibility: "PROJECT", teamIds: [], categoryCodes: [], locale: "ru" },
+  applicability: {
+    visibility: "PROJECT",
+    teamIds: [],
+    categoryCodes: [],
+    locale: "ru",
+  },
 } as SupportMacroResponseDto;
 
 describe("ConversationTemplateGallery", () => {
@@ -46,19 +51,20 @@ describe("ConversationTemplateGallery", () => {
         stubs: {
           Dialog: {
             props: ["visible"],
-            template: '<section v-if="visible"><slot name="header" /><slot /></section>',
+            template:
+              '<section v-if="visible"><slot name="header" /><slot /></section>',
           },
         },
       },
     });
 
-    await wrapper.get('input[aria-label="Найти macro"]').setValue("платёж");
+    await wrapper.get('input[aria-label="Найти шаблон"]').setValue("платёж");
     await wrapper.get("form").trigger("submit");
     expect(wrapper.emitted("search")).toEqual([["платёж"]]);
 
     const row = wrapper.get(".macro-row");
     expect(row.text()).toContain("Проверка платежа");
-    expect(row.text()).toContain("v3");
+    expect(row.text()).toContain("Версия 3");
     await row.trigger("click");
     expect(wrapper.emitted("select")).toEqual([[macro]]);
     expect(wrapper.emitted("send")).toBeUndefined();
@@ -78,7 +84,8 @@ describe("ConversationTemplateGallery", () => {
         stubs: {
           Dialog: {
             props: ["visible"],
-            template: '<section v-if="visible"><slot name="header" /><slot /></section>',
+            template:
+              '<section v-if="visible"><slot name="header" /><slot /></section>',
           },
         },
       },

@@ -787,10 +787,10 @@ onBeforeUnmount(() => {
           <span
             v-if="message.macroProvenance"
             class="conversation-surface__macro-provenance"
-            :title="`Отправлено из опубликованного macro revision ${message.macroProvenance.revisionNumber}`"
+            :title="`Отправлено из опубликованного шаблона, версия ${message.macroProvenance.revisionNumber}`"
           >
             <i class="pi pi-file-edit" aria-hidden="true" />
-            Macro v{{ message.macroProvenance.revisionNumber }}
+            Шаблон · версия {{ message.macroProvenance.revisionNumber }}
             {{ message.macroProvenance.edited ? "· изменён оператором" : "" }}
           </span>
           <span
@@ -799,7 +799,7 @@ onBeforeUnmount(() => {
             :title="`Внутренняя база знаний · точная редакция ${message.knowledgeProvenance.revisionNumber}`"
           >
             <i class="pi pi-book" aria-hidden="true" />
-            Источник v{{ message.knowledgeProvenance.revisionNumber }}
+            Источник · версия {{ message.knowledgeProvenance.revisionNumber }}
             {{ message.knowledgeProvenance.edited ? "· изменён оператором" : "" }}
           </span>
           <ul

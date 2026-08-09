@@ -260,7 +260,7 @@ describe("support reply controller", () => {
 
     expect(controller.draft.value).toBe("Текст оператора");
     expect(onMacroDraftRejected).toHaveBeenCalledOnce();
-    expect(controller.error.value).toContain("Macro изменился");
+    expect(controller.error.value).toContain("Шаблон изменился");
   });
 
   it("preserves text and refreshes Knowledge after the source changes", async () => {
