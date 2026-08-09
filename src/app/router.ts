@@ -499,43 +499,14 @@ export const router = createRouter({
         {
           path: "users/:endUserId?",
           name: "users",
-          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
-          props: (route) => ({
-            entryPoint: "USERS",
-            selectionKind: routeValue(route.query.conversationId)
-              ? "CONVERSATION"
-              : routeValue(route.params.endUserId)
-                ? "END_USER"
-                : undefined,
-            selectionId: routeValue(route.query.conversationId) ??
-              routeValue(route.params.endUserId),
-          }),
-          meta: {
-            projectPermissionsAny: [
-              "project.profiles.read",
-              "project.conversations.read",
-            ],
-            legacySupportEntryPoint: "USERS",
-          },
+          component: () => import("@/pages/UsersPage.vue"),
+          meta: { projectPermission: "project.profiles.read" },
         },
         {
           path: "live",
           name: "live",
-          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
-          props: (route) => ({
-            entryPoint: "LIVE",
-            selectionKind: routeValue(route.query.endUserId)
-              ? "END_USER"
-              : undefined,
-            selectionId: routeValue(route.query.endUserId),
-          }),
-          meta: {
-            projectPermissionsAny: [
-              "project.end_users.read",
-              "project.conversations.read",
-            ],
-            legacySupportEntryPoint: "LIVE",
-          },
+          component: () => import("@/pages/LivePage.vue"),
+          meta: { projectPermission: "project.end_users.read" },
         },
         {
           path: "operations",

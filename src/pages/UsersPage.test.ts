@@ -85,6 +85,7 @@ describe("страница профилей с единым рабочим пр�
       visible: true,
       projectId: "project-1",
       endUserId: "user-1",
+      readOnly: true,
     });
     expect(mocks.replace).toHaveBeenCalledWith({
       name: "users",

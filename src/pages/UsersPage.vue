@@ -376,8 +376,8 @@ onBeforeUnmount(() => {
         <div class="eyebrow">Данные пользователей</div>
         <h1>Профили пользователей</h1>
         <p class="subtitle">
-          Откройте пользователя, чтобы работать с профилем и разговорами в одном
-          окне.
+          Откройте пользователя, чтобы посмотреть профиль и историю разговоров
+          в одном окне.
         </p>
       </div>
       <div class="header-actions">
@@ -573,6 +573,7 @@ onBeforeUnmount(() => {
         ? route.query.endUserCaseId
         : undefined
     "
+    read-only
     @changed="load()"
     @conversation-selected="selectConversation"
     @profile-selected="selectProfile"

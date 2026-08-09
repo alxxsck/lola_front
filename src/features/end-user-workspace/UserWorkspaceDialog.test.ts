@@ -267,7 +267,10 @@ describe("единое рабочее пространство пользова�
     });
   });
 
-  function mountWorkspace(preferredConversationId?: string) {
+  function mountWorkspace(
+    preferredConversationId?: string,
+    options: { readOnly?: boolean } = {},
+  ) {
     return mount(UserWorkspaceDialog, {
       props: {
         visible: true,
@@ -275,6 +278,7 @@ describe("единое рабочее пространство пользова�
         endUserId: "user-1",
         externalUserId: "customer-1",
         preferredConversationId,
+        readOnly: options.readOnly,
         "onUpdate:visible": mocks.updateVisible,
       },
       global: {
@@ -396,6 +400,47 @@ describe("единое рабочее пространство пользова�
     expect(
       wrapper.findAll('[aria-label="Режим отображения сообщений"]'),
     ).toHaveLength(1);
+  });
+
+  it("keeps profile and chat history visible but removes every write control in read-only mode", async () => {
+    mocks.permissions.push(
+      "project.translation.create",
+      "project.telegram.links.read",
+      "project.telegram.personal_messages.send",
+      "project.user_memory.read",
+      "project.user_memory.manage",
+      "project.ai_allowance.read",
+      "project.ai_allowance.grant",
+      "project.ai_allowance.manage",
+      "project.ai_allowance.reconcile",
+      "project.end_user_state.sensitive.read",
+      "project.end_user_state.manage",
+      "project.ai_review.read",
+      "project.ai_review.run",
+      "project.settings.read",
+      "project.event_query_policy.preview",
+    );
+    const wrapper = mountWorkspace(current.id, { readOnly: true });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Только просмотр");
+    expect(wrapper.text()).toContain("Сообщение пользователя");
+    expect(wrapper.find("form.composer").exists()).toBe(false);
+    await wrapper.get('[data-action="open-profile"]').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-testid="ai-review-entry"]').exists()).toBe(false);
+    expect(
+      wrapper.get('[data-testid="end-user-telegram-panel"]').attributes(
+        "data-can-send",
+      ),
+    ).toBe("false");
+    expect(
+      wrapper.get('[data-testid="end-user-ai-allowance"]').attributes(),
+    ).toMatchObject({
+      "data-can-grant": "false",
+      "data-can-manage": "false",
+      "data-can-reconcile": "false",
+    });
   });
 
   it("keeps AI suspension controls beside the shared Surface and revokes mutation authority at runtime", async () => {

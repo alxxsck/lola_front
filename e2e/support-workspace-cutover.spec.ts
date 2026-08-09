@@ -30,7 +30,7 @@ async function setRollout(
   );
 }
 
-test("cuts legacy Cases, Users and Live links over to the canonical workspace", async ({
+test("cuts Cases over while keeping Users and Live available for read-only inspection", async ({
   page,
 }) => {
   await login(page);
@@ -67,9 +67,20 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
     .toBe(projectId);
 
   await page.goto(`/users/usr_1?projectId=${projectId}&conversationId=conv_3`);
-  await expectPath(page, "/support/inbox/conversations/conv_3");
+  await expectPath(page, "/users/usr_1");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Профили пользователей" }),
+  ).toBeVisible();
 
   await page.goto(`/live?projectId=${projectId}&endUserId=usr_1`);
+  await expectPath(page, "/live");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Сейчас онлайн" }),
+  ).toBeVisible();
+
+  await page.goto(
+    `/support/inbox?projectId=${projectId}&endUserId=usr_1&entry=live`,
+  );
   await expectPath(page, "/support/inbox");
   await expect
     .poll(() => new URL(page.url()).searchParams.get("endUserId"))
@@ -188,7 +199,7 @@ test("cuts legacy Cases, Users and Live links over to the canonical workspace", 
   ).toBeVisible();
 
   await page.goBack();
-  await expectPath(page, "/support/inbox/conversations/conv_3");
+  await expectPath(page, "/live");
   await page.goForward();
   await expectPath(page, "/support/inbox");
 });
@@ -206,7 +217,66 @@ test("restores a protected legacy deep link after login and cuts it over", async
     .toBe(projectId);
 });
 
-test("returns canonical deep links to the legacy launchers after project rollback", async ({
+test("keeps Users, chat history and Live available as read-only views after rollback", async ({
+  page,
+}) => {
+  await login(page);
+  await setRollout(page, {
+    enabled: true,
+    shellEnabled: false,
+    hardOff: false,
+    version: 2,
+  });
+
+  await page.goto(`/users/usr_1?projectId=${projectId}&conversationId=conv_1`);
+  await expectPath(page, "/users/usr_1");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Профили пользователей" }),
+  ).toBeVisible();
+  const userWorkspace = page.getByRole("dialog", {
+    name: /Рабочее пространство пользователя/,
+  });
+  await expect(userWorkspace).toBeVisible();
+  await expect(
+    userWorkspace.getByText("Как лучше пополнить баланс?"),
+  ).toBeVisible();
+  await expect(
+    userWorkspace.locator('[data-testid^="readonly-status"]:visible'),
+  ).toHaveCount(1);
+  await expect(
+    userWorkspace.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveCount(0);
+  await expect(
+    userWorkspace.getByRole("button", { name: "Новый", exact: true }),
+  ).toHaveCount(0);
+
+  await page.goto(`/live?projectId=${projectId}`);
+  await expectPath(page, "/live");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Сейчас онлайн" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Действия" })).toHaveCount(0);
+  await page
+    .getByRole("button", { name: /Открыть диалог с/ })
+    .first()
+    .click();
+  const liveWorkspace = page.getByRole("dialog", {
+    name: /Рабочее пространство пользователя/,
+  });
+  await expect(liveWorkspace).toBeVisible();
+  await liveWorkspace.getByRole("button", { name: "Открыть чат" }).click();
+  await expect(
+    liveWorkspace.getByText("Как лучше пополнить баланс?"),
+  ).toBeVisible();
+  await expect(
+    liveWorkspace.locator('[data-testid^="readonly-status"]:visible'),
+  ).toHaveCount(1);
+  await expect(
+    liveWorkspace.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveCount(0);
+});
+
+test("returns canonical deep links to read-only legacy views after project rollback", async ({
   page,
 }) => {
   await login(page);
@@ -231,7 +301,7 @@ test("returns canonical deep links to the legacy launchers after project rollbac
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Рабочее место поддержки временно выключено",
+      name: "Профили пользователей",
     }),
   ).toBeVisible();
   await expect(
@@ -242,10 +312,11 @@ test("returns canonical deep links to the legacy launchers after project rollbac
   await page.goto(`/users/usr_1?projectId=${projectId}`);
   await expectPath(page, "/users/usr_1");
   await expect(
-    page.getByText("Пользователь · usr_1", { exact: true }),
+    page.getByRole("dialog", { name: /Рабочее пространство пользователя/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Проверить доступ снова" }).click();
-  await expectPath(page, "/users/usr_1");
+  await expect(
+    page.locator('[data-testid^="readonly-status"]:visible'),
+  ).toHaveCount(1);
 
   await page.goto(
     `/support/inbox/cases/case-demo-deposit?projectId=${projectId}`,
@@ -272,10 +343,8 @@ test("returns canonical deep links to the legacy launchers after project rollbac
   );
   await expectPath(page, "/live");
   await expect(
-    page.getByText("Пользователь · usr_2", { exact: true }),
+    page.getByRole("heading", { level: 1, name: "Сейчас онлайн" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Проверить доступ снова" }).click();
-  await expectPath(page, "/live");
   await expect
     .poll(() => new URL(page.url()).searchParams.get("endUserId"))
     .toBe("usr_2");

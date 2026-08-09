@@ -95,13 +95,17 @@ interface ConversationMessageUpsertEvent {
   };
 }
 
-const props = defineProps<{
-  projectId: string;
-  endUserId: string | null;
-  externalUserId?: string;
-  preferredConversationId?: string;
-  preferredEndUserCaseId?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectId: string;
+    endUserId: string | null;
+    externalUserId?: string;
+    preferredConversationId?: string;
+    preferredEndUserCaseId?: string;
+    readOnly?: boolean;
+  }>(),
+  { readOnly: false },
+);
 const emit = defineEmits<{
   changed: [];
   conversationSelected: [conversationId: string];
@@ -223,9 +227,12 @@ const selectedSuspensionEntry = computed(() =>
     : undefined,
 );
 const canManageSuspension = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.conversations.ai_suspend",
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        auth.project?.effectivePermissionCodes ?? [],
+        "project.conversations.ai_suspend",
+      ),
   ),
 );
 const projectPermissions = computed(
@@ -238,9 +245,12 @@ const canReadTelegramLinks = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.telegram.links.read"),
 );
 const canSendTelegramPersonalMessages = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.telegram.personal_messages.send",
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.telegram.personal_messages.send",
+      ),
   ),
 );
 const canReadUserMemory = computed(() =>
@@ -253,15 +263,30 @@ const canReadAllowance = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.ai_allowance.read"),
 );
 const canManageAllowance = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_allowance.manage"),
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.ai_allowance.manage",
+      ),
+  ),
 );
 const canGrantAllowance = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_allowance.grant"),
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.ai_allowance.grant",
+      ),
+  ),
 );
 const canReconcileAllowance = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.ai_allowance.reconcile",
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.ai_allowance.reconcile",
+      ),
   ),
 );
 const canReadEndUserState = computed(() =>
@@ -271,19 +296,34 @@ const canReadEndUserState = computed(() =>
   ),
 );
 const canManageEndUserState = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.end_user_state.manage",
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.end_user_state.manage",
+      ),
   ),
 );
 const canReadConversations = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.conversations.read"),
 );
 const canReply = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.conversations.reply"),
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.conversations.reply",
+      ),
+  ),
 );
 const canManageTranslation = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.translation.create"),
+  Boolean(
+    !props.readOnly &&
+      hasProjectPermission(
+        projectPermissions.value,
+        "project.translation.create",
+      ),
+  ),
 );
 const canReadTranslationDetails = computed(() =>
   hasProjectPermission(projectPermissions.value, "project.translation.read"),
@@ -616,6 +656,7 @@ async function prepareReplyTranslation(): Promise<void> {
 }
 const canStartAIReview = computed(
   () =>
+    !props.readOnly &&
     hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
     hasProjectPermission(projectPermissions.value, "project.ai_review.run") &&
     hasProjectPermission(projectPermissions.value, "project.settings.read") &&
@@ -1446,6 +1487,14 @@ function displayField(
             </span>
           </div>
           <div class="workspace-statuses">
+            <Tag
+              v-if="readOnly"
+              class="read-only-status"
+              data-testid="readonly-status-desktop"
+              value="Только просмотр"
+              severity="secondary"
+              rounded
+            />
             <span
               class="connection-status"
               :data-state="realtimeStatus.state"
@@ -1673,6 +1722,7 @@ function displayField(
                 :end-user-id="endUserId"
                 :user-label="displayName"
                 :editable="
+                  !readOnly &&
                   hasProjectPermission(
                     projectPermissions,
                     'project.user_memory.manage',
@@ -1845,6 +1895,13 @@ function displayField(
                     1,
                   )
                 }}
+              </span>
+              <span
+                v-if="readOnly"
+                class="mobile-readonly-badge"
+                data-testid="readonly-status-mobile"
+              >
+                Только просмотр
               </span>
             </div>
             <template
@@ -2191,6 +2248,9 @@ function displayField(
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
+}
+.chat-heading .mobile-readonly-badge {
+  display: none;
 }
 .connection-status {
   display: inline-flex;
@@ -3269,6 +3329,17 @@ function displayField(
   .conversation-state-rail .chat-heading {
     grid-column: 2;
   }
+  .chat-heading .mobile-readonly-badge {
+    display: inline-flex;
+    width: fit-content;
+    margin-top: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+  }
   .conversation-state-rail :deep(.ai-suspension-header-actions),
   .conversation-state-rail :deep(.suspension-banner.compact) {
     grid-column: 3;
@@ -3325,7 +3396,7 @@ function displayField(
   .workspace-title h2 {
     font-size: 0.9rem;
   }
-  .workspace-statuses .p-tag {
+  .workspace-statuses .p-tag:not(.read-only-status) {
     display: none;
   }
   .conversation-pane,

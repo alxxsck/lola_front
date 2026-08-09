@@ -52,7 +52,7 @@ describe('LivePage permission composition', () => {
     expect(wrapper.findComponent({ name: 'SendActionDialog' }).exists()).toBe(false)
   })
 
-  it('enables each composed surface only when its exact authority exists', async () => {
+  it('opens conversation history read-only even when reply authority exists', async () => {
     mocks.permissions = [
       'project.end_users.read',
       'project.conversations.read',
@@ -64,8 +64,8 @@ describe('LivePage permission composition', () => {
 
     expect(wrapper.find('.session-open-overlay').exists()).toBe(true)
     expect(wrapper.find('button-stub[label="Открыть диалог"]').exists()).toBe(true)
-    expect(wrapper.find('button-stub[label="Действия"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'UserWorkspaceDialog' }).exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'SendActionDialog' }).props('canReadTargets')).toBe(true)
+    expect(wrapper.find('button-stub[label="Действия"]').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'UserWorkspaceDialog' }).props('readOnly')).toBe(true)
+    expect(wrapper.findComponent({ name: 'SendActionDialog' }).exists()).toBe(false)
   })
 })

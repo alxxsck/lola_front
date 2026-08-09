@@ -513,7 +513,7 @@ describe("authentication routes", () => {
     );
   });
 
-  it("cuts legacy Cases, Users and Live selections over to the canonical server-admitted route", async () => {
+  it("cuts Cases over while keeping Users and Live as separate read-only routes", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -542,13 +542,12 @@ describe("authentication routes", () => {
     await router.push(
       "/users/user-1?conversationId=conversation-1&projectId=project-1",
     );
-    expect(router.currentRoute.value.name).toBe("support-inbox-conversation");
-    expect(router.currentRoute.value.params.conversationId).toBe(
-      "conversation-1",
-    );
+    expect(router.currentRoute.value.name).toBe("users");
+    expect(router.currentRoute.value.params.endUserId).toBe("user-1");
+    expect(router.currentRoute.value.query.conversationId).toBe("conversation-1");
 
     await router.push("/live?endUserId=user-2&projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("support-inbox");
+    expect(router.currentRoute.value.name).toBe("live");
     expect(router.currentRoute.value.query.endUserId).toBe("user-2");
   });
 
