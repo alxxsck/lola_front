@@ -144,6 +144,31 @@ test("route-owned selection supports keyboard, Back and tablet geometry", async 
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
 });
 
+test("compact desktop keeps navigation and filters dense", async ({ page }) => {
+  await login(page);
+  await page.setViewportSize({ width: 856, height: 674 });
+  await page.goto("/support/external-work");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Внешние задачи" }),
+  ).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const height = (selector: string) =>
+      document.querySelector(selector)?.getBoundingClientRect().height ?? 0;
+
+    return {
+      modeSwitchHeight: height(".mode-switch"),
+      filtersHeight: height(".filters"),
+      workbenchHeight: height(".recovery-workbench"),
+    };
+  });
+
+  expect(geometry.modeSwitchHeight).toBeLessThanOrEqual(52);
+  expect(geometry.filtersHeight).toBeLessThanOrEqual(56);
+  expect(geometry.workbenchHeight).toBeGreaterThanOrEqual(300);
+});
+
 test("Case inspector creates governed external work and copies remote text only to draft", async ({
   page,
 }) => {

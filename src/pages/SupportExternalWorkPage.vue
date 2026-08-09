@@ -724,7 +724,8 @@ function safeRemoteUrl(value: string | null): string | null {
   color: var(--text);
 }
 .external-work-page {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   padding: 20px;
   height: calc(100vh - 40px);
@@ -763,6 +764,7 @@ function safeRemoteUrl(value: string | null): string | null {
   display: flex;
   gap: 4px;
   padding: 4px;
+  align-self: flex-start;
   width: max-content;
   border-radius: 12px;
   background: var(--canvas);
@@ -791,14 +793,24 @@ function safeRemoteUrl(value: string | null): string | null {
   outline-offset: 1px;
 }
 .filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
   gap: 8px;
 }
+.filters :deep(.p-select),
+.filters :deep(.p-inputtext) {
+  flex: 1 1 160px;
+  width: auto;
+  min-width: 160px;
+  max-width: 240px;
+}
 .filters :deep(.p-button) {
+  flex: 0 0 auto;
   min-height: 44px;
 }
 .recovery-workbench {
+  flex: 1 1 0;
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   min-height: 0;
@@ -1115,12 +1127,6 @@ function safeRemoteUrl(value: string | null): string | null {
   color: var(--muted);
 }
 @media (max-width: 1050px) {
-  .filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .filters :deep(.p-button) {
-    grid-column: 1/-1;
-  }
   .correlation-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1150,12 +1156,17 @@ function safeRemoteUrl(value: string | null): string | null {
     min-height: 44px;
   }
   .filters {
+    display: grid;
     grid-template-columns: 1fr;
   }
+  .filters :deep(.p-select),
+  .filters :deep(.p-inputtext),
   .filters :deep(.p-button) {
-    grid-column: auto;
+    width: 100%;
+    max-width: none;
   }
   .recovery-workbench {
+    flex: initial;
     display: block;
     min-height: 520px;
   }
