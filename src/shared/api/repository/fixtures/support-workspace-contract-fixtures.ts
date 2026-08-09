@@ -270,6 +270,7 @@ const fullSelectionSuccess = {
         revisionNumber: 1,
         attachments: [],
         macroProvenance: null,
+        knowledgeProvenance: null,
         author: {
           type: "CMS_USER",
           cmsUserId: "50000000-0000-4000-8000-000000000001",

@@ -4,14 +4,16 @@
 
 **Blocked by:** 03 — Синхронизировать content, Lead Control и notification-контракты; 20 — Добавить permission-gated inspector tabs.
 
-**Status:** partially-blocked-by-backend
+**Status:** operator-complete-admin-recovery-blocked
 
-**Backend gate (audit 2026-08-07):** search/manage/publish доступны; revision rollback и
-отдельные Knowledge retention/rollout contracts отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#25--support-internal-knowledge).
+**Backend gate (re-audit 2026-08-09, backend `f9ef8e42`):** operator search/open/download,
+Citation Draft, provenance, lifecycle, revision rollback, governance, retention и rollout
+опубликованы. Полный admin UI остаётся заблокирован durable recovery для
+`setCapabilities`, `setRetentionPolicy` и `resolveProblemReport`.
 
 - [ ] Internal Knowledge имеет отдельные routes, permissions, revisions, retention и rollout от пользовательского AI Knowledge.
 - [ ] Text/file lifecycle поддерживает draft/upload/scan/preview/publish/archive/rollback.
-- [ ] Inspector search показывает source, revision, freshness и permission-safe snippets.
-- [ ] Operator может открыть материал, вставить quote/link в draft и отредактировать его до отправки.
-- [ ] Download grants scoped по actor/project/document и очищаются при revoke.
-- [ ] Ни один internal document не попадает в public AI corpus или End User projection.
+- [x] Inspector search показывает source, revision, freshness и permission-safe snippets.
+- [x] Operator может открыть материал, вставить quote/link в draft и отредактировать его до отправки.
+- [x] Download grants scoped по actor/project/document и очищаются при revoke.
+- [x] Ни один internal document не попадает в public AI corpus или End User projection.

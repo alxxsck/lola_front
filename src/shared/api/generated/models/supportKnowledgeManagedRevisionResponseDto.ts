@@ -21,6 +21,8 @@ export interface SupportKnowledgeManagedRevisionResponseDto {
   revisionId: string;
   /** @minimum 1 */
   revisionNumber: number;
+  /** @nullable */
+  rollbackSourceRevisionId?: string | null;
   scan: SupportKnowledgeManagedScanResponseDto;
   /** @minimum 1 */
   sizeBytes: number;
@@ -28,5 +30,7 @@ export interface SupportKnowledgeManagedRevisionResponseDto {
   state: SupportKnowledgeManagedRevisionResponseDtoState;
   title: string;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
   visibility: SupportKnowledgeManagedVisibilityResponseDto;
 }

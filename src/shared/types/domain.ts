@@ -389,6 +389,15 @@ export interface ConversationMessage {
     edited: boolean;
     usedAt: string;
   };
+  /** CMS-only immutable Support Internal Knowledge citation. */
+  knowledgeProvenance?: {
+    documentId: string;
+    revisionId: string;
+    revisionNumber: number;
+    mode: "QUOTE" | "LINK";
+    edited: boolean;
+    citedAt: string;
+  };
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   /** Current server-confirmed delivery state for a public outbound message. */
   delivery?: {
@@ -658,6 +667,7 @@ export interface AdminMessageRequest {
   aiSuspension?: AdminMessageAISuspensionDto;
   replyTranslationDraftId?: string;
   macroReplyDraftId?: string;
+  supportKnowledgeCitationDraftId?: string;
   sendWithoutTranslation?: { reason: string };
   idempotencyKey?: string;
 }

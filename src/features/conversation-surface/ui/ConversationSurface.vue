@@ -470,11 +470,28 @@ function purgeSensitiveDrafts(): void {
     draft.value = props.composer.initialDraft;
 }
 
+function purgePublicDraft(): void {
+  const { projectId, actorId, conversationId } = props.composer.scope;
+  drafts.delete(`${projectId}:${actorId}:${conversationId}:PUBLIC_REPLY`);
+  skipPurgedSensitiveDraftCache = true;
+  if (props.composer.mode === "PUBLIC_REPLY")
+    draft.value = props.composer.initialDraft;
+}
+
 watch(
   () => props.composer.sensitiveDraftPurgeRevision,
   (revision, previousRevision) => {
     if (revision === previousRevision) return;
     purgeSensitiveDrafts();
+  },
+  { flush: "sync" },
+);
+
+watch(
+  () => props.composer.publicDraftPurgeRevision,
+  (revision, previousRevision) => {
+    if (revision === previousRevision) return;
+    purgePublicDraft();
   },
   { flush: "sync" },
 );
@@ -776,6 +793,15 @@ onBeforeUnmount(() => {
             Macro v{{ message.macroProvenance.revisionNumber }}
             {{ message.macroProvenance.edited ? "· изменён оператором" : "" }}
           </span>
+          <span
+            v-if="message.knowledgeProvenance"
+            class="conversation-surface__knowledge-provenance"
+            :title="`Внутренняя база знаний · точная редакция ${message.knowledgeProvenance.revisionNumber}`"
+          >
+            <i class="pi pi-book" aria-hidden="true" />
+            Источник v{{ message.knowledgeProvenance.revisionNumber }}
+            {{ message.knowledgeProvenance.edited ? "· изменён оператором" : "" }}
+          </span>
           <ul
             v-if="message.attachments?.length"
             class="conversation-surface__message-attachments"
@@ -1054,7 +1080,8 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 .conversation-surface__message-attachments small { color: var(--text-muted); font-size: 10px; }
-.conversation-surface__macro-provenance {
+.conversation-surface__macro-provenance,
+.conversation-surface__knowledge-provenance {
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -1066,6 +1093,10 @@ onBeforeUnmount(() => {
   color: var(--text-tertiary);
   font-size: 10px;
   font-weight: 700;
+}
+.conversation-surface__knowledge-provenance {
+  margin-left: 4px;
+  color: var(--text-brand);
 }
 .conversation-surface__internal-notes {
   display: grid;

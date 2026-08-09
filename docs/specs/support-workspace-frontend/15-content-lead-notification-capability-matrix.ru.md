@@ -61,15 +61,15 @@ send outcome должен проходить messaging reconciliation из Task 
 | Capability           | Operation / provenance                                                                | Status                                                                    |
 | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Search               | `SupportInternalKnowledge_search`; required Case, q 1–240, cursor ≤ 2000, limit ≤ 100 | `READY`; item содержит document/revision/title/safe snippet               |
-| Open/download        | `open/createFileDownload`; required Case; revision-scoped expiring URL                | `RELEASE_GATED`; errors `NOT_PUBLISHED`                                   |
+| Open/download        | exact `open`; create/exchange one-shot grant; required Case/revision                   | `READY`; concealed revoke and source change typed                         |
 | Manage               | page/detail, text drafts/revisions, file upload/complete/scan, publish/archive        | `RELEASE_GATED`; exact document/revision state и idempotency опубликованы |
 | Scan/revision        | `SupportKnowledgeManagedRevisionResponseDto`                                          | `EDITING / QUARANTINED / SCANNING / PUBLISHABLE / PUBLISHED / REJECTED`   |
-| Emergency revoke     | `rollbackAdmission` → `REVOKED` receipt                                               | command опубликована, admission read/current capability `NOT_PUBLISHED`   |
-| Retention/hold/purge | CMS operations отсутствуют                                                            | `NOT_PUBLISHED`; destructive maintenance не переносится в browser         |
+| Citation/provenance  | create/read/update Citation Draft; Message `knowledgeProvenance`                      | `READY`; durable send, CMS-only body-free provenance                      |
+| Emergency revoke     | governance + `rollbackAdmission` → `REVOKED` receipt                                  | `READY`; terminal hard-off                                                |
+| Retention            | append-only policy + governance                                                       | `READY`; legal hold/purge остаются maintenance-only                       |
 
-`CONTENT_PANEL` не считается отдельным typed Knowledge rollout/admission.
-Case-scoped allowed actions, typed errors и unknown-outcome lookup должны быть
-опубликованы backend Knowledge/Content owner-ом до mutation UI.
+Operator surface готов. Admin `setCapabilities`, `setRetentionPolicy` и
+`resolveProblemReport` остаются release-gated до actor-bound unknown-outcome recovery.
 
 ## 4. Lead Control и operational alerts
 

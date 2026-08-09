@@ -6,6 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type SupportContentPanelKnowledgeDtoItemsItem = {
-  [key: string]: unknown;
-};
+export interface UpdateSupportKnowledgeCitationDraftDto {
+  /** @minimum 1 */
+  expectedVersion: number;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  text: string;
+}

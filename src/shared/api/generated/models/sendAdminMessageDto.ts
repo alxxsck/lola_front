@@ -37,6 +37,8 @@ export interface SendAdminMessageDto {
   /** READY outbound translation draft consumed atomically with the ADMIN message. */
   replyTranslationDraftId?: string;
   sendWithoutTranslation?: SendAdminMessageWithoutTranslationDto;
+  /** READY actor-bound Support Knowledge citation draft consumed with the Message. */
+  supportKnowledgeCitationDraftId?: string;
   /**
    * Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.
    * @minLength 1

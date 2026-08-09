@@ -528,6 +528,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "knowledgeProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportKnowledgeMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "macroProvenance": {
             "allOf": [
               {
@@ -592,6 +601,7 @@
           "author",
           "attachments",
           "macroProvenance",
+          "knowledgeProvenance",
           "createdAt",
           "updatedAt"
         ],
@@ -1096,7 +1106,20 @@
               "SUPPORT_MACRO_DRAFT_REQUIRES_EXACT_CONVERSATION",
               "SUPPORT_MACRO_DRAFT_TEXT_REQUIRED",
               "SUPPORT_MACRO_DRAFT_DELIVERY_UNAVAILABLE",
-              "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+              "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+              "SUPPORT_KNOWLEDGE_CITATION_REQUIRES_EXACT_TARGET",
+              "SUPPORT_KNOWLEDGE_CITATION_TEXT_REQUIRED",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_NOT_FOUND_OR_FORBIDDEN",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_NOT_READY",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_STALE",
+              "SUPPORT_KNOWLEDGE_CITATION_TEXT_MISMATCH",
+              "SUPPORT_KNOWLEDGE_SOURCE_CHANGED",
+              "SUPPORT_KNOWLEDGE_CITATION_UNAVAILABLE",
+              "SUPPORT_KNOWLEDGE_CITATION_REQUIRED",
+              "SUPPORT_KNOWLEDGE_CITATION_CAPACITY_EXCEEDED",
+              "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED",
+              "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED",
+              "NOT_FOUND_OR_FORBIDDEN"
             ],
             "type": "string"
           },
@@ -1296,6 +1319,15 @@
             "nullable": true,
             "type": "number"
           },
+          "knowledgeProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportKnowledgeMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "macroProvenance": {
             "allOf": [
               {
@@ -1366,6 +1398,7 @@
           "author",
           "attachments",
           "macroProvenance",
+          "knowledgeProvenance",
           "createdAt",
           "updatedAt",
           "thread"
@@ -10971,6 +11004,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "knowledgeProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportKnowledgeMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "macroProvenance": {
             "allOf": [
               {
@@ -11038,6 +11080,7 @@
           "author",
           "attachments",
           "macroProvenance",
+          "knowledgeProvenance",
           "createdAt",
           "updatedAt"
         ],
@@ -15812,8 +15855,87 @@
         },
         "type": "object"
       },
+      "CreateSupportKnowledgeCitationDraftDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "QUOTE",
+              "LINK"
+            ],
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "selectedText": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "conversationId",
+          "documentId",
+          "revisionId",
+          "mode"
+        ],
+        "type": "object"
+      },
+      "CreateSupportKnowledgeProblemReportDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "details": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "OUTDATED",
+              "INCORRECT",
+              "UNCLEAR",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "revisionId",
+          "reasonCode"
+        ],
+        "type": "object"
+      },
       "CreateSupportKnowledgeTextDocumentDto": {
         "properties": {
+          "categoryCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
+          },
           "contentText": {
             "maxLength": 1048576,
             "minLength": 1,
@@ -15829,6 +15951,14 @@
               "type": "string"
             },
             "maxItems": 50,
+            "type": "array"
+          },
+          "productCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
             "type": "array"
           },
           "teamIds": {
@@ -33182,6 +33312,26 @@
         ],
         "type": "object"
       },
+      "ResolveSupportKnowledgeProblemReportDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "resolution": {
+            "enum": [
+              "RESOLVED",
+              "DISMISSED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "resolution"
+        ],
+        "type": "object"
+      },
       "ResolveSupportOperationalAlertDto": {
         "properties": {
           "reasonCode": {
@@ -33370,6 +33520,23 @@
         },
         "required": [
           "reasonCode"
+        ],
+        "type": "object"
+      },
+      "RollbackSupportKnowledgeRevisionDto": {
+        "properties": {
+          "expectedCurrentPublishedRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedDocumentVersion": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "expectedDocumentVersion",
+          "expectedCurrentPublishedRevisionId"
         ],
         "type": "object"
       },
@@ -37370,6 +37537,11 @@
           "sendWithoutTranslation": {
             "$ref": "#/components/schemas/SendAdminMessageWithoutTranslationDto"
           },
+          "supportKnowledgeCitationDraftId": {
+            "description": "READY actor-bound Support Knowledge citation draft consumed with the Message.",
+            "format": "uuid",
+            "type": "string"
+          },
           "text": {
             "description": "Required unless replyTranslationDraftId is supplied. With a draft it must equal the draft source snapshot.",
             "maxLength": 10000,
@@ -37460,6 +37632,51 @@
           "observedAt",
           "attributes",
           "idempotencyKey"
+        ],
+        "type": "object"
+      },
+      "SetSupportKnowledgeCapabilitiesDto": {
+        "properties": {
+          "authoring": {
+            "type": "boolean"
+          },
+          "expectedAdmissionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "fileUpload": {
+            "type": "boolean"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "scan": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedAdmissionVersion",
+          "authoring",
+          "read",
+          "fileUpload",
+          "scan"
+        ],
+        "type": "object"
+      },
+      "SetSupportKnowledgeRetentionPolicyDto": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "retentionDays": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "retentionDays",
+          "enabled"
         ],
         "type": "object"
       },
@@ -37830,6 +38047,14 @@
       },
       "StartSupportKnowledgeFileUploadDto": {
         "properties": {
+          "categoryCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
+          },
           "checksumSha256Base64": {
             "description": "Canonical base64 SHA-256 checksum",
             "pattern": "^[A-Za-z0-9+/]{43}=$",
@@ -37864,6 +38089,14 @@
               "text/csv"
             ],
             "type": "string"
+          },
+          "productCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
           },
           "sizeBytes": {
             "maximum": 26214400,
@@ -39564,9 +39797,12 @@
           "code": {
             "type": "string"
           },
+          "freshness": {
+            "$ref": "#/components/schemas/SupportKnowledgeFreshnessResponseDto"
+          },
           "items": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/SupportKnowledgeSearchItemResponseDto"
             },
             "type": "array"
           },
@@ -41145,8 +41381,107 @@
         ],
         "type": "object"
       },
+      "SupportKnowledgeCapabilityRolloutResponseDto": {
+        "properties": {
+          "admissionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/SupportKnowledgeGovernanceCapabilitiesResponseDto"
+          },
+          "catalogGeneration": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "ADMITTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "admissionVersion",
+          "catalogGeneration",
+          "capabilities",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeCitationDraftResponseDto": {
+        "properties": {
+          "actionEtag": {
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "QUOTE",
+              "LINK"
+            ],
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "READY",
+              "CONSUMED",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "nullable": true,
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "revisionId",
+          "revisionNumber",
+          "mode",
+          "state",
+          "version",
+          "expiresAt",
+          "actionEtag"
+        ],
+        "type": "object"
+      },
       "SupportKnowledgeCommandReceiptResponseDto": {
         "properties": {
+          "commandId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "documentId": {
             "format": "uuid",
             "type": "string"
@@ -41173,10 +41508,42 @@
           }
         },
         "required": [
+          "commandId",
           "documentId",
           "revisionId",
           "state",
           "replayed"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeDownloadGrantResponseDto": {
+        "properties": {
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "grantId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grantId",
+          "documentId",
+          "revisionId",
+          "filename",
+          "expiresAt"
         ],
         "type": "object"
       },
@@ -41189,11 +41556,129 @@
           "revisionId": {
             "format": "uuid",
             "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
           }
         },
         "required": [
           "revisionId",
+          "version",
           "contentText"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeErrorBodyResponseDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "NOT_FOUND_OR_FORBIDDEN",
+              "REQUEST_VALIDATION_FAILED",
+              "PAGINATION_CURSOR_INVALID",
+              "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED",
+              "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED",
+              "SUPPORT_KNOWLEDGE_ADMISSION_VERSION_CONFLICT",
+              "SUPPORT_KNOWLEDGE_MANAGE_REQUIRED",
+              "SUPPORT_KNOWLEDGE_READ_REQUIRED",
+              "SUPPORT_KNOWLEDGE_CMS_USER_REQUIRED",
+              "SUPPORT_KNOWLEDGE_SEARCH_QUERY_INVALID",
+              "SUPPORT_KNOWLEDGE_SEARCH_LIMIT_INVALID",
+              "SUPPORT_KNOWLEDGE_MANAGE_LIST_LIMIT_INVALID",
+              "SUPPORT_KNOWLEDGE_DOCUMENT_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_REVISION_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_IDEMPOTENCY_KEY_INVALID",
+              "SUPPORT_KNOWLEDGE_IDEMPOTENCY_KEY_REUSED",
+              "SUPPORT_KNOWLEDGE_DOCUMENT_CONFLICT",
+              "SUPPORT_KNOWLEDGE_DOCUMENT_NOT_ACTIVE",
+              "SUPPORT_KNOWLEDGE_MUTABLE_DRAFT_EXISTS",
+              "SUPPORT_KNOWLEDGE_DRAFT_NOT_CURRENT",
+              "SUPPORT_KNOWLEDGE_REVISION_NOT_EDITING",
+              "SUPPORT_KNOWLEDGE_REVISION_NOT_PUBLISHABLE",
+              "SUPPORT_KNOWLEDGE_DOCUMENT_REVISION_MISSING",
+              "SUPPORT_KNOWLEDGE_LIFECYCLE_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_ARCHIVE_REASON_INVALID",
+              "SUPPORT_KNOWLEDGE_DRAFT_CONTENT_INVALID",
+              "SUPPORT_KNOWLEDGE_DRAFT_VISIBILITY_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_DRAFT_INVALID",
+              "SUPPORT_KNOWLEDGE_DRAFT_VERSION_CONFLICT",
+              "SUPPORT_KNOWLEDGE_ROLLBACK_INPUT_INVALID",
+              "SUPPORT_KNOWLEDGE_ROLLBACK_STALE",
+              "SUPPORT_KNOWLEDGE_ROLLBACK_SOURCE_NOT_PUBLISHED",
+              "SUPPORT_KNOWLEDGE_SOURCE_CHANGED",
+              "SUPPORT_KNOWLEDGE_DOWNLOAD_GRANT_NOT_FOUND_OR_FORBIDDEN",
+              "SUPPORT_KNOWLEDGE_DOWNLOAD_GRANT_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_DOWNLOAD_GRANT_EXPIRED",
+              "SUPPORT_KNOWLEDGE_DOWNLOAD_GRANT_ALREADY_EXCHANGED",
+              "SUPPORT_KNOWLEDGE_DOWNLOAD_GRANT_CAPACITY_EXCEEDED",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_NOT_FOUND_OR_FORBIDDEN",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_STALE",
+              "SUPPORT_KNOWLEDGE_CITATION_DRAFT_NOT_READY",
+              "SUPPORT_KNOWLEDGE_CITATION_SELECTION_INVALID",
+              "SUPPORT_KNOWLEDGE_CITATION_TEXT_INVALID",
+              "SUPPORT_KNOWLEDGE_CITATION_TEXT_MISMATCH",
+              "SUPPORT_KNOWLEDGE_CITATION_REQUIRED",
+              "SUPPORT_KNOWLEDGE_CITATION_REQUIRES_EXACT_TARGET",
+              "SUPPORT_KNOWLEDGE_CITATION_TEXT_REQUIRED",
+              "SUPPORT_KNOWLEDGE_CITATION_CAPACITY_EXCEEDED",
+              "SUPPORT_KNOWLEDGE_PROBLEM_REPORT_CAPACITY_EXCEEDED",
+              "SUPPORT_KNOWLEDGE_PROBLEM_REPORT_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_PROBLEM_REPORT_VERSION_CONFLICT",
+              "SUPPORT_KNOWLEDGE_RETENTION_POLICY_INVALID",
+              "SUPPORT_KNOWLEDGE_RETENTION_POLICY_REQUIRED",
+              "SUPPORT_KNOWLEDGE_RETENTION_CLOCK_UNAVAILABLE",
+              "SUPPORT_INTERNAL_KNOWLEDGE_FILE_UPLOAD_DISABLED",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_NOT_FOUND",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_NOT_PENDING",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_EXPIRED",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_CHANGED",
+              "SUPPORT_KNOWLEDGE_FILE_UPLOAD_SESSION_CONFLICT",
+              "SUPPORT_KNOWLEDGE_FILE_TITLE_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_LANGUAGE_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_DOCUMENT_ID_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_NAME_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_TYPE_NOT_ALLOWED",
+              "SUPPORT_KNOWLEDGE_FILE_SIZE_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_CHECKSUM_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_MAGIC_INVALID",
+              "SUPPORT_KNOWLEDGE_FILE_POLYGLOT_REJECTED",
+              "SUPPORT_KNOWLEDGE_FILE_OBJECT_MISMATCH",
+              "SUPPORT_KNOWLEDGE_FILE_OBJECT_VERSION_INVALID",
+              "SUPPORT_KNOWLEDGE_SCAN_REVISION_NOT_FOUND",
+              "SUPPORT_KNOWLEDGE_SCAN_STATE_CONFLICT",
+              "SUPPORT_KNOWLEDGE_SCAN_COMPLETION_INVALID",
+              "SUPPORT_KNOWLEDGE_OBJECT_STORE_HEAD_INVALID",
+              "SUPPORT_KNOWLEDGE_VISIBILITY_RULE_INVALID",
+              "SUPPORT_KNOWLEDGE_VISIBILITY_TEAM_INVALID",
+              "SUPPORT_KNOWLEDGE_VISIBILITY_TOPIC_INVALID",
+              "SUPPORT_KNOWLEDGE_BUSY"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/SupportKnowledgeErrorBodyResponseDto"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -41210,6 +41695,10 @@
           "filename": {
             "type": "string"
           },
+          "grantId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "revisionId": {
             "format": "uuid",
             "type": "string"
@@ -41220,6 +41709,7 @@
           }
         },
         "required": [
+          "grantId",
           "documentId",
           "revisionId",
           "filename",
@@ -41263,6 +41753,117 @@
           "sessionId",
           "state",
           "replayed"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeFreshnessResponseDto": {
+        "properties": {
+          "admissionVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "catalogGeneration": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "CURRENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "admissionVersion",
+          "catalogGeneration",
+          "evaluatedAt"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeGovernanceCapabilitiesResponseDto": {
+        "properties": {
+          "authoring": {
+            "type": "boolean"
+          },
+          "fileUpload": {
+            "type": "boolean"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "scan": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "authoring",
+          "read",
+          "fileUpload",
+          "scan"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeGovernanceResponseDto": {
+        "properties": {
+          "activeDocumentHolds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "activeProjectHolds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "admissionVersion": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/SupportKnowledgeGovernanceCapabilitiesResponseDto"
+          },
+          "catalogGeneration": {
+            "minimum": 1,
+            "nullable": true,
+            "type": "number"
+          },
+          "dueArchivedDocuments": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "retentionPolicy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportKnowledgeRetentionPolicyResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "state": {
+            "enum": [
+              "NOT_ADMITTED",
+              "ADMITTED",
+              "REVOKED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "capabilities",
+          "activeProjectHolds",
+          "activeDocumentHolds",
+          "dueArchivedDocuments",
+          "evaluatedAt"
         ],
         "type": "object"
       },
@@ -41327,11 +41928,16 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
           }
         },
         "required": [
           "documentId",
           "lifecycle",
+          "version",
           "currentDraftRevision",
           "currentPublishedRevision",
           "createdAt",
@@ -41385,11 +41991,16 @@
           "updatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
           }
         },
         "required": [
           "documentId",
           "lifecycle",
+          "version",
           "currentDraftRevision",
           "currentPublishedRevision",
           "createdAt",
@@ -41444,6 +42055,11 @@
             "minimum": 1,
             "type": "number"
           },
+          "rollbackSourceRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "scan": {
             "$ref": "#/components/schemas/SupportKnowledgeManagedScanResponseDto"
           },
@@ -41476,6 +42092,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          },
           "visibility": {
             "$ref": "#/components/schemas/SupportKnowledgeManagedVisibilityResponseDto"
           }
@@ -41483,6 +42103,7 @@
         "required": [
           "revisionId",
           "revisionNumber",
+          "version",
           "state",
           "sourceType",
           "title",
@@ -41493,6 +42114,24 @@
           "scan",
           "createdAt",
           "updatedAt"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeManagedRevisionsPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportKnowledgeManagedRevisionResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -41615,8 +42254,221 @@
         ],
         "type": "object"
       },
+      "SupportKnowledgeMessageProvenanceResponseDto": {
+        "properties": {
+          "citedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "edited": {
+            "type": "boolean"
+          },
+          "mode": {
+            "enum": [
+              "QUOTE",
+              "LINK"
+            ],
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "documentId",
+          "revisionId",
+          "revisionNumber",
+          "mode",
+          "edited",
+          "citedAt"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeProblemReportPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportKnowledgeProblemReportResponseDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeProblemReportReceiptResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "reportId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "reportId",
+          "documentId",
+          "revisionId",
+          "state",
+          "version",
+          "createdAt",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeProblemReportResponseDto": {
+        "properties": {
+          "caseId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "details": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "documentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "enum": [
+              "OUTDATED",
+              "INCORRECT",
+              "UNCLEAR",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "reportId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "state": {
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "reportId",
+          "caseId",
+          "documentId",
+          "revisionId",
+          "revisionNumber",
+          "reasonCode",
+          "state",
+          "version",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "SupportKnowledgeRetentionPolicyResponseDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "retentionDays": {
+            "maximum": 3650,
+            "minimum": 1,
+            "type": "number"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "retentionDays",
+          "enabled",
+          "createdAt"
+        ],
+        "type": "object"
+      },
       "SupportKnowledgeSearchItemResponseDto": {
         "properties": {
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "OPEN",
+                "DOWNLOAD",
+                "INSERT_QUOTE",
+                "INSERT_LINK",
+                "REPORT_PROBLEM"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "documentId": {
             "format": "uuid",
             "type": "string"
@@ -41632,6 +42484,10 @@
           "revisionId": {
             "format": "uuid",
             "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
           },
           "snippet": {
             "maxLength": 320,
@@ -41651,15 +42507,20 @@
         "required": [
           "documentId",
           "revisionId",
+          "revisionNumber",
           "sourceType",
           "title",
           "publishedAt",
-          "snippet"
+          "snippet",
+          "allowedActions"
         ],
         "type": "object"
       },
       "SupportKnowledgeSearchPageResponseDto": {
         "properties": {
+          "freshness": {
+            "$ref": "#/components/schemas/SupportKnowledgeFreshnessResponseDto"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/SupportKnowledgeSearchItemResponseDto"
@@ -41672,12 +42533,24 @@
           }
         },
         "required": [
-          "items"
+          "items",
+          "freshness"
         ],
         "type": "object"
       },
       "SupportKnowledgeTextDocumentResponseDto": {
         "properties": {
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "INSERT_QUOTE",
+                "INSERT_LINK",
+                "REPORT_PROBLEM"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "contentText": {
             "maxLength": 1048576,
             "type": "string"
@@ -41685,6 +42558,9 @@
           "documentId": {
             "format": "uuid",
             "type": "string"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/SupportKnowledgeFreshnessResponseDto"
           },
           "language": {
             "nullable": true,
@@ -41697,6 +42573,10 @@
           "revisionId": {
             "format": "uuid",
             "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
           },
           "sourceType": {
             "enum": [
@@ -41711,10 +42591,13 @@
         "required": [
           "documentId",
           "revisionId",
+          "revisionNumber",
           "sourceType",
           "title",
           "publishedAt",
-          "contentText"
+          "contentText",
+          "allowedActions",
+          "freshness"
         ],
         "type": "object"
       },
@@ -54438,6 +55321,92 @@
           "catalogSnapshotId",
           "formRevision",
           "definition"
+        ],
+        "type": "object"
+      },
+      "UpdateSupportKnowledgeCitationDraftDto": {
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "expectedVersion"
+        ],
+        "type": "object"
+      },
+      "UpdateSupportKnowledgeTextDraftDto": {
+        "properties": {
+          "categoryCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
+          },
+          "contentText": {
+            "maxLength": 1048576,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "language": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "languageTags": {
+            "items": {
+              "maxLength": 35,
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "productCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
+          },
+          "teamIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 1,
+            "type": "string"
+          },
+          "topicCodes": {
+            "items": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 39,
+            "type": "array"
+          }
+        },
+        "required": [
+          "title",
+          "contentText",
+          "expectedVersion"
         ],
         "type": "object"
       },
@@ -85793,10 +86762,16 @@
         "tags": [
           "admin support workspace content"
         ],
-        "x-iam-permission": {
-          "code": "project.support.macros.read",
-          "scope": "PROJECT"
-        }
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.macros.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/cases/{caseId}/events": {
@@ -89245,6 +90220,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89252,10 +90307,595 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
         "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/citation-drafts": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_createCitationDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportKnowledgeCitationDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCitationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/citation-drafts/{draftId}": {
+      "get": {
+        "operationId": "SupportInternalKnowledge_readCitationDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCitationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "SupportInternalKnowledge_updateCitationDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupportKnowledgeCitationDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCitationDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.conversations.reply",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/commands/{commandId}": {
+      "get": {
+        "operationId": "SupportInternalKnowledge_readCommandOutcome",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "commandId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCommandReceiptResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
         "x-iam-permission": {
           "code": "project.support.knowledge.manage",
           "scope": "PROJECT"
@@ -89290,6 +90930,15 @@
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -89302,6 +90951,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89309,13 +91038,20 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
-        "x-iam-permission": {
-          "code": "project.support.knowledge.read",
-          "scope": "PROJECT"
-        }
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/archive": {
@@ -89369,6 +91105,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89376,6 +91192,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89385,9 +91202,9 @@
         }
       }
     },
-    "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/download": {
-      "get": {
-        "operationId": "SupportInternalKnowledge_createFileDownload",
+    "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/download-grants": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_createDownloadGrant",
         "parameters": [
           {
             "in": "path",
@@ -89413,6 +91230,15 @@
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -89420,7 +91246,87 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SupportKnowledgeFileDownloadResponseDto"
+                  "$ref": "#/components/schemas/SupportKnowledgeDownloadGrantResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
                 }
               }
             },
@@ -89432,13 +91338,174 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
-        "x-iam-permission": {
-          "code": "project.support.knowledge.read",
-          "scope": "PROJECT"
-        }
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/problem-reports": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_reportProblem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportKnowledgeProblemReportDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeProblemReportReceiptResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/revisions/{revisionId}/publish": {
@@ -89490,6 +91557,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89497,6 +91644,163 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/documents/{documentId}/revisions/{revisionId}/rollback": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_rollbackRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackSupportKnowledgeRevisionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCommandReceiptResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89555,6 +91859,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89562,6 +91946,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89614,7 +91999,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateSupportKnowledgeTextDocumentDto"
+                "$ref": "#/components/schemas/UpdateSupportKnowledgeTextDraftDto"
               }
             }
           },
@@ -89630,6 +92015,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89637,6 +92102,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89697,6 +92163,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89704,6 +92250,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89715,7 +92262,7 @@
     },
     "/api/v1/admin/projects/{projectId}/support/knowledge/documents/text-drafts": {
       "post": {
-        "operationId": "SupportInternalKnowledge_createTextDraft",
+        "operationId": "SupportInternalKnowledge_createTextDocument",
         "parameters": [
           {
             "in": "path",
@@ -89756,6 +92303,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89763,6 +92390,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89770,6 +92398,148 @@
           "code": "project.support.knowledge.manage",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/download-grants/{grantId}/exchange": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_exchangeDownloadGrant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "grantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeFileDownloadResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/knowledge/file-uploads": {
@@ -89815,6 +92585,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89822,6 +92672,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89872,6 +92723,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89879,6 +92810,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89888,9 +92820,140 @@
         }
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/capabilities": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_setCapabilities",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSupportKnowledgeCapabilitiesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeCapabilityRolloutResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/knowledge/manage/documents": {
       "get": {
-        "operationId": "SupportInternalKnowledge_managePage",
+        "operationId": "SupportInternalKnowledge_listManagedDocuments",
         "parameters": [
           {
             "in": "path",
@@ -89931,6 +92994,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89938,6 +93081,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
@@ -89949,7 +93093,7 @@
     },
     "/api/v1/admin/projects/{projectId}/support/knowledge/manage/documents/{documentId}": {
       "get": {
-        "operationId": "SupportInternalKnowledge_manageDetail",
+        "operationId": "SupportInternalKnowledge_readManagedDocument",
         "parameters": [
           {
             "in": "path",
@@ -89978,6 +93122,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -89985,9 +93209,964 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/documents/{documentId}/revisions": {
+      "get": {
+        "operationId": "SupportInternalKnowledge_listRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeManagedRevisionsPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/documents/{documentId}/revisions/{revisionId}/preview-grants": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_createFilePreviewGrant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeDownloadGrantResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/governance": {
+      "get": {
+        "operationId": "SupportInternalKnowledge_readGovernance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeGovernanceResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/preview-grants/{grantId}/exchange": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_exchangeFilePreviewGrant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "grantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeFileDownloadResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/problem-reports": {
+      "get": {
+        "operationId": "SupportInternalKnowledge_listProblemReports",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "enum": [
+                "OPEN",
+                "RESOLVED",
+                "DISMISSED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2000,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeProblemReportPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/problem-reports/{reportId}/resolve": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_resolveProblemReport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSupportKnowledgeProblemReportDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeProblemReportResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.knowledge.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/knowledge/manage/retention-policy": {
+      "post": {
+        "operationId": "SupportInternalKnowledge_setRetentionPolicy",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSupportKnowledgeRetentionPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeRetentionPolicyResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support internal knowledge"
+        ],
+        "x-iam-fresh-strong-authentication": true,
         "x-iam-permission": {
           "code": "project.support.knowledge.manage",
           "scope": "PROJECT"
@@ -90027,6 +94206,83 @@
           },
           {
             "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "maxLength": 35,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "topicCode",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "categoryCode",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productCode",
+            "required": false,
+            "schema": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "audience",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ALL",
+                "TEAM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rollout",
+            "required": false,
+            "schema": {
+              "enum": [
+                "CURRENT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revisionId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expectedAdmissionVersion",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
@@ -90056,6 +94312,86 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportKnowledgeErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90063,13 +94399,20 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support internal knowledge"
         ],
-        "x-iam-permission": {
-          "code": "project.support.knowledge.read",
-          "scope": "PROJECT"
-        }
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.knowledge.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/support/lead/cases/{caseId}/investigation": {

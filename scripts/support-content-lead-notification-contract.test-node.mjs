@@ -95,9 +95,9 @@ test("Support content contracts retain separate authority, revisions and safe li
       );
     },
     (contract) => {
-      delete operation(contract, "SupportInternalKnowledge_search")[
-        "x-iam-permission"
-      ];
+      operation(contract, "SupportInternalKnowledge_search")[
+        "x-iam-all-permissions"
+      ] = [];
     },
     (contract) => {
       operation(contract, "SupportInternalKnowledge_search").parameters.find(

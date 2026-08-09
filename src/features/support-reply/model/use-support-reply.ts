@@ -16,15 +16,29 @@ export interface SupportReplyContext {
   reconcile(): Promise<void>;
   onAccepted?(attempt: { attachmentDraftKey?: string; attachmentIds?: string[] }): void;
   onMacroDraftRejected?(cause: ApiError): void | Promise<void>;
+  onKnowledgeCitationRejected?(cause: ApiError): void | Promise<void>;
 }
 
 function isMacroDraftFailure(cause: unknown): cause is ApiError {
   return cause instanceof ApiError && Boolean(cause.code?.startsWith("SUPPORT_MACRO_DRAFT_"));
 }
 
+function isKnowledgeCitationFailure(cause: unknown): cause is ApiError {
+  return (
+    cause instanceof ApiError &&
+    Boolean(
+      cause.code?.startsWith("SUPPORT_KNOWLEDGE_CITATION_") ||
+        cause.code === "SUPPORT_KNOWLEDGE_SOURCE_CHANGED" ||
+        cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED" ||
+        cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED",
+    )
+  );
+}
+
 interface SupportReplyDelivery {
   replyTranslationDraftId?: string;
   macroReplyDraftId?: string;
+  supportKnowledgeCitationDraftId?: string;
   sendWithoutTranslationReason?: string;
   attachmentDraftKey?: string;
   attachmentIds?: string[];
@@ -70,7 +84,7 @@ function attemptIdentity(
   delivery: SupportReplyDelivery,
   endUserCaseId?: string,
 ): string {
-  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.macroReplyDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}\u001f${delivery.attachmentDraftKey ?? ""}\u001f${delivery.attachmentIds?.join(",") ?? ""}`;
+  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.macroReplyDraftId ?? ""}\u001f${delivery.supportKnowledgeCitationDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}\u001f${delivery.attachmentDraftKey ?? ""}\u001f${delivery.attachmentIds?.join(",") ?? ""}`;
 }
 
 function storageKey(scope: string): string {
@@ -137,6 +151,11 @@ function restoreAttempt(scope: string): PendingReplyAttempt | undefined {
         (typeof value.macroReplyDraftId !== "string" ||
           !value.macroReplyDraftId.trim() ||
           value.macroReplyDraftId.length > 200)) ||
+      ("supportKnowledgeCitationDraftId" in value &&
+        value.supportKnowledgeCitationDraftId !== undefined &&
+        (typeof value.supportKnowledgeCitationDraftId !== "string" ||
+          !value.supportKnowledgeCitationDraftId.trim() ||
+          value.supportKnowledgeCitationDraftId.length > 200)) ||
       !("key" in value) ||
       typeof value.key !== "string" ||
       value.key.length < 8 ||
@@ -421,6 +440,12 @@ export function createSupportReplyController(
       ...(delivery.macroReplyDraftId?.trim()
         ? { macroReplyDraftId: delivery.macroReplyDraftId.trim() }
         : {}),
+      ...(delivery.supportKnowledgeCitationDraftId?.trim()
+        ? {
+            supportKnowledgeCitationDraftId:
+              delivery.supportKnowledgeCitationDraftId.trim(),
+          }
+        : {}),
       ...(sendWithoutTranslationReason ? { sendWithoutTranslationReason } : {}),
       ...(attachmentIds.length ? { attachmentIds, attachmentDraftKey } : {}),
     };
@@ -485,6 +510,12 @@ export function createSupportReplyController(
         ...(attempt.macroReplyDraftId
           ? { macroReplyDraftId: attempt.macroReplyDraftId }
           : {}),
+        ...(attempt.supportKnowledgeCitationDraftId
+          ? {
+              supportKnowledgeCitationDraftId:
+                attempt.supportKnowledgeCitationDraftId,
+            }
+          : {}),
         ...(attempt.sendWithoutTranslationReason
           ? {
               sendWithoutTranslation: {
@@ -509,6 +540,15 @@ export function createSupportReplyController(
         outcomeState.value = "IDLE";
         await context.onMacroDraftRejected?.(caught);
         error.value = "Macro изменился или больше недоступен. Текст сохранён — выберите актуальный macro.";
+      } else if (
+        attempt.supportKnowledgeCitationDraftId &&
+        isKnowledgeCitationFailure(caught)
+      ) {
+        pendingAttempts.delete(scope);
+        forgetAttempt(scope);
+        outcomeState.value = "IDLE";
+        await context.onKnowledgeCitationRejected?.(caught);
+        error.value = "Источник изменился или больше недоступен. Текст сохранён — выберите материал заново.";
       } else if (isAmbiguousOutcome(caught)) {
         await checkAttemptOutcome(scope, attempt);
       } else if (
@@ -564,11 +604,15 @@ export function createSupportReplyController(
     replyTranslationDraftId: string,
     attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
     macroReplyDraftId?: string,
+    supportKnowledgeCitationDraftId?: string,
   ): Promise<boolean> {
     if (!replyTranslationDraftId.trim()) return false;
     return send({
       replyTranslationDraftId,
       ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+      ...(supportKnowledgeCitationDraftId
+        ? { supportKnowledgeCitationDraftId }
+        : {}),
       ...attachments,
     });
   }
@@ -577,11 +621,15 @@ export function createSupportReplyController(
     reason: string,
     attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
     macroReplyDraftId?: string,
+    supportKnowledgeCitationDraftId?: string,
   ): Promise<void> {
     if (!reason.trim()) return;
     await send({
       sendWithoutTranslationReason: reason,
       ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+      ...(supportKnowledgeCitationDraftId
+        ? { supportKnowledgeCitationDraftId }
+        : {}),
       ...attachments,
     });
   }

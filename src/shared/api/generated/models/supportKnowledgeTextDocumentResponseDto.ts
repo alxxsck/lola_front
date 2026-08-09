@@ -5,16 +5,22 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportKnowledgeTextDocumentResponseDtoAllowedActionsItem } from "./supportKnowledgeTextDocumentResponseDtoAllowedActionsItem";
+import type { SupportKnowledgeFreshnessResponseDto } from "./supportKnowledgeFreshnessResponseDto";
 import type { SupportKnowledgeTextDocumentResponseDtoSourceType } from "./supportKnowledgeTextDocumentResponseDtoSourceType";
 
 export interface SupportKnowledgeTextDocumentResponseDto {
+  allowedActions: SupportKnowledgeTextDocumentResponseDtoAllowedActionsItem[];
   /** @maxLength 1048576 */
   contentText: string;
   documentId: string;
+  freshness: SupportKnowledgeFreshnessResponseDto;
   /** @nullable */
   language?: string | null;
   publishedAt: string;
   revisionId: string;
+  /** @minimum 1 */
+  revisionNumber: number;
   sourceType: SupportKnowledgeTextDocumentResponseDtoSourceType;
   title: string;
 }

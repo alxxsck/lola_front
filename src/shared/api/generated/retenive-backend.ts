@@ -216,6 +216,8 @@ import type {
   CreateSupportExternalMappingDto,
   CreateSupportInternalNoteAttachmentUploadDto,
   CreateSupportInternalNoteDto,
+  CreateSupportKnowledgeCitationDraftDto,
+  CreateSupportKnowledgeProblemReportDto,
   CreateSupportKnowledgeTextDocumentDto,
   CreateSupportMacroDto,
   CreateSupportMacroReplyDraftDto,
@@ -481,6 +483,7 @@ import type {
   RequestSupportRoutingShadowRunDto,
   ResolveAiSpendAttemptDto,
   ResolveSupportExternalWorkCommandDto,
+  ResolveSupportKnowledgeProblemReportDto,
   ResolveSupportOperationalAlertDto,
   ResolveSupportQualityDisputeDto,
   RestoreEventDefinitionDto,
@@ -492,6 +495,7 @@ import type {
   RevokeSupportRoutingAdmissionReceiptDto,
   RollbackScenarioDto,
   RollbackSupportKnowledgeAdmissionDto,
+  RollbackSupportKnowledgeRevisionDto,
   RollbackSupportMacroDto,
   RotateAmplitudeCredentialDto,
   RotateAmplitudeInboundCredentialDto,
@@ -529,6 +533,8 @@ import type {
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
+  SetSupportKnowledgeCapabilitiesDto,
+  SetSupportKnowledgeRetentionPolicyDto,
   SetSupportLolaPresentationDto,
   SetSupportOperatorAvailabilityDto,
   SetSupportOperatorPresentationDto,
@@ -575,10 +581,15 @@ import type {
   SupportExternalWorkReadTimelineParams,
   SupportInspectorEventPageResponseDto,
   SupportInspectorEventsListParams,
-  SupportInternalKnowledgeCreateFileDownloadParams,
-  SupportInternalKnowledgeManagePageParams,
+  SupportInternalKnowledgeCreateDownloadGrantParams,
+  SupportInternalKnowledgeExchangeDownloadGrantParams,
+  SupportInternalKnowledgeListManagedDocumentsParams,
+  SupportInternalKnowledgeListProblemReportsParams,
+  SupportInternalKnowledgeListRevisionsParams,
   SupportInternalKnowledgeOpenParams,
+  SupportInternalKnowledgeReadCitationDraftParams,
   SupportInternalKnowledgeSearchParams,
+  SupportInternalKnowledgeUpdateCitationDraftParams,
   SupportInternalNoteAttachmentDownloadGrantResponseDto,
   SupportInternalNoteAttachmentDraftResponseDto,
   SupportInternalNoteAttachmentStatusResponseDto,
@@ -590,11 +601,20 @@ import type {
   SupportInternalNoteRevisionPageResponseDto,
   SupportInternalNoteRevisionsParams,
   SupportKnowledgeAdmissionRollbackResponseDto,
+  SupportKnowledgeCapabilityRolloutResponseDto,
+  SupportKnowledgeCitationDraftResponseDto,
   SupportKnowledgeCommandReceiptResponseDto,
+  SupportKnowledgeDownloadGrantResponseDto,
   SupportKnowledgeFileDownloadResponseDto,
   SupportKnowledgeFileUploadStartResponseDto,
+  SupportKnowledgeGovernanceResponseDto,
   SupportKnowledgeManagedDocumentDetailResponseDto,
   SupportKnowledgeManagedDocumentsPageResponseDto,
+  SupportKnowledgeManagedRevisionsPageResponseDto,
+  SupportKnowledgeProblemReportPageResponseDto,
+  SupportKnowledgeProblemReportReceiptResponseDto,
+  SupportKnowledgeProblemReportResponseDto,
+  SupportKnowledgeRetentionPolicyResponseDto,
   SupportKnowledgeSearchPageResponseDto,
   SupportKnowledgeTextDocumentResponseDto,
   SupportLeadActivityParams,
@@ -743,6 +763,8 @@ import type {
   UpdateSupportContentRetentionDraftDto,
   UpdateSupportContentRolloutDto,
   UpdateSupportExternalMappingDraftDto,
+  UpdateSupportKnowledgeCitationDraftDto,
+  UpdateSupportKnowledgeTextDraftDto,
   UpdateSupportRoutingProjectRolloutDto,
   UpdateSupportRoutingQueueSlotDto,
   UpdateSupportRoutingShadowControlDto,
@@ -6779,6 +6801,79 @@ export const supportInternalKnowledgeRollbackAdmission = (
   );
 };
 
+export const supportInternalKnowledgeCreateCitationDraft = (
+  projectId: string,
+  createSupportKnowledgeCitationDraftDto: BodyType<CreateSupportKnowledgeCitationDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCitationDraftResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCitationDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/citation-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeCitationDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeReadCitationDraft = (
+  projectId: string,
+  draftId: string,
+  params: SupportInternalKnowledgeReadCitationDraftParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCitationDraftResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCitationDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/citation-drafts/${draftId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeUpdateCitationDraft = (
+  projectId: string,
+  draftId: string,
+  updateSupportKnowledgeCitationDraftDto: BodyType<UpdateSupportKnowledgeCitationDraftDto>,
+  params: SupportInternalKnowledgeUpdateCitationDraftParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCitationDraftResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCitationDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/citation-drafts/${draftId}`,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      data: updateSupportKnowledgeCitationDraftDto,
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeReadCommandOutcome = (
+  projectId: string,
+  commandId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/commands/${commandId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportInternalKnowledgeOpen = (
   projectId: string,
   documentId: string,
@@ -6816,19 +6911,38 @@ export const supportInternalKnowledgeArchive = (
   );
 };
 
-export const supportInternalKnowledgeCreateFileDownload = (
+export const supportInternalKnowledgeCreateDownloadGrant = (
   projectId: string,
   documentId: string,
-  params: SupportInternalKnowledgeCreateFileDownloadParams,
+  params: SupportInternalKnowledgeCreateDownloadGrantParams,
   options?: SecondParameter<
-    typeof request<SupportKnowledgeFileDownloadResponseDto>
+    typeof request<SupportKnowledgeDownloadGrantResponseDto>
   >,
 ) => {
-  return request<SupportKnowledgeFileDownloadResponseDto>(
+  return request<SupportKnowledgeDownloadGrantResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/download`,
-      method: "GET",
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/download-grants`,
+      method: "POST",
       params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeReportProblem = (
+  projectId: string,
+  documentId: string,
+  createSupportKnowledgeProblemReportDto: BodyType<CreateSupportKnowledgeProblemReportDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeProblemReportReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeProblemReportReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/problem-reports`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeProblemReportDto,
     },
     options,
   );
@@ -6846,6 +6960,26 @@ export const supportInternalKnowledgePublish = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/publish`,
       method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeRollbackRevision = (
+  projectId: string,
+  documentId: string,
+  revisionId: string,
+  rollbackSupportKnowledgeRevisionDto: BodyType<RollbackSupportKnowledgeRevisionDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackSupportKnowledgeRevisionDto,
     },
     options,
   );
@@ -6872,7 +7006,7 @@ export const supportInternalKnowledgeUpdateTextDraft = (
   projectId: string,
   documentId: string,
   revisionId: string,
-  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
+  updateSupportKnowledgeTextDraftDto: BodyType<UpdateSupportKnowledgeTextDraftDto>,
   options?: SecondParameter<
     typeof request<SupportKnowledgeCommandReceiptResponseDto>
   >,
@@ -6882,7 +7016,7 @@ export const supportInternalKnowledgeUpdateTextDraft = (
       url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/revisions/${revisionId}/text-draft`,
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      data: createSupportKnowledgeTextDocumentDto,
+      data: updateSupportKnowledgeTextDraftDto,
     },
     options,
   );
@@ -6907,7 +7041,7 @@ export const supportInternalKnowledgeCreateTextRevision = (
   );
 };
 
-export const supportInternalKnowledgeCreateTextDraft = (
+export const supportInternalKnowledgeCreateTextDocument = (
   projectId: string,
   createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
   options?: SecondParameter<
@@ -6920,6 +7054,24 @@ export const supportInternalKnowledgeCreateTextDraft = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createSupportKnowledgeTextDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeExchangeDownloadGrant = (
+  projectId: string,
+  grantId: string,
+  params: SupportInternalKnowledgeExchangeDownloadGrantParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeFileDownloadResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeFileDownloadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/download-grants/${grantId}/exchange`,
+      method: "POST",
+      params,
     },
     options,
   );
@@ -6959,9 +7111,27 @@ export const supportInternalKnowledgeCompleteFileUpload = (
   );
 };
 
-export const supportInternalKnowledgeManagePage = (
+export const supportInternalKnowledgeSetCapabilities = (
   projectId: string,
-  params?: SupportInternalKnowledgeManagePageParams,
+  setSupportKnowledgeCapabilitiesDto: BodyType<SetSupportKnowledgeCapabilitiesDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCapabilityRolloutResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCapabilityRolloutResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/capabilities`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: setSupportKnowledgeCapabilitiesDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeListManagedDocuments = (
+  projectId: string,
+  params?: SupportInternalKnowledgeListManagedDocumentsParams,
   options?: SecondParameter<
     typeof request<SupportKnowledgeManagedDocumentsPageResponseDto>
   >,
@@ -6976,7 +7146,7 @@ export const supportInternalKnowledgeManagePage = (
   );
 };
 
-export const supportInternalKnowledgeManageDetail = (
+export const supportInternalKnowledgeReadManagedDocument = (
   projectId: string,
   documentId: string,
   options?: SecondParameter<
@@ -6987,6 +7157,126 @@ export const supportInternalKnowledgeManageDetail = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/documents/${documentId}`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeListRevisions = (
+  projectId: string,
+  documentId: string,
+  params?: SupportInternalKnowledgeListRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeManagedRevisionsPageResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeManagedRevisionsPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/documents/${documentId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCreateFilePreviewGrant = (
+  projectId: string,
+  documentId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeDownloadGrantResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeDownloadGrantResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/documents/${documentId}/revisions/${revisionId}/preview-grants`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeReadGovernance = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeGovernanceResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeGovernanceResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/governance`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeExchangeFilePreviewGrant = (
+  projectId: string,
+  grantId: string,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeFileDownloadResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeFileDownloadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/preview-grants/${grantId}/exchange`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeListProblemReports = (
+  projectId: string,
+  params?: SupportInternalKnowledgeListProblemReportsParams,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeProblemReportPageResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeProblemReportPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/problem-reports`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeResolveProblemReport = (
+  projectId: string,
+  reportId: string,
+  resolveSupportKnowledgeProblemReportDto: BodyType<ResolveSupportKnowledgeProblemReportDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeProblemReportResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeProblemReportResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/problem-reports/${reportId}/resolve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resolveSupportKnowledgeProblemReportDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeSetRetentionPolicy = (
+  projectId: string,
+  setSupportKnowledgeRetentionPolicyDto: BodyType<SetSupportKnowledgeRetentionPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeRetentionPolicyResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeRetentionPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/retention-policy`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: setSupportKnowledgeRetentionPolicyDto,
     },
     options,
   );
@@ -12560,17 +12850,35 @@ export type SupportInternalNoteRealtimeContractResult = NonNullable<
 export type SupportInternalKnowledgeRollbackAdmissionResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeRollbackAdmission>>
 >;
+export type SupportInternalKnowledgeCreateCitationDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateCitationDraft>>
+>;
+export type SupportInternalKnowledgeReadCitationDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeReadCitationDraft>>
+>;
+export type SupportInternalKnowledgeUpdateCitationDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeUpdateCitationDraft>>
+>;
+export type SupportInternalKnowledgeReadCommandOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeReadCommandOutcome>>
+>;
 export type SupportInternalKnowledgeOpenResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeOpen>>
 >;
 export type SupportInternalKnowledgeArchiveResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeArchive>>
 >;
-export type SupportInternalKnowledgeCreateFileDownloadResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeCreateFileDownload>>
+export type SupportInternalKnowledgeCreateDownloadGrantResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateDownloadGrant>>
+>;
+export type SupportInternalKnowledgeReportProblemResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeReportProblem>>
 >;
 export type SupportInternalKnowledgePublishResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgePublish>>
+>;
+export type SupportInternalKnowledgeRollbackRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeRollbackRevision>>
 >;
 export type SupportInternalKnowledgeSubmitForScanResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeSubmitForScan>>
@@ -12581,8 +12889,11 @@ export type SupportInternalKnowledgeUpdateTextDraftResult = NonNullable<
 export type SupportInternalKnowledgeCreateTextRevisionResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextRevision>>
 >;
-export type SupportInternalKnowledgeCreateTextDraftResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextDraft>>
+export type SupportInternalKnowledgeCreateTextDocumentResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextDocument>>
+>;
+export type SupportInternalKnowledgeExchangeDownloadGrantResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeExchangeDownloadGrant>>
 >;
 export type SupportInternalKnowledgeStartFileUploadResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeStartFileUpload>>
@@ -12590,11 +12901,36 @@ export type SupportInternalKnowledgeStartFileUploadResult = NonNullable<
 export type SupportInternalKnowledgeCompleteFileUploadResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeCompleteFileUpload>>
 >;
-export type SupportInternalKnowledgeManagePageResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeManagePage>>
+export type SupportInternalKnowledgeSetCapabilitiesResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeSetCapabilities>>
 >;
-export type SupportInternalKnowledgeManageDetailResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeManageDetail>>
+export type SupportInternalKnowledgeListManagedDocumentsResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeListManagedDocuments>>
+>;
+export type SupportInternalKnowledgeReadManagedDocumentResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeReadManagedDocument>>
+>;
+export type SupportInternalKnowledgeListRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeListRevisions>>
+>;
+export type SupportInternalKnowledgeCreateFilePreviewGrantResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateFilePreviewGrant>>
+>;
+export type SupportInternalKnowledgeReadGovernanceResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeReadGovernance>>
+>;
+export type SupportInternalKnowledgeExchangeFilePreviewGrantResult =
+  NonNullable<
+    Awaited<ReturnType<typeof supportInternalKnowledgeExchangeFilePreviewGrant>>
+  >;
+export type SupportInternalKnowledgeListProblemReportsResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeListProblemReports>>
+>;
+export type SupportInternalKnowledgeResolveProblemReportResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeResolveProblemReport>>
+>;
+export type SupportInternalKnowledgeSetRetentionPolicyResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeSetRetentionPolicy>>
 >;
 export type SupportInternalKnowledgeSearchResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeSearch>>

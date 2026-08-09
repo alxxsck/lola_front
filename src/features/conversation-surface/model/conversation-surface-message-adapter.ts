@@ -103,6 +103,15 @@ export function adaptConversationSurfaceMessages(
               },
             }
           : {}),
+        ...(message.knowledgeProvenance
+          ? {
+              knowledgeProvenance: {
+                revisionNumber: message.knowledgeProvenance.revisionNumber,
+                mode: message.knowledgeProvenance.mode,
+                edited: message.knowledgeProvenance.edited,
+              },
+            }
+          : {}),
       },
     ];
   });

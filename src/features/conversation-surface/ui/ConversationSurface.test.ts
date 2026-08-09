@@ -879,6 +879,32 @@ describe("ConversationSurface", () => {
     );
   });
 
+  it("purges the exact public draft populated from protected Knowledge", async () => {
+    const wrapper = mountSurface();
+    await wrapper.get("textarea").setValue("Текст из закрытого материала");
+
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        publicDraftPurgeRevision: 1,
+      },
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+
+    await wrapper.setProps({ composer: composer("conversation-2") });
+    await wrapper.setProps({
+      composer: {
+        ...composer(),
+        publicDraftPurgeRevision: 1,
+      },
+    });
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
+      "",
+    );
+  });
+
   it("makes public and private composer states explicit without duplicating the Surface", async () => {
     const publicComposer = {
       ...composer(),

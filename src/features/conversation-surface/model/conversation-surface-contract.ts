@@ -48,6 +48,11 @@ export interface ConversationSurfaceMessage {
     revisionNumber: number;
     edited: boolean;
   };
+  knowledgeProvenance?: {
+    revisionNumber: number;
+    mode: "QUOTE" | "LINK";
+    edited: boolean;
+  };
 }
 
 export interface ConversationSurfaceAttachments {
@@ -165,6 +170,7 @@ export interface ConversationSurfaceComposerActions {
   createTicket: ConversationSurfaceActionCapability;
   classifyCase?: ConversationSurfaceActionCapability;
   internalNotes?: ConversationSurfaceActionCapability;
+  knowledge?: ConversationSurfaceActionCapability;
   templates: ConversationSurfaceActionCapability;
   improveWithAI: ConversationSurfaceActionCapability;
   sendWithoutTranslation: ConversationSurfaceActionCapability;
@@ -175,6 +181,8 @@ export type ConversationSurfaceComposerAction =
   | "CREATE_TICKET"
   | "CLASSIFY_CASE"
   | "INTERNAL_NOTES"
+  | "KNOWLEDGE"
+  | "REMOVE_KNOWLEDGE"
   | "TEMPLATES"
   | "IMPROVE_WITH_AI"
   | "SEND_WITHOUT_TRANSLATION";
@@ -205,6 +213,14 @@ interface ConversationSurfaceComposerBase {
   draftRevision: string | number;
   /** Invalidates cached sensitive drafts after revoke or target disposal. */
   sensitiveDraftPurgeRevision?: string | number;
+  /** Invalidates a public draft populated from protected Support Knowledge. */
+  publicDraftPurgeRevision?: string | number;
+  knowledgeSource?: {
+    title: string;
+    revisionNumber: number;
+    mode: "QUOTE" | "LINK";
+    edited: boolean;
+  };
   sending: boolean;
   outcome?: ConversationSurfaceComposerOutcome;
   recipientStatus: {

@@ -105,6 +105,14 @@ describe("repository domain mappers", () => {
         edited: true,
         usedAt: "2026-08-06T10:00:00.000Z",
       },
+      knowledgeProvenance: {
+        documentId: "document-1",
+        revisionId: "knowledge-revision-3",
+        revisionNumber: 3,
+        mode: "QUOTE",
+        edited: true,
+        citedAt: "2026-08-06T10:00:00.000Z",
+      },
       createdAt: "2026-08-06T10:00:00.000Z",
       updatedAt: "2026-08-06T10:00:00.000Z",
       author: {
@@ -153,6 +161,14 @@ describe("repository domain mappers", () => {
       revisionNumber: 3,
       edited: true,
       usedAt: "2026-08-06T10:00:00.000Z",
+    });
+    expect(message.knowledgeProvenance).toEqual({
+      documentId: "document-1",
+      revisionId: "knowledge-revision-3",
+      revisionNumber: 3,
+      mode: "QUOTE",
+      edited: true,
+      citedAt: "2026-08-06T10:00:00.000Z",
     });
   });
 
@@ -525,6 +541,7 @@ describe("repository domain mappers", () => {
         revisionNumber: 1,
         attachments: [],
         macroProvenance: null,
+        knowledgeProvenance: null,
         createdAt: "2026-07-13T08:00:00.000Z",
         updatedAt: "2026-07-13T08:00:00.000Z",
       }),
@@ -549,6 +566,7 @@ describe("repository domain mappers", () => {
         revisionNumber: 1,
         attachments: [],
         macroProvenance: null,
+        knowledgeProvenance: null,
         createdAt: "2026-07-13T08:01:00.000Z",
         updatedAt: "2026-07-13T08:01:00.000Z",
       }).status,

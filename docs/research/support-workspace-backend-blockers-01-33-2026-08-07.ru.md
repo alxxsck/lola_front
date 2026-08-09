@@ -493,7 +493,7 @@ attachment schemas.
 
 ### 24 — Support Macros
 
-**Статус: частичный backend-блокер.**
+**Статус: operator flow готов; admin recovery частично заблокирован.**
 
 Backend `565762c4` публикует typed catalog/detail/create/draft/preview/publish/archive,
 revision history/rollback, compiled variables, public/note macro drafts, closed failure
@@ -512,24 +512,16 @@ Evidence: `src/modules/support-operations/api/support-macro.controller.ts`,
 
 **Статус: частичный backend-блокер.**
 
-Готово: отдельный `/support/knowledge/*` corpus, typed search/open/download/manage, text revisions,
-file upload/complete/scan, publish/archive и emergency admission rollback.
+Backend `f9ef8e42`: отдельный `/support/knowledge/*` corpus, exact revision search/open,
+двухфазные download grants, Citation Draft, CMS-only Message provenance, text/file lifecycle,
+immutable revision rollback, governance, retention и rollout опубликованы.
 
-Не хватает:
+Остался admin-only P1: `setCapabilities`, `setRetentionPolicy` и
+`resolveProblemReport` не имеют заявленного actor-bound command outcome. До его публикации
+frontend не выпускает эти три неоднозначно повторяемые mutation UI.
 
-- document revision rollback к выбранной опубликованной revision;
-- отдельного Knowledge retention contract: опубликованный Support retention API относится только
-  к `internal-notes`;
-- отдельного Knowledge rollout/admission read contract: общий content-rollout перечисляет Macros,
-  Notes и Content Panel, но не публикует независимую Knowledge capability;
-- Case-scoped allowed actions для manage/download/insert, если UI должен заранее показывать именно
-  target authority, а не только project permission и последующий fail-closed endpoint check;
-- полного набора typed conflict/revoked/scan/download errors и unknown-outcome lookup;
-- typed content-panel items: aggregate panel `items` остаются arbitrary objects, поэтому надо
-  использовать explicit search/read endpoints.
-
-Что может frontend сейчас: search/open/download, management list/detail, text/file draft,
-scan/publish/archive. Нельзя заявить полный lifecycle с document rollback.
+Frontend реализовал operator search/open/download, quote/link insertion, editable Citation Draft,
+durable send и provenance. Полный admin settings surface остаётся помечен blocker-ом выше.
 
 Evidence: `src/composition/support-workspace/support-internal-knowledge.controller.ts`,
 `SupportKnowledgeSearchPageResponseDto`, `SupportKnowledgeManagedDocumentDetailResponseDto`,

@@ -8,6 +8,8 @@
 import type { StartSupportKnowledgeFileUploadDtoMimeType } from "./startSupportKnowledgeFileUploadDtoMimeType";
 
 export interface StartSupportKnowledgeFileUploadDto {
+  /** @maxItems 39 */
+  categoryCodes?: string[];
   /**
    * Canonical base64 SHA-256 checksum
    * @pattern ^[A-Za-z0-9+/]{43}=$
@@ -24,6 +26,8 @@ export interface StartSupportKnowledgeFileUploadDto {
   /** @maxItems 50 */
   languageTags?: string[];
   mimeType: StartSupportKnowledgeFileUploadDtoMimeType;
+  /** @maxItems 39 */
+  productCodes?: string[];
   /**
    * @minimum 1
    * @maximum 26214400

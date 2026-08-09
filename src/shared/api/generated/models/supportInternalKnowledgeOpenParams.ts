@@ -8,4 +8,5 @@
 
 export type SupportInternalKnowledgeOpenParams = {
   caseId: string;
+  revisionId: string;
 };

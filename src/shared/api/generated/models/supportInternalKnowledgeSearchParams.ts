@@ -5,6 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportInternalKnowledgeSearchAudience } from "./supportInternalKnowledgeSearchAudience";
+import type { SupportInternalKnowledgeSearchRollout } from "./supportInternalKnowledgeSearchRollout";
 
 export type SupportInternalKnowledgeSearchParams = {
   caseId: string;
@@ -13,6 +15,29 @@ export type SupportInternalKnowledgeSearchParams = {
    * @maxLength 240
    */
   q: string;
+  /**
+   * @maxLength 35
+   */
+  locale?: string;
+  /**
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
+  topicCode?: string;
+  /**
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
+  categoryCode?: string;
+  /**
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
+  productCode?: string;
+  audience?: SupportInternalKnowledgeSearchAudience;
+  rollout?: SupportInternalKnowledgeSearchRollout;
+  revisionId?: string;
+  /**
+   * @minimum 1
+   */
+  expectedAdmissionVersion?: number;
   /**
    * @maxLength 2000
    */

@@ -20,4 +20,6 @@ export interface SupportKnowledgeManagedDocumentResponseDto {
   documentId: string;
   lifecycle: SupportKnowledgeManagedDocumentResponseDtoLifecycle;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

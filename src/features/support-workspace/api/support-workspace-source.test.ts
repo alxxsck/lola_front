@@ -361,6 +361,7 @@ describe("support workspace selection contract mapper", () => {
             revisionNumber: 1,
             attachments: [],
             macroProvenance: null,
+            knowledgeProvenance: null,
             author: {
               type: "CMS_USER",
               cmsUserId: "operator-1",

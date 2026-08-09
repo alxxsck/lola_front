@@ -5,8 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportInternalKnowledgeListProblemReportsState } from "./supportInternalKnowledgeListProblemReportsState";
 
-export type SupportInternalKnowledgeManagePageParams = {
+export type SupportInternalKnowledgeListProblemReportsParams = {
+  state?: SupportInternalKnowledgeListProblemReportsState;
   /**
    * @maxLength 2000
    */

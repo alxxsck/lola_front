@@ -71,6 +71,7 @@ import {
 } from "@/features/support-views/model/support-view-route";
 import { createSupportViewsController } from "@/features/support-views/model/use-support-views";
 import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
+import { ApiError } from "@/shared/api/http/api-error";
 import { supportAttachmentsSource } from "@/features/support-attachments/api/support-attachments-source";
 import { createSupportAttachmentsController } from "@/features/support-attachments/model/use-support-attachments";
 import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
@@ -85,6 +86,8 @@ import { createSupportAvailabilityController } from "@/features/support-availabi
 import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
 import { supportInternalNotesSource } from "@/features/support-internal-notes/api/support-internal-notes-source";
 import { createSupportInternalNotesController } from "@/features/support-internal-notes/model/use-support-internal-notes";
+import { supportInternalKnowledgeSource } from "@/features/support-internal-knowledge/api/support-internal-knowledge-source";
+import { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
 import { parseSupportInternalNoteChanged } from "@/features/support-internal-notes/model/support-internal-note-live";
 import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue";
 import {
@@ -491,6 +494,25 @@ const noteAttachmentAuthorityKey = computed(() => {
     capability.download ? "download" : "no-download",
   ].join("\u0000");
 });
+const knowledgeAccessDenied = ref(false);
+const publicKnowledgeDraftPurgeRevision = ref(0);
+const hasKnowledgeReadPermission = computed(
+  () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.cases.read",
+    ) &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.knowledge.read",
+    ),
+);
+const canReadSelectedKnowledge = computed(
+  () =>
+    !knowledgeAccessDenied.value &&
+    Boolean(conversation.selection.value?.case) &&
+    hasKnowledgeReadPermission.value,
+);
 const reply = createSupportReplyController(
   {
     projectId: () => auth.project?.id,
@@ -501,10 +523,44 @@ const reply = createSupportReplyController(
     },
     onAccepted(attempt) {
       if (attempt.attachmentIds?.length) publicAttachments.consumeDraft();
+      knowledge.accepted();
     },
     onMacroDraftRejected: handleSupportMacroRejected,
+    onKnowledgeCitationRejected: handleSupportKnowledgeRejected,
   },
   repository,
+);
+const knowledge = createSupportInternalKnowledgeController(
+  {
+    scope: () => {
+      const selection = conversation.selection.value;
+      const projectId = auth.project?.id;
+      if (!projectId || !selection?.case || !selection.conversation) return null;
+      return {
+        projectId,
+        caseId: selection.case.id,
+        conversationId: selection.conversation.id,
+        ...(selection.endUser.locale
+          ? { locale: selection.endUser.locale }
+          : {}),
+      };
+    },
+    allowed: () => canReadSelectedKnowledge.value,
+    canInsert: () =>
+      Boolean(
+        canReadSelectedKnowledge.value &&
+          reply.canReply.value &&
+          supportComposerMode.value === "PUBLIC_REPLY",
+      ),
+    onInsert(text) {
+      reply.draft.value = [reply.draft.value.trim(), text]
+        .filter(Boolean)
+        .join("\n\n");
+      void workspaceLive.setDraftActive(true);
+    },
+    onForbidden: handleSupportKnowledgeForbidden,
+  },
+  supportInternalKnowledgeSource,
 );
 const messageDelivery = createSupportMessageDeliveryController(
   {
@@ -616,6 +672,38 @@ async function handleSupportMacroRejected(): Promise<void> {
     !hasSupportMacrosReadPermission.value || !hasSupportMacrosUsePermission.value;
   if (!supportMacrosAccessDenied.value) await supportMacros.load();
 }
+
+async function handleSupportKnowledgeForbidden(): Promise<void> {
+  const hadDerivedKnowledgeText = Boolean(
+    knowledge.activeCitation.value || knowledge.recoveryRequired.value,
+  );
+  knowledgeAccessDenied.value = true;
+  knowledge.purge({ keepQuery: true });
+  if (hadDerivedKnowledgeText) {
+    reply.draft.value = "";
+    publicKnowledgeDraftPurgeRevision.value += 1;
+  }
+  try {
+    await auth.refreshContext();
+  } catch {
+    // Protected Knowledge text and citation identity are already purged.
+  }
+  await conversation.reconcile().catch(() => undefined);
+  if (hasKnowledgeReadPermission.value && conversation.selection.value?.case)
+    knowledgeAccessDenied.value = false;
+}
+
+async function handleSupportKnowledgeRejected(cause: ApiError): Promise<void> {
+  if (
+    cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED" ||
+    cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED"
+  ) {
+    await handleSupportKnowledgeForbidden();
+    return;
+  }
+  knowledge.requireRecovery();
+  await conversation.reconcile().catch(() => undefined);
+}
 const translationSettingsVisible = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
@@ -670,6 +758,9 @@ const canSubmitPublicReply = computed(() => {
   if (
     !reply.canReply.value ||
     supportMacros.recoveryRequired.value ||
+    knowledge.recoveryRequired.value ||
+    knowledge.inserting.value ||
+    knowledge.preparing.value ||
     (replyHasText.value && replyPolicyChecking.value)
   )
     return false;
@@ -688,6 +779,9 @@ const canSubmitPublicReply = computed(() => {
 const publicReplyBlockedReason = computed(() => {
   if (!reply.canReply.value) return "";
   if (supportMacros.recoveryRequired.value) return supportMacros.error.value;
+  if (knowledge.recoveryRequired.value) return knowledge.error.value;
+  if (knowledge.inserting.value || knowledge.preparing.value)
+    return "Закрепляем внутренний источник…";
   if (replyHasText.value && replyPolicyChecking.value)
     return translation.error.value || "Проверяем правила перевода…";
   if (
@@ -711,22 +805,37 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
     const noteAvailable = noteCapabilities?.state === "AVAILABLE";
     const modeSwitch = {
       publicReply: {
-        visibility: reply.canReply.value && !supportMacros.recoveryRequired.value
+        visibility:
+          reply.canReply.value &&
+          !supportMacros.recoveryRequired.value &&
+          !knowledge.recoveryRequired.value
           ? ("ENABLED" as const)
           : ("DISABLED" as const),
-        reason: reply.canReply.value && !supportMacros.recoveryRequired.value
+        reason:
+          reply.canReply.value &&
+          !supportMacros.recoveryRequired.value &&
+          !knowledge.recoveryRequired.value
           ? undefined
           : supportMacros.recoveryRequired.value
             ? supportMacros.error.value
-            : "Ответ пользователю в этом диалоге недоступен.",
+            : knowledge.recoveryRequired.value
+              ? knowledge.error.value
+              : "Ответ пользователю в этом диалоге недоступен.",
       },
       internalNote: {
         visibility:
-          noteAvailable && noteCapabilities.create && !supportMacros.recoveryRequired.value
+          noteAvailable &&
+          noteCapabilities.create &&
+          !supportMacros.recoveryRequired.value &&
+          !knowledge.recoveryRequired.value
             ? ("ENABLED" as const)
             : ("DISABLED" as const),
-        reason: supportMacros.recoveryRequired.value
-          ? supportMacros.error.value
+        reason:
+          supportMacros.recoveryRequired.value ||
+          knowledge.recoveryRequired.value
+          ? supportMacros.recoveryRequired.value
+            ? supportMacros.error.value
+            : knowledge.error.value
           : noteAvailable
             ? "Для этого обращения доступен только просмотр заметок."
             : "Внутренние заметки недоступны для текущего обращения.",
@@ -770,6 +879,9 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           classifyCase: { visibility: "HIDDEN" },
           internalNotes: {
             visibility: noteCapabilities?.read ? "ENABLED" : "HIDDEN",
+          },
+          knowledge: {
+            visibility: canReadSelectedKnowledge.value ? "ENABLED" : "HIDDEN",
           },
           templates: {
             visibility: canUseSupportMacros.value ? "ENABLED" : "HIDDEN",
@@ -838,6 +950,26 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           selection?.conversation?.id ?? "unselected-conversation",
       },
       initialDraft: reply.draft.value,
+      publicDraftPurgeRevision: publicKnowledgeDraftPurgeRevision.value,
+      ...(knowledge.activeCitation.value
+        ? {
+            knowledgeSource: {
+              title:
+                knowledge.selected.value?.title ??
+                knowledge.items.value.find(
+                  (item) =>
+                    item.documentId ===
+                    knowledge.activeCitation.value?.documentId,
+                )?.title ??
+                "Внутренний материал",
+              revisionNumber:
+                knowledge.activeCitation.value.revisionNumber,
+              mode: knowledge.activeCitation.value.mode,
+              edited:
+                knowledge.activeCitation.value.text !== reply.draft.value,
+            },
+          }
+        : {}),
       sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
       draftRevision:
         translation.draft.value?.id ??
@@ -920,6 +1052,9 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           reason: selection?.case
             ? undefined
             : "Внутренние заметки доступны после привязки обращения.",
+        },
+        knowledge: {
+          visibility: canReadSelectedKnowledge.value ? "ENABLED" : "HIDDEN",
         },
         templates: {
           visibility: canUseSupportMacros.value
@@ -1520,11 +1655,13 @@ const inspector = createSupportInspectorController(
       profile: canReadInspectorProfile.value,
       events: canReadInspectorEvents.value,
       activity: canReadInspectorActivity.value,
+      knowledge: canReadSelectedKnowledge.value,
     }),
     async onForbidden(tab) {
       if (tab === "DATA") profileAccessDenied.value = true;
       if (tab === "EVENTS") inspectorEventsAccessDenied.value = true;
       if (tab === "ACTIVITY") inspectorActivityAccessDenied.value = true;
+      if (tab === "KNOWLEDGE") await handleSupportKnowledgeForbidden();
       try {
         await auth.refreshContext();
       } catch {
@@ -1768,6 +1905,16 @@ async function classifySelectedCase(): Promise<void> {
   }
   await nextTick();
   supportContext.value?.requestClassification();
+}
+
+async function openSupportKnowledge(): Promise<void> {
+  if (!canReadSelectedKnowledge.value) return;
+  await inspector.open("KNOWLEDGE");
+  if (isMobileWorkspace.value) {
+    await router.push({ query: { ...route.query, panel: "inspector" } });
+  } else if (isCompactWorkspace.value) {
+    contextDrawerVisible.value = true;
+  }
 }
 
 async function backToInbox(): Promise<void> {
@@ -2035,13 +2182,24 @@ async function reconcileCaseOperations(expiresAt: string): Promise<void> {
 async function sendReply(
   attachments?: { attachmentIds: string[]; attachmentDraftKey: string },
 ): Promise<void> {
-  if (supportMacros.recoveryRequired.value) return;
+  if (
+    supportMacros.recoveryRequired.value ||
+    knowledge.recoveryRequired.value ||
+    knowledge.inserting.value ||
+    knowledge.preparing.value
+  )
+    return;
   const activeMacro = supportMacros.activeDraft.value;
   const macroReplyDraftId =
     activeMacro?.target.kind === "PUBLIC_REPLY"
       ? await supportMacros.prepareForSend(reply.draft.value)
       : undefined;
   if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
+  const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
+  const supportKnowledgeCitationDraftId = hadKnowledgeCitation
+    ? await knowledge.prepareForSend(reply.draft.value)
+    : undefined;
+  if (hadKnowledgeCitation && !supportKnowledgeCitationDraftId) return;
   if (!replyHasText.value) {
     await reply.send(attachments);
     return;
@@ -2068,6 +2226,9 @@ async function sendReply(
   await reply.send({
     ...attachments,
     ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+    ...(supportKnowledgeCitationDraftId
+      ? { supportKnowledgeCitationDraftId }
+      : {}),
   });
 }
 
@@ -2077,7 +2238,13 @@ function setSendWithoutTranslationVisible(visible: boolean): void {
 }
 
 async function sendReplyWithoutTranslation(): Promise<void> {
-  if (supportMacros.recoveryRequired.value) return;
+  if (
+    supportMacros.recoveryRequired.value ||
+    knowledge.recoveryRequired.value ||
+    knowledge.inserting.value ||
+    knowledge.preparing.value
+  )
+    return;
   const reason = sendWithoutTranslationReason.value.trim();
   if (!reason || !reply.canSendWithoutTranslation.value) return;
   const activeMacro = supportMacros.activeDraft.value;
@@ -2086,6 +2253,11 @@ async function sendReplyWithoutTranslation(): Promise<void> {
       ? await supportMacros.prepareForSend(reply.draft.value)
       : undefined;
   if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
+  const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
+  const supportKnowledgeCitationDraftId = hadKnowledgeCitation
+    ? await knowledge.prepareForSend(reply.draft.value)
+    : undefined;
+  if (hadKnowledgeCitation && !supportKnowledgeCitationDraftId) return;
   await reply.sendWithoutTranslation(
     reason,
     publicAttachments.readyIds.value.length && publicAttachments.draftKey.value
@@ -2095,6 +2267,7 @@ async function sendReplyWithoutTranslation(): Promise<void> {
       }
       : undefined,
     macroReplyDraftId ?? undefined,
+    supportKnowledgeCitationDraftId,
   );
   if (!reply.draft.value.trim()) {
     setSendWithoutTranslationVisible(false);
@@ -2214,7 +2387,11 @@ function changeSupportComposerMode(
   mode: "PUBLIC_REPLY" | "INTERNAL_NOTE",
 ): void {
   if (mode === supportComposerMode.value) return;
-  if (supportMacros.recoveryRequired.value) return;
+  if (
+    supportMacros.recoveryRequired.value ||
+    knowledge.recoveryRequired.value
+  )
+    return;
   supportMacros.reset({ keepQuery: true });
   replyTemplateGalleryVisible.value = false;
   if (mode === "INTERNAL_NOTE") {
@@ -2260,6 +2437,14 @@ function handleSupportComposerAction(
       if (canWriteSelectedInternalNotes.value)
         changeSupportComposerMode("INTERNAL_NOTE");
       else openInternalNotes();
+      break;
+    case "KNOWLEDGE":
+      void openSupportKnowledge();
+      break;
+    case "REMOVE_KNOWLEDGE":
+      knowledge.accepted();
+      reply.draft.value = "";
+      publicKnowledgeDraftPurgeRevision.value += 1;
       break;
     case "SEND_WITHOUT_TRANSLATION":
       setSendWithoutTranslationVisible(true);
@@ -2349,6 +2534,8 @@ async function sendTranslatedReply(
   if (
     translation.savingPreference.value ||
     translation.previewStale.value ||
+    knowledge.inserting.value ||
+    knowledge.preparing.value ||
     !reply.canReply.value
   )
     return;
@@ -2369,7 +2556,17 @@ async function sendTranslatedReply(
     supportMacros.activeDraft.value?.target.kind === "PUBLIC_REPLY"
       ? supportMacros.activeDraft.value.receipt.id
       : undefined;
-  await reply.sendTranslatedReply(ready.id, attachments, macroReplyDraftId);
+  const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
+  const supportKnowledgeCitationDraftId = hadKnowledgeCitation
+    ? await knowledge.prepareForSend(reply.draft.value)
+    : undefined;
+  if (hadKnowledgeCitation && !supportKnowledgeCitationDraftId) return;
+  await reply.sendTranslatedReply(
+    ready.id,
+    attachments,
+    macroReplyDraftId,
+    supportKnowledgeCitationDraftId,
+  );
   if (!reply.draft.value.trim()) {
     translation.clearReplyDraft();
     replyTranslationRequested.value = false;
@@ -2546,6 +2743,7 @@ watch(
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
     supportMacrosAccessDenied.value = false;
+    knowledgeAccessDenied.value = false;
     publicAttachmentsAccessDenied.value = false;
     noteAttachmentsAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
@@ -2559,6 +2757,7 @@ watch(
     caseDesk.reset();
     reply.reset();
     supportMacros.reset();
+    knowledge.purge();
     messageDelivery.reset();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
@@ -2732,6 +2931,11 @@ watch(
   },
 );
 
+watch(hasKnowledgeReadPermission, (allowed, previousAllowed) => {
+  if (allowed || !previousAllowed) return;
+  void handleSupportKnowledgeForbidden();
+});
+
 watch(
   [
     internalNotesVisible,
@@ -2750,7 +2954,12 @@ watch(
   ],
   ([actorId, canRead, canUse], [previousActorId]) => {
     if (actorId === previousActorId && canRead && canUse) return;
+    if (knowledge.activeCitation.value) {
+      reply.draft.value = "";
+      publicKnowledgeDraftPurgeRevision.value += 1;
+    }
     supportMacros.reset({ keepQuery: actorId === previousActorId });
+    knowledge.purge({ keepQuery: actorId === previousActorId });
     replyTemplateGalleryVisible.value = false;
   },
   { flush: "sync" },
@@ -2908,10 +3117,15 @@ watch(
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
     internalNoteDraft.value = "";
+    if (knowledge.activeCitation.value) {
+      reply.draft.value = "";
+      publicKnowledgeDraftPurgeRevision.value += 1;
+    }
     supportComposerMode.value = "PUBLIC_REPLY";
     assignment.resetCase();
     inspector.reset();
     internalNotes.reset();
+    knowledge.purge({ keepQuery: true });
     messageDelivery.reset();
     void conversation.load();
   },
@@ -3502,6 +3716,7 @@ onBeforeUnmount(() => {
             :availability-label="assignmentAvailabilityLabel"
             :can-read-internal-notes="canReadSelectedInternalNotes"
             :inspector="inspector"
+            :knowledge-controller="knowledge"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
             @reconcile-operations="reconcileCaseOperations"

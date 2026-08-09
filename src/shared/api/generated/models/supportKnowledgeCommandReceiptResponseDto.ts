@@ -8,6 +8,7 @@
 import type { SupportKnowledgeCommandReceiptResponseDtoState } from "./supportKnowledgeCommandReceiptResponseDtoState";
 
 export interface SupportKnowledgeCommandReceiptResponseDto {
+  commandId: string;
   documentId: string;
   replayed: boolean;
   revisionId: string;

@@ -165,6 +165,33 @@ describe("support reply controller", () => {
     );
   });
 
+  it("keeps the exact Knowledge citation bound to durable recovery", async () => {
+    const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      replySource(sendAdminMessage),
+    );
+    controller.draft.value = "Ответ с проверенным источником";
+
+    await controller.send({
+      supportKnowledgeCitationDraftId: "citation-draft-1",
+    });
+
+    expect(sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        text: "Ответ с проверенным источником",
+        supportKnowledgeCitationDraftId: "citation-draft-1",
+      }),
+    );
+  });
+
   it("preserves text and refreshes only Macro state after a stale macro draft", async () => {
     const onMacroDraftRejected = vi.fn();
     const sendAdminMessage = vi.fn().mockRejectedValue(
@@ -193,6 +220,39 @@ describe("support reply controller", () => {
     expect(controller.draft.value).toBe("Текст оператора");
     expect(onMacroDraftRejected).toHaveBeenCalledOnce();
     expect(controller.error.value).toContain("Macro изменился");
+  });
+
+  it("preserves text and refreshes Knowledge after the source changes", async () => {
+    const onKnowledgeCitationRejected = vi.fn();
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+        onKnowledgeCitationRejected,
+      },
+      replySource(
+        vi.fn().mockRejectedValue(
+          new ApiError(
+            409,
+            "source changed",
+            undefined,
+            undefined,
+            "SUPPORT_KNOWLEDGE_SOURCE_CHANGED",
+          ),
+        ),
+      ),
+    );
+    controller.draft.value = "Текст из проверенного источника";
+
+    await controller.send({
+      supportKnowledgeCitationDraftId: "citation-draft-1",
+    });
+
+    expect(controller.draft.value).toBe("Текст из проверенного источника");
+    expect(onKnowledgeCitationRejected).toHaveBeenCalledOnce();
+    expect(controller.error.value).toContain("Источник изменился");
   });
 
   it("binds a reviewed translation draft to the same authoritative reply", async () => {

@@ -5,9 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportKnowledgeFreshnessResponseDto } from "./supportKnowledgeFreshnessResponseDto";
 import type { SupportKnowledgeSearchItemResponseDto } from "./supportKnowledgeSearchItemResponseDto";
 
 export interface SupportKnowledgeSearchPageResponseDto {
+  freshness: SupportKnowledgeFreshnessResponseDto;
   items: SupportKnowledgeSearchItemResponseDto[];
   /** @nullable */
   nextCursor?: string | null;

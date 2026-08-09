@@ -7,6 +7,8 @@
  */
 
 export interface CreateSupportKnowledgeTextDocumentDto {
+  /** @maxItems 39 */
+  categoryCodes?: string[];
   /**
    * @minLength 1
    * @maxLength 1048576
@@ -16,6 +18,8 @@ export interface CreateSupportKnowledgeTextDocumentDto {
   language?: string;
   /** @maxItems 50 */
   languageTags?: string[];
+  /** @maxItems 39 */
+  productCodes?: string[];
   /** @maxItems 100 */
   teamIds?: string[];
   /**

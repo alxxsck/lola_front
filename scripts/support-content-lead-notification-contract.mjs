@@ -221,7 +221,10 @@ export function validateSupportContentLeadNotificationContract(document) {
   ]);
 
   const contentPanel = operation(document, "SupportContentPanel_read");
-  requirePermission(contentPanel, "project.support.macros.read");
+  requireAllPermissions(contentPanel, [
+    "project.support.macros.read",
+    "project.cases.read",
+  ]);
   requireBound(contentPanel, "q", "maxLength", 128);
   requireBound(contentPanel, "macroLimit", "maximum", 100);
   requireBound(contentPanel, "knowledgeLimit", "maximum", 100);
@@ -352,16 +355,24 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportInternalKnowledge_search",
   );
   const knowledgeOpen = operation(document, "SupportInternalKnowledge_open");
+  const knowledgeDownloadGrant = operation(
+    document,
+    "SupportInternalKnowledge_createDownloadGrant",
+  );
   const knowledgeDownload = operation(
     document,
-    "SupportInternalKnowledge_createFileDownload",
+    "SupportInternalKnowledge_exchangeDownloadGrant",
   );
   for (const operationValue of [
     knowledgeSearch,
     knowledgeOpen,
+    knowledgeDownloadGrant,
     knowledgeDownload,
   ]) {
-    requirePermission(operationValue, "project.support.knowledge.read");
+    requireAllPermissions(operationValue, [
+      "project.support.knowledge.read",
+      "project.cases.read",
+    ]);
     if (parameter(operationValue, "caseId").required !== true) {
       throw new Error(`${operationValue.operationId}.caseId must be required`);
     }
@@ -379,6 +390,11 @@ export function validateSupportContentLeadNotificationContract(document) {
     knowledgeOpen,
     "200",
     "SupportKnowledgeTextDocumentResponseDto",
+  );
+  requireResponseSchema(
+    knowledgeDownloadGrant,
+    "200",
+    "SupportKnowledgeDownloadGrantResponseDto",
   );
   requireResponseSchema(
     knowledgeDownload,
@@ -408,11 +424,52 @@ export function validateSupportContentLeadNotificationContract(document) {
     "url",
     "expiresAt",
   ]);
+  const citationOperations = [
+    "SupportInternalKnowledge_createCitationDraft",
+    "SupportInternalKnowledge_readCitationDraft",
+    "SupportInternalKnowledge_updateCitationDraft",
+  ].map((operationId) => operation(document, operationId));
+  for (const operationValue of citationOperations) {
+    requireAllPermissions(operationValue, [
+      "project.support.knowledge.read",
+      "project.cases.read",
+      "project.conversations.reply",
+    ]);
+    requireResponseSchema(
+      operationValue,
+      "200",
+      "SupportKnowledgeCitationDraftResponseDto",
+    );
+  }
+  requireProperties(document, "SupportKnowledgeCitationDraftResponseDto", [
+    "id",
+    "documentId",
+    "revisionId",
+    "revisionNumber",
+    "mode",
+    "state",
+    "version",
+    "expiresAt",
+    "actionEtag",
+  ]);
+  if (
+    !document.components?.schemas?.SendAdminMessageDto?.properties
+      ?.supportKnowledgeCitationDraftId
+  )
+    throw new Error(
+      "SendAdminMessageDto must publish supportKnowledgeCitationDraftId",
+    );
+  for (const schemaName of [
+    "AdminConversationMessageResponseDto",
+    "AdminStoredMessageResponseDto",
+    "CmsConversationMessageRealtimeStateDto",
+  ])
+    requireProperties(document, schemaName, ["knowledgeProvenance"]);
 
   const knowledgeManageOperations = [
-    "SupportInternalKnowledge_managePage",
-    "SupportInternalKnowledge_manageDetail",
-    "SupportInternalKnowledge_createTextDraft",
+    "SupportInternalKnowledge_listManagedDocuments",
+    "SupportInternalKnowledge_readManagedDocument",
+    "SupportInternalKnowledge_createTextDocument",
     "SupportInternalKnowledge_createTextRevision",
     "SupportInternalKnowledge_updateTextDraft",
     "SupportInternalKnowledge_startFileUpload",
@@ -420,6 +477,7 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportInternalKnowledge_submitForScan",
     "SupportInternalKnowledge_publish",
     "SupportInternalKnowledge_archive",
+    "SupportInternalKnowledge_rollbackRevision",
     "SupportInternalKnowledge_rollbackAdmission",
   ].map((operationId) => operation(document, operationId));
   for (const operationValue of knowledgeManageOperations) {
@@ -436,7 +494,7 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportKnowledgeManagedDocumentDetailResponseDto",
   );
   for (const operationId of [
-    "SupportInternalKnowledge_createTextDraft",
+    "SupportInternalKnowledge_createTextDocument",
     "SupportInternalKnowledge_createTextRevision",
     "SupportInternalKnowledge_updateTextDraft",
     "SupportInternalKnowledge_startFileUpload",
@@ -444,6 +502,7 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportInternalKnowledge_submitForScan",
     "SupportInternalKnowledge_publish",
     "SupportInternalKnowledge_archive",
+    "SupportInternalKnowledge_rollbackRevision",
   ]) {
     requireHeader(operation(document, operationId), "Idempotency-Key");
   }
@@ -453,13 +512,14 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportKnowledgeFileUploadStartResponseDto",
   );
   for (const operationId of [
-    "SupportInternalKnowledge_createTextDraft",
+    "SupportInternalKnowledge_createTextDocument",
     "SupportInternalKnowledge_createTextRevision",
     "SupportInternalKnowledge_updateTextDraft",
     "SupportInternalKnowledge_completeFileUpload",
     "SupportInternalKnowledge_submitForScan",
     "SupportInternalKnowledge_publish",
     "SupportInternalKnowledge_archive",
+    "SupportInternalKnowledge_rollbackRevision",
   ]) {
     requireResponseSchema(
       operation(document, operationId),

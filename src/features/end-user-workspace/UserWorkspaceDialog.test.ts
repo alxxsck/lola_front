@@ -1963,9 +1963,9 @@ describe("единое рабочее пространство пользова�
       .find((button) => button.text().includes("Шаблоны"))
       ?.trigger("click");
 
-    expect(
-      wrapper.get('[data-testid="reply-template-gallery"]').text(),
-    ).toContain("Галерея шаблонов");
+    const gallery = wrapper.get(".support-macro-dialog");
+    expect(gallery.text()).toContain("Шаблоны ответа");
+    expect(gallery.text()).toContain("Проверяю");
   });
 
   it("после reconnect сверяет REST projection выбранного диалога", async () => {

@@ -511,6 +511,12 @@ export const apiRepository: ReteniveRepository = {
         ...(message.macroReplyDraftId
           ? { macroReplyDraftId: message.macroReplyDraftId }
           : {}),
+        ...(message.supportKnowledgeCitationDraftId
+          ? {
+              supportKnowledgeCitationDraftId:
+                message.supportKnowledgeCitationDraftId,
+            }
+          : {}),
         ...(message.sendWithoutTranslation
           ? { sendWithoutTranslation: message.sendWithoutTranslation }
           : {}),

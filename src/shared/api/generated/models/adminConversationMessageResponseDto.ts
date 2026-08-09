@@ -9,6 +9,7 @@ import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentM
 import type { AdminConversationMessageResponseDtoAuthor } from "./adminConversationMessageResponseDtoAuthor";
 import type { AdminConversationMessageResponseDtoContentState } from "./adminConversationMessageResponseDtoContentState";
 import type { AdminMessageDeliveryResponseDto } from "./adminMessageDeliveryResponseDto";
+import type { AdminConversationMessageResponseDtoKnowledgeProvenance } from "./adminConversationMessageResponseDtoKnowledgeProvenance";
 import type { AdminConversationMessageResponseDtoMacroProvenance } from "./adminConversationMessageResponseDtoMacroProvenance";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
@@ -24,6 +25,8 @@ export interface AdminConversationMessageResponseDto {
   createdAt: string;
   delivery?: AdminMessageDeliveryResponseDto;
   id: string;
+  /** @nullable */
+  knowledgeProvenance: AdminConversationMessageResponseDtoKnowledgeProvenance;
   /** @nullable */
   macroProvenance: AdminConversationMessageResponseDtoMacroProvenance;
   /** @minimum 1 */

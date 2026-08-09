@@ -10,6 +10,8 @@ import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue
 import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
 import type { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
 import SupportInspectorState from "@/features/support-inspector/ui/SupportInspectorState.vue";
+import type { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
+import SupportInternalKnowledgePane from "@/features/support-internal-knowledge/ui/SupportInternalKnowledgePane.vue";
 import type {
   ProfileProjectionFieldResponseDto,
   SupportLeadSafeFactDto,
@@ -41,6 +43,7 @@ const props = withDefaults(
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     inspector: ReturnType<typeof createSupportInspectorController>;
+    knowledgeController?: ReturnType<typeof createSupportInternalKnowledgeController>;
     caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
   }>(),
   {
@@ -54,6 +57,7 @@ const props = withDefaults(
     leadAssignmentController: undefined,
     availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
+    knowledgeController: undefined,
   },
 );
 
@@ -512,6 +516,14 @@ defineExpose({ requestClassification });
             В рабочем месте используется внутренний идентификатор. Внешний ID
             продукта здесь не раскрывается.
           </p>
+        </section>
+
+        <section
+          v-else-if="activeTab === 'KNOWLEDGE' && knowledgeController"
+          class="inspector-section knowledge-section"
+          aria-label="Внутренняя база знаний"
+        >
+          <SupportInternalKnowledgePane :controller="knowledgeController" />
         </section>
 
         <section

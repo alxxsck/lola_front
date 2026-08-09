@@ -10,6 +10,7 @@ export interface SupportKnowledgeFileDownloadResponseDto {
   documentId: string;
   expiresAt: string;
   filename: string;
+  grantId: string;
   revisionId: string;
   url: string;
 }

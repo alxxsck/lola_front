@@ -8,6 +8,7 @@
 import type { CmsConversationAttachmentRealtimeSnapshotDto } from "./cmsConversationAttachmentRealtimeSnapshotDto";
 import type { CmsConversationMessageRealtimeStateDtoAuthor } from "./cmsConversationMessageRealtimeStateDtoAuthor";
 import type { CmsConversationMessageRealtimeStateDtoContentState } from "./cmsConversationMessageRealtimeStateDtoContentState";
+import type { CmsConversationMessageRealtimeStateDtoKnowledgeProvenance } from "./cmsConversationMessageRealtimeStateDtoKnowledgeProvenance";
 import type { CmsConversationMessageRealtimeStateDtoMacroProvenance } from "./cmsConversationMessageRealtimeStateDtoMacroProvenance";
 import type { CmsConversationMessageRealtimeStateDtoRole } from "./cmsConversationMessageRealtimeStateDtoRole";
 import type { CmsConversationMessageRealtimeStateDtoStatus } from "./cmsConversationMessageRealtimeStateDtoStatus";
@@ -21,6 +22,8 @@ export interface CmsConversationMessageRealtimeStateDto {
   contentVersion: number;
   createdAt: string;
   id: string;
+  /** @nullable */
+  knowledgeProvenance: CmsConversationMessageRealtimeStateDtoKnowledgeProvenance;
   /** @nullable */
   macroProvenance: CmsConversationMessageRealtimeStateDtoMacroProvenance;
   /** @minimum 1 */

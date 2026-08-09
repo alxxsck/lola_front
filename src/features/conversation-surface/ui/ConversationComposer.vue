@@ -89,6 +89,7 @@ const hasActionMenuItems = computed(() =>
     props.composer.actions.createTicket,
     props.composer.actions.classifyCase,
     props.composer.actions.internalNotes,
+    props.composer.actions.knowledge,
     props.composer.actions.sendWithoutTranslation,
   ].some((action) => action && action.visibility !== "HIDDEN"),
 );
@@ -225,6 +226,32 @@ function runOutcomeAction(): void {
         <i class="pi pi-shield" aria-hidden="true" />
         Видно только команде
       </span>
+    </div>
+    <div
+      v-if="composer.mode === 'PUBLIC_REPLY' && composer.knowledgeSource"
+      class="conversation-composer__knowledge-source"
+    >
+      <span class="conversation-composer__knowledge-icon">
+        <i class="pi pi-book" aria-hidden="true" />
+      </span>
+      <span>
+        <strong>{{ composer.knowledgeSource.title }}</strong>
+        <small>
+          Источник · v{{ composer.knowledgeSource.revisionNumber }} ·
+          {{ composer.knowledgeSource.mode === "QUOTE" ? "цитата" : "ссылка" }}
+          {{ composer.knowledgeSource.edited ? " · изменён" : "" }}
+        </small>
+      </span>
+      <Button
+        type="button"
+        label="Убрать с текстом"
+        aria-label="Убрать источник вместе с производным текстом"
+        icon="pi pi-times"
+        severity="secondary"
+        text
+        size="small"
+        @click="emit('action', 'REMOVE_KNOWLEDGE')"
+      />
     </div>
     <div class="conversation-composer__source">
       <div class="conversation-composer__label">
@@ -540,6 +567,23 @@ function runOutcomeAction(): void {
             </button>
             <button
               v-if="
+                composer.actions.knowledge &&
+                composer.actions.knowledge.visibility !== 'HIDDEN'
+              "
+              type="button"
+              role="menuitem"
+              :disabled="composer.actions.knowledge.visibility === 'DISABLED'"
+              :title="composer.actions.knowledge.reason"
+              @click="runAction('KNOWLEDGE')"
+            >
+              <i class="pi pi-book" aria-hidden="true" />
+              <span>
+                <strong>База знаний</strong>
+                <small>Найти проверенный внутренний материал</small>
+              </span>
+            </button>
+            <button
+              v-if="
                 composer.actions.sendWithoutTranslation.visibility !== 'HIDDEN'
               "
               type="button"
@@ -675,6 +719,43 @@ function runOutcomeAction(): void {
   color: var(--status-warning-text);
   font-size: 11px;
   font-weight: 750;
+}
+.conversation-composer__knowledge-source {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--brand) 36%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand-soft) 46%, var(--surface-card));
+}
+.conversation-composer__knowledge-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-brand);
+}
+.conversation-composer__knowledge-source > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.conversation-composer__knowledge-source strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conversation-composer__knowledge-source small {
+  color: var(--text-muted);
+  font-size: 10px;
 }
 .conversation-composer.is-translated {
   position: relative;

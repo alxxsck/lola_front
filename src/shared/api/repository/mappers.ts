@@ -319,6 +319,9 @@ export function mapConversationMessage(
     ...(dto.macroProvenance
       ? { macroProvenance: { ...dto.macroProvenance } }
       : {}),
+    ...(dto.knowledgeProvenance
+      ? { knowledgeProvenance: { ...dto.knowledgeProvenance } }
+      : {}),
     status,
     ...(dto.delivery
       ? {

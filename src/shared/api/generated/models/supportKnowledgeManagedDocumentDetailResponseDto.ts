@@ -26,4 +26,6 @@ export interface SupportKnowledgeManagedDocumentDetailResponseDto {
   revisions: SupportKnowledgeManagedRevisionResponseDto[];
   revisionsTruncated: boolean;
   updatedAt: string;
+  /** @minimum 1 */
+  version: number;
 }

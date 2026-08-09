@@ -56,6 +56,12 @@ const macroReplyDraft = {
 const emptyKnowledgeSearch = {
   items: [],
   nextCursor: null,
+  freshness: {
+    state: "CURRENT",
+    admissionVersion: 1,
+    catalogGeneration: 1,
+    evaluatedAt: "2026-08-07T10:00:00.000Z",
+  },
 } satisfies SupportKnowledgeSearchPageResponseDto;
 
 const partialContentPanel = {

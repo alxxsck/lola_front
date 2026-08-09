@@ -10,4 +10,6 @@ export interface SupportKnowledgeEditableTextDraftResponseDto {
   /** @maxLength 1048576 */
   contentText: string;
   revisionId: string;
+  /** @minimum 1 */
+  version: number;
 }
