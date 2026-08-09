@@ -1343,7 +1343,7 @@ test("scenario graph auto-layout keeps audited branches stable in light and dark
   await expect(canvas).toHaveClass(/graph-expanded/);
   const graph = canvas.locator(".vue-flow");
   await expect(graph.locator('.vue-flow__node[data-id="finish"]')).toBeVisible();
-  await expect(page.getByLabel("Перестроить схему автоматически")).toBeVisible();
+  await expect(page.getByLabel("Выровнять схему автоматически")).toBeVisible();
 
   const nodePositions = await graph.locator(".vue-flow__node").evaluateAll((nodes) =>
     Object.fromEntries(nodes.map((node) => [
@@ -1389,8 +1389,8 @@ test("scenario graph auto-layout keeps audited branches stable in light and dark
   )).toBe(viewportTransformBeforeSelection);
 
   await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
-  await page.getByLabel("Перестроить схему автоматически").click();
-  await expect(page.getByLabel("Перестроить схему автоматически")).toBeEnabled();
+  await page.getByLabel("Выровнять схему автоматически").click();
+  await expect(page.getByLabel("Выровнять схему автоматически")).toBeEnabled();
   await page.waitForTimeout(300);
 
   await page.screenshot({
@@ -1407,6 +1407,146 @@ test("scenario graph auto-layout keeps audited branches stable in light and dark
   });
 });
 
+test("scenario manual layout is personal, durable and byte-for-byte domain safe", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Manual graph drag is covered on the desktop canvas",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page);
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: [
+        {
+          position: 0,
+          nodeKey: "question",
+          type: "ASK_CHOICE",
+          nextNodeKey: null,
+          config: {
+            message: "Продолжить?",
+            timeoutMs: 30_000,
+            onTimeout: "finish",
+            options: [
+              { id: "yes", label: "Да", nextNodeKey: "finish" },
+              { id: "no", label: "Нет", nextNodeKey: "finish" },
+            ],
+          },
+        },
+        {
+          position: 1,
+          nodeKey: "finish",
+          type: "COMPLETE_SCENARIO",
+          nextNodeKey: null,
+          config: {},
+        },
+      ],
+    },
+  };
+  await page.goto("/scenarios/scn_1");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
+  await page.getByRole("button", { name: "Сохранить" }).click();
+  await expect.poll(() => fixture.calls.draft).toBe(1);
+  const domainPayloadBefore = JSON.stringify(
+    (fixture.savedDraft as { graph: { actions: unknown[] } }).graph.actions,
+  );
+  const graph = page.locator(".graph-canvas.graph-expanded .vue-flow");
+  await expect(graph).toBeVisible();
+  await page
+    .getByRole("group", { name: "Режим раскладки схемы" })
+    .getByRole("button", { name: "Ручная раскладка" })
+    .click();
+  await expect(page.getByText("Только для вас", { exact: true })).toBeVisible();
+
+  const question = graph.locator('.vue-flow__node[data-id="question"]');
+  const beforeBox = await question.boundingBox();
+  const manualPositionBefore = await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((candidate) =>
+      candidate.startsWith("retenive:scenario-graph-layout:v1:"),
+    )!;
+    return JSON.parse(localStorage.getItem(key)!).nodes.question as {
+      x: number;
+      y: number;
+      pinned: boolean;
+    };
+  });
+  await page.mouse.move(
+    beforeBox!.x + beforeBox!.width / 2,
+    beforeBox!.y + beforeBox!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    beforeBox!.x + beforeBox!.width / 2 - 100,
+    beforeBox!.y + beforeBox!.height / 2,
+    { steps: 12 },
+  );
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => {
+    const key = Object.keys(localStorage).find((candidate) =>
+      candidate.startsWith("retenive:scenario-graph-layout:v1:"),
+    )!;
+    return JSON.parse(localStorage.getItem(key)!).nodes.question as {
+      x: number;
+      y: number;
+      pinned: boolean;
+    };
+  })).not.toEqual(manualPositionBefore);
+  expect(await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((candidate) =>
+      candidate.startsWith("retenive:scenario-graph-layout:v1:"),
+    )!;
+    return JSON.parse(localStorage.getItem(key)!).nodes.question.pinned;
+  })).toBe(true);
+  const draggedTransform = await question.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  );
+
+  await question.click();
+  const selectedQuestion = page.locator(
+    '.graph-canvas .vue-flow__node[data-id="question"]',
+  );
+  await expect(
+    page.getByLabel("Сдвинуть узел «Задать вопрос с вариантами» влево"),
+  ).toBeVisible();
+  await page.getByLabel("Сдвинуть узел «Задать вопрос с вариантами» влево").click();
+  const nudgedTransform = await selectedQuestion.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  );
+  expect(nudgedTransform).not.toBe(draggedTransform);
+
+  await page.getByRole("button", { name: "Сохранить" }).click();
+  await expect.poll(() => fixture.calls.draft).toBe(2);
+  expect(JSON.stringify(
+    (fixture.savedDraft as { graph: { actions: unknown[] } }).graph.actions,
+  )).toBe(domainPayloadBefore);
+
+  const manualTransform = await selectedQuestion.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  );
+  await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-graph-manual-layout-desktop.png"),
+  });
+  await page.reload();
+  await page.getByRole("button", { name: /Действия/ }).click();
+  const reopenedQuestion = page.locator(
+    '.graph-canvas .vue-flow__node[data-id="question"]',
+  );
+  await expect(reopenedQuestion).toBeVisible();
+  await expect.poll(() => reopenedQuestion.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  )).toBe(manualTransform);
+
+  await page.getByLabel("Выровнять схему автоматически").click();
+  await expect(page.getByText("Только для вас", { exact: true })).toHaveCount(0);
+  await expect.poll(() => reopenedQuestion.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  )).not.toBe(manualTransform);
+  await expectNoSeriousAccessibilityViolations(page);
+});
+
 test("action editor uses list, full-width detail and graph views on mobile", async ({
   page,
 }, testInfo) => {
@@ -1414,6 +1554,7 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
     testInfo.project.name !== "mobile-chromium",
     "Mobile composition is covered on the mobile project",
   );
+  await page.setViewportSize({ width: 390, height: 844 });
   await installScenarioAuthoringFixtures(page, {
     localization: bilingualScenarioLocalization,
   });
@@ -1482,6 +1623,45 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
     path: testInfo.outputPath("scenario-actions-mobile-graph.png"),
   });
   await expectNoSeriousAccessibilityViolations(page);
+  const manualMode = page.getByRole("button", { name: "Ручная раскладка" });
+  expect((await manualMode.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await manualMode.click();
+  const mobileGraphNode = expandedGraph.locator(
+    '.vue-flow__node[data-id="step_1"]',
+  );
+  const transformBeforeNudge = await mobileGraphNode.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  );
+  await mobileGraphNode.click();
+  await expect(expandedGraph.locator(".vue-flow")).toBeVisible();
+  const nudgeRight = page.getByLabel("Сдвинуть узел «Озвучить текст» вправо");
+  expect((await nudgeRight.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await page.setViewportSize({ width: 320, height: 700 });
+  const [graphHeaderBox, layoutToolbarBox, mobileFlowBox] = await Promise.all([
+    expandedGraph.locator(".graph-toolbar").boundingBox(),
+    expandedGraph.locator(".scenario-layout-toolbar").boundingBox(),
+    expandedGraph.locator(".vue-flow").boundingBox(),
+  ]);
+  expect(layoutToolbarBox!.y).toBeGreaterThanOrEqual(
+    graphHeaderBox!.y + graphHeaderBox!.height,
+  );
+  expect(mobileFlowBox!.y).toBeGreaterThanOrEqual(
+    layoutToolbarBox!.y + layoutToolbarBox!.height,
+  );
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await nudgeRight.click();
+  await expect.poll(() => mobileGraphNode.evaluate(
+    (node) => (node as HTMLElement).style.transform,
+  )).not.toBe(transformBeforeNudge);
+  await page.getByRole("button", { name: "Вернуться к настройке действия" }).click();
+  await expect(inspector).toBeVisible();
+  await page.getByRole("button", { name: "Закрыть инспектор узла" }).click();
+  await expect(outline).toBeVisible();
+  await openGraphButton.click();
+  await expect(expandedGraph.locator(".vue-flow")).toBeVisible();
   await page.waitForTimeout(300);
   const initialMobileViewport = await expandedGraph
     .locator(".vue-flow__viewport")

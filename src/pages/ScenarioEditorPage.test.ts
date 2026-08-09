@@ -14,7 +14,7 @@ import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioActionChangeDialog from "@/features/scenarios/ScenarioActionChangeDialog.vue";
-import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
+import ScenarioGraphLayoutToolbar from "@/features/scenarios/ScenarioGraphLayoutToolbar.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
 import type { ProjectAction } from "@/features/project-actions/model/project-action";
@@ -74,6 +74,7 @@ vi.mock("vue-router", () => ({
 
 vi.mock("@/features/auth/auth.store", () => ({
   useAuthStore: () => ({
+    user: { id: "operator-1" },
     project: {
       id: "project-1",
       get effectivePermissionCodes() {
@@ -290,7 +291,13 @@ function mountPage() {
       stubs: {
         VueFlow: {
           name: "VueFlow",
-          emits: ["init", "node-click"],
+          props: ["nodes", "edges", "nodesDraggable", "nodesConnectable"],
+          emits: [
+            "init",
+            "node-click",
+            "node-drag-stop",
+            "viewport-change-end",
+          ],
           template: '<div data-test="vue-flow"><slot /></div>',
         },
         Background: true,
@@ -320,6 +327,7 @@ async function openValidation(wrapper: ReturnType<typeof mountPage>) {
 describe("ScenarioEditorPage V2 rule journey", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     mocks.routeLeaveGuards.length = 0;
     mocks.route.params.scenarioId = "scenario-1";
     mocks.permissions = [
@@ -918,12 +926,312 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     const layoutCallsBeforeCommand = mocks.layoutGraph.mock.calls.length;
     const fitCallsBeforeCommand = fitView.mock.calls.length;
 
-    wrapper.getComponent(ScenarioFlowControls).vm.$emit("auto-layout");
+    wrapper.getComponent(ScenarioGraphLayoutToolbar).vm.$emit("auto-layout");
     await flushPromises();
 
     expect(mocks.layoutGraph).toHaveBeenCalledTimes(layoutCallsBeforeCommand + 1);
     expect(fitView).toHaveBeenCalledTimes(fitCallsBeforeCommand + 1);
     expect(fitView).toHaveBeenLastCalledWith({ padding: 0.16, duration: 240 });
+  });
+
+  it("keeps drag presentation-only, restores it locally and never enables edge reconnect", async () => {
+    const actions = [
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: "finish",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+      {
+        position: 1,
+        nodeKey: "finish",
+        nextNodeKey: null,
+        type: "COMPLETE_SCENARIO",
+        config: {},
+      },
+    ];
+    setAuthoringActions(actions);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const vueFlow = wrapper.getComponent({ name: "VueFlow" });
+    const getViewport = vi.fn(() => ({ x: -80, y: 30, zoom: 0.85 }));
+    vueFlow.vm.$emit("init", {
+      fitView: vi.fn().mockResolvedValue(true),
+      getViewport,
+      setViewport: vi.fn().mockResolvedValue(true),
+    });
+    await flushPromises();
+
+    wrapper.getComponent(ScenarioGraphLayoutToolbar).vm.$emit("mode-change", "manual");
+    await flushPromises();
+    expect(vueFlow.props("nodesDraggable")).toBe(true);
+    expect(vueFlow.props("nodesConnectable")).toBe(false);
+
+    vueFlow.vm.$emit("node-drag-stop", {
+      node: { id: "welcome_message", position: { x: 740, y: 310 } },
+      nodes: [],
+      event: new MouseEvent("mouseup"),
+    });
+    vueFlow.vm.$emit("viewport-change-end", { x: -120, y: 45, zoom: 0.9 });
+    await flushPromises();
+
+    expect(vueFlow.props("nodes").find(({ id }: { id: string }) => id === "welcome_message").position)
+      .toEqual({ x: 740, y: 310 });
+    expect(JSON.parse(window.localStorage.getItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+    )!)).toMatchObject({
+      mode: "manual",
+      nodes: { welcome_message: { x: 740, y: 310, pinned: true } },
+      viewport: { x: -120, y: 45, zoom: 0.9 },
+    });
+    expect(mocks.authoringActions).toEqual(actions);
+
+    wrapper.unmount();
+    const reopened = mountPage();
+    await flushPromises();
+    await stageButton(reopened, "Действия").trigger("click");
+    await flushPromises();
+    const reopenedFlow = reopened.getComponent({ name: "VueFlow" });
+    const setViewport = vi.fn().mockResolvedValue(true);
+    reopenedFlow.vm.$emit("init", {
+      fitView: vi.fn().mockResolvedValue(true),
+      getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
+      setViewport,
+    });
+    await flushPromises();
+
+    expect(reopenedFlow.props("nodesDraggable")).toBe(true);
+    expect(reopenedFlow.props("nodes").find(({ id }: { id: string }) => id === "welcome_message").position)
+      .toEqual({ x: 740, y: 310 });
+    expect(setViewport).toHaveBeenCalledWith(
+      { x: -120, y: 45, zoom: 0.9 },
+      { duration: 0 },
+    );
+  });
+
+  it("keeps the canvas pannable but disables node movement in read-only mode", async () => {
+    mocks.permissions = ["project.scenarios.read", "project.actions.read"];
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    window.localStorage.setItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+      JSON.stringify({
+        version: 1,
+        mode: "manual",
+        nodes: { welcome_message: { x: 700, y: 300, pinned: true } },
+        viewport: { x: -100, y: 40, zoom: 0.8 },
+      }),
+    );
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+
+    const flow = wrapper.getComponent({ name: "VueFlow" });
+    expect(flow.props("nodesDraggable")).toBe(false);
+    expect(flow.props("nodesConnectable")).toBe(false);
+    expect(wrapper.getComponent(ScenarioGraphLayoutToolbar).props("canArrange"))
+      .toBe(false);
+    expect(flow.attributes("pan-on-drag")).not.toBe("false");
+    expect(flow.attributes("zoom-on-scroll")).not.toBe("false");
+  });
+
+  it("keeps authoring available when browser layout storage is blocked", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const descriptor = Object.getOwnPropertyDescriptor(window, "localStorage")!;
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new DOMException("Storage is disabled", "SecurityError");
+      },
+    });
+    try {
+      const wrapper = mountPage();
+      await flushPromises();
+      await stageButton(wrapper, "Действия").trigger("click");
+      await flushPromises();
+
+      wrapper.getComponent({ name: "VueFlow" });
+      expect(wrapper.getComponent(ScenarioGraphLayoutToolbar).props("mode"))
+        .toBe("auto");
+      wrapper.unmount();
+    } finally {
+      Object.defineProperty(window, "localStorage", descriptor);
+    }
+  });
+
+  it("keeps manual positions through inspector edits and places new nodes without a global relayout", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const flow = wrapper.getComponent({ name: "VueFlow" });
+    flow.vm.$emit("init", {
+      fitView: vi.fn().mockResolvedValue(true),
+      getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
+      setViewport: vi.fn().mockResolvedValue(true),
+    });
+    wrapper.getComponent(ScenarioGraphLayoutToolbar).vm.$emit("mode-change", "manual");
+    flow.vm.$emit("node-drag-stop", {
+      node: { id: "welcome_message", position: { x: 680, y: 300 } },
+      nodes: [],
+      event: new MouseEvent("mouseup"),
+    });
+    flow.vm.$emit("node-click", { node: { id: "welcome_message" } });
+    await flushPromises();
+    const layoutCallsBeforeEdit = mocks.layoutGraph.mock.calls.length;
+
+    wrapper.getComponent(ScenarioNodeInspector).vm.$emit("update", {
+      position: 0,
+      nodeKey: "welcome_message",
+      nextNodeKey: null,
+      type: "SAY",
+      config: { text: "Изменённый текст" },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await flushPromises();
+
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(layoutCallsBeforeEdit);
+    expect(flow.props("nodes").find(({ id }: { id: string }) => id === "welcome_message").position)
+      .toEqual({ x: 680, y: 300 });
+
+    wrapper.getComponent(ScenarioNodeInspector).vm.$emit(
+      "rename",
+      "welcome_message",
+      "renamed_message",
+    );
+    await flushPromises();
+    expect(flow.props("nodes").find(({ id }: { id: string }) => id === "renamed_message").position)
+      .toEqual({ x: 680, y: 300 });
+    expect(JSON.parse(window.localStorage.getItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+    )!).nodes).toMatchObject({
+      renamed_message: { x: 680, y: 300, pinned: true },
+    });
+
+    wrapper.getComponent(ActionPicker).vm.$emit("update:model-value", "SAY");
+    await flushPromises();
+    const actionNodes = flow.props("nodes").filter(({ id }: { id: string }) => id !== "trigger");
+    expect(actionNodes.find(({ id }: { id: string }) => id === "renamed_message").position)
+      .toEqual({ x: 680, y: 300 });
+    expect(actionNodes.at(-1).position.y).toBeGreaterThan(420);
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(layoutCallsBeforeEdit);
+  });
+
+  it("migrates an ephemeral new-scenario layout only after the scenario receives an id", async () => {
+    mocks.route.params.scenarioId = "new";
+    mocks.getScenarios.mockResolvedValue([]);
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
+        type: "SAY",
+        name: "Сказать текст",
+        description: null,
+        executor: "SERVER",
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string" } },
+          required: ["text"],
+        },
+        uiSchema: { fields: [{ key: "text", label: "Текст", control: "textarea" }] },
+      }),
+    ];
+    window.localStorage.setItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:new",
+      JSON.stringify({
+        version: 1,
+        mode: "manual",
+        nodes: { step_1: { x: 999, y: 999, pinned: true } },
+      }),
+    );
+    const wrapper = mountPage();
+    await flushPromises();
+    const page = wrapper.vm as unknown as {
+      form: { name: string; code: string; actions: Array<Record<string, unknown>> };
+    };
+    page.form.name = "Новый сценарий";
+    page.form.code = "new_scenario";
+    page.form.actions = [{
+      position: 0,
+      nodeKey: "step_1",
+      nextNodeKey: null,
+      type: "SAY",
+      config: { text: "Привет" },
+    }];
+    await wrapper.vm.$nextTick();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const flow = wrapper.getComponent({ name: "VueFlow" });
+    flow.vm.$emit("init", {
+      fitView: vi.fn().mockResolvedValue(true),
+      getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
+      setViewport: vi.fn().mockResolvedValue(true),
+    });
+    wrapper.getComponent(ScenarioGraphLayoutToolbar).vm.$emit("mode-change", "manual");
+    flow.vm.$emit("node-drag-stop", {
+      node: { id: "step_1", position: { x: 620, y: 280 } },
+      nodes: [],
+      event: new MouseEvent("mouseup"),
+    });
+    await flushPromises();
+
+    expect(window.localStorage.getItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:new",
+    )).toBeNull();
+    await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
+    await flushPromises();
+
+    expect(JSON.parse(window.localStorage.getItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+    )!)).toMatchObject({
+      mode: "manual",
+      nodes: { step_1: { x: 620, y: 280, pinned: true } },
+    });
+
+    wrapper.unmount();
+    const fresh = mountPage();
+    await flushPromises();
+    const freshPage = fresh.vm as unknown as {
+      form: { actions: Array<Record<string, unknown>> };
+    };
+    freshPage.form.actions = [{
+      position: 0,
+      nodeKey: "step_1",
+      nextNodeKey: null,
+      type: "SAY",
+      config: { text: "Другой" },
+    }];
+    await fresh.vm.$nextTick();
+    await stageButton(fresh, "Действия").trigger("click");
+    await flushPromises();
+    expect(fresh.getComponent(ScenarioGraphLayoutToolbar).props("mode")).toBe("auto");
+    expect(fresh.getComponent({ name: "VueFlow" }).props("nodesDraggable")).toBe(false);
   });
 
   it("retries fitting when nodes are not measured on the first attempt", async () => {

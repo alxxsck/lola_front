@@ -18,7 +18,12 @@ import Message from "primevue/message";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
-import { VueFlow, type Node } from "@vue-flow/core";
+import {
+  VueFlow,
+  type Node,
+  type NodeDragEvent,
+  type ViewportTransform,
+} from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
@@ -26,12 +31,30 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowEdge from "@/features/scenarios/ScenarioFlowEdge.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
+import ScenarioGraphLayoutToolbar from "@/features/scenarios/ScenarioGraphLayoutToolbar.vue";
 import {
   layoutScenarioGraphViewModel,
   mergeScenarioGraphPresentation,
   type ScenarioGraphLayoutEngine,
 } from "@/features/scenarios/model/scenario-graph-auto-layout";
 import { createScenarioGraphLayoutWorker } from "@/features/scenarios/model/scenario-graph-layout-worker";
+import {
+  applyScenarioGraphLayout,
+  createAutoScenarioGraphLayout,
+  createManualScenarioGraphLayout,
+  loadScenarioGraphLayout,
+  moveScenarioGraphNode,
+  nudgeScenarioGraphNode,
+  persistScenarioGraphLayout,
+  reconcileScenarioGraphLayout,
+  removeScenarioGraphLayout,
+  renameScenarioGraphLayoutNode,
+  updateScenarioGraphViewport,
+  type ScenarioGraphLayout,
+  type ScenarioGraphLayoutMode,
+  type ScenarioGraphLayoutScope,
+  type ScenarioGraphNudgeDirection,
+} from "@/features/scenarios/model/scenario-graph-layout";
 import { measureScenarioGraphEdgeLabel } from "@/features/scenarios/scenario-graph-label-measurer";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioActionChangeDialog, {
@@ -888,6 +911,76 @@ const baseGraphViewModel = computed(() =>
   }),
 );
 
+const graphPresentationLayout = ref<ScenarioGraphLayout>(
+  createAutoScenarioGraphLayout(),
+);
+const graphPresentationScope = computed<ScenarioGraphLayoutScope | null>(() => {
+  const operatorId = auth.user?.id;
+  const projectId = auth.project?.id;
+  const routeScenarioId =
+    typeof route.params.scenarioId === "string"
+      ? route.params.scenarioId
+      : "new";
+  const scenarioId = form.id ?? (routeScenarioId !== "new" ? routeScenarioId : "");
+  return operatorId && projectId && scenarioId
+    ? { operatorId, projectId, scenarioId }
+    : null;
+});
+let activeGraphPresentationScope: ScenarioGraphLayoutScope | null = null;
+
+function graphPresentationStorage() {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function persistGraphPresentation(
+  layout = graphPresentationLayout.value,
+  scope = graphPresentationScope.value,
+) {
+  const storage = graphPresentationStorage();
+  if (storage && scope) persistScenarioGraphLayout(storage, scope, layout);
+}
+
+function setGraphPresentationLayout(layout: ScenarioGraphLayout) {
+  graphPresentationLayout.value = layout;
+  persistGraphPresentation(layout);
+}
+
+watch(
+  graphPresentationScope,
+  (scope) => {
+    if (!scope) {
+      activeGraphPresentationScope = null;
+      graphPresentationLayout.value = createAutoScenarioGraphLayout();
+      const storage = graphPresentationStorage();
+      const operatorId = auth.user?.id;
+      const projectId = auth.project?.id;
+      if (storage && operatorId && projectId) {
+        removeScenarioGraphLayout(storage, {
+          operatorId,
+          projectId,
+          scenarioId: "new",
+        });
+      }
+      return;
+    }
+    const storage = graphPresentationStorage();
+    const previous = activeGraphPresentationScope;
+    activeGraphPresentationScope = scope;
+    if (!previous && graphPresentationLayout.value.mode === "manual") {
+      persistGraphPresentation(graphPresentationLayout.value, scope);
+      return;
+    }
+    if (!storage) return;
+    graphPresentationLayout.value = loadScenarioGraphLayout(storage, scope);
+  },
+  { immediate: true },
+);
+
 const graphViewModel = shallowRef(baseGraphViewModel.value);
 const graphLayoutStatus = ref<"idle" | "loading" | "laid-out" | "fallback">(
   "idle",
@@ -900,7 +993,14 @@ let graphLayoutEngine: ScenarioGraphLayoutEngine | undefined;
 let graphHasInitialFit = false;
 let graphFitPending = false;
 let graphFlowApi:
-  | { fitView: (options?: Record<string, unknown>) => Promise<boolean> }
+  | {
+      fitView: (options?: Record<string, unknown>) => Promise<boolean>;
+      getViewport?: () => ViewportTransform;
+      setViewport?: (
+        viewport: ViewportTransform,
+        options?: { duration?: number },
+      ) => Promise<boolean>;
+    }
   | undefined;
 
 async function fitGraphAfterLayout(attempt = 0): Promise<boolean> {
@@ -1008,6 +1108,9 @@ function queueGraphAutoLayout(
 }
 
 function requestExplicitGraphAutoLayout() {
+  setGraphPresentationLayout(
+    createAutoScenarioGraphLayout(),
+  );
   const model = baseGraphViewModel.value;
   const fingerprint = graphLayoutKey(model);
   graphLayoutFingerprint = fingerprint;
@@ -1015,9 +1118,27 @@ function requestExplicitGraphAutoLayout() {
 }
 
 function initializeGraphFlow(
-  instance: { fitView: (options?: Record<string, unknown>) => Promise<boolean> },
+  instance: {
+    fitView: (options?: Record<string, unknown>) => Promise<boolean>;
+    getViewport?: () => ViewportTransform;
+    setViewport?: (
+      viewport: ViewportTransform,
+      options?: { duration?: number },
+    ) => Promise<boolean>;
+  },
 ) {
   graphFlowApi = instance;
+  const savedViewport = graphPresentationLayout.value.viewport;
+  if (
+    graphPresentationLayout.value.mode === "manual" &&
+    savedViewport &&
+    instance.setViewport
+  ) {
+    graphFitPending = false;
+    graphHasInitialFit = true;
+    void instance.setViewport(savedViewport, { duration: 0 });
+    return;
+  }
   if (graphFitPending || graphLayoutCompleted) {
     void fitGraphAfterLayout().then((fitted) => {
       if (fitted) graphHasInitialFit = true;
@@ -1028,6 +1149,27 @@ function initializeGraphFlow(
 watch(
   baseGraphViewModel,
   (model) => {
+    if (graphPresentationLayout.value.mode === "manual") {
+      cancelGraphLayout();
+      if (loading.value && model.nodes.length <= 1) {
+        graphViewModel.value = model;
+        graphLayoutStatus.value = "idle";
+        return;
+      }
+      const reconciled = reconcileScenarioGraphLayout(
+        graphPresentationLayout.value,
+        model,
+      );
+      if (JSON.stringify(reconciled) !== JSON.stringify(graphPresentationLayout.value)) {
+        setGraphPresentationLayout(reconciled);
+      }
+      graphViewModel.value = applyScenarioGraphLayout(
+        mergeScenarioGraphPresentation(graphViewModel.value, model),
+        reconciled,
+      );
+      graphLayoutStatus.value = "idle";
+      return;
+    }
     const fingerprint = graphLayoutKey(model);
     if (fingerprint === graphLayoutFingerprint) {
       graphViewModel.value = mergeScenarioGraphPresentation(
@@ -1045,6 +1187,74 @@ watch(
 
 const flowNodes = computed(() => graphViewModel.value.nodes);
 const flowEdges = computed(() => graphViewModel.value.edges);
+const graphLayoutMode = computed(() => graphPresentationLayout.value.mode);
+const selectedGraphNodeLabel = computed(() => {
+  const action = selectedAction.value;
+  if (!action) return "";
+  return (
+    findScenarioActionCatalogItem(actionCatalog.value, action.type)?.name ??
+    action.type
+  );
+});
+
+function selectGraphLayoutMode(mode: ScenarioGraphLayoutMode) {
+  if (mode === graphPresentationLayout.value.mode) return;
+  if (mode === "auto") {
+    requestExplicitGraphAutoLayout();
+    return;
+  }
+  if (!canEdit.value) return;
+  cancelGraphLayout();
+  const viewport = graphFlowApi?.getViewport?.();
+  const manual = createManualScenarioGraphLayout(
+    graphViewModel.value,
+    viewport,
+  );
+  setGraphPresentationLayout(manual);
+  graphViewModel.value = applyScenarioGraphLayout(
+    graphViewModel.value,
+    manual,
+  );
+  graphLayoutStatus.value = "idle";
+}
+
+function moveGraphNode(event: NodeDragEvent) {
+  if (!canEdit.value || graphPresentationLayout.value.mode !== "manual") return;
+  const next = moveScenarioGraphNode(
+    graphPresentationLayout.value,
+    event.node.id,
+    event.node.position,
+  );
+  if (next === graphPresentationLayout.value) return;
+  setGraphPresentationLayout(next);
+  graphViewModel.value = applyScenarioGraphLayout(
+    mergeScenarioGraphPresentation(graphViewModel.value, baseGraphViewModel.value),
+    next,
+  );
+}
+
+function nudgeGraphNode(direction: ScenarioGraphNudgeDirection) {
+  if (!canEdit.value || !selectedNodeKey.value) return;
+  const next = nudgeScenarioGraphNode(
+    graphPresentationLayout.value,
+    selectedNodeKey.value,
+    direction,
+  );
+  if (next === graphPresentationLayout.value) return;
+  setGraphPresentationLayout(next);
+  graphViewModel.value = applyScenarioGraphLayout(
+    mergeScenarioGraphPresentation(graphViewModel.value, baseGraphViewModel.value),
+    next,
+  );
+}
+
+function rememberGraphViewport(viewport: ViewportTransform) {
+  const next = updateScenarioGraphViewport(
+    graphPresentationLayout.value,
+    viewport,
+  );
+  setGraphPresentationLayout(next);
+}
 
 watch(
   () => form.name,
@@ -1624,7 +1834,11 @@ function restoreActionViewFocus() {
 function toggleGraphExpanded() {
   if (graphExpanded.value) {
     graphExpanded.value = false;
-    restoreActionViewFocus();
+    if (compactActionLayout.value && selectedAction.value) {
+      focusActionInspector();
+    } else {
+      restoreActionViewFocus();
+    }
     return;
   }
   rememberActionViewFocus();
@@ -1666,8 +1880,16 @@ function selectNode(event: { node: Node }) {
   rememberActionViewFocus();
   selectedNodeKey.value = event.node.id;
   inspectorMode.value = "node";
-  graphExpanded.value = false;
   studioStage.value = "actions";
+  const keepManualCanvasOpen =
+    compactActionLayout.value &&
+    graphExpanded.value &&
+    graphPresentationLayout.value.mode === "manual";
+  if (keepManualCanvasOpen) {
+    void nextTick(() => graphCanvasElement.value?.focus());
+    return;
+  }
+  graphExpanded.value = false;
   focusActionInspector();
 }
 
@@ -1857,8 +2079,17 @@ function updateSelected(action: ScenarioAction) {
 }
 
 function renameNode(oldKey: string, newKey: string) {
-  if (renameScenarioNode(form.actions, oldKey, newKey))
+  if (renameScenarioNode(form.actions, oldKey, newKey)) {
+    const renamedLayout = renameScenarioGraphLayoutNode(
+      graphPresentationLayout.value,
+      oldKey,
+      newKey,
+    );
+    if (renamedLayout !== graphPresentationLayout.value) {
+      setGraphPresentationLayout(renamedLayout);
+    }
     selectedNodeKey.value = newKey;
+  }
 }
 
 function removeSelected() {
@@ -2535,6 +2766,17 @@ function leave() {
               @update:model-value="addNode"
             />
           </section>
+          <ScenarioGraphLayoutToolbar
+            v-if="(!compactActionLayout || graphExpanded) && form.actions.length"
+            :mode="graphLayoutMode"
+            :can-arrange="canEdit"
+            :layouting="graphLayoutStatus === 'loading'"
+            :layout-failed="graphLayoutStatus === 'fallback'"
+            :selected-node-label="selectedGraphNodeLabel"
+            @mode-change="selectGraphLayoutMode"
+            @auto-layout="requestExplicitGraphAutoLayout"
+            @nudge="nudgeGraphNode"
+          />
           <VueFlow
             v-if="
               (!compactActionLayout || graphExpanded) && form.actions.length
@@ -2546,21 +2788,19 @@ function leave() {
             :fit-view-on-init="graphViewModel.viewport.fitViewOnInit"
             :min-zoom="graphViewModel.viewport.minZoom"
             :max-zoom="graphViewModel.viewport.maxZoom"
-            :nodes-draggable="false"
+            :nodes-draggable="canEdit && graphLayoutMode === 'manual'"
             :nodes-connectable="false"
             @init="initializeGraphFlow"
             @keydown="activateGraphNodeFromKeyboard"
             @node-click="selectNode"
+            @node-drag-stop="moveGraphNode"
+            @viewport-change-end="rememberGraphViewport"
           >
             <Background
               pattern-color="var(--graph-edge)"
               :gap="graphViewModel.viewport.backgroundGap"
             />
-            <ScenarioFlowControls
-              :layouting="graphLayoutStatus === 'loading'"
-              :layout-failed="graphLayoutStatus === 'fallback'"
-              @auto-layout="requestExplicitGraphAutoLayout"
-            />
+            <ScenarioFlowControls />
           </VueFlow>
           <section
             v-if="!compactActionLayout && !form.actions.length"
@@ -3785,14 +4025,21 @@ function leave() {
   font-size: var(--font-size-body);
 }
 .graph-canvas :deep(.vue-flow) {
-  height: calc(100% - 82px);
-  margin-top: 82px;
+  height: calc(100% - 194px);
+  margin-top: 194px;
   --vf-node-bg: var(--graph-node);
   --vf-node-text: var(--text-primary);
   --vf-node-color: var(--graph-selection);
   --vf-connection-path: var(--graph-edge);
   --vf-handle: var(--graph-selection);
   --vf-box-shadow: var(--graph-selection);
+}
+.graph-canvas > :deep(.scenario-layout-toolbar) {
+  position: absolute;
+  z-index: 6;
+  top: 82px;
+  left: 12px;
+  max-width: calc(100% - 24px);
 }
 .graph-canvas :deep(.vue-flow__edge-textbg) {
   fill: var(--graph-node);
@@ -4476,6 +4723,9 @@ function leave() {
     position: fixed;
     z-index: 1100;
     inset: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: stretch;
     min-height: 0;
     padding: 0;
     border: 0;
@@ -4483,7 +4733,11 @@ function leave() {
   .graph-canvas.graph-expanded .graph-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    position: static;
+    inset: auto;
     width: calc(100% - 24px);
+    max-width: none;
+    margin: 12px 12px 0;
   }
   .graph-canvas:not(.graph-expanded) .localization-policy-card {
     position: static;
@@ -4512,8 +4766,15 @@ function leave() {
   }
   .graph-canvas.graph-expanded :deep(.vue-flow) {
     display: block;
-    height: calc(100% - 128px);
-    margin-top: 128px;
+    min-height: 0;
+    height: 100%;
+    margin-top: 0;
+  }
+  .graph-canvas.graph-expanded > :deep(.scenario-layout-toolbar) {
+    position: static;
+    width: calc(100% - 16px);
+    max-width: none;
+    margin: 8px;
   }
   .mobile-action-outline {
     display: grid;
@@ -4608,8 +4869,9 @@ function leave() {
   }
   .graph-canvas.graph-expanded :deep(.vue-flow) {
     display: block;
-    height: calc(100% - 128px);
-    margin-top: 128px;
+    min-height: 0;
+    height: 100%;
+    margin-top: 0;
   }
   .mobile-action-outline {
     display: grid;

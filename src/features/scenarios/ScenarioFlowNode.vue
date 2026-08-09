@@ -31,6 +31,7 @@ defineProps<NodeProps<ScenarioGraphNodeData>>()
         height: `${data.portSize.height}px`,
       }"
       :data-branch-id="port.id"
+      role="img"
       :aria-label="port.label ? `Исход ${port.label}` : `Исход ${port.id}`"
     />
   </div>

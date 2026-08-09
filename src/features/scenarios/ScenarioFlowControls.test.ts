@@ -16,9 +16,8 @@ vi.mock('@vue-flow/core', async (importOriginal) => ({
 }))
 
 describe('ScenarioFlowControls', () => {
-  it('exposes an explicit auto-layout command and its pending state', async () => {
+  it('keeps viewport navigation available independently from layout mode', () => {
     const wrapper = shallowMount(ScenarioFlowControls, {
-      props: { layouting: false, layoutFailed: false },
       global: {
         stubs: {
           Panel: { template: '<div><slot /></div>' },
@@ -26,29 +25,9 @@ describe('ScenarioFlowControls', () => {
       },
     })
 
-    const autoLayout = wrapper.get('.scenario-auto-layout')
-    expect(autoLayout.attributes('aria-label')).toBe('Перестроить схему автоматически')
-    await autoLayout.trigger('click')
-    expect(wrapper.emitted('autoLayout')).toHaveLength(1)
-
-    await wrapper.setProps({ layouting: true })
-    expect(autoLayout.attributes('disabled')).toBeDefined()
-    expect(autoLayout.attributes('aria-label')).toBe('Выполняется автораскладка')
-    expect(autoLayout.find('.pi-spinner').exists()).toBe(true)
-  })
-
-  it('communicates that the fallback graph is currently shown', () => {
-    const wrapper = shallowMount(ScenarioFlowControls, {
-      props: { layoutFailed: true },
-      global: {
-        stubs: {
-          Panel: { template: '<div><slot /></div>' },
-        },
-      },
-    })
-
-    const autoLayout = wrapper.get('.scenario-auto-layout')
-    expect(autoLayout.classes()).toContain('layout-failed')
-    expect(autoLayout.attributes('title')).toContain('резервная схема')
+    wrapper.get('[aria-label="Увеличить схему"]')
+    wrapper.get('[aria-label="Уменьшить схему"]')
+    wrapper.get('[aria-label="Показать всю схему"]')
+    expect(wrapper.find('.scenario-auto-layout').exists()).toBe(false)
   })
 })
