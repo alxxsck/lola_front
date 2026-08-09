@@ -18,6 +18,8 @@ const route = computed(() => buildScenarioEdgeRoute({
   routeIndex: props.data.routeIndex,
   routeCount: props.data.routeCount,
   laneGap: props.data.laneGap,
+  layoutPoints: props.data.routePoints,
+  labelPosition: props.data.labelPosition,
 }))
 
 const semanticStyle = computed<CSSProperties>(() => ({

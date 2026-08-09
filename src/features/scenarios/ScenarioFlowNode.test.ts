@@ -24,6 +24,7 @@ describe('ScenarioFlowNode', () => {
           executor: 'SERVER',
           summary: 'Продолжить?',
           issueCount: 0,
+          portSize: { width: 9, height: 9 },
           ports: [
             { id: 'choice:yes', label: 'Да', position: 25 },
             { id: 'choice:no', label: 'Нет', position: 50 },
@@ -45,7 +46,7 @@ describe('ScenarioFlowNode', () => {
       id: handle.attributes('data-id'),
       type: handle.attributes('data-type'),
     }))).toEqual([
-      { id: undefined, type: 'target' },
+      { id: 'target', type: 'target' },
       { id: 'choice:yes', type: 'source' },
       { id: 'choice:no', type: 'source' },
       { id: 'timeout', type: 'source' },

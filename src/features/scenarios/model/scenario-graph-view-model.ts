@@ -31,6 +31,7 @@ export interface ScenarioGraphViewportOptions {
 export interface ScenarioGraphLayoutOptions {
   node: ScenarioGraphSize
   trigger: ScenarioGraphSize
+  port: ScenarioGraphSize
   label: ScenarioGraphLabelMetrics
   gaps: {
     column: number
@@ -46,6 +47,7 @@ export interface ScenarioGraphLayoutOptions {
 type ScenarioGraphViewOverrides = {
   node?: Partial<ScenarioGraphSize>
   trigger?: Partial<ScenarioGraphSize>
+  port?: Partial<ScenarioGraphSize>
   label?: Partial<ScenarioGraphLabelMetrics>
   gaps?: Partial<ScenarioGraphLayoutOptions['gaps']>
   origin?: {
@@ -66,6 +68,7 @@ export interface ScenarioGraphActionPresentation extends Record<string, unknown>
 
 export interface ScenarioGraphNodeData extends ScenarioGraphActionPresentation {
   ports: ScenarioGraphPort[]
+  portSize: ScenarioGraphSize
 }
 
 export interface ScenarioGraphPort {
@@ -82,6 +85,8 @@ export interface ScenarioGraphEdgeData extends Record<string, unknown> {
   routeCount: number
   laneGap: number
   labelMetrics: ScenarioGraphLabelMetrics
+  routePoints?: ScenarioGraphPoint[]
+  labelPosition?: ScenarioGraphPoint
 }
 
 export interface ScenarioGraphViewModelInput {
@@ -101,6 +106,7 @@ export interface ScenarioGraphViewModel {
 export const DEFAULT_SCENARIO_GRAPH_LAYOUT: Readonly<ScenarioGraphLayoutOptions> = {
   node: { width: 228, height: 120 },
   trigger: { width: 205, height: 44 },
+  port: { width: 9, height: 9 },
   label: { fontSize: 11, paddingX: 6, paddingY: 4 },
   gaps: { column: 52, row: 70, branchLane: 24 },
   origin: {
@@ -110,7 +116,7 @@ export const DEFAULT_SCENARIO_GRAPH_LAYOUT: Readonly<ScenarioGraphLayoutOptions>
 }
 
 export const DEFAULT_SCENARIO_GRAPH_VIEWPORT: Readonly<ScenarioGraphViewportOptions> = {
-  fitViewOnInit: true,
+  fitViewOnInit: false,
   minZoom: 0.25,
   maxZoom: 1.6,
   backgroundGap: 22,
@@ -122,6 +128,7 @@ function resolveLayout(
   return {
     node: { ...DEFAULT_SCENARIO_GRAPH_LAYOUT.node, ...overrides.node },
     trigger: { ...DEFAULT_SCENARIO_GRAPH_LAYOUT.trigger, ...overrides.trigger },
+    port: { ...DEFAULT_SCENARIO_GRAPH_LAYOUT.port, ...overrides.port },
     label: { ...DEFAULT_SCENARIO_GRAPH_LAYOUT.label, ...overrides.label },
     gaps: { ...DEFAULT_SCENARIO_GRAPH_LAYOUT.gaps, ...overrides.gaps },
     origin: {
@@ -209,6 +216,7 @@ export function buildScenarioGraphViewModel(
       const outgoing = outgoingBySource.get(action.nodeKey ?? '') ?? []
       const data: ScenarioGraphNodeData = {
         ...input.presentAction(action),
+        portSize: layout.port,
         ports: outgoing.map((transition, index) => ({
           id: transition.branchId,
           label: transition.label,
@@ -244,6 +252,7 @@ export function buildScenarioGraphViewModel(
         id: 'trigger-edge',
         source: 'trigger',
         target: ordered[0].nodeKey,
+        targetHandle: 'target',
         type: 'smoothstep',
         animated: true,
         data: {
@@ -267,6 +276,7 @@ export function buildScenarioGraphViewModel(
       label: transition.label,
       type: 'scenario',
       sourceHandle: transition.branchId,
+      targetHandle: 'target',
       animated: transition.kind === 'default',
       class: `scenario-edge scenario-edge-${transition.kind}`,
       ariaLabel: transition.label

@@ -7,6 +7,7 @@ import {
   onMounted,
   reactive,
   ref,
+  shallowRef,
   watch,
 } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
@@ -25,6 +26,13 @@ import "@vue-flow/controls/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowEdge from "@/features/scenarios/ScenarioFlowEdge.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
+import {
+  layoutScenarioGraphViewModel,
+  mergeScenarioGraphPresentation,
+  type ScenarioGraphLayoutEngine,
+} from "@/features/scenarios/model/scenario-graph-auto-layout";
+import { createScenarioGraphLayoutWorker } from "@/features/scenarios/model/scenario-graph-layout-worker";
+import { measureScenarioGraphEdgeLabel } from "@/features/scenarios/scenario-graph-label-measurer";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker, {
@@ -834,7 +842,7 @@ const flowTransitions = computed(() => {
   });
 });
 
-const graphViewModel = computed(() =>
+const baseGraphViewModel = computed(() =>
   buildScenarioGraphViewModel({
     actions: form.actions,
     transitions: flowTransitions.value,
@@ -867,6 +875,161 @@ const graphViewModel = computed(() =>
   }),
 );
 
+const graphViewModel = shallowRef(baseGraphViewModel.value);
+const graphLayoutStatus = ref<"idle" | "loading" | "laid-out" | "fallback">(
+  "idle",
+);
+let graphLayoutRequest = 0;
+let graphLayoutFingerprint = "";
+let graphLayoutCompleted = false;
+let graphLayoutTimer: ReturnType<typeof setTimeout> | undefined;
+let graphLayoutEngine: ScenarioGraphLayoutEngine | undefined;
+let graphHasInitialFit = false;
+let graphFitPending = false;
+let graphFlowApi:
+  | { fitView: (options?: Record<string, unknown>) => Promise<boolean> }
+  | undefined;
+
+async function fitGraphAfterLayout(attempt = 0): Promise<boolean> {
+  graphFitPending = true;
+  await nextTick();
+  const flowApi = graphFlowApi;
+  if (!flowApi) return false;
+  try {
+    const fitted = await flowApi.fitView({ padding: 0.16, duration: 240 });
+    if (fitted) {
+      if (graphFlowApi === flowApi) graphFitPending = false;
+      return true;
+    }
+    if (graphFlowApi === flowApi && attempt < 2) {
+      await new Promise<void>((resolve) => {
+        if (typeof requestAnimationFrame === "function") {
+          requestAnimationFrame(() => resolve());
+        } else setTimeout(resolve, 16);
+      });
+      return fitGraphAfterLayout(attempt + 1);
+    }
+    return false;
+  } catch {
+    // Viewport fitting is non-critical and may race a conditional canvas unmount.
+    return false;
+  }
+}
+
+function graphLayoutKey(model: typeof baseGraphViewModel.value) {
+  return JSON.stringify({
+    nodes: model.nodes.map(({ id }) => id),
+    edges: model.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle,
+      label: edge.data?.label,
+      kind: edge.data?.kind,
+    })),
+    layout: model.layout,
+  });
+}
+
+function cancelGraphLayout() {
+  if (graphLayoutTimer !== undefined) clearTimeout(graphLayoutTimer);
+  graphLayoutTimer = undefined;
+  graphLayoutRequest += 1;
+  graphLayoutEngine?.terminateWorker?.();
+  graphLayoutEngine = undefined;
+}
+
+async function performGraphAutoLayout(
+  model: typeof baseGraphViewModel.value,
+  fingerprint: string,
+  explicit: boolean,
+) {
+  const request = ++graphLayoutRequest;
+  try {
+    graphLayoutEngine = createScenarioGraphLayoutWorker();
+  } catch {
+    if (request !== graphLayoutRequest) return;
+    graphViewModel.value = model;
+    graphLayoutStatus.value = "fallback";
+    graphLayoutCompleted = true;
+    return;
+  }
+  const engine = graphLayoutEngine;
+  graphLayoutStatus.value = "loading";
+  const result = await layoutScenarioGraphViewModel(model, {
+    engine,
+    measureLabel: measureScenarioGraphEdgeLabel,
+  });
+  if (request !== graphLayoutRequest) return;
+  engine.terminateWorker?.();
+  if (graphLayoutEngine === engine) graphLayoutEngine = undefined;
+  if (fingerprint !== graphLayoutFingerprint) return;
+  graphViewModel.value = mergeScenarioGraphPresentation(
+    result.viewModel,
+    baseGraphViewModel.value,
+  );
+  graphLayoutStatus.value = result.status;
+  graphLayoutCompleted = true;
+  const shouldFit = explicit || (!graphHasInitialFit && model.nodes.length > 1);
+  if (!shouldFit) return;
+  if (await fitGraphAfterLayout()) graphHasInitialFit = true;
+}
+
+function queueGraphAutoLayout(
+  model: typeof baseGraphViewModel.value,
+  fingerprint: string,
+  explicit = false,
+) {
+  cancelGraphLayout();
+  if (model.nodes.length <= 1 || typeof window === "undefined") {
+    graphViewModel.value = model;
+    graphLayoutStatus.value = "idle";
+    return;
+  }
+  const run = () => {
+    graphLayoutTimer = undefined;
+    void performGraphAutoLayout(model, fingerprint, explicit);
+  };
+  if (explicit || !graphLayoutCompleted) run();
+  else graphLayoutTimer = setTimeout(run, 120);
+}
+
+function requestExplicitGraphAutoLayout() {
+  const model = baseGraphViewModel.value;
+  const fingerprint = graphLayoutKey(model);
+  graphLayoutFingerprint = fingerprint;
+  queueGraphAutoLayout(model, fingerprint, true);
+}
+
+function initializeGraphFlow(
+  instance: { fitView: (options?: Record<string, unknown>) => Promise<boolean> },
+) {
+  graphFlowApi = instance;
+  if (graphFitPending || graphLayoutCompleted) {
+    void fitGraphAfterLayout().then((fitted) => {
+      if (fitted) graphHasInitialFit = true;
+    });
+  }
+}
+
+watch(
+  baseGraphViewModel,
+  (model) => {
+    const fingerprint = graphLayoutKey(model);
+    if (fingerprint === graphLayoutFingerprint) {
+      graphViewModel.value = mergeScenarioGraphPresentation(
+        graphViewModel.value,
+        model,
+      );
+      return;
+    }
+    graphLayoutFingerprint = fingerprint;
+    graphViewModel.value = model;
+    queueGraphAutoLayout(model, fingerprint);
+  },
+  { immediate: true },
+);
+
 const flowNodes = computed(() => graphViewModel.value.nodes);
 const flowEdges = computed(() => graphViewModel.value.edges);
 
@@ -891,9 +1054,22 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  cancelGraphLayout();
+  graphFlowApi = undefined;
+  graphFitPending = false;
   compactActionMedia?.removeEventListener("change", syncCompactActionLayout);
   translationController.dispose();
 });
+
+watch(
+  () => [studioStage.value, compactActionLayout.value, graphExpanded.value] as const,
+  ([stage, compact, expanded]) => {
+    if (stage !== "actions" || (compact && !expanded)) {
+      graphFlowApi = undefined;
+      graphFitPending = false;
+    }
+  },
+);
 
 async function load() {
   const projectId = auth.project?.id;
@@ -2221,6 +2397,7 @@ function leave() {
             :max-zoom="graphViewModel.viewport.maxZoom"
             :nodes-draggable="false"
             :nodes-connectable="false"
+            @init="initializeGraphFlow"
             @keydown="activateGraphNodeFromKeyboard"
             @node-click="selectNode"
           >
@@ -2228,7 +2405,11 @@ function leave() {
               pattern-color="var(--graph-edge)"
               :gap="graphViewModel.viewport.backgroundGap"
             />
-            <ScenarioFlowControls />
+            <ScenarioFlowControls
+              :layouting="graphLayoutStatus === 'loading'"
+              :layout-failed="graphLayoutStatus === 'fallback'"
+              @auto-layout="requestExplicitGraphAutoLayout"
+            />
           </VueFlow>
           <section
             v-if="!compactActionLayout && !form.actions.length"
@@ -3451,7 +3632,8 @@ function leave() {
   font-size: var(--font-size-body);
 }
 .graph-canvas :deep(.vue-flow) {
-  height: 100%;
+  height: calc(100% - 82px);
+  margin-top: 82px;
   --vf-node-bg: var(--graph-node);
   --vf-node-text: var(--text-primary);
   --vf-node-color: var(--graph-selection);
@@ -4153,6 +4335,8 @@ function leave() {
   }
   .graph-canvas.graph-expanded :deep(.vue-flow) {
     display: block;
+    height: calc(100% - 128px);
+    margin-top: 128px;
   }
   .mobile-action-outline {
     display: grid;
@@ -4247,6 +4431,8 @@ function leave() {
   }
   .graph-canvas.graph-expanded :deep(.vue-flow) {
     display: block;
+    height: calc(100% - 128px);
+    margin-top: 128px;
   }
   .mobile-action-outline {
     display: grid;

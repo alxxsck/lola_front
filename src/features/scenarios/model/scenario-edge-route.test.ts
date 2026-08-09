@@ -31,4 +31,27 @@ describe('scenario edge route', () => {
     }
     expect(buildScenarioEdgeRoute(input)).toEqual(buildScenarioEdgeRoute(input))
   })
+
+  it('uses ELK bend points while anchoring the route to live handles', () => {
+    const route = buildScenarioEdgeRoute({
+      sourceX: 100,
+      sourceY: 140,
+      targetX: 340,
+      targetY: 420,
+      routeIndex: 0,
+      routeCount: 1,
+      laneGap: 24,
+      layoutPoints: [
+        { x: 96, y: 132 },
+        { x: 96, y: 260 },
+        { x: 344, y: 260 },
+        { x: 344, y: 428 },
+      ],
+      labelPosition: { x: 220, y: 248 },
+    })
+
+    expect(route.path).toBe('M 100 140 L 100 260 L 96 260 L 344 260 L 344 420 L 340 420')
+    expect(route.labelX).toBe(220)
+    expect(route.labelY).toBe(248)
+  })
 })

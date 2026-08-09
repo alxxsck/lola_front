@@ -13,6 +13,7 @@ import {
 import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
 import type { ProjectAction } from "@/features/project-actions/model/project-action";
@@ -37,6 +38,8 @@ const mocks = vi.hoisted(() => ({
   ensureProjectActionsLoaded: vi.fn(),
   projectActions: [] as ProjectAction[],
   authoringActions: [] as Array<Record<string, unknown>>,
+  layoutGraph: vi.fn(),
+  createLayoutWorker: vi.fn(),
   guardDirty: null as { value: boolean } | null,
   routeLeaveGuards: [] as Array<() => boolean>,
   permissions: [
@@ -45,6 +48,20 @@ const mocks = vi.hoisted(() => ({
     "project.scenarios.publish",
     "project.actions.read",
   ] as string[],
+}));
+
+vi.mock(
+  "@/features/scenarios/model/scenario-graph-auto-layout",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/features/scenarios/model/scenario-graph-auto-layout")
+    >()),
+    layoutScenarioGraphViewModel: mocks.layoutGraph,
+  }),
+);
+
+vi.mock("@/features/scenarios/model/scenario-graph-layout-worker", () => ({
+  createScenarioGraphLayoutWorker: mocks.createLayoutWorker,
 }));
 
 vi.mock("vue-router", () => ({
@@ -272,7 +289,7 @@ function mountPage() {
       stubs: {
         VueFlow: {
           name: "VueFlow",
-          emits: ["node-click"],
+          emits: ["init", "node-click"],
           template: '<div data-test="vue-flow"><slot /></div>',
         },
         Background: true,
@@ -316,6 +333,14 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     mocks.ensureProjectActionsLoaded.mockResolvedValue([]);
     mocks.projectActions = [];
     mocks.authoringActions = [];
+    mocks.layoutGraph.mockImplementation(async (viewModel) => ({
+      status: "laid-out",
+      viewModel,
+    }));
+    mocks.createLayoutWorker.mockImplementation(() => ({
+      layout: vi.fn(),
+      terminateWorker: vi.fn(),
+    }));
     mocks.getContract.mockResolvedValue(contract);
     mocks.getScenarioDocument.mockImplementation(async () => ({
         scenarioId: scenario.id,
@@ -846,6 +871,176 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(stageButton(wrapper, "Действия").classes()).toContain("active");
     expect(wrapper.getComponent(ScenarioNodeInspector).props("action"))
       .toMatchObject({ nodeKey: "welcome_message", type: "SAY" });
+  });
+
+  it("does not re-run auto-layout when a node is selected", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const callsBeforeSelection = mocks.layoutGraph.mock.calls.length;
+
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("node-click", {
+      node: { id: "welcome_message" },
+    });
+    await flushPromises();
+
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(callsBeforeSelection);
+  });
+
+  it("fits the viewport after an explicit auto-layout command", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const fitView = vi.fn().mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", { fitView });
+    await flushPromises();
+    const layoutCallsBeforeCommand = mocks.layoutGraph.mock.calls.length;
+    const fitCallsBeforeCommand = fitView.mock.calls.length;
+
+    wrapper.getComponent(ScenarioFlowControls).vm.$emit("auto-layout");
+    await flushPromises();
+
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(layoutCallsBeforeCommand + 1);
+    expect(fitView).toHaveBeenCalledTimes(fitCallsBeforeCommand + 1);
+    expect(fitView).toHaveBeenLastCalledWith({ padding: 0.16, duration: 240 });
+  });
+
+  it("retries fitting when nodes are not measured on the first attempt", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    await flushPromises();
+    const delayedFit = vi.fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", {
+      fitView: delayedFit,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    await flushPromises();
+
+    expect(delayedFit).toHaveBeenCalledTimes(2);
+    expect(delayedFit).toHaveBeenLastCalledWith({ padding: 0.16, duration: 240 });
+  });
+
+  it("coalesces rapid topology-label edits and skips layout for presentation-only text", async () => {
+    const action = {
+      position: 0,
+      nodeKey: "question",
+      nextNodeKey: null,
+      type: "ASK_CHOICE",
+      config: {
+        message: "Продолжить?",
+        options: [{ id: "yes", label: "Да", nextNodeKey: "finish" }],
+      },
+    };
+    setAuthoringActions([
+      action,
+      {
+        position: 1,
+        nodeKey: "finish",
+        nextNodeKey: null,
+        type: "COMPLETE_SCENARIO",
+        config: {},
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("node-click", {
+      node: { id: "question" },
+    });
+    await flushPromises();
+    const callsAfterInitialLayout = mocks.layoutGraph.mock.calls.length;
+    const inspector = wrapper.getComponent(ScenarioNodeInspector);
+
+    inspector.vm.$emit("update", {
+      ...action,
+      config: { ...action.config, message: "Новый текст без изменения размеров узла" },
+    });
+    await wrapper.vm.$nextTick();
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(callsAfterInitialLayout);
+
+    for (const label of ["Конечно", "Да, продолжить", "Подтверждаю"]) {
+      inspector.vm.$emit("update", {
+        ...action,
+        config: {
+          ...action.config,
+          message: "Новый текст без изменения размеров узла",
+          options: [{ id: "yes", label, nextNodeKey: "finish" }],
+        },
+      });
+      await wrapper.vm.$nextTick();
+    }
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(callsAfterInitialLayout);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await flushPromises();
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(callsAfterInitialLayout + 1);
+  });
+
+  it("cancels the worker and ignores a late layout result after unmount", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    let resolveLayout!: (value: { status: "laid-out"; viewModel: unknown }) => void;
+    mocks.layoutGraph.mockImplementation((viewModel) => new Promise((resolve) => {
+      resolveLayout = resolve as typeof resolveLayout;
+      void viewModel;
+    }));
+    const terminateWorker = vi.fn();
+    mocks.createLayoutWorker.mockReturnValue({
+      layout: vi.fn(),
+      terminateWorker,
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    const fitView = vi.fn().mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", { fitView });
+    await wrapper.vm.$nextTick();
+    const pendingViewModel = mocks.layoutGraph.mock.calls.at(-1)?.[0];
+
+    wrapper.unmount();
+    expect(terminateWorker).toHaveBeenCalledOnce();
+    resolveLayout({ status: "laid-out", viewModel: pendingViewModel });
+    await flushPromises();
+
+    expect(fitView).not.toHaveBeenCalled();
   });
 
   it("changes the first action of a linear scenario without deleting its steps", async () => {
