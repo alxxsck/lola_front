@@ -15,6 +15,7 @@ import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioActionChangeDialog from "@/features/scenarios/ScenarioActionChangeDialog.vue";
 import ScenarioGraphLayoutToolbar from "@/features/scenarios/ScenarioGraphLayoutToolbar.vue";
+import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioActionInspectorDock from "@/features/scenarios/ScenarioActionInspectorDock.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
@@ -1010,6 +1011,87 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     );
   });
 
+  it("restores the saved viewport when the same automatic-layout draft is reopened", async () => {
+    window.localStorage.setItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+      JSON.stringify({
+        version: 1,
+        mode: "auto",
+        nodes: {},
+        viewport: { x: -360, y: 128, zoom: 0.72 },
+      }),
+    );
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: null,
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    const setViewport = vi.fn()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", {
+      fitView: vi.fn().mockResolvedValue(true),
+      getViewport: vi.fn(() => ({ x: 0, y: 0, zoom: 1 })),
+      setViewport,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    await flushPromises();
+
+    expect(setViewport).toHaveBeenCalledTimes(2);
+    expect(setViewport).toHaveBeenLastCalledWith(
+      { x: -360, y: 128, zoom: 0.72 },
+      { duration: 0 },
+    );
+    expect(wrapper.getComponent({ name: "VueFlow" }).props("nodesDraggable"))
+      .toBe(false);
+  });
+
+  it("ignores a rejected saved-viewport restore after the graph canvas unmounts", async () => {
+    window.localStorage.setItem(
+      "retenive:scenario-graph-layout:v1:operator-1:project-1:scenario-1",
+      JSON.stringify({
+        version: 1,
+        mode: "auto",
+        nodes: {},
+        viewport: { x: -240, y: 96, zoom: 0.8 },
+      }),
+    );
+    setAuthoringActions([{
+      position: 0,
+      nodeKey: "welcome_message",
+      nextNodeKey: null,
+      type: "SAY",
+      config: { text: "Добро пожаловать" },
+    }]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    let rejectViewport!: (error: Error) => void;
+    const setViewport = vi.fn(() => new Promise<boolean>((_resolve, reject) => {
+      rejectViewport = reject;
+    }));
+    const fitView = vi.fn().mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", {
+      fitView,
+      setViewport,
+    });
+    await wrapper.vm.$nextTick();
+
+    wrapper.unmount();
+    rejectViewport(new Error("canvas removed"));
+    await flushPromises();
+
+    expect(setViewport).toHaveBeenCalledOnce();
+    expect(fitView).not.toHaveBeenCalled();
+  });
+
   it("keeps the canvas pannable but disables node movement in read-only mode", async () => {
     mocks.permissions = ["project.scenarios.read", "project.actions.read"];
     setAuthoringActions([
@@ -1042,6 +1124,10 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       .toBe(false);
     expect(flow.attributes("pan-on-drag")).not.toBe("false");
     expect(flow.attributes("zoom-on-scroll")).not.toBe("false");
+    expect(wrapper.getComponent(ScenarioFlowControls).props("selectedNodeId"))
+      .toBeNull();
+    expect(wrapper.get('[aria-label="Найти действие"]').attributes("disabled"))
+      .toBeUndefined();
   });
 
   it("keeps authoring available when browser layout storage is blocked", async () => {
@@ -2307,6 +2393,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     });
     await flushPromises();
     const fitCallsBeforeSelection = fitView.mock.calls.length;
+    const layoutCallsBeforeNavigation = mocks.layoutGraph.mock.calls.length;
 
     await wrapper.get('[data-action-node-key="welcome_message"] .action-outline-main').trigger("click");
     await wrapper.vm.$nextTick();
@@ -2322,15 +2409,15 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(wrapper.get(".action-outline-row").text()).toContain("broken_action");
     await wrapper.get('[aria-label="Показать только действия с ошибками"]').trigger("click");
     expect(wrapper.findAll(".action-outline-row")).toHaveLength(1);
-    await wrapper.get('[aria-label="Показать broken_action на схеме"]').trigger("click");
+    await wrapper.get('[aria-label="Найти действие"]').trigger("keydown", { key: "Enter" });
     await new Promise((resolve) => setTimeout(resolve, 50));
     await flushPromises();
 
     expect(fitView).toHaveBeenLastCalledWith({
       nodes: ["broken_action"],
       padding: 0.75,
-      minZoom: 0.75,
-      maxZoom: 1.15,
+      minZoom: 0.9,
+      maxZoom: 0.9,
       duration: 240,
     });
     expect(
@@ -2340,6 +2427,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
         .find((node: { id: string }) => node.id === "broken_action"),
     ).toMatchObject({ selected: true });
     expect(wrapper.get('[data-action-node-key="broken_action"]').classes()).toContain("active");
+    expect(mocks.layoutGraph).toHaveBeenCalledTimes(layoutCallsBeforeNavigation);
 
     wrapper.getComponent(ScenarioActionInspectorDock).vm.$emit("resize", 520);
     await wrapper.vm.$nextTick();

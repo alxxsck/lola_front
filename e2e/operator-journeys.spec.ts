@@ -1020,6 +1020,8 @@ test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinc
   await expect(graph.locator('.vue-flow__node[data-id="decision"] .node-kind')).toHaveText("Решение");
   await expect(graph.locator('.vue-flow__node[data-id="wait"] .node-kind')).toHaveText("Ожидание");
   await expect(graph.locator('.vue-flow__node[data-id="finish"] .node-kind')).toHaveText("Завершение");
+  await expect(page.getByLabel("Мини-карта большого сценария")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Показать мини-карту" })).toHaveCount(0);
   await page.getByRole("button", { name: "Показать всю схему" }).click();
   await page.screenshot({ path: testInfo.outputPath("scenario-canvas-7-nodes-desktop.png") });
 
@@ -1038,8 +1040,24 @@ test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinc
   await page.goto("/scenarios/scn_1?graph-size=31");
   await page.getByRole("button", { name: /Действия/ }).click();
   await expect(graph.locator(".vue-flow__node-scenario")).toHaveCount(31);
-  await page.getByLabel("Найти действие").fill("step_30");
-  await page.getByRole("button", { name: "Показать step_30 на схеме" }).click();
+  const nodeTransformsBeforeNavigation = await graph.locator(".vue-flow__node-scenario")
+    .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).style.transform));
+  const minimap = page.getByLabel("Мини-карта большого сценария");
+  await expect(minimap).toBeVisible();
+  const minimapBox = await minimap.boundingBox();
+  const navigationControls = page.locator(".scenario-flow-controls");
+  const controlsBox = await navigationControls.boundingBox();
+  expect((minimapBox?.x ?? 0) + (minimapBox?.width ?? 0))
+    .toBeLessThanOrEqual(controlsBox?.x ?? 0);
+  const zoomReset = page.getByRole("button", { name: /Текущий масштаб .*Сбросить до 100%/ });
+  expect((await zoomReset.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+  await page.getByRole("button", { name: "Уменьшить схему" }).click();
+  await expect(zoomReset).not.toHaveText("100%");
+  await page.waitForTimeout(300);
+  const zoomBeforeSearchCenter = await zoomReset.textContent();
+  const desktopSearch = page.locator(".action-workflow-nav").getByLabel("Найти действие");
+  await desktopSearch.fill("step_30");
+  await desktopSearch.press("Enter");
   await expect(graph.locator('.vue-flow__node[data-id="step_30"]')).toHaveClass(/selected/);
   await expect(page.locator('[data-action-node-key="step_30"].action-outline-row')).toHaveClass(/active/);
   await expect(graph.locator('.vue-flow__node[data-id="step_30"]')).toBeInViewport();
@@ -1050,11 +1068,90 @@ test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinc
   expect(centeredNodeBox?.x).toBeGreaterThanOrEqual(largeGraphBox?.x ?? 0);
   expect((centeredNodeBox?.x ?? 0) + (centeredNodeBox?.width ?? 0))
     .toBeLessThanOrEqual((largeGraphBox?.x ?? 0) + (largeGraphBox?.width ?? 0));
+  await expect(zoomReset).toHaveText(zoomBeforeSearchCenter ?? "");
+  await page.getByRole("button", { name: "Показать выбранную ветку" }).click();
+  await page.getByRole("button", { name: "Центрировать выбранное действие" }).click();
+  await zoomReset.click();
+  await expect(zoomReset).toHaveText("100%");
+  await page.getByRole("button", { name: "Скрыть мини-карту" }).click();
+  await expect(minimap).toBeHidden();
+  await page.getByRole("button", { name: "Показать мини-карту" }).click();
+  await expect(minimap).toBeVisible();
+  expect(await graph.locator(".vue-flow__node-scenario")
+    .evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).style.transform)))
+    .toEqual(nodeTransformsBeforeNavigation);
   await expect(page.locator(".scenario-action-inspector-dock")).toBeVisible();
   expect(await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
   )).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("scenario-canvas-31-nodes-desktop.png") });
+});
+
+test("large scenario search and minimap stay usable on mobile", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "Large-graph mobile navigation is covered on the touch project",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const fixture = await installScenarioAuthoringFixtures(page);
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: Array.from({ length: 31 }, (_, index) => ({
+        position: index,
+        nodeKey: index === 30 ? "finish" : `step_${index + 1}`,
+        type: index === 30 ? "COMPLETE_SCENARIO" : "SAY",
+        nextNodeKey: index < 29 ? `step_${index + 2}` : index === 29 ? "finish" : null,
+        config: index === 30 ? {} : { text: `Сообщение ${index + 1}` },
+      })),
+    },
+  };
+
+  await page.goto("/scenarios/scn_1?graph-size=31-mobile");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  const mobileOutline = page.getByRole("region", {
+    name: "Линейный список действий и ожиданий",
+  });
+  await expect(mobileOutline).toBeVisible();
+  await mobileOutline.getByLabel("Найти действие").fill("step_30");
+  await mobileOutline.getByLabel("Найти действие").press("Enter");
+
+  const expandedGraph = page.locator(".graph-canvas.graph-expanded");
+  const flow = expandedGraph.locator(".vue-flow");
+  await expect(flow.locator(".vue-flow__node-scenario")).toHaveCount(31);
+  await expect(flow.locator('.vue-flow__node[data-id="step_30"]')).toHaveClass(/selected/);
+  await expect(flow.locator('.vue-flow__node[data-id="step_30"]')).toBeInViewport();
+  const minimap = page.getByLabel("Мини-карта большого сценария");
+  const controls = page.locator(".scenario-flow-controls");
+  await expect(minimap).toBeVisible();
+  await expect(controls).toBeVisible();
+  const [mapBox, controlsBox] = await Promise.all([
+    minimap.boundingBox(),
+    controls.boundingBox(),
+  ]);
+  expect((mapBox?.x ?? 0) + (mapBox?.width ?? 0))
+    .toBeLessThanOrEqual(controlsBox?.x ?? 0);
+  for (const box of await controls.locator("button").evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const bounds = button.getBoundingClientRect();
+      return { width: bounds.width, height: bounds.height };
+    }),
+  )) {
+    expect(box.width).toBeGreaterThanOrEqual(40);
+    expect(box.height).toBeGreaterThanOrEqual(40);
+  }
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-large-navigation-mobile.png"),
+  });
+  await page.getByRole("button", { name: "Скрыть мини-карту" }).click();
+  await expect(minimap).toBeHidden();
+  await expectNoSeriousAccessibilityViolations(page);
 });
 
 test("scenario graph labels use the project default locale and stable branch identity", async ({

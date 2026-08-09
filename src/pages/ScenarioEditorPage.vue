@@ -25,9 +25,11 @@ import {
   type ViewportTransform,
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
+import { MiniMap } from "@vue-flow/minimap";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import "@vue-flow/controls/dist/style.css";
+import "@vue-flow/minimap/dist/style.css";
 import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowEdge from "@/features/scenarios/ScenarioFlowEdge.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
@@ -183,6 +185,11 @@ import {
   buildScenarioGraphViewModel,
   scenarioGraphNodePresentation,
 } from "@/features/scenarios/model/scenario-graph-view-model";
+import {
+  scenarioGraphBranchNodeIds,
+  scenarioGraphShowsMinimap,
+  scenarioGraphViewportDuration,
+} from "@/features/scenarios/model/scenario-graph-navigation";
 
 interface ScenarioForm {
   id?: string;
@@ -310,6 +317,7 @@ const graphExpanded = ref(false);
 const graphLocale = ref("");
 const actionOutlineQuery = ref("");
 const actionOutlineIssuesOnly = ref(false);
+const graphMinimapVisible = ref(true);
 const actionInspectorWidth = ref(380);
 const actionInspectorMaxWidth = ref(SCENARIO_ACTION_INSPECTOR_MAX_WIDTH);
 const studioGridElement = ref<HTMLElement | null>(null);
@@ -594,6 +602,9 @@ const filteredActionOutlineItems = computed(() => {
 });
 const actionOutlineIssueCount = computed(
   () => actionOutlineItems.value.filter(({ issueCount }) => issueCount > 0).length,
+);
+const graphIsLarge = computed(() =>
+  scenarioGraphShowsMinimap(form.actions.length),
 );
 const actionWorkspaceStyle = computed(() => ({
   "--action-outline-width": `${SCENARIO_ACTION_OUTLINE_WIDTH}px`,
@@ -1048,16 +1059,58 @@ let graphLayoutEngine: ScenarioGraphLayoutEngine | undefined;
 let pendingGraphCenterNodeKey: string | null = null;
 let graphHasInitialFit = false;
 let graphFitPending = false;
-let graphFlowApi:
-  | {
-      fitView: (options?: Record<string, unknown>) => Promise<boolean>;
-      getViewport?: () => ViewportTransform;
-      setViewport?: (
-        viewport: ViewportTransform,
-        options?: { duration?: number },
-      ) => Promise<boolean>;
+interface ScenarioGraphFlowApi {
+  findNode?: (nodeId: string) => {
+    computedPosition: { x: number; y: number };
+    dimensions: { width: number; height: number };
+  } | undefined;
+  fitView: (options?: Record<string, unknown>) => Promise<boolean>;
+  getViewport?: () => ViewportTransform;
+  setCenter?: (
+    x: number,
+    y: number,
+    options?: { zoom?: number; duration?: number },
+  ) => Promise<boolean>;
+  setViewport?: (
+    viewport: ViewportTransform,
+    options?: { duration?: number },
+  ) => Promise<boolean>;
+}
+let graphFlowApi: ScenarioGraphFlowApi | undefined;
+
+async function waitGraphViewportFrame() {
+  await new Promise<void>((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => resolve());
+    } else setTimeout(resolve, 16);
+  });
+}
+
+async function restoreGraphViewport(
+  instance: ScenarioGraphFlowApi,
+  viewport: ViewportTransform,
+  attempt = 0,
+): Promise<boolean> {
+  graphFitPending = true;
+  await nextTick();
+  if (graphFlowApi !== instance || !instance.setViewport) return false;
+  try {
+    const restored = await instance.setViewport(viewport, { duration: 0 });
+    if (graphFlowApi !== instance) return false;
+    if (restored) {
+      graphFitPending = false;
+      graphHasInitialFit = true;
+      return true;
     }
-  | undefined;
+  } catch {
+    if (graphFlowApi !== instance) return false;
+  }
+  if (attempt < 2) {
+    await waitGraphViewportFrame();
+    return restoreGraphViewport(instance, viewport, attempt + 1);
+  }
+  return false;
+}
 
 async function fitGraphAfterLayout(attempt = 0): Promise<boolean> {
   graphFitPending = true;
@@ -1065,17 +1118,16 @@ async function fitGraphAfterLayout(attempt = 0): Promise<boolean> {
   const flowApi = graphFlowApi;
   if (!flowApi) return false;
   try {
-    const fitted = await flowApi.fitView({ padding: 0.16, duration: 240 });
+    const fitted = await flowApi.fitView({
+      padding: 0.16,
+      duration: scenarioGraphViewportDuration(),
+    });
     if (fitted) {
       if (graphFlowApi === flowApi) graphFitPending = false;
       return true;
     }
     if (graphFlowApi === flowApi && attempt < 2) {
-      await new Promise<void>((resolve) => {
-        if (typeof requestAnimationFrame === "function") {
-          requestAnimationFrame(() => resolve());
-        } else setTimeout(resolve, 16);
-      });
+      await waitGraphViewportFrame();
       return fitGraphAfterLayout(attempt + 1);
     }
     return false;
@@ -1178,33 +1230,48 @@ function requestExplicitGraphAutoLayout() {
   queueGraphAutoLayout(model, fingerprint, true);
 }
 
-function initializeGraphFlow(
-  instance: {
-    fitView: (options?: Record<string, unknown>) => Promise<boolean>;
-    getViewport?: () => ViewportTransform;
-    setViewport?: (
-      viewport: ViewportTransform,
-      options?: { duration?: number },
-    ) => Promise<boolean>;
-  },
-) {
+function initializeGraphFlow(instance: ScenarioGraphFlowApi) {
   graphFlowApi = instance;
+  const centerPendingNode = () => {
+    const nodeKey = pendingGraphCenterNodeKey;
+    if (
+      !nodeKey
+      || graphLayoutTimer !== undefined
+      || graphLayoutEngine
+      || graphLayoutStatus.value === "loading"
+    ) return;
+    void focusGraphNodeInViewport(nodeKey).then((centered) => {
+      if (centered && pendingGraphCenterNodeKey === nodeKey) {
+        pendingGraphCenterNodeKey = null;
+      }
+    });
+  };
   const savedViewport = graphPresentationLayout.value.viewport;
   if (
-    graphPresentationLayout.value.mode === "manual" &&
     savedViewport &&
     instance.setViewport
   ) {
-    graphFitPending = false;
-    graphHasInitialFit = true;
-    void instance.setViewport(savedViewport, { duration: 0 });
+    void restoreGraphViewport(instance, savedViewport).then((restored) => {
+      if (graphFlowApi !== instance) return;
+      if (restored) {
+        centerPendingNode();
+      } else if (graphLayoutCompleted) {
+        void fitGraphAfterLayout().then((fitted) => {
+          if (fitted) graphHasInitialFit = true;
+          centerPendingNode();
+        });
+      }
+    });
     return;
   }
   if (graphFitPending || graphLayoutCompleted) {
     void fitGraphAfterLayout().then((fitted) => {
       if (fitted) graphHasInitialFit = true;
+      centerPendingNode();
     });
+    return;
   }
+  centerPendingNode();
 }
 
 watch(
@@ -1253,6 +1320,9 @@ const flowNodes = computed(() =>
   })),
 );
 const flowEdges = computed(() => graphViewModel.value.edges);
+const selectedGraphBranchNodeIds = computed(() =>
+  scenarioGraphBranchNodeIds(selectedNodeKey.value, flowEdges.value),
+);
 const graphLayoutMode = computed(() => graphPresentationLayout.value.mode);
 const selectedGraphNodeLabel = computed(() => {
   const action = selectedAction.value;
@@ -2016,9 +2086,23 @@ function resizeActionInspector(width: number) {
   );
 }
 
+function centerFirstActionOutlineResult() {
+  const first = filteredActionOutlineItems.value[0]?.action.nodeKey;
+  if (first) void centerGraphNode(first);
+}
+
 async function centerGraphNode(nodeKey: string) {
   pendingGraphCenterNodeKey = nodeKey;
-  openNode(nodeKey);
+  if (compactActionLayout.value) {
+    rememberActionViewFocus();
+    selectedNodeKey.value = nodeKey;
+    inspectorMode.value = "node";
+    studioStage.value = "actions";
+    graphExpanded.value = true;
+    void nextTick(() => graphCanvasElement.value?.focus());
+  } else {
+    openNode(nodeKey);
+  }
   if (graphLayoutTimer !== undefined || graphLayoutEngine || graphLayoutStatus.value === "loading") return;
   if (await focusGraphNodeInViewport(nodeKey)) pendingGraphCenterNodeKey = null;
 }
@@ -2030,12 +2114,20 @@ async function focusGraphNodeInViewport(nodeKey: string) {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
   }
+  const node = graphFlowApi?.findNode?.(nodeKey);
+  const zoom = graphFlowApi?.getViewport?.().zoom;
+  if (node && zoom && graphFlowApi?.setCenter) {
+    return await graphFlowApi.setCenter(
+      node.computedPosition.x + node.dimensions.width / 2,
+      node.computedPosition.y + node.dimensions.height / 2,
+      { zoom, duration: scenarioGraphViewportDuration() },
+    );
+  }
   return await graphFlowApi?.fitView({
     nodes: [nodeKey],
     padding: 0.75,
-    minZoom: 0.75,
-    maxZoom: 1.15,
-    duration: 240,
+    ...(zoom ? { minZoom: zoom, maxZoom: zoom } : {}),
+    duration: scenarioGraphViewportDuration(),
   }) ?? false;
 }
 
@@ -2657,7 +2749,9 @@ function leave() {
                   v-model="actionOutlineQuery"
                   type="search"
                   aria-label="Найти действие"
+                  aria-keyshortcuts="Enter"
                   placeholder="Название или код"
+                  @keydown.enter.prevent="centerFirstActionOutlineResult"
                 />
               </label>
               <button
@@ -2846,8 +2940,30 @@ function leave() {
             >
               <i class="pi pi-sitemap" />Открыть схему
             </button>
+            <div v-if="form.actions.length" class="action-outline-tools mobile-action-outline-tools">
+              <label class="action-outline-search">
+                <i class="pi pi-search" aria-hidden="true" />
+                <input
+                  v-model="actionOutlineQuery"
+                  type="search"
+                  aria-label="Найти действие"
+                  aria-keyshortcuts="Enter"
+                  placeholder="Название или код"
+                  @keydown.enter.prevent="centerFirstActionOutlineResult"
+                />
+              </label>
+              <button
+                type="button"
+                class="action-outline-error-filter"
+                :class="{ active: actionOutlineIssuesOnly }"
+                :aria-pressed="actionOutlineIssuesOnly"
+                aria-label="Показать только действия с ошибками"
+                :disabled="!actionOutlineIssueCount"
+                @click="actionOutlineIssuesOnly = !actionOutlineIssuesOnly"
+              ><i class="pi pi-exclamation-circle" aria-hidden="true" />{{ actionOutlineIssueCount }}</button>
+            </div>
             <button
-              v-for="item in actionOutlineItems"
+              v-for="item in filteredActionOutlineItems"
               :key="item.action.nodeKey"
               type="button"
               class="mobile-node-card"
@@ -2863,6 +2979,11 @@ function leave() {
               <em v-if="item.issueCount">{{ item.issueCount }}</em
               ><i class="pi pi-chevron-right" />
             </button>
+            <p
+              v-if="form.actions.length && !filteredActionOutlineItems.length"
+              class="mobile-empty"
+              role="status"
+            >{{ actionOutlineIssuesOnly ? "Действий с ошибками не найдено." : "Поиск не нашёл действий." }}</p>
             <p v-if="!form.actions.length" class="mobile-empty">
               Добавьте первое действие из списка ниже.
             </p>
@@ -2912,7 +3033,27 @@ function leave() {
               pattern-color="var(--graph-edge)"
               :gap="graphViewModel.viewport.backgroundGap"
             />
-            <ScenarioFlowControls />
+            <MiniMap
+              v-if="graphIsLarge && graphMinimapVisible"
+              id="scenario-graph-minimap"
+              class="scenario-graph-minimap"
+              aria-label="Мини-карта большого сценария"
+              position="bottom-left"
+              pannable
+              zoomable
+              :node-border-radius="6"
+              node-color="var(--status-accent-text)"
+              node-stroke-color="var(--status-accent-text)"
+              mask-color="color-mix(in srgb, var(--surface-canvas) 68%, transparent)"
+              mask-stroke-color="var(--status-accent)"
+            />
+            <ScenarioFlowControls
+              :selected-node-id="selectedNodeKey"
+              :branch-node-ids="selectedGraphBranchNodeIds"
+              :large-graph="graphIsLarge"
+              :minimap-visible="graphMinimapVisible"
+              @toggle-minimap="graphMinimapVisible = !graphMinimapVisible"
+            />
           </VueFlow>
           <section
             v-if="!compactActionLayout && !form.actions.length"
@@ -4052,6 +4193,9 @@ function leave() {
   overflow: auto;
   background: var(--graph-canvas);
 }
+.graph-canvas {
+  container: scenario-graph / inline-size;
+}
 .graph-toolbar {
   position: absolute;
   z-index: 6;
@@ -4289,6 +4433,19 @@ function leave() {
   border-radius: 11px;
   box-shadow: none;
   overflow: hidden;
+}
+.graph-canvas :deep(.scenario-graph-minimap) {
+  width: 180px;
+  height: 116px;
+  margin: 12px;
+  background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+}
+@container scenario-graph (max-width: 600px) {
+  .graph-canvas :deep(.scenario-graph-minimap) {
+    width: 156px;
+    height: 116px;
+    margin: 8px;
+  }
 }
 .actions-warning {
   position: absolute;
