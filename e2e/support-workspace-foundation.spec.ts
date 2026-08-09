@@ -42,11 +42,26 @@ test("keeps the support search toolbar readable in the inbox rail", async ({
   const toolsTrigger = queue.locator(".inbox-tools__trigger");
   if ((await toolsTrigger.getAttribute("aria-expanded")) !== "true")
     await toolsTrigger.click();
-  await queue.getByRole("button", { name: "Новый поиск" }).click();
 
   const searchInput = queue.getByRole("searchbox", {
     name: "Поиск по поддержке",
   });
+  await searchInput.focus();
+  const compactFocus = await searchInput.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      delegatedTo: element.getAttribute("data-focus-ring"),
+      boxShadow: style.boxShadow,
+      outlineStyle: style.outlineStyle,
+    };
+  });
+  expect(compactFocus).toEqual({
+    delegatedTo: "container",
+    boxShadow: "none",
+    outlineStyle: "none",
+  });
+
+  await queue.getByRole("button", { name: "Новый поиск" }).click();
   await searchInput.fill("второй депозит");
   await searchInput.focus();
 

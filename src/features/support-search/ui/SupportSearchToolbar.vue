@@ -246,6 +246,7 @@ function submit(): void {
       <i class="pi pi-search" aria-hidden="true" />
       <input
         data-support-search-input
+        data-focus-ring="container"
         type="search"
         :value="modelValue.phrase"
         placeholder="Найти обращение, диалог, сообщение…"
