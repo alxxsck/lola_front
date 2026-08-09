@@ -17,7 +17,7 @@ import Message from "primevue/message";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
-import { Position, VueFlow, type Edge, type Node } from "@vue-flow/core";
+import { VueFlow, type Node } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
@@ -122,7 +122,6 @@ import {
   choiceOptions,
   conditionBranches,
   createScenarioNode,
-  graphTransitionId,
   graphTransitions,
   normalizePositions,
   renameScenarioNode,
@@ -132,6 +131,7 @@ import {
   usesExplicitTransitions,
   validateScenarioGraph,
 } from "@/features/scenarios/model/scenario-graph";
+import { buildScenarioGraphViewModel } from "@/features/scenarios/model/scenario-graph-view-model";
 
 interface ScenarioForm {
   id?: string;
@@ -832,119 +832,41 @@ const flowTransitions = computed(() => {
   });
 });
 
-const flowNodes = computed<Node[]>(() => {
-  const transitions = flowTransitions.value;
-  const depth = new Map<string, number>();
-  form.actions.forEach((action, index) =>
-    depth.set(action.nodeKey ?? "", index ? 1 : 0),
-  );
-  for (const action of form.actions) {
-    const sourceDepth = depth.get(action.nodeKey ?? "") ?? 0;
-    for (const transition of transitions.filter(
-      (item) => item.source === action.nodeKey,
-    )) {
-      depth.set(
-        transition.target,
-        Math.max(depth.get(transition.target) ?? 0, sourceDepth + 1),
-      );
-    }
-  }
-  const levels = new Map<number, ScenarioAction[]>();
-  for (const action of form.actions) {
-    const level = depth.get(action.nodeKey ?? "") ?? action.position;
-    levels.set(level, [...(levels.get(level) ?? []), action]);
-  }
-  const nodes: Node[] = [
-    {
-      id: "trigger",
-      type: "input",
-      position: { x: 332, y: 24 },
-      sourcePosition: Position.Bottom,
-      selectable: false,
-      draggable: false,
-      data: {
-        label: selectedEvent.value
-          ? eventDisplayName(selectedEvent.value.code, selectedEvent.value.name)
-          : "Выберите событие",
-      },
-    },
-  ];
-  for (const [level, actions] of levels) {
-    actions.forEach((action, column) => {
+const graphViewModel = computed(() =>
+  buildScenarioGraphViewModel({
+    actions: form.actions,
+    transitions: flowTransitions.value,
+    triggerLabel: selectedEvent.value
+      ? eventDisplayName(selectedEvent.value.code, selectedEvent.value.name)
+      : "Выберите событие",
+    presentAction: (action) => {
       const definition = findScenarioActionCatalogItem(
         actionCatalog.value,
         action.type,
       );
-      const totalWidth = (actions.length - 1) * 280;
-      nodes.push({
-        id: action.nodeKey ?? `step_${action.position}`,
-        type: "scenario",
-        position: {
-          x: 320 - totalWidth / 2 + column * 280,
-          y: 180 + level * 190,
-        },
-        data: {
-          label: definition?.name ?? action.type,
-          nodeKey: action.nodeKey,
-          icon:
-            action.type === "CONDITION"
-              ? "pi pi-code"
-              : action.type === "ASK_CHOICE"
-                ? "pi pi-question-circle"
-                : definition?.executor === "FRONTEND"
-                  ? "pi pi-desktop"
-                  : "pi pi-server",
-          executor: definition?.executor ?? "SERVER",
-          summary: nodeSummary(action),
-          issueCount: actionIssues.value.filter(
-            (issue) => issue.nodeKey === action.nodeKey,
-          ).length,
-        },
-      });
-    });
-  }
-  return nodes;
-});
+      return {
+        label: definition?.name ?? action.type,
+        nodeKey: action.nodeKey ?? "",
+        icon:
+          action.type === "CONDITION"
+            ? "pi pi-code"
+            : action.type === "ASK_CHOICE"
+              ? "pi pi-question-circle"
+              : definition?.executor === "FRONTEND"
+                ? "pi pi-desktop"
+                : "pi pi-server",
+        executor: definition?.executor ?? "SERVER",
+        summary: nodeSummary(action),
+        issueCount: actionIssues.value.filter(
+          (issue) => issue.nodeKey === action.nodeKey,
+        ).length,
+      };
+    },
+  }),
+);
 
-const flowEdges = computed<Edge[]>(() => {
-  const edges: Edge[] = form.actions[0]?.nodeKey
-    ? [
-        {
-          id: "trigger-edge",
-          source: "trigger",
-          target: form.actions[0].nodeKey,
-          type: "smoothstep",
-          animated: true,
-        },
-      ]
-    : [];
-  flowTransitions.value.forEach((transition) =>
-    edges.push({
-      id: graphTransitionId(transition),
-      source: transition.source,
-      target: transition.target,
-      label: transition.label,
-      type: "smoothstep",
-      animated: transition.kind === "default",
-      style: {
-        stroke:
-          transition.kind === "timeout"
-            ? "var(--status-danger)"
-            : transition.kind === "fallback"
-              ? "var(--graph-edge)"
-              : "var(--graph-selection)",
-        strokeWidth: 2,
-      },
-      labelStyle: {
-        fill: "var(--text-secondary)",
-        fontSize: 11,
-        fontWeight: 600,
-      },
-      labelBgStyle: { fill: "var(--graph-node)", fillOpacity: 0.92 },
-    }),
-  );
-  return edges;
-});
+const flowNodes = computed(() => graphViewModel.value.nodes);
+const flowEdges = computed(() => graphViewModel.value.edges);
 
 watch(
   () => form.name,
@@ -2275,14 +2197,17 @@ function leave() {
             :nodes="flowNodes"
             :edges="flowEdges"
             :node-types="flowNodeTypes"
-            fit-view-on-init
-            :min-zoom="0.25"
-            :max-zoom="1.6"
+            :fit-view-on-init="graphViewModel.viewport.fitViewOnInit"
+            :min-zoom="graphViewModel.viewport.minZoom"
+            :max-zoom="graphViewModel.viewport.maxZoom"
             :nodes-draggable="false"
             :nodes-connectable="false"
             @node-click="selectNode"
           >
-            <Background pattern-color="var(--graph-edge)" :gap="22" />
+            <Background
+              pattern-color="var(--graph-edge)"
+              :gap="graphViewModel.viewport.backgroundGap"
+            />
             <ScenarioFlowControls />
           </VueFlow>
           <section

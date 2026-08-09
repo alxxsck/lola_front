@@ -54,7 +54,9 @@ function json(route: Route, body: unknown, status = 200) {
 
 async function installScenarioAuthoringFixtures(
   page: Page,
-  options: { localization?: ScenarioLocalizationCatalogResponseDto } = {},
+  options: {
+    localization?: ScenarioLocalizationCatalogResponseDto;
+  } = {},
 ): Promise<AuthoringFixtureState> {
   const state: AuthoringFixtureState = {
     currentRevisionId: null,
@@ -956,6 +958,115 @@ test("scenario graph labels use the project default locale and stable branch ide
   await expect(page.locator(".p-select-overlay")).toBeHidden();
   await page.screenshot({
     path: testInfo.outputPath("scenario-graph-localized-branches.png"),
+  });
+});
+
+test("scenario graph constrains long trigger, title and summary inside measured boxes", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Rendered graph box metrics are covered on the desktop canvas",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page);
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: [
+        {
+          position: 0,
+          nodeKey: "long_action",
+          nextNodeKey: "finish",
+          type: "ОЧЕНЬ_ДЛИННОЕ_НАЗВАНИЕ_ДЕЙСТВИЯ_ДЛЯ_ПРОВЕРКИ_ГРАНИЦ",
+          config: {
+            text: "Очень длинное описание параметров действия, которое занимает много строк и не должно выходить за измеренную карточку графа сценария",
+          },
+        },
+        {
+          position: 1,
+          nodeKey: "finish",
+          nextNodeKey: null,
+          type: "COMPLETE_SCENARIO",
+          config: {},
+        },
+      ],
+    },
+  };
+
+  await page.goto("/scenarios/scn_1");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await page.getByRole("button", { name: "Развернуть схему сценария" }).click();
+  const graph = page.locator(".graph-canvas.graph-expanded .vue-flow");
+  const trigger = graph.locator(".vue-flow__node-input");
+  const actionNode = graph.locator(".flow-node").filter({ hasText: "long_action" });
+  const finishNode = graph.locator(".flow-node").filter({ hasText: "finish" });
+  await expect(actionNode).toBeVisible();
+
+  const metrics = await actionNode.evaluate((element) => {
+    const title = element.querySelector<HTMLElement>(".node-title")!;
+    const summary = element.querySelector<HTMLElement>(".node-summary")!;
+    const style = getComputedStyle(element);
+    return {
+      width: element.clientWidth,
+      height: element.clientHeight,
+      overflow: style.overflow,
+      titleOverflow: getComputedStyle(title).overflow,
+      titleClamp: getComputedStyle(title).webkitLineClamp,
+      summaryOverflow: getComputedStyle(summary).overflow,
+      summaryClamp: getComputedStyle(summary).webkitLineClamp,
+      titleIsClipped: title.scrollHeight > title.clientHeight,
+      summaryIsClipped: summary.scrollHeight > summary.clientHeight,
+    };
+  });
+  expect(metrics).toEqual({
+    width: 226,
+    height: 118,
+    overflow: "hidden",
+    titleOverflow: "hidden",
+    titleClamp: "2",
+    summaryOverflow: "hidden",
+    summaryClamp: "2",
+    titleIsClipped: true,
+    summaryIsClipped: true,
+  });
+
+  await trigger.evaluate((element) => {
+    const label = [...element.childNodes].find(
+      (node) => node.nodeType === Node.TEXT_NODE,
+    );
+    if (label) {
+      label.textContent =
+        "Регистрация завершена после очень длинной последовательности проверок профиля пользователя";
+    }
+  });
+  const triggerMetrics = await trigger.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      width: element.clientWidth,
+      height: element.clientHeight,
+      overflow: style.overflow,
+      textOverflow: style.textOverflow,
+      whiteSpace: style.whiteSpace,
+      isClipped: element.scrollWidth > element.clientWidth,
+    };
+  });
+  expect(triggerMetrics).toEqual({
+    width: 205,
+    height: 44,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    isClipped: true,
+  });
+
+  const [actionBox, finishBox] = await Promise.all([
+    actionNode.boundingBox(),
+    finishNode.boundingBox(),
+  ]);
+  expect((actionBox?.y ?? 0) + (actionBox?.height ?? 0))
+    .toBeLessThanOrEqual(finishBox?.y ?? 0);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-graph-long-label-bounds.png"),
   });
 });
 
