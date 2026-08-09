@@ -807,7 +807,7 @@ test("new scenario authoring journey remains usable at the active viewport", asy
   await expectNoSeriousAccessibilityViolations(page);
 });
 
-test("action editor gives configuration the primary desktop area and keeps the graph below", async ({
+test("action editor keeps the graph canvas primary beside a resizable inspector", async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -826,28 +826,61 @@ test("action editor gives configuration the primary desktop area and keeps the g
     .click();
   await page.waitForTimeout(350);
 
-  const inspector = page.locator(".inspector");
+  const inspectorDock = page.locator(".scenario-action-inspector-dock");
+  const inspector = inspectorDock.locator(".inspector");
   const graph = page.locator(".graph-canvas");
+  const flow = graph.locator(".vue-flow");
   await expect(inspector).toBeVisible();
   await expect(graph).toBeVisible();
-  expect(
-    await inspector.evaluate((element) => element.clientWidth),
-  ).toBeGreaterThan(700);
-  expect(
-    await graph.evaluate((element) => element.clientHeight),
-  ).toBeGreaterThan(200);
+  await expect(flow).toBeVisible();
+  const [graphBox, inspectorBox] = await Promise.all([
+    graph.boundingBox(),
+    inspectorDock.boundingBox(),
+  ]);
+  expect(graphBox?.width).toBeGreaterThan(320);
+  expect(graphBox?.height).toBeGreaterThan(500);
+  expect(inspectorBox?.width).toBeGreaterThanOrEqual(320);
+  expect(inspectorBox?.width).toBeLessThanOrEqual(520);
+  expect((graphBox?.x ?? 0) + (graphBox?.width ?? 0))
+    .toBeLessThanOrEqual(inspectorBox?.x ?? 0);
+  expect(await inspector.evaluate((element) => ({
+    overflowY: getComputedStyle(element).overflowY,
+    scrollable: element.scrollHeight >= element.clientHeight,
+  }))).toEqual({ overflowY: "auto", scrollable: true });
   expect(
     await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth,
+      () => ({
+        horizontal:
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+        vertical:
+          document.documentElement.scrollHeight <=
+          document.documentElement.clientHeight,
+      }),
     ),
-  ).toBe(true);
+  ).toEqual({ horizontal: true, vertical: true });
   await expect(
     page.getByRole("button", { name: "Настроить действие Озвучить текст" }),
   ).toBeVisible();
+  const viewportBeforeInspectorToggle = await flow.locator(".vue-flow__viewport")
+    .evaluate((element) => (element as HTMLElement).style.transform);
+  await page.getByRole("button", { name: "Закрыть инспектор узла" }).click();
+  await page.getByRole("button", { name: "Настроить действие Озвучить текст" }).click();
+  await expect(inspector).toBeVisible();
+  expect(await flow.locator(".vue-flow__viewport")
+    .evaluate((element) => (element as HTMLElement).style.transform))
+    .toBe(viewportBeforeInspectorToggle);
+
+  const resizer = page.getByRole("separator", { name: "Изменить ширину инспектора" });
+  await resizer.focus();
+  const widthBeforeKeyboardResize = (await inspectorDock.boundingBox())!.width;
+  await page.keyboard.press("ArrowLeft");
+  await expect.poll(async () => (await inspectorDock.boundingBox())!.width)
+    .toBeCloseTo(widthBeforeKeyboardResize + 24, 2);
+  await page.keyboard.press("Home");
+  await expect.poll(async () => (await inspectorDock.boundingBox())!.width).toBe(320);
   await page.screenshot({
-    path: testInfo.outputPath("scenario-actions-desktop.png"),
+    path: testInfo.outputPath("scenario-canvas-1-node-desktop.png"),
   });
   await expectNoSeriousAccessibilityViolations(page);
 
@@ -866,7 +899,7 @@ test("action editor gives configuration the primary desktop area and keeps the g
   await page.screenshot({
     path: testInfo.outputPath("scenario-next-action-picker-desktop.png"),
   });
-  await page.getByText("Схема сценария", { exact: true }).click();
+  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("dialog", { name: /Выберите следующее действие/ }),
   ).toBeHidden();
@@ -885,6 +918,23 @@ test("action editor gives configuration the primary desktop area and keeps the g
 
   await page.setViewportSize({ width: 1200, height: 800 });
   await expect(inspector).toBeVisible();
+  await expect(flow).toBeVisible();
+  const studioGrid = page.locator(".studio-grid");
+  const expectedInspectorMax = await studioGrid.evaluate((element) =>
+    Math.min(520, Math.max(320, Math.floor(element.clientWidth - 240 - 300))),
+  );
+  await expect(resizer).toHaveAttribute("aria-valuemax", String(expectedInspectorMax));
+  await resizer.focus();
+  await page.keyboard.press("End");
+  await expect.poll(async () => (await inspectorDock.boundingBox())!.width)
+    .toBe(expectedInspectorMax);
+  const [compactDesktopGraphBox, compactDesktopInspectorBox] = await Promise.all([
+    graph.boundingBox(),
+    inspectorDock.boundingBox(),
+  ]);
+  expect(compactDesktopGraphBox?.width).toBeGreaterThanOrEqual(300);
+  expect((compactDesktopGraphBox?.x ?? 0) + (compactDesktopGraphBox?.width ?? 0))
+    .toBeLessThanOrEqual(compactDesktopInspectorBox?.x ?? 0);
   expect(
     await page.evaluate(
       () =>
@@ -892,6 +942,119 @@ test("action editor gives configuration the primary desktop area and keeps the g
         document.documentElement.clientWidth,
     ),
   ).toBe(true);
+
+  await page.setViewportSize({ width: 880, height: 800 });
+  await expect(flow).toBeVisible();
+  await expect(page.locator(".mobile-action-outline")).toBeHidden();
+  const [tabletWorkspaceBox, tabletGraphBox, tabletInspectorBox] = await Promise.all([
+    studioGrid.boundingBox(),
+    graph.boundingBox(),
+    inspectorDock.boundingBox(),
+  ]);
+  expect(tabletGraphBox?.width).toBeGreaterThanOrEqual(300);
+  expect((tabletGraphBox?.x ?? 0) + (tabletGraphBox?.width ?? 0))
+    .toBeLessThanOrEqual(tabletInspectorBox?.x ?? 0);
+  expect((tabletInspectorBox?.x ?? 0) + (tabletInspectorBox?.width ?? 0))
+    .toBeLessThanOrEqual((tabletWorkspaceBox?.x ?? 0) + (tabletWorkspaceBox?.width ?? 0));
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test("scenario canvas keeps 7 and 30+ node graphs navigable and visually distinct", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "Large graph visual coverage is captured on the desktop project",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page);
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: [
+        { position: 0, nodeKey: "intro", type: "SAY", nextNodeKey: "decision", config: { text: "Начало" } },
+        {
+          position: 1,
+          nodeKey: "decision",
+          type: "ASK_CHOICE",
+          config: {
+            message: "Продолжить?",
+            options: [
+              { id: "yes", label: "Да", nextNodeKey: "wait" },
+              { id: "no", label: "Нет", nextNodeKey: "decline" },
+            ],
+          },
+        },
+        {
+          position: 2,
+          nodeKey: "wait",
+          type: "WAIT_FOR_GOAL",
+          config: {
+            eventDefinitionRevisionId: "evt_1",
+            measure: "count",
+            operator: "gte",
+            threshold: 1,
+            windowMs: 86_400_000,
+            onGoal: "success",
+            onTimeout: "timeout",
+          },
+        },
+        { position: 3, nodeKey: "decline", type: "SAY", nextNodeKey: "finish", config: { text: "Отказ" } },
+        { position: 4, nodeKey: "success", type: "SAY", nextNodeKey: "finish", config: { text: "Готово" } },
+        { position: 5, nodeKey: "timeout", type: "SAY", nextNodeKey: "finish", config: { text: "Время вышло" } },
+        { position: 6, nodeKey: "finish", type: "COMPLETE_SCENARIO", nextNodeKey: null, config: {} },
+      ],
+    },
+  };
+
+  await page.goto("/scenarios/scn_1?graph-size=7");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  const graph = page.locator(".graph-canvas .vue-flow");
+  await expect(graph.locator(".vue-flow__node-scenario")).toHaveCount(7);
+  await page.getByRole("button", { name: /Настроить действие Задать вопрос/ }).click();
+  await expect(page.locator(".scenario-action-inspector-dock")).toBeVisible();
+  await expect(graph).toBeVisible();
+  await expect(graph.locator('.vue-flow__node[data-id="decision"] .node-kind')).toHaveText("Решение");
+  await expect(graph.locator('.vue-flow__node[data-id="wait"] .node-kind')).toHaveText("Ожидание");
+  await expect(graph.locator('.vue-flow__node[data-id="finish"] .node-kind')).toHaveText("Завершение");
+  await page.getByRole("button", { name: "Показать всю схему" }).click();
+  await page.screenshot({ path: testInfo.outputPath("scenario-canvas-7-nodes-desktop.png") });
+
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: Array.from({ length: 31 }, (_, index) => ({
+        position: index,
+        nodeKey: index === 30 ? "finish" : `step_${index + 1}`,
+        type: index === 30 ? "COMPLETE_SCENARIO" : "SAY",
+        nextNodeKey: index < 29 ? `step_${index + 2}` : index === 29 ? "finish" : null,
+        config: index === 30 ? {} : { text: `Сообщение ${index + 1}` },
+      })),
+    },
+  };
+  await page.goto("/scenarios/scn_1?graph-size=31");
+  await page.getByRole("button", { name: /Действия/ }).click();
+  await expect(graph.locator(".vue-flow__node-scenario")).toHaveCount(31);
+  await page.getByLabel("Найти действие").fill("step_30");
+  await page.getByRole("button", { name: "Показать step_30 на схеме" }).click();
+  await expect(graph.locator('.vue-flow__node[data-id="step_30"]')).toHaveClass(/selected/);
+  await expect(page.locator('[data-action-node-key="step_30"].action-outline-row')).toHaveClass(/active/);
+  await expect(graph.locator('.vue-flow__node[data-id="step_30"]')).toBeInViewport();
+  const [largeGraphBox, centeredNodeBox] = await Promise.all([
+    graph.boundingBox(),
+    graph.locator('.vue-flow__node[data-id="step_30"]').boundingBox(),
+  ]);
+  expect(centeredNodeBox?.x).toBeGreaterThanOrEqual(largeGraphBox?.x ?? 0);
+  expect((centeredNodeBox?.x ?? 0) + (centeredNodeBox?.width ?? 0))
+    .toBeLessThanOrEqual((largeGraphBox?.x ?? 0) + (largeGraphBox?.width ?? 0));
+  await expect(page.locator(".scenario-action-inspector-dock")).toBeVisible();
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("scenario-canvas-31-nodes-desktop.png") });
 });
 
 test("scenario graph labels use the project default locale and stable branch identity", async ({
@@ -1679,6 +1842,22 @@ test("action editor uses list, full-width detail and graph views on mobile", asy
   await page.keyboard.press("Escape");
   await expect(outline).toBeVisible();
 
+  await outline.getByRole("button", { name: "Открыть узел step_1" }).click();
+  await page.setViewportSize({ width: 880, height: 800 });
+  await expect(page.locator(".graph-canvas .vue-flow")).toBeVisible();
+  await expect(page.locator(".scenario-action-inspector-dock")).toBeVisible();
+  await expect(
+    page.getByRole("separator", { name: "Изменить ширину инспектора" }),
+  ).toBeHidden();
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-actions-touch-tablet.png"),
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Закрыть инспектор узла" }).click();
+  await expect(outline).toBeVisible();
   await outline.getByRole("button", { name: "Открыть узел step_1" }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Удалить узел" }).click();

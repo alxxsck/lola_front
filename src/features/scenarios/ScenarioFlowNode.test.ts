@@ -24,6 +24,8 @@ describe('ScenarioFlowNode', () => {
           executor: 'SERVER',
           summary: 'Продолжить?',
           issueCount: 0,
+          kind: 'decision',
+          kindLabel: 'Решение',
           portSize: { width: 9, height: 9 },
           ports: [
             { id: 'choice:yes', label: 'Да', position: 25 },
@@ -51,5 +53,40 @@ describe('ScenarioFlowNode', () => {
       { id: 'choice:no', type: 'source' },
       { id: 'timeout', type: 'source' },
     ])
+  })
+
+  it('renders the node kind as text and styling instead of relying on color or system code', () => {
+    const wrapper = shallowMount(ScenarioFlowNode, {
+      props: {
+        id: 'wait',
+        type: 'scenario',
+        selected: true,
+        connectable: false,
+        position: { x: 0, y: 0 },
+        dimensions: { width: 228, height: 120 },
+        dragging: false,
+        resizing: false,
+        zIndex: 0,
+        events: {} as NodeProps['events'],
+        data: {
+          label: 'Ждать оплату',
+          nodeKey: 'wait_for_payment',
+          icon: 'pi pi-clock',
+          executor: 'SERVER',
+          summary: 'До 24 часов',
+          issueCount: 0,
+          kind: 'wait',
+          kindLabel: 'Ожидание',
+          portSize: { width: 9, height: 9 },
+          ports: [],
+        },
+      },
+      global: { stubs: { Handle: true } },
+    })
+
+    expect(wrapper.get('.flow-node').classes()).toContain('kind-wait')
+    expect(wrapper.get('.node-kind').text()).toBe('Ожидание')
+    expect(wrapper.get('.node-title').text()).toBe('Ждать оплату')
+    expect(wrapper.get('.node-key').text()).toBe('wait_for_payment')
   })
 })

@@ -32,6 +32,16 @@ import ScenarioFlowNode from "@/features/scenarios/ScenarioFlowNode.vue";
 import ScenarioFlowEdge from "@/features/scenarios/ScenarioFlowEdge.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ScenarioGraphLayoutToolbar from "@/features/scenarios/ScenarioGraphLayoutToolbar.vue";
+import ScenarioActionInspectorDock from "@/features/scenarios/ScenarioActionInspectorDock.vue";
+import {
+  SCENARIO_ACTION_CANVAS_MIN_WIDTH,
+  SCENARIO_ACTION_COMPACT_MAX_WIDTH,
+  SCENARIO_ACTION_INSPECTOR_MAX_WIDTH,
+  SCENARIO_ACTION_INSPECTOR_MIN_WIDTH,
+  SCENARIO_ACTION_OUTLINE_WIDTH,
+  clampScenarioActionInspectorWidth,
+  scenarioActionInspectorMaxWidth,
+} from "@/features/scenarios/model/scenario-action-workspace";
 import {
   layoutScenarioGraphViewModel,
   mergeScenarioGraphPresentation,
@@ -169,7 +179,10 @@ import {
   planScenarioActionTypeReplacement,
   planScenarioEntryPointChange,
 } from "@/features/scenarios/model/scenario-action-change";
-import { buildScenarioGraphViewModel } from "@/features/scenarios/model/scenario-graph-view-model";
+import {
+  buildScenarioGraphViewModel,
+  scenarioGraphNodePresentation,
+} from "@/features/scenarios/model/scenario-graph-view-model";
 
 interface ScenarioForm {
   id?: string;
@@ -295,6 +308,11 @@ const inspectorMode = ref<"node" | "settings">("settings");
 const compactActionLayout = ref(false);
 const graphExpanded = ref(false);
 const graphLocale = ref("");
+const actionOutlineQuery = ref("");
+const actionOutlineIssuesOnly = ref(false);
+const actionInspectorWidth = ref(380);
+const actionInspectorMaxWidth = ref(SCENARIO_ACTION_INSPECTOR_MAX_WIDTH);
+const studioGridElement = ref<HTMLElement | null>(null);
 const graphCanvasElement = ref<HTMLElement | null>(null);
 const actionInspector = ref<{ focus?: () => void } | null>(null);
 let actionViewReturnFocus: HTMLElement | null = null;
@@ -304,7 +322,7 @@ const admissionSettings = ref<ScenarioAdmissionSettingsResponseDto | null>(
 );
 const codeTouched = ref(false);
 const initialSnapshot = ref("");
-let compactActionMedia: MediaQueryList | null = null;
+let actionWorkspaceResizeObserver: ResizeObserver | null = null;
 
 const form = reactive<ScenarioForm>({
   code: "",
@@ -541,6 +559,48 @@ const selectedIssues = computed(() =>
     .filter((issue) => issue.nodeKey === selectedNodeKey.value)
     .map((issue) => issue.message),
 );
+const actionOutlineItems = computed(() =>
+  form.actions.map((action) => {
+    const definition = findScenarioActionCatalogItem(
+      actionCatalog.value,
+      action.type,
+    );
+    const issues = actionIssues.value.filter(
+      (issue) => issue.nodeKey === action.nodeKey,
+    );
+    const executor = definition?.executor ?? "SERVER";
+    return {
+      action,
+      label: definition?.name ?? action.type,
+      summary: nodeSummary(action),
+      issueCount: issues.length,
+      executor,
+      ...scenarioGraphNodePresentation(action.type, executor),
+    };
+  }),
+);
+const filteredActionOutlineItems = computed(() => {
+  const query = actionOutlineQuery.value.trim().toLocaleLowerCase("ru");
+  return actionOutlineItems.value.filter((item) => {
+    if (actionOutlineIssuesOnly.value && !item.issueCount) return false;
+    if (!query) return true;
+    return [
+      item.label,
+      item.action.type,
+      item.action.nodeKey,
+      item.summary,
+    ].some((value) => String(value ?? "").toLocaleLowerCase("ru").includes(query));
+  });
+});
+const actionOutlineIssueCount = computed(
+  () => actionOutlineItems.value.filter(({ issueCount }) => issueCount > 0).length,
+);
+const actionWorkspaceStyle = computed(() => ({
+  "--action-outline-width": `${SCENARIO_ACTION_OUTLINE_WIDTH}px`,
+  "--action-canvas-min-width": `${SCENARIO_ACTION_CANVAS_MIN_WIDTH}px`,
+  "--action-inspector-min-width": `${SCENARIO_ACTION_INSPECTOR_MIN_WIDTH}px`,
+  "--action-inspector-width": `${actionInspectorWidth.value}px`,
+}));
 const formIsDirty = computed(
   () =>
     Boolean(initialSnapshot.value) &&
@@ -886,26 +946,21 @@ const baseGraphViewModel = computed(() =>
       ? eventDisplayName(selectedEvent.value.code, selectedEvent.value.name)
       : "Выберите событие",
     presentAction: (action) => {
-      const definition = findScenarioActionCatalogItem(
-        actionCatalog.value,
+      const item = actionOutlineItems.value.find(
+        ({ action: candidate }) => candidate === action,
+      );
+      const definition = findScenarioActionCatalogItem(actionCatalog.value, action.type);
+      const semantics = scenarioGraphNodePresentation(
         action.type,
+        definition?.executor ?? "SERVER",
       );
       return {
-        label: definition?.name ?? action.type,
+        label: item?.label ?? definition?.name ?? action.type,
         nodeKey: action.nodeKey ?? "",
-        icon:
-          action.type === "CONDITION"
-            ? "pi pi-code"
-            : action.type === "ASK_CHOICE"
-              ? "pi pi-question-circle"
-              : definition?.executor === "FRONTEND"
-                ? "pi pi-desktop"
-                : "pi pi-server",
+        icon: semantics.icon,
         executor: definition?.executor ?? "SERVER",
-        summary: nodeSummary(action),
-        issueCount: actionIssues.value.filter(
-          (issue) => issue.nodeKey === action.nodeKey,
-        ).length,
+        summary: item?.summary ?? nodeSummary(action),
+        issueCount: item?.issueCount ?? 0,
       };
     },
   }),
@@ -990,6 +1045,7 @@ let graphLayoutFingerprint = "";
 let graphLayoutCompleted = false;
 let graphLayoutTimer: ReturnType<typeof setTimeout> | undefined;
 let graphLayoutEngine: ScenarioGraphLayoutEngine | undefined;
+let pendingGraphCenterNodeKey: string | null = null;
 let graphHasInitialFit = false;
 let graphFitPending = false;
 let graphFlowApi:
@@ -1084,8 +1140,13 @@ async function performGraphAutoLayout(
   graphLayoutStatus.value = result.status;
   graphLayoutCompleted = true;
   const shouldFit = explicit || (!graphHasInitialFit && model.nodes.length > 1);
-  if (!shouldFit) return;
-  if (await fitGraphAfterLayout()) graphHasInitialFit = true;
+  if (shouldFit && await fitGraphAfterLayout()) graphHasInitialFit = true;
+  if (pendingGraphCenterNodeKey) {
+    const nodeKey = pendingGraphCenterNodeKey;
+    if (await focusGraphNodeInViewport(nodeKey)) {
+      if (pendingGraphCenterNodeKey === nodeKey) pendingGraphCenterNodeKey = null;
+    }
+  }
 }
 
 function queueGraphAutoLayout(
@@ -1185,7 +1246,12 @@ watch(
   { immediate: true },
 );
 
-const flowNodes = computed(() => graphViewModel.value.nodes);
+const flowNodes = computed(() =>
+  graphViewModel.value.nodes.map((node) => ({
+    ...node,
+    selected: node.id !== "trigger" && node.id === selectedNodeKey.value,
+  })),
+);
 const flowEdges = computed(() => graphViewModel.value.edges);
 const graphLayoutMode = computed(() => graphPresentationLayout.value.mode);
 const selectedGraphNodeLabel = computed(() => {
@@ -1263,24 +1329,48 @@ watch(
   },
 );
 
-function syncCompactActionLayout(event: MediaQueryListEvent | MediaQueryList) {
-  compactActionLayout.value = event.matches;
+function syncActionWorkspaceWidth() {
+  const workspaceWidth = studioGridElement.value?.clientWidth ?? 0;
+  compactActionLayout.value = workspaceWidth
+    ? workspaceWidth <= SCENARIO_ACTION_COMPACT_MAX_WIDTH
+    : Boolean(window.matchMedia?.("(max-width: 1100px)").matches);
+  if (!workspaceWidth || compactActionLayout.value) {
+    actionInspectorMaxWidth.value = SCENARIO_ACTION_INSPECTOR_MAX_WIDTH;
+    return;
+  }
+  const maxWidth = scenarioActionInspectorMaxWidth(workspaceWidth);
+  actionInspectorMaxWidth.value = maxWidth;
+  if (actionInspectorWidth.value > maxWidth) actionInspectorWidth.value = maxWidth;
 }
 
+watch(
+  studioGridElement,
+  (element) => {
+    actionWorkspaceResizeObserver?.disconnect();
+    actionWorkspaceResizeObserver = null;
+    if (element && typeof ResizeObserver !== "undefined") {
+      actionWorkspaceResizeObserver = new ResizeObserver(syncActionWorkspaceWidth);
+      actionWorkspaceResizeObserver.observe(element);
+    }
+    syncActionWorkspaceWidth();
+  },
+  { flush: "post" },
+);
+
 onMounted(() => {
-  if (typeof window !== "undefined" && window.matchMedia) {
-    compactActionMedia = window.matchMedia("(max-width: 1024px)");
-    syncCompactActionLayout(compactActionMedia);
-    compactActionMedia.addEventListener("change", syncCompactActionLayout);
-  }
+  syncActionWorkspaceWidth();
+  window.addEventListener("resize", syncActionWorkspaceWidth);
   void load();
 });
 
 onBeforeUnmount(() => {
   cancelGraphLayout();
+  pendingGraphCenterNodeKey = null;
   graphFlowApi = undefined;
   graphFitPending = false;
-  compactActionMedia?.removeEventListener("change", syncCompactActionLayout);
+  actionWorkspaceResizeObserver?.disconnect();
+  actionWorkspaceResizeObserver = null;
+  window.removeEventListener("resize", syncActionWorkspaceWidth);
   translationController.dispose();
 });
 
@@ -1918,6 +2008,37 @@ function openNode(nodeKey: string) {
   focusActionInspector();
 }
 
+function resizeActionInspector(width: number) {
+  actionInspectorWidth.value = clampScenarioActionInspectorWidth(
+    width,
+    SCENARIO_ACTION_INSPECTOR_MIN_WIDTH,
+    actionInspectorMaxWidth.value,
+  );
+}
+
+async function centerGraphNode(nodeKey: string) {
+  pendingGraphCenterNodeKey = nodeKey;
+  openNode(nodeKey);
+  if (graphLayoutTimer !== undefined || graphLayoutEngine || graphLayoutStatus.value === "loading") return;
+  if (await focusGraphNodeInViewport(nodeKey)) pendingGraphCenterNodeKey = null;
+}
+
+async function focusGraphNodeInViewport(nodeKey: string) {
+  await nextTick();
+  if (typeof requestAnimationFrame === "function") {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  }
+  return await graphFlowApi?.fitView({
+    nodes: [nodeKey],
+    padding: 0.75,
+    minZoom: 0.75,
+    maxZoom: 1.15,
+    duration: 240,
+  }) ?? false;
+}
+
 function openFirstAction() {
   if (firstAction.value?.nodeKey) openNode(firstAction.value.nodeKey);
 }
@@ -2411,7 +2532,7 @@ function leave() {
     <Message v-if="error" severity="error" class="page-error">{{
       error
     }}</Message>
-    <div v-else-if="loading" class="studio-loading">
+    <div v-else-if="loading" class="studio-loading" role="status" aria-live="polite">
       <i class="pi pi-spin pi-spinner" /><span>Загружаем редактор…</span>
     </div>
     <template v-else>
@@ -2485,7 +2606,9 @@ function leave() {
         />
       </section>
       <div
+        ref="studioGridElement"
         class="studio-grid"
+        :style="actionWorkspaceStyle"
         :class="[
           `stage-${studioStage}`,
           {
@@ -2527,51 +2650,62 @@ function leave() {
               </div>
               <small>{{ form.actions.length }}</small>
             </header>
-            <div v-if="form.actions.length" class="action-outline-list">
+            <div v-if="form.actions.length" class="action-outline-tools">
+              <label class="action-outline-search">
+                <i class="pi pi-search" aria-hidden="true" />
+                <input
+                  v-model="actionOutlineQuery"
+                  type="search"
+                  aria-label="Найти действие"
+                  placeholder="Название или код"
+                />
+              </label>
               <button
-                v-for="action in form.actions"
-                :key="action.nodeKey"
                 type="button"
-                class="action-outline-item"
-                :data-action-node-key="action.nodeKey"
-                :class="{
-                  active: selectedNodeKey === action.nodeKey && !graphExpanded,
-                }"
-                :aria-label="`Настроить действие ${findScenarioActionCatalogItem(actionCatalog, action.type)?.name ?? action.type}`"
-                @click="openNode(action.nodeKey ?? '')"
-              >
-                <span
-                  ><i
-                    :class="
-                      action.type === 'CONDITION'
-                        ? 'pi pi-code'
-                        : action.type === 'WAIT_FOR_GOAL'
-                          ? 'pi pi-clock'
-                          : 'pi pi-bolt'
-                    "
-                /></span>
-                <div>
-                  <strong>{{
-                    findScenarioActionCatalogItem(actionCatalog, action.type)
-                      ?.name ?? action.type
-                  }}</strong>
-                  <small>{{ action.nodeKey }}</small>
-                </div>
-                <em
-                  v-if="
-                    actionIssues.filter(
-                      (issue) => issue.nodeKey === action.nodeKey,
-                    ).length
-                  "
-                >
-                  {{
-                    actionIssues.filter(
-                      (issue) => issue.nodeKey === action.nodeKey,
-                    ).length
-                  }}
-                </em>
-              </button>
+                class="action-outline-error-filter"
+                :class="{ active: actionOutlineIssuesOnly }"
+                :aria-pressed="actionOutlineIssuesOnly"
+                aria-label="Показать только действия с ошибками"
+                :disabled="!actionOutlineIssueCount"
+                @click="actionOutlineIssuesOnly = !actionOutlineIssuesOnly"
+              ><i class="pi pi-exclamation-circle" aria-hidden="true" />{{ actionOutlineIssueCount }}</button>
             </div>
+            <div v-if="filteredActionOutlineItems.length" class="action-outline-list">
+              <div
+                v-for="item in filteredActionOutlineItems"
+                :key="item.action.nodeKey"
+                class="action-outline-row"
+                :data-action-node-key="item.action.nodeKey"
+                :class="{
+                  active: selectedNodeKey === item.action.nodeKey && !graphExpanded,
+                }"
+              >
+                <button
+                  type="button"
+                  class="action-outline-item action-outline-main"
+                  :aria-label="`Настроить действие ${item.label}`"
+                  @click="openNode(item.action.nodeKey ?? '')"
+                >
+                  <span><i :class="item.icon" /></span>
+                  <div>
+                    <strong>{{ item.label }}</strong>
+                    <small>{{ item.summary }}</small>
+                    <code>{{ item.action.nodeKey }}</code>
+                  </div>
+                  <em v-if="item.issueCount">{{ item.issueCount }}</em>
+                </button>
+                <button
+                  type="button"
+                  class="action-outline-center"
+                  :aria-label="`Показать ${item.action.nodeKey} на схеме`"
+                  :title="`Показать ${item.action.nodeKey} на схеме`"
+                  @click="centerGraphNode(item.action.nodeKey ?? '')"
+                ><i class="pi pi-crosshairs" aria-hidden="true" /></button>
+              </div>
+            </div>
+            <p v-else-if="form.actions.length" class="action-outline-empty" role="status">
+              {{ actionOutlineIssuesOnly ? "Действий с ошибками не найдено." : "Поиск не нашёл действий." }}
+            </p>
             <p v-else class="action-outline-empty">
               Здесь появятся добавленные действия.
             </p>
@@ -2713,42 +2847,20 @@ function leave() {
               <i class="pi pi-sitemap" />Открыть схему
             </button>
             <button
-              v-for="action in form.actions"
-              :key="action.nodeKey"
+              v-for="item in actionOutlineItems"
+              :key="item.action.nodeKey"
               type="button"
               class="mobile-node-card"
-              :data-action-node-key="action.nodeKey"
-              :aria-label="`Открыть узел ${action.nodeKey}`"
-              @click="openNode(action.nodeKey ?? '')"
+              :data-action-node-key="item.action.nodeKey"
+              :aria-label="`Открыть узел ${item.action.nodeKey}`"
+              @click="openNode(item.action.nodeKey ?? '')"
             >
-              <span
-                ><i
-                  :class="
-                    action.type === 'WAIT_FOR_GOAL'
-                      ? 'pi pi-clock'
-                      : action.type === 'CONDITION'
-                        ? 'pi pi-code'
-                        : 'pi pi-bolt'
-                  "
-              /></span>
+              <span><i :class="item.icon" /></span>
               <div>
-                <strong>{{
-                  findScenarioActionCatalogItem(actionCatalog, action.type)
-                    ?.name ?? action.type
-                }}</strong
-                ><small>{{ action.nodeKey }} · {{ nodeSummary(action) }}</small>
+                <strong>{{ item.label }}</strong
+                ><small>{{ item.action.nodeKey }} · {{ item.summary }}</small>
               </div>
-              <em
-                v-if="
-                  actionIssues.filter(
-                    (issue) => issue.nodeKey === action.nodeKey,
-                  ).length
-                "
-                >{{
-                  actionIssues.filter(
-                    (issue) => issue.nodeKey === action.nodeKey,
-                  ).length
-                }}</em
+              <em v-if="item.issueCount">{{ item.issueCount }}</em
               ><i class="pi pi-chevron-right" />
             </button>
             <p v-if="!form.actions.length" class="mobile-empty">
@@ -2805,6 +2917,8 @@ function leave() {
           <section
             v-if="!compactActionLayout && !form.actions.length"
             class="action-empty"
+            role="status"
+            aria-label="Сценарий пока не содержит действий"
           >
             <span class="action-empty-icon"><i class="pi pi-bolt" /></span>
             <div>
@@ -3121,94 +3235,95 @@ function leave() {
             @focus-audience-node="focusAudienceIssue"
           />
         </aside>
-        <ScenarioNodeInspector
-          v-else-if="
-            studioStage === 'actions' &&
-            inspectorMode === 'node' &&
-            selectedAction &&
-            !graphExpanded &&
-            canEdit
-          "
-          ref="actionInspector"
-          :project-id="auth.project?.id ?? ''"
-          :action="selectedAction"
-          :actions="form.actions"
-          :action-catalog="actionCatalog"
-          :events="events"
-          :elements="elements"
-          :template-variables="templateVariables"
-          :condition-paths="conditionPaths"
-          :issues="selectedIssues"
-          :authoring-contract="authoringContract"
-          :localization-policy="localizationPolicy"
-          :scenario-id="form.id ?? 'new'"
-          :action-path="`graph.actions.${selectedAction.nodeKey}`"
-          :translation-states="translationStates"
-          :focus-field-path="focusedLocalizedFieldPath"
-          :focus-locale="focusedLocale"
-          @change-type="changeType"
-          @type-picker-closed="showPendingActionChange"
-          @create-target="createTarget"
-          @remove="removeSelected"
-          @update="updateSelected"
-          @rename="renameNode"
-          @close="closeNodeInspector"
-          @translation-request="requestTranslation"
-          @translation-retry="retryTranslation"
-          @translation-cancel="cancelTranslation"
-          @translation-manual-edit="markTranslationManual"
-        />
-        <aside
+        <ScenarioActionInspectorDock
           v-else-if="
             studioStage === 'actions' &&
             inspectorMode === 'node' &&
             selectedAction &&
             !graphExpanded
           "
-          class="readonly-panel readonly-action-panel"
-          aria-label="Действие только для просмотра"
+          :width="actionInspectorWidth"
+          :max-width="actionInspectorMaxWidth"
+          @resize="resizeActionInspector"
         >
-          <div class="settings-head readonly-action-head">
-            <div>
-              <small>Режим просмотра</small>
-              <h2>
-                {{
-                  findScenarioActionCatalogItem(
-                    actionCatalog,
-                    selectedAction.type,
-                  )?.name ?? selectedAction.type
-                }}
-              </h2>
+          <ScenarioNodeInspector
+            v-if="canEdit"
+            ref="actionInspector"
+            :project-id="auth.project?.id ?? ''"
+            :action="selectedAction"
+            :actions="form.actions"
+            :action-catalog="actionCatalog"
+            :events="events"
+            :elements="elements"
+            :template-variables="templateVariables"
+            :condition-paths="conditionPaths"
+            :issues="selectedIssues"
+            :authoring-contract="authoringContract"
+            :localization-policy="localizationPolicy"
+            :scenario-id="form.id ?? 'new'"
+            :action-path="`graph.actions.${selectedAction.nodeKey}`"
+            :translation-states="translationStates"
+            :focus-field-path="focusedLocalizedFieldPath"
+            :focus-locale="focusedLocale"
+            @change-type="changeType"
+            @type-picker-closed="showPendingActionChange"
+            @create-target="createTarget"
+            @remove="removeSelected"
+            @update="updateSelected"
+            @rename="renameNode"
+            @close="closeNodeInspector"
+            @translation-request="requestTranslation"
+            @translation-retry="retryTranslation"
+            @translation-cancel="cancelTranslation"
+            @translation-manual-edit="markTranslationManual"
+          />
+          <aside
+            v-else
+            class="readonly-panel readonly-action-panel"
+            aria-label="Действие только для просмотра"
+          >
+            <div class="settings-head readonly-action-head">
+              <div>
+                <small>Режим просмотра</small>
+                <h2>
+                  {{
+                    findScenarioActionCatalogItem(
+                      actionCatalog,
+                      selectedAction.type,
+                    )?.name ?? selectedAction.type
+                  }}
+                </h2>
+              </div>
+              <Button
+                icon="pi pi-times"
+                text
+                rounded
+                aria-label="Закрыть просмотр действия"
+                @click="closeNodeInspector"
+              />
             </div>
-            <Button
-              icon="pi pi-times"
-              text
-              rounded
-              aria-label="Закрыть просмотр действия"
-              @click="closeNodeInspector"
-            />
-          </div>
-          <dl>
-            <div>
-              <dt>Код шага</dt>
-              <dd>
-                <code>{{ selectedAction.nodeKey }}</code>
-              </dd>
-            </div>
-            <div>
-              <dt>Что делает</dt>
-              <dd>{{ nodeSummary(selectedAction) }}</dd>
-            </div>
-            <div>
-              <dt>Следующий шаг</dt>
-              <dd>{{ selectedAction.nextNodeKey || "Завершает сценарий" }}</dd>
-            </div>
-          </dl>
-          <p class="readonly-action-note">
-            Изменить этот шаг нельзя: исходные настройки опубликованной версии
-            не сохранились в формате редактора.
-          </p>
-        </aside>
+            <dl>
+              <div>
+                <dt>Код шага</dt>
+                <dd>
+                  <code>{{ selectedAction.nodeKey }}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>Что делает</dt>
+                <dd>{{ nodeSummary(selectedAction) }}</dd>
+              </div>
+              <div>
+                <dt>Следующий шаг</dt>
+                <dd>{{ selectedAction.nextNodeKey || "Завершает сценарий" }}</dd>
+              </div>
+            </dl>
+            <p class="readonly-action-note">
+              Изменить этот шаг нельзя: исходные настройки опубликованной версии
+              не сохранились в формате редактора.
+            </p>
+          </aside>
+        </ScenarioActionInspectorDock>
         <aside
           v-else-if="studioStage === 'trigger' && !canEdit"
           class="readonly-panel"
@@ -3585,20 +3700,22 @@ function leave() {
   overflow: hidden;
 }
 .studio-grid.stage-actions.has-action-inspector {
-  grid-template-columns: 240px minmax(0, 1fr);
-  grid-template-rows: minmax(430px, 1fr) minmax(220px, 34%);
+  grid-template-columns:
+    var(--action-outline-width)
+    minmax(var(--action-canvas-min-width), 1fr)
+    minmax(var(--action-inspector-min-width), var(--action-inspector-width));
+  grid-template-rows: minmax(0, 1fr);
 }
 .studio-grid.stage-actions.has-action-inspector > .studio-sidebar {
-  grid-row: 1 / -1;
+  grid-column: 1;
+  grid-row: 1;
 }
 .studio-grid.stage-actions.has-action-inspector > .graph-canvas {
   grid-column: 2;
-  grid-row: 2;
-  border-top: 1px solid var(--line);
+  grid-row: 1;
 }
-.studio-grid.stage-actions.has-action-inspector > .inspector,
-.studio-grid.stage-actions.has-action-inspector > .readonly-action-panel {
-  grid-column: 2;
+.studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+  grid-column: 3;
   grid-row: 1;
   min-width: 0;
 }
@@ -3727,10 +3844,87 @@ function leave() {
   font-size: 0.65rem;
   font-weight: 800;
 }
+.action-outline-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 6px;
+  padding: 0 2px 10px;
+}
+.action-outline-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 9px;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-small-muted);
+}
+.action-outline-search:focus-within {
+  border-color: var(--status-accent-text);
+  box-shadow: 0 0 0 2px var(--status-accent-soft);
+}
+.action-outline-search i { font-size: 0.72rem; }
+.action-outline-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 0.67rem var(--font-display);
+}
+.action-outline-search input::placeholder { color: var(--text-small-muted); }
+.action-outline-error-filter,
+.action-outline-center {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.action-outline-error-filter {
+  grid-template-columns: auto auto;
+  gap: 3px;
+  min-width: 40px;
+  min-height: 40px;
+  font: 800 0.61rem var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.action-outline-error-filter.active {
+  border-color: var(--status-danger);
+  background: var(--status-danger-soft);
+  color: var(--status-danger-text);
+}
+.action-outline-error-filter:disabled { cursor: default; opacity: 0.45; }
 .action-outline-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   padding-inline: 2px;
+}
+.action-outline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: border-color 140ms cubic-bezier(0.23, 1, 0.32, 1), background-color 140ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.action-outline-row:hover {
+  border-color: var(--border-default);
+  background: var(--surface-card);
+}
+.action-outline-row.active {
+  border-color: var(--status-accent);
+  background: var(--surface-card);
+  box-shadow: 0 0 0 2px var(--status-accent-soft);
 }
 .action-outline-item {
   display: grid;
@@ -3738,23 +3932,14 @@ function leave() {
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 54px;
-  padding: 10px 9px;
-  border: 1px solid transparent;
+  min-height: 62px;
+  padding: 8px 5px 8px 8px;
+  border: 0;
   border-radius: 12px;
   background: transparent;
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-}
-.action-outline-item:hover,
-.action-outline-item.active {
-  border-color: var(--border-default);
-  background: var(--surface-card);
-}
-.action-outline-item.active {
-  border-color: var(--status-accent);
-  box-shadow: 0 0 0 2px var(--status-accent-soft);
 }
 .action-outline-item > span {
   display: grid;
@@ -3769,7 +3954,8 @@ function leave() {
   min-width: 0;
 }
 .action-outline-item strong,
-.action-outline-item small {
+.action-outline-item small,
+.action-outline-item code {
   display: block;
 }
 .action-outline-item strong {
@@ -3780,10 +3966,22 @@ function leave() {
 }
 .action-outline-item small {
   margin-top: 2px;
-  color: var(--text-small-muted);
-  font-size: 0.67rem;
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.64rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.action-outline-item code {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--text-small-muted);
+  font-size: 0.57rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .action-outline-item em {
   display: grid;
@@ -3796,11 +3994,31 @@ function leave() {
   font-size: 0.6rem;
   font-style: normal;
 }
+.action-outline-center {
+  width: 40px;
+  height: 40px;
+  border-color: transparent;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 140ms cubic-bezier(0.23, 1, 0.32, 1), color 140ms cubic-bezier(0.23, 1, 0.32, 1), background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.action-outline-row:hover .action-outline-center,
+.action-outline-row:focus-within .action-outline-center,
+.action-outline-row.active .action-outline-center { opacity: 1; }
+.action-outline-center:hover,
+.action-outline-center:focus-visible {
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
+}
 .action-outline-empty {
   margin: 4px 7px 12px;
   color: var(--text-small-muted);
   font-size: 0.66rem;
   line-height: 1.45;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-outline-row,
+  .action-outline-center { transition: none; }
 }
 .action-library-picker {
   margin: 10px 2px 0;
@@ -4658,7 +4876,7 @@ function leave() {
 .studio-sidebar::-webkit-scrollbar {
   display: none;
 }
-@container scenario-studio (max-width:1024px) {
+@container scenario-studio (max-width:860px) {
   .scenario-studio {
     height: 100dvh;
     min-height: 0;
@@ -4680,10 +4898,12 @@ function leave() {
   }
   .studio-grid.stage-actions.has-action-inspector > .studio-sidebar,
   .studio-grid.stage-actions.has-action-inspector > .graph-canvas,
-  .studio-grid.stage-actions.has-action-inspector > .inspector,
-  .studio-grid.stage-actions.has-action-inspector > .readonly-action-panel {
+  .studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
     grid-column: 1;
     grid-row: auto;
+  }
+  .studio-grid.stage-actions.has-action-inspector > .scenario-action-inspector-dock {
+    min-height: 320px;
   }
   .studio-grid.stage-trigger > .settings-panel,
   .studio-grid.stage-trigger > .readonly-panel {

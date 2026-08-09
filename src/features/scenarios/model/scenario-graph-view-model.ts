@@ -66,7 +66,17 @@ export interface ScenarioGraphActionPresentation extends Record<string, unknown>
   issueCount: number
 }
 
+export type ScenarioGraphNodeKind = 'action' | 'decision' | 'wait' | 'terminal'
+
+export interface ScenarioGraphNodePresentation {
+  kind: ScenarioGraphNodeKind
+  kindLabel: string
+  icon: string
+}
+
 export interface ScenarioGraphNodeData extends ScenarioGraphActionPresentation {
+  kind: ScenarioGraphNodeKind
+  kindLabel: string
   ports: ScenarioGraphPort[]
   portSize: ScenarioGraphSize
 }
@@ -120,6 +130,41 @@ export const DEFAULT_SCENARIO_GRAPH_VIEWPORT: Readonly<ScenarioGraphViewportOpti
   minZoom: 0.25,
   maxZoom: 1.6,
   backgroundGap: 22,
+}
+
+function scenarioGraphNodeKindLabel(kind: ScenarioGraphNodeKind) {
+  if (kind === 'decision') return 'Решение'
+  if (kind === 'wait') return 'Ожидание'
+  if (kind === 'terminal') return 'Завершение'
+  return 'Действие'
+}
+
+export function scenarioGraphNodePresentation(
+  type: string,
+  executor = 'SERVER',
+): ScenarioGraphNodePresentation {
+  const kind: ScenarioGraphNodeKind =
+    type === 'ASK_CHOICE' || type === 'CONDITION'
+      ? 'decision'
+      : type === 'WAIT_FOR_GOAL'
+        ? 'wait'
+        : type === 'COMPLETE_SCENARIO' || type === 'CLOSE_CHAT'
+          ? 'terminal'
+          : 'action'
+  return {
+    kind,
+    kindLabel: scenarioGraphNodeKindLabel(kind),
+    icon:
+      kind === 'decision'
+        ? 'pi pi-directions-alt'
+        : kind === 'wait'
+          ? 'pi pi-clock'
+          : kind === 'terminal'
+            ? 'pi pi-flag-fill'
+            : executor === 'FRONTEND'
+              ? 'pi pi-desktop'
+              : 'pi pi-server',
+  }
 }
 
 function resolveLayout(
@@ -214,8 +259,11 @@ export function buildScenarioGraphViewModel(
     const totalWidth = (levelActions.length - 1) * columnStep
     levelActions.forEach((action, column) => {
       const outgoing = outgoingBySource.get(action.nodeKey ?? '') ?? []
+      const presentation = input.presentAction(action)
+      const semantics = scenarioGraphNodePresentation(action.type, presentation.executor)
       const data: ScenarioGraphNodeData = {
-        ...input.presentAction(action),
+        ...presentation,
+        ...semantics,
         portSize: layout.port,
         ports: outgoing.map((transition, index) => ({
           id: transition.branchId,

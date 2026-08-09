@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { graphTransitions } from './scenario-graph'
 import {
   buildScenarioGraphViewModel,
+  scenarioGraphNodePresentation,
   type ScenarioGraphViewModel,
 } from './scenario-graph-view-model'
 import {
@@ -70,6 +71,20 @@ function hasBranchOrderViolation(model: ScenarioGraphViewModel, source: string) 
 }
 
 describe('scenario graph view model', () => {
+  it.each([
+    { type: 'SAY', executor: 'SERVER', kind: 'action', label: 'Действие', icon: 'pi pi-server' },
+    { type: 'OPEN_URL', executor: 'FRONTEND', kind: 'action', label: 'Действие', icon: 'pi pi-desktop' },
+    { type: 'ASK_CHOICE', executor: 'SERVER', kind: 'decision', label: 'Решение', icon: 'pi pi-directions-alt' },
+    { type: 'WAIT_FOR_GOAL', executor: 'SERVER', kind: 'wait', label: 'Ожидание', icon: 'pi pi-clock' },
+    { type: 'COMPLETE_SCENARIO', executor: 'SERVER', kind: 'terminal', label: 'Завершение', icon: 'pi pi-flag-fill' },
+  ])('keeps $type presentation consistent across canvas and outline', ({ type, executor, kind, label, icon }) => {
+    expect(scenarioGraphNodePresentation(type, executor)).toEqual({
+      kind,
+      kindLabel: label,
+      icon,
+    })
+  })
+
   it.each(scenarioGraphFixtures)('builds deterministic, non-overlapping $name coordinates and valid routes', ({ actions }) => {
     const first = build(actions)
     const second = build(structuredClone(actions))
@@ -206,5 +221,31 @@ describe('scenario graph view model', () => {
       overflow: 'hidden',
     })
     expect(overlappingPairs(model)).toEqual([])
+  })
+
+  it('classifies action, decision, wait and terminal nodes as presentation semantics', () => {
+    const actions: ScenarioAction[] = [
+      { position: 0, nodeKey: 'message', type: 'SAY', config: {} },
+      { position: 1, nodeKey: 'question', type: 'ASK_CHOICE', config: { options: [] } },
+      { position: 2, nodeKey: 'wait', type: 'WAIT_FOR_GOAL', config: {} },
+      { position: 3, nodeKey: 'finish', type: 'COMPLETE_SCENARIO', config: {} },
+    ]
+    const model = buildScenarioGraphViewModel({
+      actions,
+      transitions: [],
+      triggerLabel: 'Старт',
+      presentAction,
+    })
+
+    expect(model.nodes.slice(1).map(({ id, data }) => ({
+      id,
+      kind: data.kind,
+      kindLabel: data.kindLabel,
+    }))).toEqual([
+      { id: 'message', kind: 'action', kindLabel: 'Действие' },
+      { id: 'question', kind: 'decision', kindLabel: 'Решение' },
+      { id: 'wait', kind: 'wait', kindLabel: 'Ожидание' },
+      { id: 'finish', kind: 'terminal', kindLabel: 'Завершение' },
+    ])
   })
 })

@@ -15,6 +15,7 @@ import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
 import ScenarioActionChangeDialog from "@/features/scenarios/ScenarioActionChangeDialog.vue";
 import ScenarioGraphLayoutToolbar from "@/features/scenarios/ScenarioGraphLayoutToolbar.vue";
+import ScenarioActionInspectorDock from "@/features/scenarios/ScenarioActionInspectorDock.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
 import type { ProjectAction } from "@/features/project-actions/model/project-action";
@@ -303,6 +304,13 @@ function mountPage() {
         Background: true,
         Controls: true,
         Message: { template: '<div class="message-stub"><slot /></div>' },
+        ScenarioActionInspectorDock: {
+          name: "ScenarioActionInspectorDock",
+          props: ["width", "minWidth", "maxWidth"],
+          emits: ["resize"],
+          template:
+            '<section class="scenario-action-inspector-dock-stub"><slot /></section>',
+        },
       },
     },
   });
@@ -781,16 +789,14 @@ describe("ScenarioEditorPage V2 rule journey", () => {
   });
 
   it("does not mount the desktop graph behind the mobile action outline", async () => {
-    const addEventListener = vi.fn();
-    const removeEventListener = vi.fn();
     vi.stubGlobal(
       "matchMedia",
       vi
         .fn()
         .mockReturnValue({
           matches: true,
-          addEventListener,
-          removeEventListener,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
         }),
     );
     const wrapper = mountPage();
@@ -799,15 +805,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
 
     expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(false);
     wrapper.unmount();
-    expect(addEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function),
-    );
-    expect(removeEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function),
-    );
-    expect(window.matchMedia).toHaveBeenCalledWith("(max-width: 1024px)");
+    expect(window.matchMedia).toHaveBeenCalledWith("(max-width: 1100px)");
     vi.unstubAllGlobals();
   });
 
@@ -2279,6 +2277,74 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     );
     expect(wrapper.get(".studio-grid").classes()).toContain(
       "has-action-inspector",
+    );
+  });
+
+  it("keeps the desktop canvas mounted while outline search, error filter and centering drive one selection", async () => {
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "welcome_message",
+        nextNodeKey: "broken_action",
+        type: "SAY",
+        config: { text: "Добро пожаловать" },
+      },
+      {
+        position: 1,
+        nodeKey: "broken_action",
+        nextNodeKey: null,
+        type: "CUSTOM_UNKNOWN",
+        config: {},
+      },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    const fitView = vi.fn().mockResolvedValue(true);
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("init", {
+      fitView,
+      getViewport: vi.fn(() => ({ x: 18, y: -24, zoom: 0.9 })),
+    });
+    await flushPromises();
+    const fitCallsBeforeSelection = fitView.mock.calls.length;
+
+    await wrapper.get('[data-action-node-key="welcome_message"] .action-outline-main').trigger("click");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get(".studio-grid").classes()).toContain("has-action-inspector");
+    expect(wrapper.find('[data-test="vue-flow"]').exists()).toBe(true);
+    expect(wrapper.get('[data-action-node-key="welcome_message"]').classes()).toContain("active");
+    expect(wrapper.getComponent(ScenarioActionInspectorDock).props("width")).toBe(380);
+    expect(fitView).toHaveBeenCalledTimes(fitCallsBeforeSelection);
+
+    await wrapper.get('[aria-label="Найти действие"]').setValue("broken");
+    expect(wrapper.findAll(".action-outline-row")).toHaveLength(1);
+    expect(wrapper.get(".action-outline-row").text()).toContain("broken_action");
+    await wrapper.get('[aria-label="Показать только действия с ошибками"]').trigger("click");
+    expect(wrapper.findAll(".action-outline-row")).toHaveLength(1);
+    await wrapper.get('[aria-label="Показать broken_action на схеме"]').trigger("click");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await flushPromises();
+
+    expect(fitView).toHaveBeenLastCalledWith({
+      nodes: ["broken_action"],
+      padding: 0.75,
+      minZoom: 0.75,
+      maxZoom: 1.15,
+      duration: 240,
+    });
+    expect(
+      wrapper
+        .getComponent({ name: "VueFlow" })
+        .props("nodes")
+        .find((node: { id: string }) => node.id === "broken_action"),
+    ).toMatchObject({ selected: true });
+    expect(wrapper.get('[data-action-node-key="broken_action"]').classes()).toContain("active");
+
+    wrapper.getComponent(ScenarioActionInspectorDock).vm.$emit("resize", 520);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get(".studio-grid").attributes("style")).toContain(
+      "--action-inspector-width: 520px",
     );
   });
 
