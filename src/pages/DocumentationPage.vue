@@ -1,6 +1,22 @@
 <script setup lang="ts">
 const guides = [
   {
+    category: 'Поддержка · Оператор',
+    title: 'Работа оператора поддержки',
+    description: 'Первый вход, очередь, обращения, ответы, заметки, переводы, назначения, SLA и завершение смены.',
+    icon: 'pi pi-headphones',
+    to: { name: 'support-operator-guide' },
+    meta: ['19 разделов', '12 минут', 'Карта экрана'],
+  },
+  {
+    category: 'Поддержка · Лид',
+    title: 'Работа лида поддержки',
+    description: 'Контроль очередей и нагрузки, риски SLA, назначения, материалы, интеграции и безопасный запуск.',
+    icon: 'pi pi-chart-line',
+    to: { name: 'support-lead-guide' },
+    meta: ['20 разделов', '15 минут', 'Права и термины'],
+  },
+  {
     category: 'Сценарии',
     title: 'Как работают сценарии Retenive',
     description: 'От событий, аудитории и условий до действий, ожиданий, публикации и безопасного отката.',
@@ -44,7 +60,7 @@ const guides = [
 
     <div class="documentation-heading">
       <div><span>Все материалы</span><h2>Руководства</h2></div>
-      <strong>{{ guides.length }} руководства</strong>
+      <strong>{{ guides.length }} руководств</strong>
     </div>
 
     <div class="guide-grid">

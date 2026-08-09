@@ -429,6 +429,16 @@ export const router = createRouter({
           component: () => import("@/pages/ScenarioGuidePage.vue"),
         },
         {
+          path: "docs/support-operator",
+          name: "support-operator-guide",
+          component: () => import("@/pages/SupportOperatorGuidePage.vue"),
+        },
+        {
+          path: "docs/support-lead",
+          name: "support-lead-guide",
+          component: () => import("@/pages/SupportLeadGuidePage.vue"),
+        },
+        {
           path: "docs/profile-fields",
           name: "profile-fields-guide",
           component: () => import("@/pages/ProfileFieldsGuidePage.vue"),
