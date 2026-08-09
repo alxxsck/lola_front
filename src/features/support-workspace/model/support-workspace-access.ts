@@ -220,13 +220,3 @@ export function canRedactSupportInternalNotes(
     supportInternalNotesRedactPermission,
   );
 }
-
-/**
- * The temporary global rollout must be explicitly enabled by deployment
- * configuration. It deliberately does not read `project.settings`: that
- * projection requires a different permission and is not a typed rollout
- * contract.
- */
-export function isSupportWorkspaceRolloutEnabled(value: unknown): boolean {
-  return value === true;
-}

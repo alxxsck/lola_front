@@ -23,6 +23,10 @@ import { readMockSupportAssignment } from "@/features/support-case-assignment/ap
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
 export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
 
+export interface SupportInboxPageRequest extends CursorPageRequest {
+  endUserId?: string;
+}
+
 export interface SupportWorkspaceCaseRow {
   id: string;
   endUserId: string;
@@ -263,7 +267,7 @@ export interface SupportWorkspaceSource {
   ): Promise<CursorPage<SupportWorkspaceCaseRow>>;
   readConversations(
     projectId: string,
-    request?: CursorPageRequest,
+    request?: SupportInboxPageRequest,
   ): Promise<CursorPage<SupportWorkspaceConversation>>;
   readSelection(
     projectId: string,
@@ -631,6 +635,7 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       mode: "ALL_CONVERSATIONS",
       limit: request?.limit ?? 30,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
+      ...(request?.endUserId ? { endUserId: request.endUserId } : {}),
     });
     if (response.mode !== "ALL_CONVERSATIONS") {
       throw new Error(
@@ -901,8 +906,13 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
 
   async readConversations(projectId, request) {
     const page = await repository.getProjectConversations(projectId, request);
+    const conversations = request?.endUserId
+      ? page.items.filter(
+          (conversation) => conversation.endUser.id === request.endUserId,
+        )
+      : page.items;
     return {
-      items: page.items.map((conversation) => ({
+      items: conversations.map((conversation) => ({
         id: conversation.id,
         endUserId: conversation.endUser.id,
         title: conversation.title,

@@ -28,22 +28,15 @@ source of truth, исполнять keyword rules в браузере или с�
 а проверка текущей реализации — в
 [backend-аудите](../../research/support-case-intelligence-backend-audit-2026-08-08.ru.md).
 
-## P1: rollout
+## P1: rollout — снят
 
-В contract нет явного server-owned поля или endpoint для
-`support_workspace_shell`. `ProjectResponseDto.settings` — нетипизированный
-object и выдаётся только с отдельным permission, поэтому он не является
-release-safe источником rollout. До появления typed contract frontend использует
-временный global deployment switch `VITE_SUPPORT_WORKSPACE_ENABLED=true` (в mock
-mode включён для проверки). Он не читает `project.settings` и по умолчанию
-выключен в production. Это снимает ложный отказ оператору из-за отсутствующего
-`project.settings.read`, но не заменяет per-project rollout: массовое включение
-по-прежнему заблокировано typed server contract.
-
-Этот же временный switch пока включает `/support/inbox` и `/support/control`
-вместе; `project.support.lead_control.read` остаётся обязательным permission,
-но независимого server-owned rollout для lead control нет. Поэтому нельзя
-считать этот global switch заменой поэтапного project rollout control center.
+Backend `4d82b6bd` опубликовал typed per-Project
+`SupportWorkspace_readAdmission`, а `9f36796b` добавил проверяемый pilot/rollback
+proof. Router и navigation читают только server-owned admission и fail closed
+при ошибке, неизвестной комбинации enum или недоступной capability. Временный
+`VITE_SUPPORT_WORKSPACE_ENABLED` удалён; `ProjectResponseDto.settings` не
+используется как authority. Lead Control и личные browser notifications
+сохраняют собственные permission/admission gates и не зависят от shell cutover.
 
 ## P1: аватары оператора и пользователя
 

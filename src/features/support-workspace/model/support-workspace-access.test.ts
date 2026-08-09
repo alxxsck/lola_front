@@ -15,7 +15,6 @@ import {
   canReadSupportAvailability,
   canReadSupportControl,
   canReadSupportWorkspace,
-  isSupportWorkspaceRolloutEnabled,
 } from "./support-workspace-access";
 
 describe("support workspace access", () => {
@@ -195,11 +194,5 @@ describe("support workspace access", () => {
     expect(
       canRedactSupportInternalNotes(["project.support.internal_notes.write"]),
     ).toBe(false);
-  });
-
-  it("accepts only an explicit rollout enablement", () => {
-    expect(isSupportWorkspaceRolloutEnabled(true)).toBe(true);
-    expect(isSupportWorkspaceRolloutEnabled(false)).toBe(false);
-    expect(isSupportWorkspaceRolloutEnabled(undefined)).toBe(false);
   });
 });

@@ -11,5 +11,6 @@ export interface SupportWorkspaceRolloutResponseDto {
   actionEtag: string;
   enabled: boolean;
   hardOff: boolean;
+  shellEnabled: boolean;
   version: number;
 }

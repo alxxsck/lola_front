@@ -1,9 +1,14 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { createMemoryHistory, createRouter, type Router } from "vue-router";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
+import {
+  resetMockSupportWorkspaceRollout,
+  writeMockSupportWorkspaceRollout,
+} from "@/features/support-workspace/api/support-workspace-shell-source";
+import { clearSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
 
 function project(
   id: string,
@@ -74,6 +79,74 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 }
 
 describe("AppShell", () => {
+  beforeEach(() => {
+    resetMockSupportWorkspaceRollout();
+    clearSupportWorkspaceShellAdmission();
+  });
+
+  it("shows Support navigation only after exact Project shell admission", async () => {
+    resetMockSupportWorkspaceRollout();
+    clearSupportWorkspaceShellAdmission();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", ["project.conversations.read"]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Поддержка");
+    wrapper.unmount();
+
+    writeMockSupportWorkspaceRollout({
+      enabled: true,
+      shellEnabled: false,
+      hardOff: false,
+      version: 2,
+    });
+    clearSupportWorkspaceShellAdmission();
+    const rolledBack = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    expect(rolledBack.text()).not.toContain("Поддержка");
+    rolledBack.unmount();
+    resetMockSupportWorkspaceRollout();
+    clearSupportWorkspaceShellAdmission();
+  });
+
+  it("links a Cases-only operator to the exact canonical inbox mode", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", ["project.cases.read"]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    const supportLink = wrapper
+      .findAll(".sidebar-scroll nav a")
+      .find((link) => link.text().includes("Поддержка"));
+    expect(supportLink?.attributes("href")).toBe(
+      "/support/inbox?mode=cases",
+    );
+  });
+
   it("uses the compact application rail on the Support workspace route", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -300,6 +373,7 @@ describe("AppShell", () => {
         },
       },
     });
+    await flushPromises();
 
     expect({
       navigationLinks: wrapper.findAll(".sidebar-scroll nav a").length,

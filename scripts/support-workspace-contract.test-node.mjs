@@ -251,6 +251,51 @@ test("workspace operations retain authority, pagination bounds and send idempote
   }
 });
 
+test("workspace shell cutover contract stays server-owned and reversible", async () => {
+  const { validateSupportWorkspaceMessagingContract } = await import(
+    "./support-workspace-contract.mjs"
+  );
+  const mutations = [
+    (contract) => {
+      for (const pathItem of Object.values(contract.paths)) {
+        for (const [method, candidate] of Object.entries(pathItem)) {
+          if (candidate?.operationId === "SupportWorkspace_readAdmission") {
+            delete pathItem[method];
+          }
+        }
+      }
+    },
+    (contract) => {
+      const schema = contract.components.schemas.SupportWorkspaceAdmissionResponseDto;
+      schema.required = schema.required.filter(
+        (field) => field !== "entryPointMode",
+      );
+    },
+    (contract) => {
+      const schema = contract.components.schemas.SupportWorkspaceRolloutResponseDto;
+      schema.required = schema.required.filter(
+        (field) => field !== "shellEnabled",
+      );
+    },
+    (contract) => {
+      operation(contract, "SupportWorkspace_updateRollout").parameters.find(
+        (parameter) => parameter.name === "If-Match",
+      ).required = false;
+    },
+    (contract) => {
+      operation(contract, "SupportWorkspace_updateRollout").parameters.find(
+        (parameter) => parameter.name === "Idempotency-Key",
+      ).required = false;
+    },
+  ];
+
+  for (const mutate of mutations) {
+    const contract = await pinnedContract();
+    mutate(contract);
+    assert.throws(() => validateSupportWorkspaceMessagingContract(contract));
+  }
+});
+
 test("message history keeps ordinal, immutable author and delivery receipt semantics", async () => {
   const { validateSupportWorkspaceMessagingContract } = await import(
     "./support-workspace-contract.mjs"

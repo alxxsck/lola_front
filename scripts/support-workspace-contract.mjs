@@ -10,6 +10,15 @@ import {
 
 export function validateSupportWorkspaceMessagingContract(document) {
   const workspaceRead = operation(document, "SupportWorkspace_read");
+  const workspaceAdmission = operation(
+    document,
+    "SupportWorkspace_readAdmission",
+  );
+  const workspaceRollout = operation(document, "SupportWorkspace_readRollout");
+  const updateWorkspaceRollout = operation(
+    document,
+    "SupportWorkspace_updateRollout",
+  );
   const messageHistory = operation(document, "AdminConversations_listMessages");
   const sendMessage = operation(document, "AdminMessaging_send");
   const lookupMessageOutcome = operation(
@@ -43,6 +52,22 @@ export function validateSupportWorkspaceMessagingContract(document) {
       throw new Error(`SupportWorkspace_read must allow ${code}`);
     }
   }
+  const admissionPermissions = new Set(
+    workspaceAdmission["x-iam-any-permission"]?.map((value) => value.code) ?? [],
+  );
+  for (const code of ["project.cases.read", "project.conversations.read"]) {
+    if (!admissionPermissions.has(code)) {
+      throw new Error(`SupportWorkspace_readAdmission must allow ${code}`);
+    }
+  }
+  requirePermission(
+    workspaceRollout,
+    "project.support.workspace.rollout.manage",
+  );
+  requirePermission(
+    updateWorkspaceRollout,
+    "project.support.workspace.rollout.manage",
+  );
   requirePermission(messageHistory, "project.conversations.read");
   requirePermission(sendMessage, "project.conversations.reply");
   requirePermission(lookupMessageOutcome, "project.conversations.reply");
@@ -63,6 +88,14 @@ export function validateSupportWorkspaceMessagingContract(document) {
     throw new Error(
       "SupportWorkspace_read messageLimit must remain bounded at 100",
     );
+  }
+  for (const header of ["If-Match", "Idempotency-Key"]) {
+    const value = parameter(updateWorkspaceRollout, header);
+    if (value.in !== "header" || value.required !== true) {
+      throw new Error(
+        `SupportWorkspace_updateRollout must require ${header} header`,
+      );
+    }
   }
   parameter(workspaceRead, "messageNewerCursor");
   const idempotencyKey = parameter(sendMessage, "Idempotency-Key");
@@ -106,6 +139,63 @@ export function validateSupportWorkspaceMessagingContract(document) {
     "capabilitiesRevision",
     "actionRevisions",
   ]);
+  requireProperties(document, "SupportWorkspaceAdmissionResponseDto", [
+    "rolloutState",
+    "rolloutVersion",
+    "entryPointMode",
+    "legacyAdapterMode",
+    "evaluatedAt",
+    "admissionRevision",
+    "capabilities",
+  ]);
+  requireProperties(document, "SupportWorkspaceAdmissionCapabilitiesDto", [
+    "supportWorkspaceShell",
+    "cases",
+    "conversations",
+  ]);
+  requireProperties(document, "SupportWorkspaceRolloutResponseDto", [
+    "actionEtag",
+    "enabled",
+    "shellEnabled",
+    "hardOff",
+    "version",
+  ]);
+  requireProperties(document, "UpdateSupportWorkspaceRolloutDto", [
+    "enabled",
+    "shellEnabled",
+    "hardOff",
+    "reason",
+  ]);
+  requireEnumValues(
+    document,
+    "SupportWorkspaceAdmissionResponseDto",
+    "rolloutState",
+    ["DISABLED", "ENABLED", "HARD_OFF"],
+  );
+  requireEnumValues(
+    document,
+    "SupportWorkspaceAdmissionResponseDto",
+    "entryPointMode",
+    ["CANONICAL_SUPPORT", "LEGACY_LAUNCHER"],
+  );
+  requireEnumValues(
+    document,
+    "SupportWorkspaceAdmissionResponseDto",
+    "legacyAdapterMode",
+    ["LAUNCHER_ONLY"],
+  );
+  for (const property of [
+    "supportWorkspaceShell",
+    "cases",
+    "conversations",
+  ]) {
+    requireEnumValues(
+      document,
+      "SupportWorkspaceAdmissionCapabilitiesDto",
+      property,
+      ["AVAILABLE", "UNAVAILABLE"],
+    );
+  }
   requireProperties(document, "SupportWorkspaceCapabilitiesResponseDto", [
     "reply",
     "replyWithoutTranslation",

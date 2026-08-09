@@ -4,14 +4,16 @@
 
 **Blocked by:** 07 — Удалить legacy renderer, composer и перевод; 08 — Реализовать общий full-tab presentation shell; 09 — Объединить Cases и Conversations в одном inbox; 10 — Добавить server search, filters и sort; 11 — Подключить Saved Views; 12 — Завершить tablet/mobile route stack; 13 — Добавить durable send и idempotency recovery; 14 — Реализовать read/unread и first-unread; 15 — Завершить delivery и reconnect reconciliation; 16 — Завершить Case workflow и классификацию; 17 — Завершить действия оператора с назначением; 18 — Добавить назначение и override для лида; 19 — Добавить SLA, routing и availability context; 20 — Добавить permission-gated inspector tabs.
 
-**Status:** transitively-blocked-by-backend
+**Status:** frontend-complete
 
-**Backend gate (audit 2026-08-07):** frontend redirects можно делать, но writable core
-cutover ждёт backend gaps 10–19 и project-level Support rollout contract. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#28--cutover-legacy-entry-points).
+**Backend gate:** снят backend commits `4d82b6bd` (shell cutover) и `9f36796b`
+(pilot/rollback proof). Frontend pinned OpenAPI —
+`sha256:2f4da7559279192a20fd77bf07e72c377d9a031724a0d77a21a81aecd521ee44`.
+Release proof: [frontend shell cutover](../../../docs/support-workspace-shell-cutover-frontend-release-proof.ru.md).
 
-- [ ] Legacy links открывают canonical Support Case/Conversation URL и сохраняют разрешённый selection context.
-- [ ] Старые Case/chat actions не остаются второй writable surface.
-- [ ] Feature flag отключает новый route без отката уже принятых backend commands.
-- [ ] Direct reload, Back/Forward, login и project restore проходят route/permission guards.
-- [ ] Core cutover не заблокирован задачами 21–27 или 30–33.
-- [ ] Rollback path и оставшийся legacy adapter явно ограничены launcher/deep-link поведением.
+- [x] Legacy links открывают canonical Support Case/Conversation URL и сохраняют разрешённый selection context.
+- [x] Старые Case/chat actions не остаются второй writable surface.
+- [x] Server-owned project rollout отключает новый route без отката уже принятых backend commands.
+- [x] Direct reload, Back/Forward, login и project restore проходят route/permission guards.
+- [x] Core cutover не заблокирован задачами 21–27 или 30–33.
+- [x] Rollback path и оставшийся legacy adapter явно ограничены launcher/deep-link поведением.

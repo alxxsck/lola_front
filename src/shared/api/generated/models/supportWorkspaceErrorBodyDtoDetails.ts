@@ -6,13 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateSupportWorkspaceRolloutDto {
-  enabled: boolean;
-  hardOff: boolean;
-  /**
-   * @minLength 3
-   * @maxLength 500
-   */
-  reason: string;
-  shellEnabled: boolean;
-}
+export type SupportWorkspaceErrorBodyDtoDetails = { [key: string]: unknown };

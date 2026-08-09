@@ -7,7 +7,7 @@ import {
   ref,
   watch,
 } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
@@ -211,10 +211,30 @@ const inboxMode = computed<SupportInboxMode>(() => {
   if (routeConversationId.value) return "ALL_CONVERSATIONS";
   return route.query.mode === "cases" ? "CASES" : "ALL_CONVERSATIONS";
 });
+function isLegacyEndUserEntry(value: unknown): boolean {
+  return value === "live" || value === "users";
+}
+
+const legacyEndUserId = computed(() =>
+  isLegacyEndUserEntry(route.query.entry) &&
+  typeof route.query.endUserId === "string"
+    ? route.query.endUserId
+    : undefined,
+);
+
+function readWorkspaceSearchRoute(query: LocationQuery) {
+  if (isLegacyEndUserEntry(query.entry) && typeof query.endUserId === "string")
+    return readSupportSearchRoute({});
+  return readSupportSearchRoute(query);
+}
+const canUseSupportSearch = computed(
+  () => canSearchSupport.value && !legacyEndUserId.value,
+);
 const inbox = createSupportInboxController(
   {
     projectId: () => auth.project?.id,
     mode: () => inboxMode.value,
+    endUserId: () => legacyEndUserId.value,
     async onForbidden() {
       try {
         await auth.refreshContext();
@@ -227,18 +247,18 @@ const inbox = createSupportInboxController(
   supportWorkspaceSource,
 );
 const searchState = ref<SupportSearchRouteState>(
-  readSupportSearchRoute(route.query),
+  readWorkspaceSearchRoute(route.query),
 );
 const searchOpen = ref(hasSupportSearchCriteria(searchState.value));
 const searchActive = computed(
   () =>
-    canSearchSupport.value &&
+    canUseSupportSearch.value &&
     (searchOpen.value || hasSupportSearchCriteria(searchState.value)),
 );
 const supportSearch = createSupportSearchController(
   {
     projectId: () => auth.project?.id,
-    canSearch: () => canSearchSupport.value,
+    canSearch: () => canUseSupportSearch.value,
     request: () => normalizeSupportSearchState(searchState.value),
     async onForbidden() {
       try {
@@ -253,9 +273,9 @@ const supportSearch = createSupportSearchController(
 const supportViews = createSupportViewsController(
   {
     projectId: () => auth.project?.id,
-    canSearch: () => canSearchSupport.value,
-    canReadSaved: () => canReadSavedViews.value,
-    canMutate: () => canCreateSavedViews.value,
+    canSearch: () => canUseSupportSearch.value,
+    canReadSaved: () => canUseSupportSearch.value && canReadSavedViews.value,
+    canMutate: () => canUseSupportSearch.value && canCreateSavedViews.value,
     phrase: () => searchState.value.phrase,
     beforeSelection() {
       searchState.value = readSupportSearchRoute({});
@@ -287,7 +307,7 @@ function supportViewIntentKey(signature: string): string {
   return key;
 }
 const viewActive = computed(
-  () => canSearchSupport.value && Boolean(supportViews.selection.value),
+  () => canUseSupportSearch.value && Boolean(supportViews.selection.value),
 );
 const supportSearchRouteKeys = new Set([
   "search",
@@ -1721,6 +1741,7 @@ async function syncSupportSearchRoute(
 }
 
 function runSupportSearch(state: SupportSearchRouteState): void {
+  if (!canUseSupportSearch.value) return;
   clearSupportSearchTimer();
   searchState.value = normalizeSupportSearchState(state);
   if (supportViews.selection.value) {
@@ -1737,6 +1758,7 @@ function runSupportSearch(state: SupportSearchRouteState): void {
 }
 
 function changeSupportSearch(state: SupportSearchRouteState): void {
+  if (!canUseSupportSearch.value) return;
   const normalized = normalizeSupportSearchState(state);
   searchState.value = state;
   searchOpen.value = true;
@@ -1764,6 +1786,7 @@ function changeSupportSearch(state: SupportSearchRouteState): void {
 async function selectSupportView(
   selection: SupportViewSelection,
 ): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   clearSupportSearchTimer();
   searchOpen.value = false;
   supportSearch.reset();
@@ -1771,6 +1794,7 @@ async function selectSupportView(
 }
 
 async function startCustomSupportSearch(): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   clearSupportSearchTimer();
   supportSearch.reset();
   searchState.value = readSupportSearchRoute({});
@@ -1786,6 +1810,7 @@ async function createSupportView(value: {
   scope: "PERSONAL" | "TEAM" | "PROJECT";
   teamId: string;
 }): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   const command = createSavedViewCommand(
     value.name,
     value.code,
@@ -1803,6 +1828,7 @@ async function replaceSupportView(value: {
   view: import("@/shared/api/generated/models").SavedSupportViewResponseDto;
   displayName: string;
 }): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   const { view } = value;
   const displayName = value.displayName.trim();
   if (
@@ -1822,6 +1848,7 @@ async function replaceSupportView(value: {
 async function setDefaultSupportView(
   selection: SupportViewSelection,
 ): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   const command =
     selection.kind === "SYSTEM"
       ? { kind: "SYSTEM" as const, presetCode: selection.code }
@@ -1834,6 +1861,7 @@ async function setDefaultSupportView(
 async function publishSupportView(
   view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
 ): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   if (!view.permissions.publish) return;
   const signature = `publish:${view.id}:${view.etag}`;
   if (await supportViews.publish(view, supportViewIntentKey(signature)))
@@ -1843,6 +1871,7 @@ async function publishSupportView(
 async function archiveSupportView(
   view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
 ): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   if (!view.permissions.archive) return;
   const signature = `archive:${view.id}:${view.etag}`;
   if (await supportViews.archive(view, supportViewIntentKey(signature)))
@@ -1850,6 +1879,7 @@ async function archiveSupportView(
 }
 
 async function closeSupportSearch(): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   clearSupportSearchTimer();
   searchOpen.value = false;
   supportSearch.reset();
@@ -1871,6 +1901,7 @@ async function closeSupportSearch(): Promise<void> {
 async function openSupportSearchResult(
   item: SupportSearchResult,
 ): Promise<void> {
+  if (!canUseSupportSearch.value) return;
   const query = { ...route.query };
   delete query.panel;
   if (item.selection.kind === "CASE") {
@@ -2085,7 +2116,7 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
     return;
   }
   if (
-    canSearchSupport.value &&
+    canUseSupportSearch.value &&
     !event.altKey &&
     !event.shiftKey &&
     (event.metaKey || event.ctrlKey) &&
@@ -2695,19 +2726,25 @@ onMounted(async () => {
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
   await inbox.load();
-  const initialCustomSearch = shouldLoadCustomSupportView(
-    route.query,
-    hasSupportSearchCriteria(searchState.value),
-  );
-  if (initialCustomSearch) {
-    searchOpen.value = true;
-    await supportViews.loadCustom();
-    if (!isCustomSupportViewRoute(route.query)) {
-      await router.replace({
-        query: { ...route.query, ...writeSupportViewSelection(null) },
-      });
-    }
-  } else await supportViews.load(readSupportViewSelection(route.query));
+  if (legacyEndUserId.value) {
+    searchOpen.value = false;
+    supportSearch.reset();
+    supportViews.reset();
+  } else {
+    const initialCustomSearch = shouldLoadCustomSupportView(
+      route.query,
+      hasSupportSearchCriteria(searchState.value),
+    );
+    if (initialCustomSearch) {
+      searchOpen.value = true;
+      await supportViews.loadCustom();
+      if (!isCustomSupportViewRoute(route.query)) {
+        await router.replace({
+          query: { ...route.query, ...writeSupportViewSelection(null) },
+        });
+      }
+    } else await supportViews.load(readSupportViewSelection(route.query));
+  }
   if (
     !supportViews.selection.value &&
     hasSupportSearchCriteria(searchState.value)
@@ -2731,7 +2768,8 @@ watch(
       clearSupportSearchTimer();
       searchOpen.value = false;
       searchState.value = readSupportSearchRoute({});
-      void syncSupportSearchRoute(searchState.value);
+      if (!legacyEndUserId.value)
+        void syncSupportSearchRoute(searchState.value);
     }
     lastInboxSelectionKey.value = "";
     contextDrawerVisible.value = false;
@@ -2772,25 +2810,32 @@ watch(
     supportViewIntentKeys.clear();
     void (async () => {
       await inbox.load();
-      const resumeCustomSearch =
-        !projectChanged &&
-        shouldLoadCustomSupportView(
-          route.query,
-          hasSupportSearchCriteria(searchState.value),
-        );
-      if (resumeCustomSearch) {
-        searchOpen.value = true;
-        await supportViews.loadCustom();
-      } else
-        await supportViews.load(
-          projectChanged ? null : readSupportViewSelection(route.query),
-        );
-      if (
-        !supportViews.selection.value &&
-        !projectChanged &&
-        hasSupportSearchCriteria(searchState.value)
-      )
-        await supportSearch.search();
+      if (legacyEndUserId.value) {
+        searchOpen.value = false;
+        searchState.value = readSupportSearchRoute({});
+        supportSearch.reset();
+        supportViews.reset();
+      } else {
+        const resumeCustomSearch =
+          !projectChanged &&
+          shouldLoadCustomSupportView(
+            route.query,
+            hasSupportSearchCriteria(searchState.value),
+          );
+        if (resumeCustomSearch) {
+          searchOpen.value = true;
+          await supportViews.loadCustom();
+        } else
+          await supportViews.load(
+            projectChanged ? null : readSupportViewSelection(route.query),
+          );
+        if (
+          !supportViews.selection.value &&
+          !projectChanged &&
+          hasSupportSearchCriteria(searchState.value)
+        )
+          await supportSearch.search();
+      }
       if (canReadAvailability.value) {
         await availability.load();
         availability.startHeartbeat();
@@ -2808,7 +2853,7 @@ watch(canReadAvailability, (allowed) => {
   void availability.load().then(() => availability.startHeartbeat());
 });
 
-watch(canSearchSupport, (allowed) => {
+watch(canUseSupportSearch, (allowed) => {
   if (allowed) return;
   clearSupportSearchTimer();
   searchOpen.value = false;
@@ -2823,7 +2868,7 @@ watch(canReadSavedViews, (allowed) => {
     void supportViews.purgeSaved();
     return;
   }
-  if (!canSearchSupport.value) return;
+  if (!canUseSupportSearch.value) return;
   const custom = shouldLoadCustomSupportView(
     route.query,
     hasSupportSearchCriteria(searchState.value),
@@ -3044,15 +3089,42 @@ watch(
   },
 );
 
+const legacyEndUserRouteScope = computed(() =>
+  [
+    isLegacyEndUserEntry(route.query.entry) ? route.query.entry : "",
+    legacyEndUserId.value ?? "",
+  ].join("\u0000"),
+);
+
 watch(inboxMode, async () => {
   inbox.reset();
   await inbox.load();
 });
 
+watch(legacyEndUserRouteScope, async () => {
+  inbox.reset();
+  supportSearch.reset();
+  supportViews.reset();
+  searchOpen.value = false;
+  if (legacyEndUserId.value) {
+    searchState.value = readSupportSearchRoute({});
+    await inbox.load();
+    return;
+  }
+  searchState.value = readSupportSearchRoute(route.query);
+  searchOpen.value = hasSupportSearchCriteria(searchState.value);
+  await Promise.all([
+    inbox.load(),
+    supportViews.load(readSupportViewSelection(route.query)),
+  ]);
+  if (searchOpen.value && !supportViews.selection.value)
+    await supportSearch.search();
+});
+
 watch(
   () => route.query,
   (query) => {
-    const next = readSupportSearchRoute(query);
+    const next = readWorkspaceSearchRoute(query);
     if (
       JSON.stringify(writeSupportSearchRoute(next)) ===
       JSON.stringify(writeSupportSearchRoute(searchState.value))
@@ -3070,13 +3142,17 @@ watch(
 watch(
   () => route.query.view,
   () => {
+    if (!canUseSupportSearch.value) {
+      supportViews.reset();
+      return;
+    }
     const custom = shouldLoadCustomSupportView(
       route.query,
-      hasSupportSearchCriteria(readSupportSearchRoute(route.query)),
+      hasSupportSearchCriteria(readWorkspaceSearchRoute(route.query)),
     );
     if (custom) {
       searchOpen.value = true;
-      if (supportViews.selection.value && canSearchSupport.value)
+      if (supportViews.selection.value)
         void supportViews.loadCustom();
       return;
     }
@@ -3089,7 +3165,7 @@ watch(
           (current?.kind === "SYSTEM" ? current.code : undefined)
         : requested?.id ===
           (current?.kind === "SAVED" ? current.id : undefined));
-    if (!same && canSearchSupport.value) void supportViews.load(requested);
+    if (!same) void supportViews.load(requested);
   },
 );
 
@@ -3345,7 +3421,7 @@ onBeforeUnmount(() => {
           :has-more="Boolean(inbox.nextCursor.value)"
           :can-read-cases="canReadInbox"
           :can-read-conversations="canReadInbox"
-          :can-search="canSearchSupport"
+          :can-search="canUseSupportSearch"
           :search-state="searchState"
           :search-active="searchActive"
           :search-items="
@@ -3375,8 +3451,8 @@ onBeforeUnmount(() => {
           :view-system="supportViews.system.value"
           :view-saved="supportViews.saved.value"
           :view-selection="supportViews.selection.value"
-          :view-can-create="canCreateSavedViews"
-          :view-can-manage-all="canManageAllSavedViews"
+          :view-can-create="canUseSupportSearch && canCreateSavedViews"
+          :view-can-manage-all="canUseSupportSearch && canManageAllSavedViews"
           :view-mutating="supportViews.mutating.value"
           :view-conflict="supportViews.conflict.value"
           :view-active="viewActive"

@@ -49,6 +49,31 @@ function supportCase(id: string): SupportWorkspaceCaseRow {
 }
 
 describe("support inbox controller", () => {
+  it("passes a legacy end-user selection to the authoritative conversation read", async () => {
+    const source = {
+      readCases: vi.fn(),
+      readConversations: vi.fn().mockResolvedValue({
+        items: [conversation("conversation-1")],
+        nextCursor: null,
+      }),
+    };
+    const controller = createSupportInboxController(
+      {
+        projectId: () => "project-1",
+        mode: () => "ALL_CONVERSATIONS",
+        endUserId: () => "user-1",
+      },
+      source,
+    );
+
+    await controller.load();
+
+    expect(source.readConversations).toHaveBeenCalledWith("project-1", {
+      endUserId: "user-1",
+      limit: 30,
+    });
+  });
+
   it("applies only monotonic authoritative read state to the matching conversation row", async () => {
     const source = {
       readCases: vi.fn(),

@@ -30,7 +30,6 @@ import { createSupportLeadAssignmentController } from "@/features/support-lead-a
 import { createSupportLeadAssignmentBatchController } from "@/features/support-lead-assignment/model/use-support-lead-assignment-batch";
 import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import SupportLeadAssignmentBatchDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentBatchDesk.vue";
-import { supportWorkspaceShellEnabled } from "@/shared/config/features";
 import { relativeTime } from "@/shared/lib/format";
 import { useRouter } from "vue-router";
 
@@ -41,7 +40,6 @@ const fallbackCaseId = ref("");
 const canRead = computed(
   () =>
     !accessDenied.value &&
-    supportWorkspaceShellEnabled &&
     canReadSupportControl(auth.project?.effectivePermissionCodes ?? []),
 );
 const availabilityAccessDenied = ref(false);

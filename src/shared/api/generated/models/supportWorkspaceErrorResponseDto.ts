@@ -5,14 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportWorkspaceErrorBodyDto } from "./supportWorkspaceErrorBodyDto";
 
-export interface UpdateSupportWorkspaceRolloutDto {
-  enabled: boolean;
-  hardOff: boolean;
-  /**
-   * @minLength 3
-   * @maxLength 500
-   */
-  reason: string;
-  shellEnabled: boolean;
+export interface SupportWorkspaceErrorResponseDto {
+  error: SupportWorkspaceErrorBodyDto;
 }

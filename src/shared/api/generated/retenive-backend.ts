@@ -698,6 +698,7 @@ import type {
   SupportWorkforceListTeamsParams,
   SupportWorkforceMutationResponseDto,
   SupportWorkforceSettingsResponseDto,
+  SupportWorkspaceAdmissionResponseDto,
   SupportWorkspaceRead200,
   SupportWorkspaceReadParams,
   SupportWorkspaceRolloutResponseDto,
@@ -9266,7 +9267,22 @@ export const supportWorkspaceRead = (
   );
 };
 
-export const supportWorkspaceRolloutRead = (
+export const supportWorkspaceReadAdmission = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportWorkspaceAdmissionResponseDto>
+  >,
+) => {
+  return request<SupportWorkspaceAdmissionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workspace/admission`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportWorkspaceReadRollout = (
   projectId: string,
   options?: SecondParameter<typeof request<SupportWorkspaceRolloutResponseDto>>,
 ) => {
@@ -9279,7 +9295,7 @@ export const supportWorkspaceRolloutRead = (
   );
 };
 
-export const supportWorkspaceRolloutUpdate = (
+export const supportWorkspaceUpdateRollout = (
   projectId: string,
   updateSupportWorkspaceRolloutDto: BodyType<UpdateSupportWorkspaceRolloutDto>,
   options?: SecondParameter<typeof request<SupportWorkspaceRolloutResponseDto>>,
@@ -13323,11 +13339,14 @@ export type SupportWorkforcePublishResult = NonNullable<
 export type SupportWorkspaceReadResult = NonNullable<
   Awaited<ReturnType<typeof supportWorkspaceRead>>
 >;
-export type SupportWorkspaceRolloutReadResult = NonNullable<
-  Awaited<ReturnType<typeof supportWorkspaceRolloutRead>>
+export type SupportWorkspaceReadAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkspaceReadAdmission>>
 >;
-export type SupportWorkspaceRolloutUpdateResult = NonNullable<
-  Awaited<ReturnType<typeof supportWorkspaceRolloutUpdate>>
+export type SupportWorkspaceReadRolloutResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkspaceReadRollout>>
+>;
+export type SupportWorkspaceUpdateRolloutResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkspaceUpdateRollout>>
 >;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>

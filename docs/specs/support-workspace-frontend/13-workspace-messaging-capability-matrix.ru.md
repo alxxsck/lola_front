@@ -1,10 +1,10 @@
 # W0: capability matrix рабочего места и переписки
 
 Статус: normative baseline для frontend Task 01
-Версия: 3
+Версия: 4
 Дата: 8 августа 2026 года
-Backend source: `2113c9950367caa02db6826c7c489a8b9c278319`
-Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b55647719a948aa0e`
+Backend source: `9f36796b477d34fcac2a9a46844bbd78863df6e1`
+Pinned contract: `sha256:2f4da7559279192a20fd77bf07e72c377d9a031724a0d77a21a81aecd521ee44`
 
 Этот документ отделяет опубликованный production contract от backend intent.
 `READY` означает, что операция есть в pinned OpenAPI. `RELEASE_GATED` означает,
@@ -15,7 +15,7 @@ Pinned contract: `sha256:4372b9e8b3bd8acce78d3a3b1a6df99f0c9c5246640a290b5564771
 
 | Capability | Published operation / contract | Session permission | Target authority / allowed action | Revision, ETag, checkpoint | Idempotency | Fixture | Flag / status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Case/Conversation selection | `GET SupportWorkspace_read`, `mode=SELECTION` | `project.cases.read` **или** `project.conversations.read` | Boolean `capabilities` текущей projection; это не универсальный `allowedActions` | `actionRevisions` — preconditions; `capabilitiesRevision` — evidence; `checkpoint` — recovery token | нет | `minimalSelectionSuccess`, `fullSelectionSuccess`, `forbiddenSelection`, `concealedSelection` | `support_workspace_shell`; `READY`, rollout source пока deployment-wide |
+| Case/Conversation selection | `GET SupportWorkspace_read`, `mode=SELECTION` | `project.cases.read` **или** `project.conversations.read` | Boolean `capabilities` текущей projection; это не универсальный `allowedActions` | `actionRevisions` — preconditions; `capabilitiesRevision` — evidence; `checkpoint` — recovery token | нет | `minimalSelectionSuccess`, `fullSelectionSuccess`, `forbiddenSelection`, `concealedSelection` | `support_workspace_shell`; `READY`, admission per Project |
 | Conversation history в workspace | `GET SupportWorkspace_read`, `messageCursor`, `messageLimit≤100` | как у selection | read authority выбранной projection | opaque cursor не равен checkpoint; canonical order задаёт Message `ordinal` | нет | `historyNextPage` | `support_workspace_shell`; `READY` |
 | Legacy exact-conversation history | `GET AdminConversations_listMessages`, `cursor`, `limit≤200` | `project.conversations.read` | exact End User + Conversation scope | opaque cursor, Message `ordinal` | нет | pinned OpenAPI + mutation tests | `READY`; мигрируется в общий Surface, не расширяется |
 | Durable public send | `POST AdminMessaging_send` | `project.conversations.reply` | selection `capabilities.reply`; translation override требует отдельной capability | отдельного expected revision/ETag в этой операции нет | обязательный `Idempotency-Key` | `sendConflict`, `unknownSendOutcome` | `support_durable_delivery`; `RELEASE_GATED` до SDK ACK/load gate |
@@ -61,7 +61,7 @@ Contract mutation tests обязаны падать при удалении oper
 
 | Gate | Текущее состояние | Owner / proof |
 | --- | --- | --- |
-| `support_workspace_shell` | временный `VITE_SUPPORT_WORKSPACE_ENABLED`; typed per-project flag не опубликован | backend rollout contract + frontend route smoke |
+| `support_workspace_shell` | typed `SupportWorkspace_readAdmission`; exact `rolloutState`, `entryPointMode`, `legacyAdapterMode` и per-surface capabilities | backend `4d82b6bd`/`9f36796b` + frontend route/E2E proof |
 | `support_project_inbox` | отдельный typed flag не опубликован | Task 02 + backend inbox handoff |
 | `support_durable_delivery` | backend contract и release proof готовы; frontend Tasks 13–15 разблокированы | backend `0f5404f`; SDK ACK + 60k outbox load proof |
 | Idempotency lookup | опубликован и подключён | backend `3791c37` + frontend Task 13 tests/e2e |

@@ -22,10 +22,16 @@ import {
   canReadSupportControl,
   canManagePersonalSupportNotifications,
   canReadSupportWorkspace,
-  isSupportWorkspaceRolloutEnabled,
 } from "@/features/support-workspace/model/support-workspace-access";
-import { supportWorkspaceShellEnabled } from "@/shared/config/features";
 import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
+import { ensureSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
+import {
+  canonicalSupportLocation,
+  isCanonicalSupportWorkspaceAdmission,
+  legacySupportLocation,
+  type LegacySupportEntryPoint,
+  type SupportWorkspaceTarget,
+} from "@/features/support-workspace/model/support-workspace-entry-point";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -248,10 +254,12 @@ export const router = createRouter({
         {
           path: "cases",
           name: "end-user-cases",
-          redirect: (to) => ({
-            name: "support-inbox",
-            query: { ...to.query, mode: "cases" },
-          }),
+          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
+          props: { entryPoint: "CASES" },
+          meta: {
+            projectPermission: "project.cases.read",
+            legacySupportEntryPoint: "CASES",
+          },
         },
         {
           path: "cases/settings",
@@ -262,11 +270,16 @@ export const router = createRouter({
         {
           path: "cases/:caseId",
           name: "end-user-case-detail",
-          redirect: (to) => ({
-            name: "support-inbox-case",
-            params: { caseId: to.params.caseId },
-            query: to.query,
+          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
+          props: (route) => ({
+            entryPoint: "CASES",
+            selectionKind: routeValue(route.params.caseId) ? "CASE" : undefined,
+            selectionId: routeValue(route.params.caseId),
           }),
+          meta: {
+            projectPermission: "project.cases.read",
+            legacySupportEntryPoint: "CASES",
+          },
         },
         {
           path: "support/inbox",
@@ -274,6 +287,7 @@ export const router = createRouter({
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
             supportWorkspaceAccess: true,
+            supportWorkspaceTarget: "CONVERSATIONS",
             supportWorkspacePresentation: true,
           },
         },
@@ -283,6 +297,7 @@ export const router = createRouter({
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
             supportWorkspaceAccess: true,
+            supportWorkspaceTarget: "CASES",
             supportWorkspacePresentation: true,
           },
         },
@@ -292,6 +307,7 @@ export const router = createRouter({
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
             supportWorkspaceAccess: true,
+            supportWorkspaceTarget: "CONVERSATIONS",
             supportWorkspacePresentation: true,
           },
         },
@@ -446,14 +462,43 @@ export const router = createRouter({
         {
           path: "users/:endUserId?",
           name: "users",
-          component: () => import("@/pages/UsersPage.vue"),
-          meta: { projectPermission: "project.profiles.read" },
+          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
+          props: (route) => ({
+            entryPoint: "USERS",
+            selectionKind: routeValue(route.query.conversationId)
+              ? "CONVERSATION"
+              : routeValue(route.params.endUserId)
+                ? "END_USER"
+                : undefined,
+            selectionId: routeValue(route.query.conversationId) ??
+              routeValue(route.params.endUserId),
+          }),
+          meta: {
+            projectPermissionsAny: [
+              "project.profiles.read",
+              "project.conversations.read",
+            ],
+            legacySupportEntryPoint: "USERS",
+          },
         },
         {
           path: "live",
           name: "live",
-          component: () => import("@/pages/LivePage.vue"),
-          meta: { projectPermission: "project.end_users.read" },
+          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
+          props: (route) => ({
+            entryPoint: "LIVE",
+            selectionKind: routeValue(route.query.endUserId)
+              ? "END_USER"
+              : undefined,
+            selectionId: routeValue(route.query.endUserId),
+          }),
+          meta: {
+            projectPermissionsAny: [
+              "project.end_users.read",
+              "project.conversations.read",
+            ],
+            legacySupportEntryPoint: "LIVE",
+          },
         },
         {
           path: "operations",
@@ -527,6 +572,7 @@ router.beforeEach(async (to) => {
     return { name: "login", query: { redirect: to.fullPath } };
   if (
     (to.meta.supportWorkspaceAccess ||
+      to.meta.legacySupportEntryPoint ||
       to.name === "ai-analysis-detail" ||
       to.name === "ai-operation-detail" ||
       to.name === "ai-costs" ||
@@ -541,24 +587,72 @@ router.beforeEach(async (to) => {
   }
   if (to.name === "overview" && auth.isAuthenticated && !auth.project)
     return auth.authenticatedLandingPath;
+  const projectPermissions = auth.project?.effectivePermissionCodes ?? [];
+  const actorId = auth.user?.id;
+  const projectId = auth.project?.id;
+  const legacyEntryPoint = to.meta
+    .legacySupportEntryPoint as LegacySupportEntryPoint | undefined;
+  if (legacyEntryPoint && actorId && projectId) {
+    const target: SupportWorkspaceTarget =
+      legacyEntryPoint === "CASES" ? "CASES" : "CONVERSATIONS";
+    const hasTargetPermission =
+      target === "CASES"
+        ? hasProjectPermission(projectPermissions, "project.cases.read")
+        : hasProjectPermission(projectPermissions, "project.conversations.read");
+    if (hasTargetPermission) {
+      const admission = await ensureSupportWorkspaceShellAdmission({
+        actorId,
+        projectId,
+        effectivePermissionCodes: projectPermissions,
+      });
+      if (isCanonicalSupportWorkspaceAdmission(admission, target)) {
+        return canonicalSupportLocation({
+          entryPoint: legacyEntryPoint,
+          caseId: routeValue(to.params.caseId),
+          endUserId:
+            routeValue(to.params.endUserId) ?? routeValue(to.query.endUserId),
+          conversationId: routeValue(to.query.conversationId),
+          query: to.query,
+        });
+      }
+    }
+  }
   if (
     to.meta.supportWorkspaceAccess &&
-    (!auth.project ||
-      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
-      !canReadSupportWorkspace(auth.project.effectivePermissionCodes ?? []))
-  )
+    (!auth.project || !actorId || !canReadSupportWorkspace(projectPermissions))
+  ) {
     return auth.authenticatedLandingPath;
+  }
+  if (to.meta.supportWorkspaceAccess && auth.project && actorId) {
+    const target = supportWorkspaceTarget(to);
+    const hasTargetPermission =
+      target === "CASES"
+        ? hasProjectPermission(projectPermissions, "project.cases.read")
+        : hasProjectPermission(projectPermissions, "project.conversations.read");
+    if (!hasTargetPermission) return auth.authenticatedLandingPath;
+    const admission = await ensureSupportWorkspaceShellAdmission({
+      actorId,
+      projectId: auth.project.id,
+      effectivePermissionCodes: projectPermissions,
+    });
+    if (!isCanonicalSupportWorkspaceAdmission(admission, target)) {
+      return legacySupportLocation({
+        target,
+        caseId: routeValue(to.params.caseId),
+        conversationId: routeValue(to.params.conversationId),
+        query: to.query,
+      });
+    }
+  }
   if (
     to.meta.supportLeadControlAccess &&
     (!auth.project ||
-      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
       !canReadSupportControl(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;
   if (
     to.meta.supportNotificationSettingsAccess &&
     (!auth.project ||
-      !isSupportWorkspaceRolloutEnabled(supportWorkspaceShellEnabled) ||
       !canManagePersonalSupportNotifications(
         auth.project.effectivePermissionCodes ?? [],
       ))
@@ -628,4 +722,20 @@ function isEmailAction(value: unknown): value is EmailActionKind {
     value === "email-change" ||
     value === "password-reset"
   );
+}
+
+function routeValue(value: unknown): string | undefined {
+  return typeof value === "string" && value ? value : undefined;
+}
+
+function supportWorkspaceTarget(to: {
+  name?: unknown;
+  meta: Record<string, unknown>;
+  query: Record<string, unknown>;
+}): SupportWorkspaceTarget {
+  if (to.name === "support-inbox" && routeValue(to.query.mode) === "cases") {
+    return "CASES";
+  }
+  return (to.meta.supportWorkspaceTarget ??
+    "CONVERSATIONS") as SupportWorkspaceTarget;
 }

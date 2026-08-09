@@ -50519,6 +50519,87 @@
         },
         "type": "object"
       },
+      "SupportWorkspaceAdmissionCapabilitiesDto": {
+        "properties": {
+          "cases": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "conversations": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "supportWorkspaceShell": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "supportWorkspaceShell",
+          "cases",
+          "conversations"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceAdmissionResponseDto": {
+        "properties": {
+          "admissionRevision": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/SupportWorkspaceAdmissionCapabilitiesDto"
+          },
+          "entryPointMode": {
+            "enum": [
+              "CANONICAL_SUPPORT",
+              "LEGACY_LAUNCHER"
+            ],
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "legacyAdapterMode": {
+            "enum": [
+              "LAUNCHER_ONLY"
+            ],
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "DISABLED",
+              "ENABLED",
+              "HARD_OFF"
+            ],
+            "type": "string"
+          },
+          "rolloutVersion": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "rolloutState",
+          "rolloutVersion",
+          "entryPointMode",
+          "legacyAdapterMode",
+          "evaluatedAt",
+          "admissionRevision",
+          "capabilities"
+        ],
+        "type": "object"
+      },
       "SupportWorkspaceAttachmentCapabilitiesResponseDto": {
         "properties": {
           "contentTypes": {
@@ -50958,6 +51039,60 @@
         ],
         "type": "object"
       },
+      "SupportWorkspaceErrorBodyDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "BAD_REQUEST",
+              "REQUEST_VALIDATION_FAILED",
+              "UNAUTHORIZED",
+              "FORBIDDEN",
+              "PERMISSION_DENIED",
+              "NOT_FOUND_OR_FORBIDDEN",
+              "SECURITY_AUDIT_UNAVAILABLE",
+              "SERVICE_UNAVAILABLE",
+              "MFA_REQUIRED",
+              "MFA_ENROLLMENT_REQUIRED",
+              "SUPPORT_WORKSPACE_PROJECT_ID_INVALID",
+              "SUPPORT_WORKSPACE_IF_MATCH_REQUIRED",
+              "SUPPORT_WORKSPACE_IDEMPOTENCY_KEY_REQUIRED",
+              "SUPPORT_WORKSPACE_IDEMPOTENCY_KEY_INVALID",
+              "SUPPORT_WORKSPACE_IDEMPOTENCY_KEY_REUSED",
+              "SUPPORT_WORKSPACE_REPLAY_OUTCOME_UNAVAILABLE",
+              "SUPPORT_WORKSPACE_NOT_ENABLED",
+              "SUPPORT_WORKSPACE_ROLLOUT_REASON_INVALID",
+              "SUPPORT_WORKSPACE_VERSION_CONFLICT"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SupportWorkspaceErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/SupportWorkspaceErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "SupportWorkspaceInternalNoteCapabilitiesResponseDto": {
         "properties": {
           "attachmentDownload": {
@@ -51053,6 +51188,9 @@
           "hardOff": {
             "type": "boolean"
           },
+          "shellEnabled": {
+            "type": "boolean"
+          },
           "version": {
             "type": "number"
           }
@@ -51060,6 +51198,7 @@
         "required": [
           "version",
           "enabled",
+          "shellEnabled",
           "hardOff",
           "actionEtag"
         ],
@@ -55758,10 +55897,14 @@
             "maxLength": 500,
             "minLength": 3,
             "type": "string"
+          },
+          "shellEnabled": {
+            "type": "boolean"
           }
         },
         "required": [
           "enabled",
+          "shellEnabled",
           "hardOff",
           "reason"
         ],
@@ -112617,9 +112760,116 @@
         ]
       }
     },
+    "/api/v1/admin/projects/{projectId}/support/workspace/admission": {
+      "get": {
+        "operationId": "SupportWorkspace_readAdmission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceAdmissionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "428": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support workspace"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.cases.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.conversations.read",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
     "/api/v1/admin/projects/{projectId}/support/workspace/rollout": {
       "get": {
-        "operationId": "SupportWorkspaceRollout_read",
+        "operationId": "SupportWorkspace_readRollout",
         "parameters": [
           {
             "in": "path",
@@ -112640,6 +112890,76 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "428": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -112647,6 +112967,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support workspace rollout"
         ],
@@ -112656,7 +112977,7 @@
         }
       },
       "put": {
-        "operationId": "SupportWorkspaceRollout_update",
+        "operationId": "SupportWorkspace_updateRollout",
         "parameters": [
           {
             "in": "path",
@@ -112703,6 +113024,76 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "428": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportWorkspaceErrorResponseDto"
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -112710,6 +113101,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support workspace rollout"
         ],

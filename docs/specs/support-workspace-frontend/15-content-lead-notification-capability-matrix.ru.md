@@ -118,7 +118,7 @@ UI не показывает toggle «Все новые обращения».
 | Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
 | Browser notifications      | typed personal admission/preferences/devices/deep-link; server rollout              | `READY` → Task 27 complete                    |
 | New Case notification      | нет Project policy/topic `SUPPORT_CASE_CREATED`                                       | Backend 35 → Frontend 38                       |
-| Whole Support shell        | временный `VITE_SUPPORT_WORKSPACE_ENABLED`                                            | backend rollout → cutover tasks                |
+| Whole Support shell        | typed per-Project admission + rollout root; server `HARD_OFF`                         | `READY` → Task 28 complete                     |
 
 Backend environment flag не равен frontend feature flag. UI читает только
 typed server rollout/admission либо остаётся выключенным.

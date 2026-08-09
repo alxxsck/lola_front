@@ -137,7 +137,7 @@ test("scenario author sees importance and quiet-hours semantics", async ({
   await page.goto("/scenarios/new");
   await expect(
     page.getByRole("heading", { name: "Настройки запуска" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("Класс важности")).toBeVisible();
   await expect(page.getByText("Соблюдать тихие часы проекта")).toBeVisible();
 

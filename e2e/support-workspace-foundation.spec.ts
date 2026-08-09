@@ -242,17 +242,10 @@ test("keeps public replies and internal notes isolated in the shared composer", 
   expect(accessibility.violations).toEqual([]);
 
   await page.goto("/users");
-  await page
-    .getByRole("button", { name: "Открыть профиль Анна Смирнова" })
-    .click();
-  await page.getByRole("button", { name: "Открыть чат" }).click();
-  const endUserWorkspace = page.getByRole("dialog", {
-    name: /Рабочее пространство пользователя/,
-  });
-  await expect(endUserWorkspace).toBeVisible();
-  await expect(endUserWorkspace.getByText(privateNote)).toHaveCount(0);
+  await expectPath(page, "/support/inbox");
+  await expect(page.getByText(privateNote)).toHaveCount(0);
   await expect(
-    endUserWorkspace.getByRole("button", { name: "Внутренняя заметка" }),
+    page.getByRole("button", { name: "Внутренняя заметка" }),
   ).toHaveCount(0);
 });
 
@@ -532,11 +525,12 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
   if (usesMobileContextRoute || usesContextDrawer) {
     await page.getByRole("button", { name: "Контекст" }).click();
   }
-  await expect(context.getByRole("tab")).toHaveCount(5);
+  await expect(context.getByRole("tab")).toHaveCount(6);
   await expect(
     context.getByRole("tab", { name: "Пользователь" }),
   ).toBeVisible();
   await expect(context.getByRole("tab", { name: "Обращение" })).toBeVisible();
+  await expect(context.getByRole("tab", { name: "Материалы" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Профиль" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "События" })).toBeVisible();
   await expect(context.getByRole("tab", { name: "Активность" })).toBeVisible();
@@ -985,6 +979,8 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
   await expect(
     page.getByRole("textbox", { name: "Ответ пользователю" }),
   ).toBeVisible();
+  if ((page.viewportSize()?.width ?? 1_280) <= 767)
+    await page.getByRole("button", { name: "Контекст" }).click();
   await page.getByRole("tab", { name: "Обращение" }).click();
   const desk = page.getByRole("region", { name: "Кто ведёт обращение" });
 
@@ -1566,6 +1562,7 @@ test("keeps all Case Inspector tabs usable on the mobile route", async ({
   await expect(inspector.getByRole("tab")).toHaveText([
     "Обращение",
     "Пользователь",
+    "Материалы",
     "Профиль",
     "События",
     "Активность",

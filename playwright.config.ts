@@ -8,7 +8,10 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: apiMode ? 120_000 : 30_000,
   fullyParallel: true,
-  workers: apiMode ? 1 : undefined,
+  // The graph-heavy mock suite shares one Vite server. More than two browser
+  // workers makes its layout assertions CPU-scheduling dependent on local and
+  // CI runners, while API mode must remain serialized for mutable fixtures.
+  workers: apiMode ? 1 : 2,
   forbidOnly: Boolean(process.env.CI),
   retries: apiMode ? 0 : process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",

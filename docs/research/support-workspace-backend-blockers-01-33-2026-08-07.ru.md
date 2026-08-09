@@ -117,8 +117,8 @@ core.
 |  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract    |
 |  26 | Lead Control                             | Нет (снят `0e3f35d9`)                  | Admission, capacity risks, investigation, Activity и alerts опубликованы              |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
-|  28 | Legacy entry-point cutover               | **Частичный, транзитивный**             | Backend gaps 10–19 сняты; нет project shell rollout contract                        |
-|  29 | Pilot/rollback hardening                 | **Частичный, транзитивный**             | Pilot ждёт core cutover и typed project rollout/admission                           |
+|  28 | Legacy entry-point cutover               | Нет (снят `4d82b6bd`); frontend complete | Typed project shell admission/rollout опубликован и подключён                       |
+|  29 | Pilot/rollback hardening                 | Нет (снят `9f36796b`)                   | Backend proof опубликован; frontend hardening продолжается                          |
 |  30 | JSM/HelpDesk contract sync               | **Полный**                              | External Work существует только как нормативная спека, API отсутствует              |
 |  31 | Integration Settings/External Work       | **Полный**                              | Нет connection/catalog/mapping/inbox/receipt APIs                                   |
 |  32 | Case External Work actions               | **Полный**                              | Нет Case link/create/comment/unlink/lookup APIs                                     |
@@ -571,33 +571,24 @@ Evidence: `src/features/support-notifications/`, `src/pages/SupportNotificationS
 
 ### 28 — Cutover legacy entry points
 
-**Статус: частичный транзитивный backend-блокер.**
+**Статус: backend-блокер снят, frontend complete.**
 
-Сам redirect/deep-link adapter является frontend work. Backend gaps задач 10–19 сняты и больше не
-блокируют завершение 28. Задачи 21–27 и 30–33 по принятому scope core cutover не блокируют.
-
-Дополнительно не опубликован typed project-level rollout/admission
-`support_workspace_shell`; `Project.settings` arbitrary object и deployment `VITE_*` switch не
-являются server-owned per-project contract.
-
-Что может frontend сейчас: legacy URL adapters, canonical route guards, read-only migration и
-deployment-wide rollback flag. Нельзя объявлять writable core cutover завершённым.
+Backend `4d82b6bd` опубликовал permission-independent typed per-Project admission
+и manage-gated rollout root. Frontend pinned source `9f36796b` использует admission
+для `/users`, `/live`, `/cases` и canonical `/support/inbox`, сохраняет selection
+context, fail closed возвращает launcher и больше не читает deployment `VITE_*`
+или arbitrary `Project.settings` как authority. Browser regression покрывает
+reload/login, Back/Forward, project query restore, rollback и hard-off.
 
 ### 29 — Hardening, pilot и rollback core Support
 
-**Статус: частичный транзитивный backend-блокер.**
+**Статус: backend-блокер снят, frontend hardening in progress.**
 
-Visual, keyboard, axe, route and read-only dogfood можно выполнять. Write pilot ждёт задачу 28 и её
-backend gaps. Для безопасного one-project rollout по-прежнему нет typed project shell
-rollout/admission projection; backend environment flags отдельных modules не равны frontend
-project capability.
-
-Что может frontend сейчас: вся не зависящая от недостающих commands тестовая матрица, read-only
-dogfood, runbook и deployment rollback rehearsal. Нельзя завершить one-project write pilot и
-accuracy proof unread/delivery/assignment/SLA.
-
-Evidence: frontend `docs/specs/support-workspace-frontend/08-backend-contract-gaps.ru.md`; fresh
-OpenAPI не публикует whole-workspace rollout operation/schema.
+Backend `9f36796b` публикует pilot/rollback proof поверх typed admission/rollout:
+one-project enablement, shell rollback и hard-off имеют server-owned revision,
+OCC и idempotency boundary. Frontend может завершить visual/keyboard/axe/E2E
+matrix, release-owner runbook и управляемую rollback rehearsal без локальных
+вычисляемых rollout-флагов.
 
 ### 30 — Синхронизация JSM/HelpDesk-контрактов
 
