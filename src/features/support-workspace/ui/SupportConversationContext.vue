@@ -13,6 +13,11 @@ import SupportInspectorState from "@/features/support-inspector/ui/SupportInspec
 import type { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
 import SupportInternalKnowledgePane from "@/features/support-internal-knowledge/ui/SupportInternalKnowledgePane.vue";
 import type {
+  createSupportCaseExternalWorkController,
+  SupportCaseExternalWorkPermissions,
+} from "@/features/support-external-work/model/use-support-case-external-work";
+import SupportCaseExternalWorkPane from "@/features/support-external-work/ui/SupportCaseExternalWorkPane.vue";
+import type {
   ProfileProjectionFieldResponseDto,
   SupportLeadSafeFactDto,
 } from "@/shared/api/generated/models";
@@ -43,8 +48,14 @@ const props = withDefaults(
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     inspector: ReturnType<typeof createSupportInspectorController>;
-    knowledgeController?: ReturnType<typeof createSupportInternalKnowledgeController>;
+    knowledgeController?: ReturnType<
+      typeof createSupportInternalKnowledgeController
+    >;
     caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
+    externalWorkController?: ReturnType<
+      typeof createSupportCaseExternalWorkController
+    >;
+    externalWorkPermissions?: SupportCaseExternalWorkPermissions;
   }>(),
   {
     canManageCase: false,
@@ -58,6 +69,8 @@ const props = withDefaults(
     availabilityLabel: "Недоступность не загружена",
     canReadInternalNotes: false,
     knowledgeController: undefined,
+    externalWorkController: undefined,
+    externalWorkPermissions: undefined,
   },
 );
 
@@ -524,6 +537,21 @@ defineExpose({ requestClassification });
           aria-label="Внутренняя база знаний"
         >
           <SupportInternalKnowledgePane :controller="knowledgeController" />
+        </section>
+
+        <section
+          v-else-if="
+            activeTab === 'INTEGRATIONS' &&
+            externalWorkController &&
+            externalWorkPermissions
+          "
+          class="inspector-section integrations-section"
+          aria-label="Интеграции обращения"
+        >
+          <SupportCaseExternalWorkPane
+            :controller="externalWorkController"
+            :permissions="externalWorkPermissions"
+          />
         </section>
 
         <section

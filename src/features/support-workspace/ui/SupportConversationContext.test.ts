@@ -251,6 +251,9 @@ function render(
             '<button type="button" @click="$emit(\'click\')">{{ label }}<slot /></button>',
         },
         SupportCaseOperationsContext: true,
+        SupportCaseExternalWorkPane: {
+          template: '<div data-testid="external-work-pane">External Work</div>',
+        },
         RouterLink: { template: "<a><slot /></a>" },
       },
     },
@@ -335,5 +338,33 @@ describe("support conversation inspector", () => {
     expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe(
       "Пользователь",
     );
+  });
+
+  it("shows the Case-scoped Integrations tab only with External Work authority", async () => {
+    const { controller } = createInspector(selection, {
+      profile: true,
+      events: true,
+      activity: true,
+      externalWork: true,
+    });
+    const wrapper = render({
+      inspector: controller,
+      externalWorkController: {} as never,
+      externalWorkPermissions: {
+        read: true,
+        create: true,
+        commentInternal: true,
+        commentPublic: false,
+        readInternal: true,
+        retry: false,
+        resolveUnknown: false,
+        inboxRead: false,
+      },
+    });
+
+    const tabs = wrapper.findAll('[role="tab"]');
+    expect(tabs.map((tab) => tab.text())).toContain("Интеграции");
+    await tabs.find((tab) => tab.text() === "Интеграции")!.trigger("click");
+    expect(wrapper.get('[data-testid="external-work-pane"]')).toBeTruthy();
   });
 });

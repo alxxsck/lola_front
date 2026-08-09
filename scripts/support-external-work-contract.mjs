@@ -12,14 +12,19 @@ function operations(document) {
 function requireOperation(index, operationId) {
   const operation = index.get(operationId);
   if (!operation)
-    throw new Error(`Support External Work operation is missing: ${operationId}`);
+    throw new Error(
+      `Support External Work operation is missing: ${operationId}`,
+    );
   return operation;
 }
 
 function requireSchemaProperties(document, name, properties) {
   const schema = document.components?.schemas?.[name];
-  if (!schema) throw new Error(`Support External Work schema is missing: ${name}`);
-  const missing = properties.filter((property) => !schema.properties?.[property]);
+  if (!schema)
+    throw new Error(`Support External Work schema is missing: ${name}`);
+  const missing = properties.filter(
+    (property) => !schema.properties?.[property],
+  );
   if (missing.length)
     throw new Error(`${name} is missing fields: ${missing.join(", ")}`);
 }
@@ -40,13 +45,37 @@ export function validateSupportExternalWorkContract(document) {
     ["SupportExternalMapping_list", "project.support.external_work.manage"],
     ["SupportExternalInbox_list", "project.support.external_work.inbox_read"],
     ["SupportExternalItem_list", "project.support.external_work.read_linked"],
-    ["SupportExternalTimeline_list", "project.support.external_work.read_linked"],
-    ["SupportExternalCommand_listForCase", "project.support.external_work.read_linked"],
+    [
+      "SupportExternalTimeline_list",
+      "project.support.external_work.read_linked",
+    ],
+    [
+      "SupportExternalCommand_listForCase",
+      "project.support.external_work.read_linked",
+    ],
+    [
+      "SupportExternalCommand_read",
+      "project.support.external_work.read_linked",
+    ],
+    [
+      "SupportExternalCaseCreateOptions_read",
+      "project.support.external_work.create",
+    ],
+    [
+      "SupportExternalCaseLinks_list",
+      "project.support.external_work.read_linked",
+    ],
+    [
+      "SupportExternalCaseLinks_read",
+      "project.support.external_work.read_linked",
+    ],
   ];
   for (const [operationId, permission] of reads) {
     const operation = requireOperation(index, operationId);
     if (operation["x-iam-permission"]?.code !== permission)
-      throw new Error(`${operationId} must require exact permission ${permission}`);
+      throw new Error(
+        `${operationId} must require exact permission ${permission}`,
+      );
   }
 
   const auditedSettingsMutations = [
@@ -64,14 +93,21 @@ export function validateSupportExternalWorkContract(document) {
   ];
   for (const operationId of auditedSettingsMutations) {
     const operation = requireOperation(index, operationId);
-    if (operation["x-iam-permission"]?.code !== "project.support.external_work.manage")
+    if (
+      operation["x-iam-permission"]?.code !==
+      "project.support.external_work.manage"
+    )
       throw new Error(`${operationId} must require External Work manage`);
     if (operation["x-iam-fresh-strong-authentication"] !== true)
-      throw new Error(`${operationId} must require fresh strong authentication`);
+      throw new Error(
+        `${operationId} must require fresh strong authentication`,
+      );
     requireHeader(operation, "Idempotency-Key");
-    const responseHeaders = operation.responses?.["200"]?.headers ??
+    const responseHeaders =
+      operation.responses?.["200"]?.headers ??
       operation.responses?.["201"]?.headers ??
-      operation.responses?.["202"]?.headers ?? {};
+      operation.responses?.["202"]?.headers ??
+      {};
     for (const name of [
       "X-Idempotent-Replay",
       "X-Support-External-Settings-Mutation-Receipt-Id",
@@ -81,12 +117,17 @@ export function validateSupportExternalWorkContract(document) {
     }
   }
 
-  const catalogRefresh = requireOperation(index, "SupportExternalCatalog_refresh");
+  const catalogRefresh = requireOperation(
+    index,
+    "SupportExternalCatalog_refresh",
+  );
   if (
     catalogRefresh["x-iam-permission"]?.code !==
     "project.support.external_work.manage"
   )
-    throw new Error("SupportExternalCatalog_refresh must require External Work manage");
+    throw new Error(
+      "SupportExternalCatalog_refresh must require External Work manage",
+    );
   requireHeader(catalogRefresh, "Idempotency-Key");
 
   for (const operationId of [
@@ -99,6 +140,57 @@ export function validateSupportExternalWorkContract(document) {
     "SupportExternalMapping_rollback",
   ])
     requireHeader(requireOperation(index, operationId), "If-Match");
+
+  const submit = requireOperation(index, "SupportExternalCommand_submit");
+  requireHeader(submit, "Idempotency-Key");
+  const submitPermissions = new Set(
+    (submit["x-iam-any-permission"] ?? []).map((item) => item.code),
+  );
+  for (const permission of [
+    "project.support.external_work.create",
+    "project.support.external_work.comment_internal",
+    "project.support.external_work.comment_public",
+    "project.support.external_work.read_linked",
+  ]) {
+    if (!submitPermissions.has(permission))
+      throw new Error(
+        `SupportExternalCommand_submit must publish ${permission}`,
+      );
+  }
+  if (!submit.responses?.["202"])
+    throw new Error("SupportExternalCommand_submit must return async 202");
+  const submitVariants =
+    submit.requestBody?.content?.["application/json"]?.schema?.oneOf ?? [];
+  const intents = new Set(
+    submitVariants.flatMap((variant) => variant.properties?.intent?.enum ?? []),
+  );
+  for (const intent of ["CREATE", "COMMENT", "REFRESH", "UNLINK"])
+    if (!intents.has(intent))
+      throw new Error(`SupportExternalCommand_submit must support ${intent}`);
+
+  for (const [operationId, permission] of [
+    ["SupportExternalCommand_retry", "project.support.external_work.retry"],
+    [
+      "SupportExternalCommand_refreshEvidence",
+      "project.support.external_work.resolve_unknown",
+    ],
+    [
+      "SupportExternalCommand_resolveUnknown",
+      "project.support.external_work.resolve_unknown",
+    ],
+    [
+      "SupportExternalInbox_linkToCase",
+      "project.support.external_work.inbox_read",
+    ],
+  ]) {
+    const operation = requireOperation(index, operationId);
+    if (operation["x-iam-permission"]?.code !== permission)
+      throw new Error(
+        `${operationId} must require exact permission ${permission}`,
+      );
+    requireHeader(operation, "If-Match");
+    requireHeader(operation, "Idempotency-Key");
+  }
 
   requireSchemaProperties(document, "SupportExternalConnectionResponseDto", [
     "provider",
@@ -119,6 +211,23 @@ export function validateSupportExternalWorkContract(document) {
     "errorCategory",
     "nextAttemptAt",
     "allowedActions",
+  ]);
+  requireSchemaProperties(document, "SupportExternalCreateOptionResponseDto", [
+    "optionId",
+    "mappingRevisionId",
+    "formRevision",
+    "allowedActions",
+    "fields",
+  ]);
+  requireSchemaProperties(document, "SupportExternalLinkResponseDto", [
+    "linkId",
+    "version",
+    "item",
+  ]);
+  requireSchemaProperties(document, "SupportExternalWorkCommandReceiptDto", [
+    "commandId",
+    "status",
+    "replayed",
   ]);
   requireSchemaProperties(document, "SupportExternalMappingDraftResponseDto", [
     "root",

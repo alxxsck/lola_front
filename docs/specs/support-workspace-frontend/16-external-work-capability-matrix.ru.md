@@ -11,16 +11,25 @@
 
 ## Поверхности и authority
 
-| Surface | Route | Exact Project permission | Authority |
-|---|---|---|---|
-| Connection и mapping settings | `/support/settings/integrations` | `project.support.external_work.manage` | backend connection/catalog/mapping roots |
-| Compatibility inbox | `/support/external-work` | `project.support.external_work.inbox_read` | backend compatibility read model |
-| Linked recovery | `/support/external-work` | `project.support.external_work.read_linked` | remote read model + Case-scoped command receipts |
-| Safe retry | linked recovery detail | `project.support.external_work.retry` | exact Case command receipt + quoted numeric OCC |
-| Unknown evidence refresh | linked recovery detail | `project.support.external_work.resolve_unknown` | exact Case command receipt + quoted numeric OCC |
+| Surface                       | Route                            | Exact Project permission                         | Authority                                            |
+| ----------------------------- | -------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| Connection и mapping settings | `/support/settings/integrations` | `project.support.external_work.manage`           | backend connection/catalog/mapping roots             |
+| Compatibility inbox           | `/support/external-work`         | `project.support.external_work.inbox_read`       | backend compatibility read model                     |
+| Linked recovery               | `/support/external-work`         | `project.support.external_work.read_linked`      | remote read model + Case-scoped command receipts     |
+| Safe retry                    | linked recovery detail           | `project.support.external_work.retry`            | exact Case command receipt + quoted numeric OCC      |
+| Unknown evidence refresh      | linked recovery detail           | `project.support.external_work.resolve_unknown`  | exact Case command receipt + quoted numeric OCC      |
+| Case external links           | Support Workspace Case inspector | `project.support.external_work.read_linked`      | Case-scoped links, remote projection и timeline      |
+| Case external create          | Support Workspace Case inspector | `project.support.external_work.create` + `project.support.external_work.read_linked` | server create options + pinned mapping/form revision + authoritative receipt recovery |
+| Internal external comment     | Support Workspace Case inspector | `project.support.external_work.comment_internal` | server allowed action + quoted link version          |
+| Public external comment       | Support Workspace Case inspector | `project.support.external_work.comment_public`   | separate permission + explicit operator confirmation |
+| Link compatibility inbox item | Support Workspace Case inspector | `project.support.external_work.inbox_read`       | exact item version + published mapping revision      |
 
 `project.integrations.manage` не даёт доступ к Support External Work. Actor,
 Project и permission scope участвуют в fencing каждого read/mutation.
+Сам backend mutation проверяет exact `external_work.create`, но pinned read
+contract разрешает reconciliation принятого `202` только с `read_linked`.
+Поэтому frontend admission для Create требует оба permission и не открывает
+необратимую команду create-only роли без способа проверить outcome.
 
 ## Mutation contract
 
@@ -53,7 +62,9 @@ Project и permission scope участвуют в fencing каждого read/mu
 
 ## Не входит в Ticket 31
 
-- Создание/link/comment External Work из Case inspector — Ticket 32.
+- Ticket 32 завершает создание/link/comment/refresh/unlink External Work из
+  Case inspector. Browser не вызывает provider напрямую и не меняет canonical
+  Lola Case state по remote status.
 - Import preview/execution — отдельная управляемая поверхность.
 - Production rollout, реальные OAuth credentials и provider mutations остаются
   release-owner действиями; mock/manual frontend gate их не выполняет.

@@ -1,5 +1,6 @@
 import type {
   SupportExternalCatalogResponseDto,
+  SupportExternalCreateOptionsResponseDto,
   SupportExternalCommandStatusResponseDto,
   SupportExternalConnectionResponseDto,
   SupportExternalMappingDefinitionDto,
@@ -8,6 +9,7 @@ import type {
   SupportExternalMappingRootResponseDto,
   SupportExternalProjectItemResponseDto,
   SupportExternalTimelineMessageResponseDto,
+  SupportExternalWorkCommandReceiptDto,
 } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
@@ -59,6 +61,10 @@ let mappingDraft: SupportExternalMappingDraftResponseDto;
 let publishedRevisions: SupportExternalMappingPublishedRevisionResponseDto[];
 let commands: SupportExternalCommandStatusResponseDto[];
 const settingsAttempts = new Map<string, unknown>();
+const commandAttempts = new Map<
+  string,
+  SupportExternalWorkCommandReceiptDto
+>();
 
 const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
   [ids.jsm]: {
@@ -270,6 +276,7 @@ function resetState(): void {
     },
   ];
   settingsAttempts.clear();
+  commandAttempts.clear();
 }
 
 resetState();
@@ -286,7 +293,9 @@ function checkSignal(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
-function connection(connectionId: string): SupportExternalConnectionResponseDto {
+function connection(
+  connectionId: string,
+): SupportExternalConnectionResponseDto {
   const value = connections.find((item) => item.id === connectionId);
   if (!value) throw new ApiError(404, "Not found");
   return value;
@@ -310,10 +319,185 @@ function mutation<T>(key: string, create: () => T): SupportExternalMutation<T> {
 
 function expectVersion(value: { version: number }, version: number): void {
   if (value.version !== version)
-    throw new ApiError(409, "Version conflict", undefined, undefined, "VERSION_CONFLICT");
+    throw new ApiError(
+      409,
+      "Version conflict",
+      undefined,
+      undefined,
+      "VERSION_CONFLICT",
+    );
 }
 
 export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
+  async readCaseCreateOptions(_projectId, _caseId, signal) {
+    checkSignal(signal);
+    const value: SupportExternalCreateOptionsResponseDto = {
+      items: [
+        {
+          optionId: "90000000-0000-4000-8000-000000000001",
+          connectionId: ids.jsm,
+          mappingRootId: ids.mapping,
+          mappingRevisionId: ids.published,
+          formRevision: "form-v8",
+          destinationId: "jsm-service-desk-1",
+          destinationLabel: "Support Operations",
+          formId: "incident",
+          formLabel: "Incident",
+          matchedBy: "RULE",
+          allowedActions: ["CREATE"],
+          fields: [
+            {
+              id: "environment",
+              valueType: "TEXT",
+              required: false,
+              options: [],
+              editable: true,
+            },
+          ],
+        },
+        {
+          optionId: "90000000-0000-4000-8000-000000000002",
+          connectionId: ids.helpdesk,
+          mappingRootId: ids.mapping,
+          mappingRevisionId: ids.published,
+          formRevision: "helpdesk-v3",
+          destinationId: "helpdesk-team-1",
+          destinationLabel: "Tier 2",
+          matchedBy: "FALLBACK",
+          allowedActions: ["CREATE"],
+          fields: [],
+        },
+      ],
+    };
+    return safeClone(value);
+  },
+  async listCaseLinks(_projectId, caseId, _params, signal) {
+    checkSignal(signal);
+    return {
+      items: [
+        {
+          linkId: ids.link,
+          connectionId: ids.jsm,
+          itemId: ids.linkedItem,
+          status: "ACTIVE",
+          linkedAt: "2026-08-09T15:00:00.000Z",
+          version: 2,
+          item: {
+            ...safeClone(linkedItem),
+            allowedActions: [
+              "OPEN_REMOTE",
+              "VIEW_TIMELINE",
+              "COMMENT_INTERNAL",
+              "COMMENT_PUBLIC",
+              "REFRESH",
+              "UNLINK",
+            ],
+            link: {
+              linkId: ids.link,
+              caseId,
+              linkedAt: "2026-08-09T15:00:00.000Z",
+              version: 2,
+            },
+          },
+        },
+      ],
+      nextCursor: null,
+    };
+  },
+  async readCaseLink(_projectId, caseId, linkId, signal) {
+    checkSignal(signal);
+    if (linkId !== ids.link) throw new ApiError(404, "Link not found");
+    return {
+      linkId: ids.link,
+      connectionId: ids.jsm,
+      itemId: ids.linkedItem,
+      status: "ACTIVE",
+      linkedAt: "2026-08-09T15:00:00.000Z",
+      version: 2,
+      item: {
+        ...safeClone(linkedItem),
+        allowedActions: [
+          "OPEN_REMOTE",
+          "VIEW_TIMELINE",
+          "COMMENT_INTERNAL",
+          "COMMENT_PUBLIC",
+          "REFRESH",
+          "UNLINK",
+        ],
+        link: {
+          linkId: ids.link,
+          caseId,
+          linkedAt: "2026-08-09T15:00:00.000Z",
+          version: 2,
+        },
+      },
+    };
+  },
+  async readCommand(_projectId, _caseId, commandId, signal) {
+    checkSignal(signal);
+    const value = commands.find((item) => item.commandId === commandId);
+    if (!value) throw new ApiError(404, "Command not found");
+    return safeClone(value);
+  },
+  async submitCaseCommand(_projectId, _caseId, body, _version, key, signal) {
+    checkSignal(signal);
+    const existing = commandAttempts.get(key);
+    if (existing) return { ...existing, replayed: true };
+    const commandId = crypto.randomUUID();
+    const status = "QUEUED" as const;
+    commands.unshift({
+      commandId,
+      intent: body.intent,
+      status,
+      errorCode: null,
+      errorCategory: null,
+      nextAttemptAt: null,
+      version: 1,
+      createdAt: now,
+      resolvedAt: null,
+      allowedActions: [],
+    });
+    const receipt = { commandId, status, replayed: false };
+    commandAttempts.set(key, receipt);
+    return receipt;
+  },
+  async resolveCommand(
+    _projectId,
+    _caseId,
+    commandId,
+    _body,
+    version,
+    _key,
+    signal,
+  ) {
+    checkSignal(signal);
+    const index = commands.findIndex((item) => item.commandId === commandId);
+    const value = commands[index];
+    if (!value) throw new ApiError(404, "Command not found");
+    expectVersion(value, version);
+    commands[index] = {
+      ...value,
+      status: "SUCCEEDED",
+      version: value.version + 1,
+      resolvedAt: now,
+      allowedActions: [],
+    };
+    return { commandId, status: "SUCCEEDED", replayed: false };
+  },
+  async linkInboxItemToCase(
+    _projectId,
+    remoteItemId,
+    _body,
+    version,
+    _key,
+    signal,
+  ) {
+    checkSignal(signal);
+    if (remoteItemId !== attentionItem.remoteItemId)
+      throw new ApiError(404, "Item not found");
+    expectVersion(attentionItem, version);
+    return { linkId: ids.link, itemVersion: version + 1, replayed: false };
+  },
   async listConnections(_projectId, _cursor, signal) {
     checkSignal(signal);
     return { items: safeClone(connections), nextCursor: null };
@@ -321,7 +505,10 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async startOAuth(_projectId, provider, key, signal) {
     checkSignal(signal);
     return mutation(key, () => ({
-      sessionId: provider === "JSM" ? "70000000-0000-4000-8000-000000000001" : "70000000-0000-4000-8000-000000000002",
+      sessionId:
+        provider === "JSM"
+          ? "70000000-0000-4000-8000-000000000001"
+          : "70000000-0000-4000-8000-000000000002",
       launchPath: `/api/v1/support/external-work/oauth/launch/mock-${provider.toLowerCase()}`,
       expiresAt: "2026-08-09T16:10:00.000Z",
     }));
@@ -331,8 +518,16 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     return {
       provider: "JSM",
       items: [
-        { id: "support-cloud", label: "Support cloud", siteUrl: "https://support.example" },
-        { id: "second-cloud", label: "Second cloud", siteUrl: "https://second.example" },
+        {
+          id: "support-cloud",
+          label: "Support cloud",
+          siteUrl: "https://support.example",
+        },
+        {
+          id: "second-cloud",
+          label: "Second cloud",
+          siteUrl: "https://second.example",
+        },
       ],
     };
   },
@@ -450,13 +645,15 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async readMappingDraft(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id)
+      throw new ApiError(404, "Mapping not found");
     return safeClone(mappingDraft);
   },
   async replaceMappingDraft(_projectId, mappingId, version, body, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id)
+        throw new ApiError(404, "Mapping not found");
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingDraft = {
@@ -469,7 +666,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async beginMappingDraft(_projectId, mappingId, version, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id)
+        throw new ApiError(404, "Mapping not found");
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingRoot.draftRevisionId = ids.draft;
@@ -481,11 +679,13 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async validateMapping(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id)
+      throw new ApiError(404, "Mapping not found");
     return {
       valid: true,
       definitionHash: "a".repeat(64),
-      catalogSnapshotId: mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
+      catalogSnapshotId:
+        mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
       formRevision: mappingDraft.draft.formRevision,
       ruleCount: mappingDraft.draft.definition.rules.length,
       validatedAt: now,
@@ -493,17 +693,22 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async previewMapping(_projectId, mappingId, body, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id)
+      throw new ApiError(404, "Mapping not found");
     const matched = mappingDraft.draft.definition.rules.find(
       (rule) =>
-        (!rule.when.caseKinds?.length || rule.when.caseKinds.includes(body.caseKind)) &&
-        (!rule.when.priorities?.length || rule.when.priorities.includes(body.priority)),
+        (!rule.when.caseKinds?.length ||
+          rule.when.caseKinds.includes(body.caseKind)) &&
+        (!rule.when.priorities?.length ||
+          rule.when.priorities.includes(body.priority)),
     );
-    const destination = matched?.destination ?? mappingDraft.draft.definition.fallback;
+    const destination =
+      matched?.destination ?? mappingDraft.draft.definition.fallback;
     return {
       mappingRootId: mappingRoot.id,
       draftRevisionId: mappingDraft.draft.id,
-      catalogSnapshotId: mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
+      catalogSnapshotId:
+        mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
       formRevision: mappingDraft.draft.formRevision,
       definitionHash: "a".repeat(64),
       validatedAt: now,
@@ -520,7 +725,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async diffMapping(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id)
+      throw new ApiError(404, "Mapping not found");
     return {
       fromRevisionId: mappingRoot.publishedRevisionId ?? null,
       fromRevisionNumber: publishedRevisions[0]?.revisionNumber ?? null,
@@ -533,7 +739,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async publishMapping(_projectId, mappingId, version, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id)
+        throw new ApiError(404, "Mapping not found");
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingRoot.publishedRevisionId = mappingDraft.draft.id;
@@ -552,13 +759,23 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async listMappingRevisions(_projectId, mappingId, _params, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id)
+      throw new ApiError(404, "Mapping not found");
     return { items: safeClone(publishedRevisions), nextCursor: null };
   },
-  async rollbackMapping(_projectId, mappingId, revisionId, version, body, key, signal) {
+  async rollbackMapping(
+    _projectId,
+    mappingId,
+    revisionId,
+    version,
+    body,
+    key,
+    signal,
+  ) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id) throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id)
+        throw new ApiError(404, "Mapping not found");
       expectVersion(mappingRoot, version);
       const source = publishedRevisions.find((item) => item.id === revisionId);
       if (!source) throw new ApiError(404, "Revision not found");
@@ -595,33 +812,39 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async listInbox(_projectId, params, signal) {
     checkSignal(signal);
-    const items = params?.freshness && params.freshness !== attentionItem.freshness
-      ? []
-      : [attentionItem];
+    const items =
+      params?.freshness && params.freshness !== attentionItem.freshness
+        ? []
+        : [attentionItem];
     return { items: safeClone(items), nextCursor: null };
   },
   async readInboxItem(_projectId, itemId, signal) {
     checkSignal(signal);
-    if (itemId !== attentionItem.itemId) throw new ApiError(404, "Item not found");
+    if (itemId !== attentionItem.itemId)
+      throw new ApiError(404, "Item not found");
     return safeClone(attentionItem);
   },
   async readInboxTimeline(_projectId, itemId, _params, signal) {
     checkSignal(signal);
-    if (itemId !== attentionItem.itemId) throw new ApiError(404, "Item not found");
+    if (itemId !== attentionItem.itemId)
+      throw new ApiError(404, "Item not found");
     return { items: safeClone(timeline), nextCursor: null };
   },
   async readLinkedTimeline(_projectId, caseId, linkId, _params, signal) {
     checkSignal(signal);
-    if (caseId !== ids.case || linkId !== ids.link)
+    if (!caseId || linkId !== ids.link)
       throw new ApiError(404, "Timeline not found");
     return { items: safeClone(timeline), nextCursor: null };
   },
   async listItems(_projectId, params, signal) {
     checkSignal(signal);
     let items = [linkedItem];
-    if (params?.provider) items = items.filter((item) => item.provider === params.provider);
-    if (params?.freshness) items = items.filter((item) => item.freshness === params.freshness);
-    if (params?.status) items = items.filter((item) => item.status === params.status);
+    if (params?.provider)
+      items = items.filter((item) => item.provider === params.provider);
+    if (params?.freshness)
+      items = items.filter((item) => item.freshness === params.freshness);
+    if (params?.status)
+      items = items.filter((item) => item.status === params.status);
     return { items: safeClone(items), nextCursor: null };
   },
   async readItem(_projectId, itemId, signal) {
@@ -631,12 +854,12 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async listCaseCommands(_projectId, caseId, _params, signal) {
     checkSignal(signal);
-    if (caseId !== ids.case) throw new ApiError(404, "Case not found");
+    if (!caseId) throw new ApiError(404, "Case not found");
     return { items: safeClone(commands), nextCursor: null };
   },
   async retryCommand(_projectId, caseId, commandId, version, _key, signal) {
     checkSignal(signal);
-    if (caseId !== ids.case || commandId !== ids.command)
+    if (!caseId || commandId !== ids.command)
       throw new ApiError(404, "Command not found");
     expectVersion(commands[0]!, version);
     commands[0] = { ...commands[0]!, status: "RETRYING", allowedActions: [] };
@@ -652,7 +875,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     signal,
   ) {
     checkSignal(signal);
-    if (caseId !== ids.case || commandId !== ids.command)
+    if (!caseId || commandId !== ids.command)
       throw new ApiError(404, "Command not found");
     expectVersion(commands[0]!, version);
     commands[0] = {

@@ -525,7 +525,7 @@ test("switches one inbox between Conversations and Cases and exposes exact conte
   if (usesMobileContextRoute || usesContextDrawer) {
     await page.getByRole("button", { name: "Контекст" }).click();
   }
-  await expect(context.getByRole("tab")).toHaveCount(6);
+  await expect(context.getByRole("tab")).toHaveCount(7);
   await expect(
     context.getByRole("tab", { name: "Пользователь" }),
   ).toBeVisible();
@@ -1563,6 +1563,7 @@ test("keeps all Case Inspector tabs usable on the mobile route", async ({
     "Обращение",
     "Пользователь",
     "Материалы",
+    "Интеграции",
     "Профиль",
     "События",
     "Активность",

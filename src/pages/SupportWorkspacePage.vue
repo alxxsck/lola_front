@@ -107,6 +107,8 @@ import {
 } from "@/features/support-workspace/model/support-workspace-access";
 import { supportInspectorSource } from "@/features/support-inspector/api/support-inspector-source";
 import { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
+import { supportExternalWorkSource } from "@/features/support-external-work/api/support-external-work-source";
+import { createSupportCaseExternalWorkController } from "@/features/support-external-work/model/use-support-case-external-work";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
 import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
 import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
@@ -415,7 +417,7 @@ function publicAttachmentCapabilities() {
   return {
     state: publicAttachmentsAccessDenied.value
       ? ("UNAVAILABLE" as const)
-      : value?.state ?? ("UNAVAILABLE" as const),
+      : (value?.state ?? ("UNAVAILABLE" as const)),
     upload: Boolean(!publicAttachmentsAccessDenied.value && value?.upload),
     download: Boolean(!publicAttachmentsAccessDenied.value && value?.download),
     maxFiles: value?.maxFilesPerMessage ?? 10,
@@ -431,11 +433,20 @@ function noteAttachmentCapabilities() {
   return {
     state:
       !noteAttachmentsAccessDenied.value &&
-      common?.state === "AVAILABLE" && note?.state === "AVAILABLE"
+      common?.state === "AVAILABLE" &&
+      note?.state === "AVAILABLE"
         ? ("AVAILABLE" as const)
         : ("UNAVAILABLE" as const),
-    upload: Boolean(!noteAttachmentsAccessDenied.value && common?.upload && note?.attachmentUpload),
-    download: Boolean(!noteAttachmentsAccessDenied.value && common?.download && note?.attachmentDownload),
+    upload: Boolean(
+      !noteAttachmentsAccessDenied.value &&
+      common?.upload &&
+      note?.attachmentUpload,
+    ),
+    download: Boolean(
+      !noteAttachmentsAccessDenied.value &&
+      common?.download &&
+      note?.attachmentDownload,
+    ),
     maxFiles: common?.maxFilesPerMessage ?? 10,
     maxFileBytes: common?.maxBytesPerFile ?? 20 * 1024 * 1024,
     maxTotalBytes: common?.maxBytesPerMessage ?? 50 * 1024 * 1024,
@@ -489,7 +500,9 @@ async function handlePublicAttachmentForbidden(): Promise<void> {
   } catch {
     // Attachment metadata is already concealed while authority is refreshed.
   }
-  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+    () => undefined,
+  );
 }
 
 async function handleNoteAttachmentForbidden(): Promise<void> {
@@ -501,7 +514,9 @@ async function handleNoteAttachmentForbidden(): Promise<void> {
   } catch {
     // Private attachment metadata is already concealed while authority is refreshed.
   }
-  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(
+    () => undefined,
+  );
 }
 const publicAttachmentAuthorityKey = computed(() => {
   const selection = conversation.selection.value;
@@ -569,7 +584,8 @@ const knowledge = createSupportInternalKnowledgeController(
     scope: () => {
       const selection = conversation.selection.value;
       const projectId = auth.project?.id;
-      if (!projectId || !selection?.case || !selection.conversation) return null;
+      if (!projectId || !selection?.case || !selection.conversation)
+        return null;
       return {
         projectId,
         caseId: selection.case.id,
@@ -583,8 +599,8 @@ const knowledge = createSupportInternalKnowledgeController(
     canInsert: () =>
       Boolean(
         canReadSelectedKnowledge.value &&
-          reply.canReply.value &&
-          supportComposerMode.value === "PUBLIC_REPLY",
+        reply.canReply.value &&
+        supportComposerMode.value === "PUBLIC_REPLY",
       ),
     onInsert(text) {
       reply.draft.value = [reply.draft.value.trim(), text]
@@ -641,12 +657,11 @@ const hasSupportMacrosUsePermission = computed(() =>
   ),
 );
 const canReadSupportMacros = computed(
-  () => !supportMacrosAccessDenied.value && hasSupportMacrosReadPermission.value,
+  () =>
+    !supportMacrosAccessDenied.value && hasSupportMacrosReadPermission.value,
 );
 const canUseSupportMacros = computed(
-  () =>
-    canReadSupportMacros.value &&
-    hasSupportMacrosUsePermission.value,
+  () => canReadSupportMacros.value && hasSupportMacrosUsePermission.value,
 );
 const supportMacros = createSupportMacroController(
   {
@@ -703,7 +718,8 @@ async function handleSupportMacroRejected(): Promise<void> {
     // The rejected Macro draft is already purged; the typed text stays local.
   }
   supportMacrosAccessDenied.value =
-    !hasSupportMacrosReadPermission.value || !hasSupportMacrosUsePermission.value;
+    !hasSupportMacrosReadPermission.value ||
+    !hasSupportMacrosUsePermission.value;
   if (!supportMacrosAccessDenied.value) await supportMacros.load();
 }
 
@@ -843,18 +859,18 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           reply.canReply.value &&
           !supportMacros.recoveryRequired.value &&
           !knowledge.recoveryRequired.value
-          ? ("ENABLED" as const)
-          : ("DISABLED" as const),
+            ? ("ENABLED" as const)
+            : ("DISABLED" as const),
         reason:
           reply.canReply.value &&
           !supportMacros.recoveryRequired.value &&
           !knowledge.recoveryRequired.value
-          ? undefined
-          : supportMacros.recoveryRequired.value
-            ? supportMacros.error.value
-            : knowledge.recoveryRequired.value
-              ? knowledge.error.value
-              : "Ответ пользователю в этом диалоге недоступен.",
+            ? undefined
+            : supportMacros.recoveryRequired.value
+              ? supportMacros.error.value
+              : knowledge.recoveryRequired.value
+                ? knowledge.error.value
+                : "Ответ пользователю в этом диалоге недоступен.",
       },
       internalNote: {
         visibility:
@@ -867,12 +883,12 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         reason:
           supportMacros.recoveryRequired.value ||
           knowledge.recoveryRequired.value
-          ? supportMacros.recoveryRequired.value
-            ? supportMacros.error.value
-            : knowledge.error.value
-          : noteAvailable
-            ? "Для этого обращения доступен только просмотр заметок."
-            : "Внутренние заметки недоступны для текущего обращения.",
+            ? supportMacros.recoveryRequired.value
+              ? supportMacros.error.value
+              : knowledge.error.value
+            : noteAvailable
+              ? "Для этого обращения доступен только просмотр заметок."
+              : "Внутренние заметки недоступны для текущего обращения.",
       },
     };
     if (supportComposerMode.value === "INTERNAL_NOTE") {
@@ -904,7 +920,9 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
         recipientStatus: null,
         actions: {
           attachment: {
-            visibility: noteAttachmentCapabilities().upload ? "ENABLED" : "DISABLED",
+            visibility: noteAttachmentCapabilities().upload
+              ? "ENABLED"
+              : "DISABLED",
             reason: noteAttachmentCapabilities().upload
               ? undefined
               : "Загрузка файлов во внутреннюю заметку недоступна.",
@@ -924,14 +942,15 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           sendWithoutTranslation: { visibility: "HIDDEN" },
         },
         modeSwitch,
-        sendCapability: enabled && !supportMacros.recoveryRequired.value
-          ? { kind: "SOURCE" }
-          : {
-              kind: "BLOCKED",
-              reason: supportMacros.recoveryRequired.value
-                ? supportMacros.error.value
-                : "Добавление заметки больше недоступно. Черновик очищен.",
-            },
+        sendCapability:
+          enabled && !supportMacros.recoveryRequired.value
+            ? { kind: "SOURCE" }
+            : {
+                kind: "BLOCKED",
+                reason: supportMacros.recoveryRequired.value
+                  ? supportMacros.error.value
+                  : "Добавление заметки больше недоступно. Черновик очищен.",
+              },
         replyPreview: null,
         translationAssist: null,
       };
@@ -958,21 +977,22 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
             showProviderDetails: canReadTranslationDetails.value,
           }
         : null;
-    const sendCapability = hasReplyText && replyPolicyChecking.value
-      ? {
-          kind: "BLOCKED" as const,
-          reason: publicReplyBlockedReason.value,
-        }
-      : translatedMode
-        ? { kind: "TRANSLATED_PREVIEW" as const }
-        : canSubmitPublicReply.value
-          ? { kind: "SOURCE" as const }
-          : {
-              kind: "BLOCKED" as const,
-              reason:
-                publicReplyBlockedReason.value ||
-                "Ответ в этом диалоге сейчас недоступен.",
-            };
+    const sendCapability =
+      hasReplyText && replyPolicyChecking.value
+        ? {
+            kind: "BLOCKED" as const,
+            reason: publicReplyBlockedReason.value,
+          }
+        : translatedMode
+          ? { kind: "TRANSLATED_PREVIEW" as const }
+          : canSubmitPublicReply.value
+            ? { kind: "SOURCE" as const }
+            : {
+                kind: "BLOCKED" as const,
+                reason:
+                  publicReplyBlockedReason.value ||
+                  "Ответ в этом диалоге сейчас недоступен.",
+              };
 
     return {
       visibility: reply.canReply.value ? "ENABLED" : "HIDDEN",
@@ -996,11 +1016,9 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
                     knowledge.activeCitation.value?.documentId,
                 )?.title ??
                 "Внутренний материал",
-              revisionNumber:
-                knowledge.activeCitation.value.revisionNumber,
+              revisionNumber: knowledge.activeCitation.value.revisionNumber,
               mode: knowledge.activeCitation.value.mode,
-              edited:
-                knowledge.activeCitation.value.text !== reply.draft.value,
+              edited: knowledge.activeCitation.value.text !== reply.draft.value,
             },
           }
         : {}),
@@ -1650,6 +1668,76 @@ const leadAssignmentSurfaceController = computed(() =>
 const profileAccessDenied = ref(false);
 const inspectorEventsAccessDenied = ref(false);
 const inspectorActivityAccessDenied = ref(false);
+const externalWorkAccessDenied = ref(false);
+const externalWorkPermissions = computed(() => {
+  const permissions = auth.project?.effectivePermissionCodes ?? [];
+  const allowed = (permission: Parameters<typeof hasProjectPermission>[1]) =>
+    !externalWorkAccessDenied.value &&
+    hasProjectPermission(permissions, permission);
+  const read = allowed("project.support.external_work.read_linked");
+  return {
+    read,
+    // A 202 receipt can only be reconciled through read_linked on the pinned
+    // backend. Keep create fail-closed when that recovery authority is absent.
+    create: read && allowed("project.support.external_work.create"),
+    commentInternal: allowed("project.support.external_work.comment_internal"),
+    commentPublic: allowed("project.support.external_work.comment_public"),
+    readInternal: allowed("project.support.external_work.read_internal"),
+    retry: allowed("project.support.external_work.retry"),
+    resolveUnknown: allowed("project.support.external_work.resolve_unknown"),
+    inboxRead: allowed("project.support.external_work.inbox_read"),
+  };
+});
+const canUseSelectedExternalWork = computed(
+  () =>
+    Boolean(conversation.selection.value?.case) &&
+    (externalWorkPermissions.value.read ||
+      externalWorkPermissions.value.create),
+);
+const externalWork = createSupportCaseExternalWorkController(
+  {
+    projectId: () => auth.project?.id,
+    actorId: () => auth.user?.id,
+    caseId: () => conversation.selection.value?.case?.id,
+    caseTitle: () => conversation.selection.value?.case?.title ?? "",
+    caseSummary: () => {
+      const supportCase = conversation.selection.value?.case;
+      return supportCase
+        ? `${supportCase.groupCode} · ${supportCase.title}`
+        : "";
+    },
+    permissions: () => externalWorkPermissions.value,
+    async onForbidden() {
+      externalWorkAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Protected links and remote text are already purged by the controller.
+      }
+    },
+    async onAuthenticationRequired() {
+      try {
+        await auth.logout();
+      } catch {
+        // Local authority is cleared before remote logout; navigation is mandatory.
+      } finally {
+        await router.replace({
+          path: "/login",
+          query: { redirect: route.fullPath },
+        });
+      }
+    },
+  },
+  supportExternalWorkSource,
+);
+externalWork.setDraftCopyHandler((text) => {
+  supportComposerMode.value = "PUBLIC_REPLY";
+  reply.draft.value = [reply.draft.value.trim(), text.trim()]
+    .filter(Boolean)
+    .join("\n\n");
+  workspaceLive.setDraftActive(true);
+  if (isMobileWorkspace.value) void closeMobileInspector();
+});
 const canReadInspectorProfile = computed(
   () =>
     !profileAccessDenied.value &&
@@ -1691,12 +1779,14 @@ const inspector = createSupportInspectorController(
       events: canReadInspectorEvents.value,
       activity: canReadInspectorActivity.value,
       knowledge: canReadSelectedKnowledge.value,
+      externalWork: canUseSelectedExternalWork.value,
     }),
     async onForbidden(tab) {
       if (tab === "DATA") profileAccessDenied.value = true;
       if (tab === "EVENTS") inspectorEventsAccessDenied.value = true;
       if (tab === "ACTIVITY") inspectorActivityAccessDenied.value = true;
       if (tab === "KNOWLEDGE") await handleSupportKnowledgeForbidden();
+      if (tab === "INTEGRATIONS") externalWorkAccessDenied.value = true;
       try {
         await auth.refreshContext();
       } catch {
@@ -2225,9 +2315,10 @@ async function reconcileCaseOperations(expiresAt: string): Promise<void> {
   }
 }
 
-async function sendReply(
-  attachments?: { attachmentIds: string[]; attachmentDraftKey: string },
-): Promise<void> {
+async function sendReply(attachments?: {
+  attachmentIds: string[];
+  attachmentDraftKey: string;
+}): Promise<void> {
   if (
     supportMacros.recoveryRequired.value ||
     knowledge.recoveryRequired.value ||
@@ -2310,7 +2401,7 @@ async function sendReplyWithoutTranslation(): Promise<void> {
       ? {
           attachmentIds: publicAttachments.readyIds.value,
           attachmentDraftKey: publicAttachments.draftKey.value,
-      }
+        }
       : undefined,
     macroReplyDraftId ?? undefined,
     supportKnowledgeCitationDraftId,
@@ -2396,9 +2487,10 @@ async function sendSupportComposer(
     if (!canWriteSelectedInternalNotes.value) return;
     internalNoteDraft.value = request.text;
     const conversationId = conversation.selection.value?.conversation?.id;
-    const attachmentDraft = request.attachmentIds?.length && request.attachmentDraftKey
-      ? { ids: request.attachmentIds, draftKey: request.attachmentDraftKey }
-      : undefined;
+    const attachmentDraft =
+      request.attachmentIds?.length && request.attachmentDraftKey
+        ? { ids: request.attachmentIds, draftKey: request.attachmentDraftKey }
+        : undefined;
     const activeMacro = supportMacros.activeDraft.value;
     const macroDraftId =
       activeMacro?.target.kind === "INTERNAL_NOTE"
@@ -2423,7 +2515,10 @@ async function sendSupportComposer(
   reply.draft.value = request.text;
   await sendReply(
     request.attachmentIds?.length && request.attachmentDraftKey
-      ? { attachmentIds: request.attachmentIds, attachmentDraftKey: request.attachmentDraftKey }
+      ? {
+          attachmentIds: request.attachmentIds,
+          attachmentDraftKey: request.attachmentDraftKey,
+        }
       : undefined,
   );
   if (!reply.draft.value.trim()) void workspaceLive.setDraftActive(false);
@@ -2433,10 +2528,7 @@ function changeSupportComposerMode(
   mode: "PUBLIC_REPLY" | "INTERNAL_NOTE",
 ): void {
   if (mode === supportComposerMode.value) return;
-  if (
-    supportMacros.recoveryRequired.value ||
-    knowledge.recoveryRequired.value
-  )
+  if (supportMacros.recoveryRequired.value || knowledge.recoveryRequired.value)
     return;
   supportMacros.reset({ keepQuery: true });
   replyTemplateGalleryVisible.value = false;
@@ -2506,14 +2598,18 @@ async function addSupportAttachments(files: File[]): Promise<void> {
   await (supportComposerMode.value === "INTERNAL_NOTE"
     ? noteAttachments.addFiles(files)
     : publicAttachments.addFiles(files));
-  if (supportComposerMode.value === "PUBLIC_REPLY" && publicAttachments.items.value.length)
+  if (
+    supportComposerMode.value === "PUBLIC_REPLY" &&
+    publicAttachments.items.value.length
+  )
     void workspaceLive.setDraftActive(true);
 }
 
 function removeSupportAttachment(localId: string): void {
-  const operation = supportComposerMode.value === "INTERNAL_NOTE"
-    ? noteAttachments.remove(localId)
-    : publicAttachments.remove(localId);
+  const operation =
+    supportComposerMode.value === "INTERNAL_NOTE"
+      ? noteAttachments.remove(localId)
+      : publicAttachments.remove(localId);
   void operation.then(() => {
     if (
       supportComposerMode.value === "PUBLIC_REPLY" &&
@@ -2791,6 +2887,7 @@ watch(
     profileAccessDenied.value = false;
     inspectorEventsAccessDenied.value = false;
     inspectorActivityAccessDenied.value = false;
+    externalWorkAccessDenied.value = false;
     availabilityAccessDenied.value = false;
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
@@ -2806,6 +2903,7 @@ watch(
     leadAssignment.reset();
     availability.reset();
     inspector.reset();
+    externalWork.reset();
     internalNotes.reset();
     caseDesk.reset();
     reply.reset();
@@ -3167,8 +3265,7 @@ watch(
     );
     if (custom) {
       searchOpen.value = true;
-      if (supportViews.selection.value)
-        void supportViews.loadCustom();
+      if (supportViews.selection.value) void supportViews.loadCustom();
       return;
     }
     const requested = readSupportViewSelection(route.query);
@@ -3201,6 +3298,7 @@ watch(
     profileAccessDenied.value = false;
     inspectorEventsAccessDenied.value = false;
     inspectorActivityAccessDenied.value = false;
+    externalWorkAccessDenied.value = false;
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
@@ -3215,6 +3313,7 @@ watch(
     supportComposerMode.value = "PUBLIC_REPLY";
     assignment.resetCase();
     inspector.reset();
+    externalWork.reset();
     internalNotes.reset();
     knowledge.purge({ keepQuery: true });
     messageDelivery.reset();
@@ -3583,7 +3682,9 @@ onBeforeUnmount(() => {
               :ai-suspension="supportConversationAiSuspension"
               :collaboration="supportConversationCollaboration"
               :internal-notes="supportConversationInternalNotes"
-              :can-download-public-attachments="publicAttachmentCapabilities().download"
+              :can-download-public-attachments="
+                publicAttachmentCapabilities().download
+              "
               :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"
@@ -3637,7 +3738,9 @@ onBeforeUnmount(() => {
               :visible="replyTemplateGalleryVisible"
               :macros="supportMacros.items.value"
               :query="supportMacros.query.value"
-              :loading="supportMacros.loading.value || supportMacros.loadingMore.value"
+              :loading="
+                supportMacros.loading.value || supportMacros.loadingMore.value
+              "
               :applying-id="supportMacros.applyingId.value"
               :error="supportMacros.error.value"
               :has-more="Boolean(supportMacros.nextCursor.value)"
@@ -3645,7 +3748,9 @@ onBeforeUnmount(() => {
               @close="replyTemplateGalleryVisible = false"
               @select="applySupportReplyTemplate"
               @search="searchSupportMacros"
-              @load-more="supportMacros.load(supportMacros.nextCursor.value ?? undefined)"
+              @load-more="
+                supportMacros.load(supportMacros.nextCursor.value ?? undefined)
+              "
             />
             <Message
               v-if="canManageTranslation && translation.error.value"
@@ -3808,6 +3913,8 @@ onBeforeUnmount(() => {
             :can-read-internal-notes="canReadSelectedInternalNotes"
             :inspector="inspector"
             :knowledge-controller="knowledge"
+            :external-work-controller="externalWork"
+            :external-work-permissions="externalWorkPermissions"
             @open-internal-notes="openInternalNotes"
             @classify-case="classifySelectedCase"
             @reconcile-operations="reconcileCaseOperations"

@@ -1,10 +1,16 @@
 import {
+  supportExternalCaseCreateOptionsRead,
+  supportExternalCaseLinksList,
+  supportExternalCaseLinksRead,
   supportExternalCatalogRead,
   supportExternalCatalogRefresh,
   supportExternalCatalogRefreshStatus,
   supportExternalCommandListForCase,
+  supportExternalCommandRead,
   supportExternalCommandRefreshEvidence,
+  supportExternalCommandResolveUnknown,
   supportExternalCommandRetry,
+  supportExternalCommandSubmit,
   supportExternalConnectionDisable,
   supportExternalConnectionList,
   supportExternalConnectionListOAuthTenants,
@@ -14,6 +20,7 @@ import {
   supportExternalConnectionStartOAuth,
   supportExternalConnectionTest,
   supportExternalInboxList,
+  supportExternalInboxLinkToCase,
   supportExternalInboxRead,
   supportExternalInboxTimelineList,
   supportExternalItemList,
@@ -34,23 +41,32 @@ import {
 } from "@/shared/api/generated/retenive-backend";
 import type {
   CreateSupportExternalMappingDto,
+  LinkHelpDeskCompatibilityTicketDto,
+  LinkHelpDeskCompatibilityTicketResponseDto,
   PreviewSupportExternalMappingDto,
+  ResolveSupportExternalWorkCommandDto,
   RollbackSupportExternalMappingDto,
   SelectSupportExternalOAuthTenantDto,
   SupportExternalCatalogReadParams,
   SupportExternalCatalogRefreshReceiptDto,
   SupportExternalCatalogRefreshStatusDto,
   SupportExternalCatalogResponseDto,
+  SupportExternalCaseLinksListParams,
   SupportExternalCommandListForCaseParams,
   SupportExternalCommandPageResponseDto,
   SupportExternalCommandRefreshEvidenceBody,
+  SupportExternalCommandStatusResponseDto,
+  SupportExternalCommandSubmitBody,
   SupportExternalConnectionListResponseDto,
   SupportExternalConnectionResponseDto,
   SupportExternalConnectionTestResponseDto,
+  SupportExternalCreateOptionsResponseDto,
   SupportExternalInboxListParams,
   SupportExternalInboxTimelineListParams,
   SupportExternalItemListParams,
   SupportExternalItemPageResponseDto,
+  SupportExternalLinkListResponseDto,
+  SupportExternalLinkResponseDto,
   SupportExternalMappingDiffResponseDto,
   SupportExternalMappingDraftResponseDto,
   SupportExternalMappingListParams,
@@ -87,6 +103,54 @@ export interface SupportExternalMutation<T> {
 }
 
 export interface SupportExternalWorkSource {
+  readCaseCreateOptions(
+    projectId: string,
+    caseId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalCreateOptionsResponseDto>;
+  listCaseLinks(
+    projectId: string,
+    caseId: string,
+    params?: SupportExternalCaseLinksListParams,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalLinkListResponseDto>;
+  readCaseLink(
+    projectId: string,
+    caseId: string,
+    linkId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalLinkResponseDto>;
+  readCommand(
+    projectId: string,
+    caseId: string,
+    commandId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalCommandStatusResponseDto>;
+  submitCaseCommand(
+    projectId: string,
+    caseId: string,
+    body: SupportExternalCommandSubmitBody,
+    expectedLinkVersion: number | undefined,
+    idempotencyKey: string,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalWorkCommandReceiptDto>;
+  resolveCommand(
+    projectId: string,
+    caseId: string,
+    commandId: string,
+    body: ResolveSupportExternalWorkCommandDto,
+    expectedVersion: number,
+    idempotencyKey: string,
+    signal?: AbortSignal,
+  ): Promise<SupportExternalWorkCommandReceiptDto>;
+  linkInboxItemToCase(
+    projectId: string,
+    remoteItemId: string,
+    body: LinkHelpDeskCompatibilityTicketDto,
+    expectedVersion: number,
+    idempotencyKey: string,
+    signal?: AbortSignal,
+  ): Promise<LinkHelpDeskCompatibilityTicketResponseDto>;
   listConnections(
     projectId: string,
     cursor?: string,
@@ -222,7 +286,9 @@ export interface SupportExternalWorkSource {
     body: RollbackSupportExternalMappingDto,
     idempotencyKey: string,
     signal?: AbortSignal,
-  ): Promise<SupportExternalMutation<SupportExternalMappingRollbackResponseDto>>;
+  ): Promise<
+    SupportExternalMutation<SupportExternalMappingRollbackResponseDto>
+  >;
   readSettingsMutation(
     projectId: string,
     receiptId: string,
@@ -338,6 +404,40 @@ async function audited<T>(
 }
 
 export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
+  readCaseCreateOptions: (projectId, caseId, signal) =>
+    supportExternalCaseCreateOptionsRead(projectId, caseId, { signal }),
+  listCaseLinks: (projectId, caseId, params, signal) =>
+    supportExternalCaseLinksList(
+      projectId,
+      caseId,
+      { limit: 50, ...params },
+      { signal },
+    ),
+  readCaseLink: (projectId, caseId, linkId, signal) =>
+    supportExternalCaseLinksRead(projectId, caseId, linkId, { signal }),
+  readCommand: (projectId, caseId, commandId, signal) =>
+    supportExternalCommandRead(projectId, caseId, commandId, { signal }),
+  submitCaseCommand: (projectId, caseId, body, version, key, signal) =>
+    supportExternalCommandSubmit(projectId, caseId, body, {
+      ...noAuthRetryRequestOptions(),
+      signal,
+      headers: {
+        "Idempotency-Key": key,
+        ...(version ? { "If-Match": `"${version}"` } : {}),
+      },
+    }),
+  resolveCommand: (projectId, caseId, commandId, body, version, key, signal) =>
+    supportExternalCommandResolveUnknown(projectId, caseId, commandId, body, {
+      ...noAuthRetryRequestOptions(),
+      signal,
+      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+    }),
+  linkInboxItemToCase: (projectId, remoteItemId, body, version, key, signal) =>
+    supportExternalInboxLinkToCase(projectId, remoteItemId, body, {
+      ...noAuthRetryRequestOptions(),
+      signal,
+      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+    }),
   listConnections: (projectId, cursor, signal) =>
     supportExternalConnectionList(
       projectId,
@@ -396,14 +496,7 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
     ),
   readMappingDraft: (projectId, mappingId, signal) =>
     supportExternalMappingReadDraft(projectId, mappingId, { signal }),
-  replaceMappingDraft: (
-    projectId,
-    mappingId,
-    version,
-    body,
-    key,
-    signal,
-  ) =>
+  replaceMappingDraft: (projectId, mappingId, version, body, key, signal) =>
     audited(key, signal, version, (options) =>
       supportExternalMappingReplaceDraft(projectId, mappingId, body, options),
     ),
@@ -422,7 +515,9 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
       supportExternalMappingPublish(projectId, mappingId, {}, options),
     ),
   listMappingRevisions: (projectId, mappingId, params, signal) =>
-    supportExternalMappingListRevisions(projectId, mappingId, params, { signal }),
+    supportExternalMappingListRevisions(projectId, mappingId, params, {
+      signal,
+    }),
   rollbackMapping: (
     projectId,
     mappingId,
@@ -442,7 +537,9 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
       ),
     ),
   readSettingsMutation: (projectId, receiptId, signal) =>
-    supportExternalSettingsMutationReadOutcome(projectId, receiptId, { signal }),
+    supportExternalSettingsMutationReadOutcome(projectId, receiptId, {
+      signal,
+    }),
   listInbox: (projectId, params, signal) =>
     supportExternalInboxList(projectId, params, { signal }),
   readInboxItem: (projectId, itemId, signal) =>
@@ -472,17 +569,11 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
     key,
     signal,
   ) =>
-    supportExternalCommandRefreshEvidence(
-      projectId,
-      caseId,
-      commandId,
-      body,
-      {
-        ...noAuthRetryRequestOptions(),
-        signal,
-        headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
-      },
-    ),
+    supportExternalCommandRefreshEvidence(projectId, caseId, commandId, body, {
+      ...noAuthRetryRequestOptions(),
+      signal,
+      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+    }),
 };
 
 export const supportExternalWorkSource = isMockMode

@@ -9,7 +9,13 @@ import type {
 import { ApiError } from "@/shared/api/http/api-error";
 
 export type SupportInspectorTab =
-  "CASE" | "USER" | "KNOWLEDGE" | "DATA" | "EVENTS" | "ACTIVITY";
+  | "CASE"
+  | "USER"
+  | "KNOWLEDGE"
+  | "INTEGRATIONS"
+  | "DATA"
+  | "EVENTS"
+  | "ACTIVITY";
 
 export interface SupportInspectorTabItem {
   id: SupportInspectorTab;
@@ -22,6 +28,7 @@ export interface SupportInspectorPermissions {
   events: boolean;
   activity: boolean;
   knowledge?: boolean;
+  externalWork?: boolean;
 }
 
 export interface SupportInspectorContext {
@@ -72,6 +79,7 @@ const tabCatalog: readonly SupportInspectorTabItem[] = [
   { id: "CASE", label: "Обращение", icon: "pi pi-briefcase" },
   { id: "USER", label: "Пользователь", icon: "pi pi-user" },
   { id: "KNOWLEDGE", label: "Материалы", icon: "pi pi-book" },
+  { id: "INTEGRATIONS", label: "Интеграции", icon: "pi pi-link" },
   { id: "DATA", label: "Профиль", icon: "pi pi-id-card" },
   { id: "EVENTS", label: "События", icon: "pi pi-bolt" },
   { id: "ACTIVITY", label: "Активность", icon: "pi pi-history" },
@@ -158,6 +166,7 @@ export function createSupportInspectorController(
     return tabCatalog.filter((tab) => {
       if (tab.id === "CASE") return hasCase;
       if (tab.id === "KNOWLEDGE") return hasCase && permissions.knowledge;
+      if (tab.id === "INTEGRATIONS") return hasCase && permissions.externalWork;
       if (tab.id === "DATA") return permissions.profile;
       if (tab.id === "EVENTS") return hasCase && permissions.events;
       if (tab.id === "ACTIVITY") return hasCase && permissions.activity;
@@ -525,6 +534,7 @@ export function createSupportInspectorController(
         context.permissions().events,
         context.permissions().activity,
         context.permissions().knowledge,
+        context.permissions().externalWork,
       ] as const,
     () => {
       const next = currentScope();
