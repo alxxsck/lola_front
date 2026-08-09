@@ -23,6 +23,7 @@ import {
 } from "@/features/support-control/api/support-lead-source";
 import { createSupportLeadRisksController } from "@/features/support-control/model/use-support-lead-risks";
 import { createSupportLeadSummaryController } from "@/features/support-control/model/use-support-lead-summary";
+import { createSupportLeadControlController } from "@/features/support-control/model/use-support-lead-control";
 import { createSupportOperationalAlertsController } from "@/features/support-control/model/use-support-operational-alerts";
 import { supportLeadAssignmentSource } from "@/features/support-lead-assignment/api/support-lead-assignment-source";
 import { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
@@ -36,6 +37,7 @@ import { useRouter } from "vue-router";
 const auth = useAuthStore();
 const router = useRouter();
 const accessDenied = ref(false);
+const fallbackCaseId = ref("");
 const canRead = computed(
   () =>
     !accessDenied.value &&
@@ -95,6 +97,16 @@ const canOpenCase = computed(() =>
   ),
 );
 const assignmentAccessDenied = ref(false);
+const activityAccessDenied = ref(false);
+const canReadActivity = computed(
+  () =>
+    canRead.value &&
+    !activityAccessDenied.value &&
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      "project.support.activity.read",
+    ),
+);
 const canOverrideAssignments = computed(
   () =>
     canRead.value &&
@@ -136,6 +148,30 @@ const risks = createSupportLeadRisksController(
   },
   supportLeadSource,
 );
+const leadControl = createSupportLeadControlController(
+  {
+    projectId: () => auth.project?.id,
+    canRead: () => canRead.value,
+    canReadActivity: () => canReadActivity.value,
+    async onForbidden() {
+      accessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Protected Lead projections are already purged.
+      }
+    },
+    async onActivityForbidden() {
+      activityAccessDenied.value = true;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Protected Activity is already purged.
+      }
+    },
+  },
+  supportLeadSource,
+);
 const alerts = createSupportOperationalAlertsController(
   {
     projectId: () => auth.project?.id,
@@ -168,7 +204,7 @@ const leadAssignment = createSupportLeadAssignmentController(
       }
     },
     async onChanged() {
-      await Promise.all([overview.load(), risks.load()]);
+      await Promise.all([overview.load(), risks.load(), leadControl.load()]);
     },
   },
 );
@@ -199,7 +235,7 @@ const leadAssignmentBatch = createSupportLeadAssignmentBatchController(
       }
     },
     async onChanged() {
-      await Promise.all([overview.load(), risks.load()]);
+      await Promise.all([overview.load(), risks.load(), leadControl.load()]);
     },
   },
 );
@@ -214,13 +250,68 @@ const alertResolveReason = ref<
   | "DUPLICATE"
   | "EXTERNAL_INCIDENT_HANDOFF"
 >("RISK_CLEARED");
+const alertOwnerId = ref("");
+const alertOwnerReason = ref<
+  "LEAD_ASSIGNMENT" | "LOAD_BALANCE" | "SHIFT_HANDOFF" | "SKILL_MATCH" | "OWNER_UNAVAILABLE"
+>("LEAD_ASSIGNMENT");
+const currentAlertOwnerMissing = computed(() => {
+  const currentOwner = alerts.detail.value?.alert.ownerCmsUserId;
+  return Boolean(
+    currentOwner && !alerts.ownerTargets.value.some((target) => target.id === currentOwner),
+  );
+});
+const canChangeAlertOwner = computed(
+  () =>
+    Boolean(alerts.detail.value) &&
+    alertOwnerId.value !== (alerts.detail.value?.alert.ownerCmsUserId ?? "") &&
+    (alertOwnerId.value ? alertOwnerReason.value !== "OWNER_UNAVAILABLE" : alertOwnerReason.value === "OWNER_UNAVAILABLE"),
+);
 
 const freshness = computed(() => {
+  const admission = leadControl.admission.value;
+  if (!admission)
+    return { label: "Проверка готовности", severity: "secondary" as const };
+  if (admission.rolloutState === "DISABLED" || admission.readinessState === "NOT_PROVISIONED")
+    return { label: "Не включено", severity: "secondary" as const };
+  if (admission.readinessState === "DEGRADED")
+    return { label: "Ограниченный режим", severity: "danger" as const };
+  if (admission.readinessState === "STALE")
+    return { label: "Снимок устарел", severity: "warning" as const };
   const state = overview.summary.value?.freshnessState;
   if (state === "READY") return { label: "Актуальный снимок", severity: "success" as const };
   if (state === "STALE") return { label: "Снимок устарел", severity: "warning" as const };
   if (state === "DEGRADED") return { label: "Снимок ограничен", severity: "danger" as const };
   return { label: "Снимок строится", severity: "secondary" as const };
+});
+
+const admissionState = computed(() => {
+  const value = leadControl.admission.value;
+  if (!value) return null;
+  if (value.rolloutState === "DISABLED" || value.readinessState === "NOT_PROVISIONED")
+    return {
+      severity: "secondary" as const,
+      title: "Lead Control ещё не включён",
+      detail: "Проекция не подготовлена. Нулевые показатели не показываются как достоверные.",
+    };
+  if (value.readinessState === "BUILDING")
+    return {
+      severity: "info" as const,
+      title: "Операционный снимок строится",
+      detail: "Дождитесь готовности server-owned проекции или обновите экран позже.",
+    };
+  if (value.readinessState === "DEGRADED")
+    return {
+      severity: "warn" as const,
+      title: "Lead Control работает в ограниченном режиме",
+      detail: "Часть агрегатов скрыта; для Case доступно только разрешённое owner-fallback расследование.",
+    };
+  if (value.readinessState === "STALE")
+    return {
+      severity: "warn" as const,
+      title: "Операционный снимок отстаёт",
+      detail: "Показатели помечены как устаревшие и не должны использоваться без проверки Case.",
+    };
+  return null;
 });
 
 function duration(value: number | null): string {
@@ -232,10 +323,46 @@ function duration(value: number | null): string {
   return `${hours} ч ${minutes % 60} мин`;
 }
 
-function reload(): void {
-  void overview.load();
-  void risks.load();
+async function reload(): Promise<void> {
+  await leadControl.load();
+  const admission = leadControl.admission.value;
+  if (
+    admission?.rolloutState === "ENABLED" &&
+    (admission.readinessState === "READY" || admission.readinessState === "STALE") &&
+    admission.capabilities.summary === "AVAILABLE"
+  )
+    await overview.load();
+  else overview.reset();
+  if (
+    admission?.rolloutState === "ENABLED" &&
+    (admission.readinessState === "READY" || admission.readinessState === "STALE") &&
+    admission.capabilities.caseRisks === "AVAILABLE"
+  )
+    await risks.load();
+  else risks.reset();
   if (canReadAlerts.value) void alerts.load();
+}
+
+function openInvestigation(caseId: string): void {
+  void leadControl.selectCase(caseId);
+}
+
+function closeInvestigation(): void {
+  leadControl.resetSelection();
+}
+
+function openFallbackInvestigation(): void {
+  const caseId = fallbackCaseId.value.trim();
+  if (!caseId) return;
+  void leadControl.selectCase(caseId);
+}
+
+function riskSearchQuery(type: SupportLeadRiskType): Record<string, string> {
+  const base = { mode: "cases", scope: "cases", sort: "ACTIVITY_AT", direction: "DESC" };
+  if (type === "UNASSIGNED_AGED") return { ...base, assignment: "UNASSIGNED" };
+  if (type === "SLA_AT_RISK") return { ...base, sla: "AT_RISK" };
+  if (type === "SLA_BREACHED") return { ...base, sla: "BREACHED" };
+  return { ...base, delivery: "PROBLEM" };
 }
 
 function toggleRiskSelection(caseId: string, selected: boolean): void {
@@ -335,6 +462,88 @@ function labelRiskFreshness(value: string): string {
   );
 }
 
+function labelExclusion(value: string): string {
+  return (
+    {
+      CAPACITY_EXHAUSTED: "Исчерпана ёмкость",
+      AVAILABILITY_NOT_ROUTABLE: "Нет доступных операторов",
+      SKILL_REQUIRED: "Не хватает навыка",
+      LANGUAGE_REQUIRED: "Не хватает языка",
+      TEAM_NOT_ELIGIBLE: "Команда не подходит",
+      CASE_COOLDOWN: "Case на паузе",
+      RECEIVE_PERMISSION_MISSING: "Нет права принять",
+      ASSIGNMENT_CONFLICT: "Конфликт назначения",
+    }[value] ?? value
+  );
+}
+
+function labelFact(value: string): string {
+  return (
+    {
+      CASE_CHANGED: "Case изменён",
+      ADMIN_REPLY_ACCEPTED: "Ответ оператора принят",
+      SUPPORT_CASE_ASSIGNMENT_CLAIMED: "Case взят в работу",
+      SUPPORT_CASE_ASSIGNMENT_ASSIGNED: "Оператор назначен",
+      SUPPORT_CASE_ASSIGNMENT_RELEASED: "Назначение снято",
+      SUPPORT_CASE_ASSIGNMENT_TRANSFERRED: "Case передан",
+      SUPPORT_ASSIGNMENT_RESERVED: "Ёмкость зарезервирована",
+      SUPPORT_ASSIGNMENT_OFFERED: "Работа предложена оператору",
+      SUPPORT_ASSIGNMENT_OFFER_ACCEPTED: "Предложение принято",
+      SUPPORT_ASSIGNMENT_RESERVATION_EXPIRED: "Резерв истёк",
+      SUPPORT_ASSIGNMENT_ROUTING_FALLBACK_SCHEDULED: "Запущен резервный маршрут",
+      SLA_CLOCK_CHANGED: "SLA обновлён",
+      SLA_CLOCK_CORRECTED: "SLA скорректирован",
+      CONVERSATION_DELIVERY_CHANGED: "Доставка сообщения обновлена",
+    }[value] ?? value.replaceAll("_", " ")
+  );
+}
+
+function factActor(fact: { actorType: string; actorCmsUserId: string | null; actorSystemCode: string | null }): string {
+  if (fact.actorType === "CMS_USER")
+    return fact.actorCmsUserId ? `CMS operator · ${fact.actorCmsUserId.slice(0, 8)}` : "CMS operator";
+  if (fact.actorType === "SYSTEM") return fact.actorSystemCode ?? "Система";
+  return fact.actorType;
+}
+
+function factOutcome(fact: { commandOutcome: string | null; deliveryState: string | null }): string {
+  if (fact.commandOutcome === "APPLIED") return "Команда применена";
+  if (fact.deliveryState) return `Доставка: ${fact.deliveryState.toLowerCase()}`;
+  return "";
+}
+
+function labelRoutingReason(value: string): string {
+  return (
+    {
+      ROUTING_OFFER_ACTIVE: "Оператору отправлено предложение",
+      ROUTING_OFFER_ACCEPTED: "Предложение принято",
+      ROUTING_AUTO_ASSIGNED: "Назначено автоматически",
+      ROUTING_EVALUATION_PENDING: "Маршрут рассчитывается",
+      ROUTING_FALLBACK_PENDING: "Готовится резервный маршрут",
+      ROUTING_FALLBACK_EXHAUSTED: "Резервные маршруты исчерпаны",
+      ROUTING_WORKER_DEGRADED: "Routing worker ограничен",
+      NO_ELIGIBLE_OPERATOR: "Нет подходящего оператора",
+      CAPACITY_GAP: "Не хватает свободной ёмкости",
+      CONFIGURATION_REQUIRED: "Нужна настройка маршрутизации",
+      STALE_INPUT: "Входные данные устарели",
+      DEGRADED: "Маршрутизация ограничена",
+    }[value] ?? value
+  );
+}
+
+function incompleteTimelineSources(sources: Record<string, string>): string[] {
+  const labels: Record<string, string> = {
+    assignmentHistory: "назначения",
+    caseHistory: "Case",
+    deliveryHistory: "доставка",
+    interventionHistory: "вмешательства",
+    replyHistory: "ответы",
+    slaHistory: "SLA",
+  };
+  return Object.entries(sources)
+    .filter(([, state]) => state !== "AVAILABLE")
+    .map(([source]) => labels[source] ?? source);
+}
+
 function severity(value: string): "secondary" | "info" | "warn" | "danger" {
   return (
     { LOW: "secondary", MEDIUM: "info", HIGH: "warn", CRITICAL: "danger" }[
@@ -346,6 +555,7 @@ function severity(value: string): "secondary" | "info" | "warn" | "danger" {
 async function openAlertDetail(alertId: string): Promise<void> {
   alertDialogVisible.value = true;
   await alerts.openDetail(alertId);
+  alertOwnerId.value = alerts.detail.value?.alert.ownerCmsUserId ?? "";
 }
 
 function closeAlertDetail(): void {
@@ -361,8 +571,29 @@ function resolveAlert(): void {
   void alerts.resolve(alertResolveReason.value);
 }
 
-onMounted(() => {
-  reload();
+function changeAlertOwner(): void {
+  if (!canChangeAlertOwner.value) return;
+  void alerts.changeOwner(alertOwnerId.value || null, alertOwnerReason.value);
+}
+
+watch(alertOwnerId, (ownerId) => {
+  if (!ownerId) alertOwnerReason.value = "OWNER_UNAVAILABLE";
+  else if (alertOwnerReason.value === "OWNER_UNAVAILABLE")
+    alertOwnerReason.value = "LEAD_ASSIGNMENT";
+});
+
+onMounted(async () => {
+  await reload();
+  const routedCaseId = typeof router.currentRoute.value.query.caseId === "string"
+    ? router.currentRoute.value.query.caseId.trim()
+    : "";
+  if (
+    routedCaseId &&
+    leadControl.admission.value?.capabilities.investigation !== "UNAVAILABLE"
+  ) {
+    fallbackCaseId.value = routedCaseId;
+    await leadControl.selectCase(routedCaseId);
+  }
   startAvailabilityHeartbeat();
 });
 
@@ -373,8 +604,10 @@ watch(
     alertsAccessDenied.value = false;
     availabilityAccessDenied.value = false;
     assignmentAccessDenied.value = false;
+    activityAccessDenied.value = false;
     overview.reset();
     risks.reset();
+    leadControl.reset();
     alerts.reset();
     availability.reset();
     leadAssignment.reset();
@@ -389,9 +622,15 @@ watch(canRead, (allowed) => {
   if (allowed) return;
   overview.reset();
   risks.reset();
+  leadControl.reset();
   alerts.reset();
   availability.reset();
   void router.replace({ name: "overview" });
+});
+
+watch(canReadActivity, (allowed) => {
+  if (allowed) return;
+  leadControl.resetActivity();
 });
 
 watch(canReadAvailability, (allowed) => {
@@ -406,6 +645,12 @@ watch(canReadAlerts, (allowed) => {
   if (allowed) return;
   alerts.reset();
   closeAlertDetail();
+});
+
+watch(canManageAlerts, (allowed) => {
+  if (allowed) return;
+  alerts.resetManagement();
+  alertOwnerId.value = "";
 });
 
 watch(canOverrideAssignments, (allowed) => {
@@ -423,6 +668,7 @@ watch(risks.riskType, () => {
 onBeforeUnmount(() => {
   overview.reset();
   risks.reset();
+  leadControl.reset();
   alerts.reset();
   availability.reset();
   leadAssignment.reset();
@@ -448,16 +694,54 @@ onBeforeUnmount(() => {
           icon="pi pi-refresh"
           severity="secondary"
           outlined
-          :loading="overview.loading.value"
+          :loading="leadControl.loadingAdmission.value || overview.loading.value"
           @click="reload"
         />
       </div>
     </header>
 
-    <Message severity="info" :closable="false" class="control-notice">
-      Показатели предназначены для распределения работы и устранения рисков, а
-      не для оценки сотрудника по online presence.
+    <div class="control-notice" role="note">
+      <i class="pi pi-shield" aria-hidden="true" />
+      <span>
+        Показатели предназначены для распределения работы и устранения рисков, а
+        не для оценки сотрудника по online presence.
+      </span>
+    </div>
+
+    <Message v-if="leadControl.error.value" severity="error" :closable="false">
+      {{ leadControl.error.value }}
     </Message>
+    <Message
+      v-if="admissionState"
+      :severity="admissionState.severity"
+      :closable="false"
+      class="admission-state"
+    >
+      <strong>{{ admissionState.title }}</strong>
+      <span>{{ admissionState.detail }}</span>
+    </Message>
+    <form
+      v-if="leadControl.admission.value?.capabilities.investigation === 'OWNER_FALLBACK'"
+      class="fallback-case-form"
+      @submit.prevent="openFallbackInvestigation"
+    >
+      <div>
+        <strong>Проверить конкретный Case</strong>
+        <span>В ограниченном режиме доступна только точечная owner-fallback проверка.</span>
+      </div>
+      <label>
+        <span class="sr-only">ID Case</span>
+        <input v-model="fallbackCaseId" autocomplete="off" placeholder="ID Case" />
+      </label>
+      <Button type="submit" label="Проверить" icon="pi pi-search" :disabled="!fallbackCaseId.trim()" />
+    </form>
+    <div
+      v-if="leadControl.loadingAdmission.value && !leadControl.admission.value"
+      class="admission-skeleton"
+      aria-label="Проверяем готовность Lead Control"
+    >
+      <Skeleton height="72px" border-radius="14px" />
+    </div>
 
     <Message v-if="overview.error.value" severity="error" :closable="false">
       {{ overview.error.value }}
@@ -468,10 +752,22 @@ onBeforeUnmount(() => {
     <template v-if="overview.summary.value">
       <p class="computed-at">
         Серверный снимок: {{ relativeTime(overview.summary.value.computedAt) }}
+        <template v-if="leadControl.admission.value?.projectionGeneration">
+          · поколение {{ leadControl.admission.value.projectionGeneration }}
+        </template>
         <template v-if="overview.summary.value.slaRolloutState === 'SHADOW'">
           · SLA в shadow-режиме
         </template>
       </p>
+      <details class="metric-definitions">
+        <summary><i class="pi pi-info-circle" aria-hidden="true" /> Как считаются показатели</summary>
+        <div>
+          <p><strong>Без назначения</strong> — открытые Cases без действующего владельца.</p>
+          <p><strong>SLA под риском</strong> — server-owned shadow-прогноз, а не договорный срок.</p>
+          <p><strong>Ёмкость</strong> — доступная рабочая нагрузка операторов, не оценка эффективности.</p>
+          <p><strong>Доставка</strong> — подтверждённые сервером pending/unknown outcomes.</p>
+        </div>
+      </details>
       <div class="metric-grid">
         <article class="metric-card">
           <span class="eyebrow">Очередь</span>
@@ -554,6 +850,113 @@ onBeforeUnmount(() => {
             <dd>{{ overview.summary.value.workforce.availability.OFFLINE }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section
+        v-if="leadControl.admission.value?.capabilities.capacityRisks === 'AVAILABLE'"
+        class="control-section capacity-section"
+        aria-labelledby="capacity-heading"
+      >
+        <header class="control-section__header">
+          <div>
+            <span class="eyebrow">Routing capacity</span>
+            <h2 id="capacity-heading">Где не хватает свободной ёмкости</h2>
+            <p class="section-description">
+              Очереди, где доступных операторов недостаточно для входящей работы.
+            </p>
+          </div>
+        </header>
+        <p v-if="leadControl.capacity.value" class="section-freshness">
+          Серверный снимок: {{ relativeTime(leadControl.capacity.value.computedAt) }} ·
+          {{ labelRiskFreshness(leadControl.capacity.value.freshnessState) }}
+        </p>
+        <Message
+          v-if="
+            leadControl.capacity.value?.items.length &&
+            leadControl.capacity.value.freshnessState !== 'READY'
+          "
+          severity="warn"
+          :closable="false"
+        >
+          Риски показаны как ограниченные evidence: перед действием перепроверьте текущую очередь.
+        </Message>
+        <div v-if="leadControl.loadingCapacity.value" class="capacity-grid">
+          <Skeleton v-for="index in 2" :key="index" height="132px" border-radius="14px" />
+        </div>
+        <Message
+          v-else-if="leadControl.capacity.value?.state === 'UNAVAILABLE'"
+          severity="warn"
+          :closable="false"
+        >
+          Capacity projection пока недоступна. Дефицит не считается равным нулю.
+        </Message>
+        <p
+          v-else-if="
+            leadControl.capacity.value &&
+            !leadControl.capacity.value.items.length &&
+            leadControl.capacity.value.freshnessState === 'READY'
+          "
+          class="empty-section"
+        >
+          На момент снимка дефицита свободной ёмкости нет.
+        </p>
+        <Message
+          v-else-if="leadControl.capacity.value && !leadControl.capacity.value.items.length"
+          severity="warn"
+          :closable="false"
+        >
+          Снимок capacity {{ labelRiskFreshness(leadControl.capacity.value.freshnessState) }}:
+          отсутствие дефицита не подтверждено.
+        </Message>
+        <div v-else class="capacity-grid">
+          <article
+            v-for="item in leadControl.capacity.value?.items ?? []"
+            :key="item.riskId"
+            class="capacity-row"
+          >
+            <div class="capacity-row__heading">
+              <span class="capacity-row__icon" aria-hidden="true"><i class="pi pi-users" /></span>
+              <div>
+                <span class="eyebrow">{{ item.queue?.code ?? 'Команда' }}</span>
+                <h3>{{ item.queue?.name ?? 'Командная очередь' }}</h3>
+              </div>
+              <strong>−{{ item.requiredCapacityUnits }}</strong>
+            </div>
+            <p>Требуется ещё {{ item.requiredCapacityUnits }} ед. ёмкости</p>
+            <ul class="capacity-causes" aria-label="Причины исключения операторов">
+              <li
+                v-for="([reason, count]) in Object.entries(item.exclusionCounts).filter(([, value]) => value > 0)"
+                :key="reason"
+              >
+                {{ labelExclusion(reason) }} · {{ count }}
+              </li>
+            </ul>
+            <RouterLink
+              v-if="item.queue"
+              class="row-link"
+              :to="{
+                name: 'support-inbox',
+                query: {
+                  mode: 'cases',
+                  scope: 'cases',
+                  queue: item.queue.id,
+                  sort: 'ACTIVITY_AT',
+                  direction: 'DESC',
+                },
+              }"
+            >
+              Открыть очередь <i class="pi pi-arrow-right" aria-hidden="true" />
+            </RouterLink>
+          </article>
+        </div>
+        <Button
+          v-if="leadControl.capacity.value?.nextCursor"
+          label="Показать ещё очереди"
+          severity="secondary"
+          text
+          :loading="leadControl.loadingCapacity.value"
+          @click="leadControl.loadMoreCapacity"
+        />
       </section>
     </template>
 
@@ -639,7 +1042,15 @@ onBeforeUnmount(() => {
         </Message>
       </section>
 
-      <section class="control-section risk-section" aria-labelledby="risk-heading">
+      <section
+        v-if="
+          leadControl.admission.value?.rolloutState === 'ENABLED' &&
+          ['READY', 'STALE'].includes(leadControl.admission.value.readinessState) &&
+          leadControl.admission.value.capabilities.caseRisks === 'AVAILABLE'
+        "
+        class="control-section risk-section"
+        aria-labelledby="risk-heading"
+      >
         <header class="control-section__header">
           <div>
             <span class="eyebrow">Case risks</span>
@@ -730,10 +1141,21 @@ onBeforeUnmount(() => {
                 :case-label="labelRiskType(risk.riskType)"
                 compact
               />
+              <Button
+                label="Почему"
+                icon="pi pi-sitemap"
+                severity="secondary"
+                outlined
+                @click="openInvestigation(risk.caseId)"
+              />
               <RouterLink
                 v-if="canOpenCase"
                 class="row-link"
-                :to="{ name: 'end-user-case-detail', params: { caseId: risk.caseId } }"
+                :to="{
+                  name: 'support-inbox-case',
+                  params: { caseId: risk.caseId },
+                  query: riskSearchQuery(risk.riskType),
+                }"
               >
                 Открыть Case
               </RouterLink>
@@ -750,6 +1172,184 @@ onBeforeUnmount(() => {
           @click="risks.loadMore"
         />
       </section>
+
+    <Dialog
+      :visible="Boolean(leadControl.selectedCaseId.value)"
+      modal
+      header="Причинная история Case"
+      :style="{ width: 'min(720px, calc(100vw - 24px))' }"
+      class="lead-investigation-dialog"
+      @update:visible="(visible) => !visible && closeInvestigation()"
+    >
+      <div v-if="leadControl.loadingInvestigation.value" class="investigation-loading">
+        <Skeleton height="92px" border-radius="14px" />
+        <Skeleton height="220px" border-radius="14px" />
+      </div>
+      <Message
+        v-else-if="leadControl.investigationError.value"
+        severity="error"
+        :closable="false"
+      >
+        {{ leadControl.investigationError.value }}
+      </Message>
+      <template v-else-if="leadControl.investigation.value">
+        <div class="investigation-summary">
+          <div>
+            <span class="eyebrow">Authoritative Case</span>
+            <strong>Причины собраны сервером</strong>
+            <small>
+              {{ relativeTime(leadControl.investigation.value.computedAt) }} ·
+              {{ labelRiskFreshness(leadControl.investigation.value.freshnessState) }}
+            </small>
+          </div>
+          <RouterLink
+            v-if="canOpenCase"
+            class="row-link"
+            :to="{
+              name: 'support-inbox-case',
+              params: { caseId: leadControl.investigation.value.caseId },
+              query: { mode: 'cases' },
+            }"
+          >
+            Открыть рабочее место <i class="pi pi-arrow-up-right" aria-hidden="true" />
+          </RouterLink>
+        </div>
+        <Message
+          v-if="leadControl.investigation.value.evidenceSource === 'OWNER_FALLBACK'"
+          severity="warn"
+          :closable="false"
+          class="investigation-warning"
+        >
+          Показан ограниченный owner-fallback: aggregate projection недоступна, факты перепроверены
+          непосредственно у владельцев данных.
+        </Message>
+        <Message
+          v-if="incompleteTimelineSources(leadControl.investigation.value.timelineSources).length"
+          severity="secondary"
+          :closable="false"
+          class="investigation-warning"
+        >
+          История частичная. Ограничены источники:
+          {{ incompleteTimelineSources(leadControl.investigation.value.timelineSources).join(', ') }}.
+        </Message>
+        <section class="routing-card" aria-labelledby="routing-heading">
+          <span class="eyebrow">Маршрутизация</span>
+          <h3 id="routing-heading">
+            {{
+              leadControl.investigation.value.routing
+                ? labelRoutingReason(leadControl.investigation.value.routing.reasonCode)
+                : 'Маршрут ещё не рассчитывался'
+            }}
+          </h3>
+          <p v-if="leadControl.investigation.value.routing?.reservation">
+            Зарезервировано
+            {{ leadControl.investigation.value.routing.reservation.capacityWeightUnits }} ед. до
+            {{ relativeTime(leadControl.investigation.value.routing.reservation.expiresAt) }}.
+          </p>
+          <p v-else>
+            {{
+              leadControl.investigation.value.routingFactsState === 'AVAILABLE'
+                ? 'Активного резерва сейчас нет.'
+                : 'Routing facts пока не вычислены; это не означает отсутствие проблемы.'
+            }}
+          </p>
+        </section>
+        <section class="causal-section" aria-labelledby="causal-heading">
+          <div class="causal-section__heading">
+            <div>
+              <span class="eyebrow">Causal timeline</span>
+              <h3 id="causal-heading">Что привело к текущему состоянию</h3>
+            </div>
+            <span>{{ leadControl.investigation.value.facts.length }} событий</span>
+          </div>
+          <ol v-if="leadControl.investigation.value.facts.length" class="causal-timeline">
+            <li v-for="fact in leadControl.investigation.value.facts" :key="fact.id">
+              <span class="causal-dot" aria-hidden="true" />
+              <div>
+                <strong>{{ labelFact(fact.eventCode) }}</strong>
+                <p>
+                  {{ fact.kind }} · {{ factActor(fact) }}
+                  <template v-if="factOutcome(fact)"> · {{ factOutcome(fact) }}</template>
+                </p>
+                <small>
+                  {{ relativeTime(fact.occurredAt) }}
+                  <template v-if="fact.reasonCode"> · {{ labelReasonCode(fact.reasonCode) }}</template>
+                </small>
+              </div>
+            </li>
+          </ol>
+          <p v-else class="empty-section">
+            {{
+              leadControl.investigation.value.evidenceSource === 'OWNER_FALLBACK' ||
+              incompleteTimelineSources(leadControl.investigation.value.timelineSources).length
+                ? 'В доступной части истории причинных событий нет; полнота не подтверждена.'
+                : 'В разрешённом окне нет причинных событий.'
+            }}
+          </p>
+          <Button
+            v-if="leadControl.investigation.value.nextCursor"
+            label="Показать более ранние события"
+            severity="secondary"
+            text
+            :loading="leadControl.loadingInvestigation.value"
+            @click="leadControl.loadMoreInvestigation"
+          />
+        </section>
+        <section
+          v-if="canReadActivity && leadControl.admission.value?.capabilities.activity === 'AVAILABLE'"
+          class="activity-section"
+          aria-labelledby="activity-heading"
+        >
+          <span class="eyebrow">Protected activity</span>
+          <h3 id="activity-heading">Технические действия</h3>
+          <p class="section-description">
+            Без текста сообщений и персональных данных; доступ требует отдельного permission.
+          </p>
+          <Message
+            v-if="leadControl.activityError.value"
+            severity="warn"
+            :closable="false"
+          >
+            {{ leadControl.activityError.value }}
+          </Message>
+          <ul v-if="leadControl.activity.value?.facts.length" class="activity-facts">
+            <li v-for="fact in leadControl.activity.value.facts" :key="fact.id">
+              <div>
+                <strong>{{ labelFact(fact.eventCode) }}</strong>
+                <small>
+                  {{ factActor(fact) }}
+                  <template v-if="fact.reasonCode"> · {{ labelReasonCode(fact.reasonCode) }}</template>
+                  <template v-if="factOutcome(fact)"> · {{ factOutcome(fact) }}</template>
+                </small>
+              </div>
+              <span>#{{ fact.sequence }} · rev {{ fact.schemaVersion }} · {{ relativeTime(fact.occurredAt) }}</span>
+            </li>
+          </ul>
+          <p
+            v-else-if="!leadControl.activityError.value && !leadControl.loadingActivity.value"
+            class="empty-section"
+          >
+            В разрешённом семидневном окне технических действий нет.
+          </p>
+          <Button
+            v-if="leadControl.activity.value?.nextCursor"
+            label="Показать ещё технические действия"
+            severity="secondary"
+            text
+            :loading="leadControl.loadingActivity.value"
+            @click="leadControl.loadMoreActivity"
+          />
+        </section>
+        <Message
+          v-else-if="canReadActivity"
+          severity="secondary"
+          :closable="false"
+          class="investigation-warning"
+        >
+          Protected Activity недоступна в текущем режиме Lead Control.
+        </Message>
+      </template>
+    </Dialog>
 
     <Dialog
       :visible="alertDialogVisible"
@@ -800,17 +1400,69 @@ onBeforeUnmount(() => {
         >
           {{ alerts.mutationError.value }}
         </Message>
+        <Message
+          v-if="alerts.mutationNotice.value"
+          severity="info"
+          :closable="false"
+          class="detail-warning"
+        >
+          {{ alerts.mutationNotice.value }}
+        </Message>
         <section
           v-if="canManageAlerts && alerts.detail.value.alert.state !== 'RESOLVED'"
           class="alert-commands"
           aria-label="Команды alert"
         >
           <p>Команды применяются к версии {{ alerts.detail.value.alert.version }}.</p>
+          <div class="alert-owner-command">
+            <label>
+              <span>Ответственный</span>
+              <select
+                v-model="alertOwnerId"
+                :disabled="Boolean(alerts.mutating.value) || alerts.ownerTargetsLoading.value || alerts.appliedReceiptVersion.value !== null"
+              >
+                <option value="">Без владельца</option>
+                <option
+                  v-if="currentAlertOwnerMissing && alerts.detail.value?.alert.ownerCmsUserId"
+                  :value="alerts.detail.value.alert.ownerCmsUserId"
+                >
+                  Текущий владелец недоступен в каталоге
+                </option>
+                <option
+                  v-for="target in alerts.ownerTargets.value"
+                  :key="target.id"
+                  :value="target.id"
+                >
+                  {{ target.displayName }}
+                </option>
+              </select>
+            </label>
+            <label>
+              <span>Причина</span>
+              <select v-model="alertOwnerReason" :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null">
+                <template v-if="alertOwnerId">
+                  <option value="LEAD_ASSIGNMENT">Назначение лидом</option>
+                  <option value="LOAD_BALANCE">Балансировка нагрузки</option>
+                  <option value="SHIFT_HANDOFF">Передача смены</option>
+                  <option value="SKILL_MATCH">Подбор по навыку</option>
+                </template>
+                <option v-else value="OWNER_UNAVAILABLE">Владелец недоступен</option>
+              </select>
+            </label>
+            <Button
+              type="button"
+              label="Сменить владельца"
+              severity="secondary"
+              :loading="alerts.mutating.value === 'OWNER'"
+              :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null || !canChangeAlertOwner"
+              @click="changeAlertOwner"
+            />
+          </div>
           <label v-if="alerts.detail.value.alert.state === 'NEW'">
             <span>Подтвердить alert как</span>
             <select
               v-model="alertAcknowledgeReason"
-              :disabled="Boolean(alerts.mutating.value)"
+              :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null"
             >
               <option value="INVESTIGATING">Идёт расследование</option>
               <option value="OWNERSHIP_ACCEPTED">Владелец принял работу</option>
@@ -821,7 +1473,7 @@ onBeforeUnmount(() => {
               label="Подтвердить alert"
               severity="secondary"
               :loading="alerts.mutating.value === 'ACKNOWLEDGE'"
-              :disabled="Boolean(alerts.mutating.value)"
+              :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null"
               @click="acknowledgeAlert"
             />
           </label>
@@ -829,7 +1481,7 @@ onBeforeUnmount(() => {
             <span>Закрыть alert как</span>
             <select
               v-model="alertResolveReason"
-              :disabled="Boolean(alerts.mutating.value)"
+              :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null"
             >
               <option value="RISK_CLEARED">Риск устранён</option>
               <option value="MITIGATED">Применены меры</option>
@@ -842,7 +1494,7 @@ onBeforeUnmount(() => {
               label="Закрыть alert"
               severity="danger"
               :loading="alerts.mutating.value === 'RESOLVE'"
-              :disabled="Boolean(alerts.mutating.value)"
+              :disabled="Boolean(alerts.mutating.value) || alerts.appliedReceiptVersion.value !== null"
               @click="resolveAlert"
             />
           </label>
@@ -898,9 +1550,70 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
 }
 .control-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   height: auto;
   overflow: visible;
   margin-bottom: 16px;
+  padding: 11px 13px;
+  border: 1px solid color-mix(in srgb, var(--status-info) 24%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--status-info-soft) 58%, var(--surface-card));
+  color: var(--status-info-text);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.control-notice i {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 0.78rem;
+}
+.admission-state :deep(.p-message-text) {
+  display: grid;
+  gap: 3px;
+}
+.admission-state span,
+.section-description {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.admission-skeleton {
+  margin-bottom: 16px;
+}
+.fallback-case-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 320px) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.fallback-case-form > div {
+  display: grid;
+  gap: 3px;
+}
+.fallback-case-form > div span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.fallback-case-form input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+}
+.fallback-case-form input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .computed-at {
   margin-bottom: 16px;
@@ -908,6 +1621,37 @@ onBeforeUnmount(() => {
 .computed-at {
   color: var(--text-muted);
   font-size: 0.82rem;
+}
+.metric-definitions {
+  margin: -6px 0 14px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.metric-definitions summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  cursor: pointer;
+  color: var(--text-link);
+  font-weight: 700;
+}
+.metric-definitions summary::-webkit-details-marker {
+  display: none;
+}
+.metric-definitions > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 18px;
+  max-width: 920px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.metric-definitions p {
+  margin: 0;
+  line-height: 1.45;
 }
 .metric-grid {
   display: grid;
@@ -987,9 +1731,156 @@ onBeforeUnmount(() => {
   font-size: 0.8rem;
 }
 .risk-list,
-.alert-list {
+.alert-list,
+.capacity-grid {
   display: grid;
   gap: 10px;
+}
+.capacity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.capacity-row {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.capacity-row__heading {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.capacity-row__icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+.capacity-row h3,
+.routing-card h3,
+.causal-section h3,
+.activity-section h3 {
+  margin: 3px 0 0;
+  font-size: 0.94rem;
+}
+.capacity-row__heading > strong {
+  color: var(--danger-text, var(--red-600));
+  font-size: 1.25rem;
+}
+.capacity-row > p {
+  margin: 12px 0 8px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.capacity-causes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.capacity-causes li {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+.investigation-loading {
+  display: grid;
+  gap: 12px;
+}
+.investigation-summary,
+.causal-section__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.investigation-summary > div {
+  display: grid;
+  gap: 3px;
+}
+.investigation-summary small,
+.causal-section__heading > span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.routing-card,
+.causal-section,
+.activity-section {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.routing-card {
+  background: color-mix(in srgb, var(--brand-soft) 48%, var(--surface-card));
+}
+.routing-card p {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.causal-timeline,
+.activity-facts {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.causal-timeline li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 10px;
+  padding: 0 0 16px;
+}
+.causal-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border: 2px solid var(--surface-card);
+  border-radius: 50%;
+  background: var(--brand-primary);
+  box-shadow: 0 0 0 1px var(--brand-primary);
+}
+.causal-timeline p,
+.causal-timeline small {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.activity-facts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.76rem;
+}
+.activity-facts span {
+  color: var(--text-muted);
+}
+.activity-facts div {
+  display: grid;
+  gap: 3px;
+}
+.activity-facts small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+.investigation-warning {
+  margin-top: 12px;
 }
 .risk-batch-toolbar {
   display: flex;
@@ -1130,6 +2021,18 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
 }
+.alert-owner-command {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+.alert-owner-command label {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 5px;
+}
 .alert-commands select {
   min-height: 34px;
   min-width: 0;
@@ -1190,6 +2093,16 @@ onBeforeUnmount(() => {
   .metric-grid {
     grid-template-columns: 1fr;
   }
+  .capacity-grid {
+    grid-template-columns: 1fr;
+  }
+  .fallback-case-form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .metric-definitions > div {
+    grid-template-columns: 1fr;
+  }
   .metric-card {
     min-height: 0;
   }
@@ -1234,6 +2147,16 @@ onBeforeUnmount(() => {
   .alert-commands label {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+  .alert-owner-command {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .investigation-summary,
+  .causal-section__heading,
+  .activity-facts li {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

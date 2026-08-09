@@ -7,14 +7,20 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import type {
   SupportLeadCaseRiskPage,
   SupportLeadSummary,
+  SupportLeadAdmission,
+  SupportLeadCapacityRiskPage,
   SupportOperationalAlertDetail,
   SupportOperationalAlertPage,
 } from "@/features/support-control/api/support-lead-source";
 import SupportControlPage from "./SupportControlPage.vue";
 
 const api = vi.hoisted(() => ({
+  readAdmission: vi.fn(),
   readSummary: vi.fn(),
   readCaseRisks: vi.fn(),
+  readCapacityRisks: vi.fn(),
+  readInvestigation: vi.fn(),
+  readActivity: vi.fn(),
   readAlerts: vi.fn(),
   readAlertDetail: vi.fn(),
   readAvailability: vi.fn(),
@@ -96,6 +102,9 @@ interface RenderOptions {
   alertsPage?: SupportOperationalAlertPage;
   allowAvailability?: boolean;
   allowAssignment?: boolean;
+  allowActivity?: boolean;
+  admission?: SupportLeadAdmission;
+  capacityPage?: SupportLeadCapacityRiskPage;
 }
 
 async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
@@ -104,6 +113,9 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     allowLeadControl = true,
     allowAvailability = false,
     allowAssignment = false,
+    allowActivity = false,
+    admission: admissionOverride,
+    capacityPage,
     riskPage,
     alertsPage,
   } = options;
@@ -135,11 +147,51 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
               "project.support.assignments.force_assign",
             ]
           : []),
+        ...(allowActivity ? ["project.support.activity.read"] : []),
       ],
     },
     projects: [],
   });
   api.readSummary.mockResolvedValue(value);
+  api.readAdmission.mockResolvedValue(admissionOverride ?? {
+    rolloutState: "ENABLED",
+    readinessState: "READY",
+    evaluatedAt: "2026-08-06T10:00:00.000Z",
+    computedAt: "2026-08-06T10:00:00.000Z",
+    projectionGeneration: 1,
+    checkpoint: "10",
+    sourceHighWater: "10",
+    capabilities: {
+      summary: "AVAILABLE",
+      caseRisks: "AVAILABLE",
+      capacityRisks: "AVAILABLE",
+      investigation: "AVAILABLE",
+      activity: "AVAILABLE",
+      realtime: "AVAILABLE",
+    },
+  });
+  api.readCapacityRisks.mockResolvedValue(capacityPage ?? {
+    computedAt: "2026-08-06T10:00:00.000Z",
+    freshnessState: "READY",
+    state: "AVAILABLE",
+    items: [],
+    nextCursor: null,
+  });
+  api.readInvestigation.mockResolvedValue({
+    caseId: "case-1",
+    computedAt: "2026-08-06T10:00:00.000Z",
+    freshnessState: "READY",
+    routingFactsState: "AVAILABLE",
+    routing: null,
+    facts: [],
+    nextCursor: null,
+  });
+  api.readActivity.mockResolvedValue({
+    computedAt: "2026-08-06T10:00:00.000Z",
+    freshnessState: "READY",
+    facts: [],
+    nextCursor: null,
+  });
   api.readCaseRisks.mockImplementation((_, riskType) =>
     Promise.resolve({
       computedAt: riskPage?.computedAt ?? "2026-08-06T10:00:00.000Z",
@@ -178,6 +230,16 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
         name: "end-user-case-detail",
         component: { template: "<div />" },
       },
+      {
+        path: "/support/inbox",
+        name: "support-inbox",
+        component: { template: "<div />" },
+      },
+      {
+        path: "/support/inbox/cases/:caseId",
+        name: "support-inbox-case",
+        component: { template: "<div />" },
+      },
     ],
   });
   await router.push("/support/control");
@@ -197,6 +259,61 @@ describe("SupportControlPage", () => {
 
     expect(wrapper.text()).toContain("SLA в shadow-режиме");
     expect(wrapper.text()).toContain("Под риском");
+  });
+
+  it("uses admission as a hard gate instead of showing disabled aggregates as zero", async () => {
+    const { wrapper } = await render(summary, {
+      admission: {
+        rolloutState: "DISABLED",
+        readinessState: "NOT_PROVISIONED",
+        evaluatedAt: "2026-08-06T10:00:00.000Z",
+        computedAt: null,
+        projectionGeneration: null,
+        rolloutVersion: null,
+        checkpoint: null,
+        sourceHighWater: null,
+        capabilities: {
+          summary: "UNAVAILABLE",
+          caseRisks: "UNAVAILABLE",
+          capacityRisks: "UNAVAILABLE",
+          investigation: "UNAVAILABLE",
+          activity: "UNAVAILABLE",
+          realtime: "UNAVAILABLE",
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Lead Control ещё не включён");
+    expect(api.readSummary).not.toHaveBeenCalled();
+    expect(api.readCaseRisks).not.toHaveBeenCalled();
+    expect(wrapper.text()).not.toContain("Без назначения");
+  });
+
+  it("shows server capacity causes and opens the canonical filtered inbox", async () => {
+    const { wrapper } = await render(summary, {
+      capacityPage: {
+        computedAt: "2026-08-06T10:00:00.000Z",
+        freshnessState: "READY",
+        state: "AVAILABLE",
+        nextCursor: null,
+        items: [{
+          riskId: "risk-capacity-1",
+          riskVersion: 1,
+          lastDecisionId: "decision-1",
+          observedAt: "2026-08-06T10:00:00.000Z",
+          requiredCapacityUnits: 3,
+          teamId: "team-1",
+          queue: { id: "queue-1", code: "PAYMENTS", name: "Платежи" },
+          exclusionCounts: { CAPACITY_EXHAUSTED: 2 },
+        }],
+      },
+    });
+
+    expect(wrapper.text()).toContain("Где не хватает свободной ёмкости");
+    expect(wrapper.text()).toContain("Исчерпана ёмкость · 2");
+    const href = wrapper.get(".capacity-row .row-link").attributes("href");
+    expect(href).toContain("/support/inbox");
+    expect(href).toContain("queue=queue-1");
   });
 
   it("exposes the shared Lead assignment action from a Control risk drill-down", async () => {

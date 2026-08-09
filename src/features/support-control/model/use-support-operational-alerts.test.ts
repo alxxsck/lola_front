@@ -164,7 +164,11 @@ describe("support operational alerts controller", () => {
     expect(readAlertDetail).toHaveBeenLastCalledWith(
       "project-1",
       "alert-1",
-      { cursor: "cursor-2" },
+      {
+        cursor: "cursor-2",
+        from: "2026-08-06T09:00:00.000Z",
+        to: "2026-08-06T10:00:00.000Z",
+      },
       expect.any(AbortSignal),
     );
   });
@@ -255,5 +259,35 @@ describe("support operational alerts controller", () => {
     await command;
 
     expect(controller.mutating.value).toBeNull();
+  });
+
+  it("purges a late owner catalog when manage permission is revoked", async () => {
+    let resolveTargets!: (value: Array<{ id: string; displayName: string; teamIds: string[] }>) => void;
+    const controller = createSupportOperationalAlertsController(
+      {
+        projectId: () => "project-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      {
+        readAlerts: vi.fn(),
+        readAlertDetail: vi.fn().mockResolvedValue(alertDetail()),
+        readAlertOwnerTargets: vi.fn().mockReturnValue(
+          new Promise((resolve) => {
+            resolveTargets = resolve;
+          }),
+        ),
+        ...commands(),
+      },
+    );
+
+    const detailRequest = controller.openDetail("alert-1");
+    await detailRequest;
+    controller.resetManagement();
+    resolveTargets([{ id: "operator-1", displayName: "Оператор", teamIds: [] }]);
+    await Promise.resolve();
+
+    expect(controller.detail.value?.alert.id).toBe("alert-1");
+    expect(controller.ownerTargets.value).toEqual([]);
   });
 });

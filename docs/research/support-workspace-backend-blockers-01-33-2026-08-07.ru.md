@@ -115,7 +115,7 @@ core.
 |  23 | Public/note attachments                  | **Полный**                              | Нет upload/scan/grant/attachment-send контрактов                                    |
 |  24 | Support Macros                           | Нет (снят `565762c4`); frontend complete | Preview/history/rollback, closed failures и CMS-only provenance опубликованы         |
 |  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract    |
-|  26 | Lead Control                             | **Частичный**                           | Capacity/routing facts готовы; отдельный project rollout/admission ещё не опубликован |
+|  26 | Lead Control                             | Нет (снят `0e3f35d9`)                  | Admission, capacity risks, investigation, Activity и alerts опубликованы              |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
 |  28 | Legacy entry-point cutover               | **Частичный, транзитивный**             | Backend gaps 10–19 сняты; нет project shell rollout contract                        |
 |  29 | Pilot/rollback hardening                 | **Частичный, транзитивный**             | Pilot ждёт core cutover и typed project rollout/admission                           |
@@ -529,23 +529,22 @@ Evidence: `src/composition/support-workspace/support-internal-knowledge.controll
 
 ### 26 — Lead Control
 
-**Статус: частичный backend-блокер.**
+**Статус: backend-блокер снят; frontend complete.**
 
-Готово: typed summary, Case risks, investigation, Activity, alert list/detail и versioned
-acknowledge/resolve/change-owner commands.
+Backend `0e3f35d9` публикует отдельный Project admission/readiness, typed summary, Case risks,
+реальные routing capacity rows, bounded Case investigation, отдельную protected Activity,
+alert list/detail и versioned acknowledge/resolve/change-owner commands. Frontend читает admission
+первым, не маскирует DISABLED/BUILDING/DEGRADED нулевыми KPI, разделяет
+`project.support.lead_control.read` и `project.support.activity.read`, очищает concealed projection
+при `403/404`, повторяет exact effective window при cursor pagination и ведёт Case в canonical
+Support inbox. Assignment/override/bulk остаются на общем versioned assignment use case.
 
-Не хватает:
+Честные ограничения V1: `noEligibleOperator`, saved queues и team/skill/language capacity остаются
+`UNAVAILABLE`; frontend их не дорисовывает эвристикой. Routing capacity risks доступны.
 
-- реальных capacity risk rows — contract возвращает только `UNAVAILABLE`;
-- current routing/reservation facts в investigation;
-- отдельного project rollout/admission contract для Lead Control.
-
-Что может frontend сейчас: summary, Case risks, causal facts, Activity, alerts read и
-acknowledge/resolve, safe owner/assignment pickers и bulk partial-result flow. Capacity tables и
-routing investigation остаются заблокированы.
-
-Evidence: `src/modules/support-operations/api/support-lead.controller.ts`,
-`support-operational-alert*.controller.ts`, `SupportLeadCapacityRisksDataDto`.
+Evidence: backend `src/modules/support-operations/api/support-lead.controller.ts`,
+`support-operational-alert*.controller.ts`; frontend `src/features/support-control/`,
+`src/pages/SupportControlPage.vue`.
 
 ### 27 — Browser notification settings
 

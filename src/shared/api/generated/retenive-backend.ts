@@ -618,6 +618,7 @@ import type {
   SupportKnowledgeSearchPageResponseDto,
   SupportKnowledgeTextDocumentResponseDto,
   SupportLeadActivityParams,
+  SupportLeadAdmissionResponseDto,
   SupportLeadCapacityRisksParams,
   SupportLeadCapacityRisksResponseDto,
   SupportLeadCaseRisksParams,
@@ -7300,6 +7301,22 @@ export const supportInternalKnowledgeSearch = (
 };
 
 /**
+ * @summary Read Project-owned Team Lead Control admission and readiness
+ */
+export const supportLeadAdmission = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportLeadAdmissionResponseDto>>,
+) => {
+  return request<SupportLeadAdmissionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/lead/admission`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+/**
  * @summary Read bounded causal evidence for one Case
  */
 export const supportLeadInvestigation = (
@@ -12934,6 +12951,9 @@ export type SupportInternalKnowledgeSetRetentionPolicyResult = NonNullable<
 >;
 export type SupportInternalKnowledgeSearchResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeSearch>>
+>;
+export type SupportLeadAdmissionResult = NonNullable<
+  Awaited<ReturnType<typeof supportLeadAdmission>>
 >;
 export type SupportLeadInvestigationResult = NonNullable<
   Awaited<ReturnType<typeof supportLeadInvestigation>>

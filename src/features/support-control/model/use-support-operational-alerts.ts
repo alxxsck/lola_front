@@ -4,6 +4,7 @@ import type {
   SupportOperationalAlertsSource,
   SupportOperationalAlertDetail,
   SupportOperationalAlertPage,
+  SupportLeadTarget,
 } from "@/features/support-control/api/support-lead-source";
 
 export interface SupportOperationalAlertsContext {
@@ -25,10 +26,15 @@ export function createSupportOperationalAlertsController(
   const detailLoading = ref(false);
   const detailError = ref("");
   const detailAlertId = ref<string | null>(null);
-  const mutating = ref<"ACKNOWLEDGE" | "RESOLVE" | null>(null);
+  const ownerTargets = ref<SupportLeadTarget[]>([]);
+  const ownerTargetsLoading = ref(false);
+  const mutating = ref<"ACKNOWLEDGE" | "RESOLVE" | "OWNER" | null>(null);
   const mutationError = ref("");
+  const mutationNotice = ref("");
+  const appliedReceiptVersion = ref<number | null>(null);
   let generation = 0;
   let detailGeneration = 0;
+  let ownerTargetsGeneration = 0;
   let listAbort: AbortController | null = null;
   let detailAbort: AbortController | null = null;
   const attempts = new Map<string, string>();
@@ -36,6 +42,7 @@ export function createSupportOperationalAlertsController(
   function reset(): void {
     generation += 1;
     detailGeneration += 1;
+    ownerTargetsGeneration += 1;
     listAbort?.abort();
     detailAbort?.abort();
     listAbort = null;
@@ -47,8 +54,12 @@ export function createSupportOperationalAlertsController(
     detailLoading.value = false;
     detailError.value = "";
     detailAlertId.value = null;
+    ownerTargets.value = [];
+    ownerTargetsLoading.value = false;
     mutating.value = null;
     mutationError.value = "";
+    mutationNotice.value = "";
+    appliedReceiptVersion.value = null;
     attempts.clear();
   }
 
@@ -149,12 +160,19 @@ export function createSupportOperationalAlertsController(
       const result = await source.readAlertDetail(
         projectId,
         alertId,
-        cursor ? { cursor } : undefined,
+        cursor
+          ? { cursor, ...(detail.value?.effectiveWindow ?? {}) }
+          : undefined,
         abort.signal,
       );
       if (!isCurrentDetail(projectId, requestGeneration)) return;
       if (!append || !detail.value) {
         detail.value = result;
+        if (
+          appliedReceiptVersion.value !== null &&
+          result.alert.version >= appliedReceiptVersion.value
+        )
+          appliedReceiptVersion.value = null;
         return;
       }
       const existing = new Set(detail.value.timeline.map((item) => item.id));
@@ -185,7 +203,48 @@ export function createSupportOperationalAlertsController(
   }
 
   function openDetail(alertId: string): Promise<void> {
-    return loadDetail(alertId);
+    const request = loadDetail(alertId);
+    if (canManage()) void loadOwnerTargets();
+    return request;
+  }
+
+  async function loadOwnerTargets(): Promise<void> {
+    const projectId = context.projectId();
+    const requestGeneration = detailGeneration;
+    const targetGeneration = ++ownerTargetsGeneration;
+    if (!projectId || !canManage() || !source.readAlertOwnerTargets) return;
+    ownerTargetsLoading.value = true;
+    try {
+      const result = await source.readAlertOwnerTargets(projectId);
+      if (
+        !isCurrentDetail(projectId, requestGeneration) ||
+        targetGeneration !== ownerTargetsGeneration ||
+        !canManage()
+      )
+        return;
+      ownerTargets.value = result;
+    } catch (cause) {
+      if (!isCurrentDetail(projectId, requestGeneration) || targetGeneration !== ownerTargetsGeneration)
+        return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        ownerTargets.value = [];
+        await context.onForbidden?.();
+      }
+    } finally {
+      if (requestGeneration === detailGeneration && targetGeneration === ownerTargetsGeneration)
+        ownerTargetsLoading.value = false;
+    }
+  }
+
+  function resetManagement(): void {
+    ownerTargetsGeneration += 1;
+    ownerTargets.value = [];
+    ownerTargetsLoading.value = false;
+    mutating.value = null;
+    mutationError.value = "";
+    mutationNotice.value = "";
+    appliedReceiptVersion.value = null;
+    attempts.clear();
   }
 
   function loadMoreDetail(): Promise<void> {
@@ -205,6 +264,8 @@ export function createSupportOperationalAlertsController(
     detailAlertId.value = null;
     mutating.value = null;
     mutationError.value = "";
+    mutationNotice.value = "";
+    appliedReceiptVersion.value = null;
   }
 
   function canManage(): boolean {
@@ -232,6 +293,7 @@ export function createSupportOperationalAlertsController(
       !alertId ||
       current.alert.id !== alertId ||
       !canManage() ||
+      appliedReceiptVersion.value !== null ||
       mutating.value
     )
       return false;
@@ -245,15 +307,17 @@ export function createSupportOperationalAlertsController(
     mutating.value = kind;
     mutationError.value = "";
     try {
-      if (kind === "ACKNOWLEDGE") {
-        await source.acknowledge(projectId, alertId, input as Parameters<
+      const receipt = kind === "ACKNOWLEDGE"
+        ? await source.acknowledge(projectId, alertId, input as Parameters<
           SupportOperationalAlertsSource["acknowledge"]
-        >[2]);
-      } else {
-        await source.resolve(projectId, alertId, input as Parameters<
+        >[2])
+        : await source.resolve(projectId, alertId, input as Parameters<
           SupportOperationalAlertsSource["resolve"]
         >[2]);
-      }
+      const expectedState = kind === "ACKNOWLEDGE" ? "ACKNOWLEDGED" : "RESOLVED";
+      if (receipt.alertId !== alertId || receipt.state !== expectedState || receipt.version <= current.alert.version)
+        throw new ApiError(0, "Некорректная command receipt от сервера");
+      appliedReceiptVersion.value = receipt.version;
       if (
         detailRequestGeneration !== detailGeneration ||
         context.projectId() !== projectId ||
@@ -266,6 +330,8 @@ export function createSupportOperationalAlertsController(
         load(undefined, { retainDetail: true }),
         loadDetail(alertId),
       ]);
+      if (error.value || detailError.value)
+        mutationNotice.value = "Команда применена, но свежий снимок пока не загрузился.";
       return true;
     } catch (cause) {
       if (
@@ -283,6 +349,8 @@ export function createSupportOperationalAlertsController(
         cause instanceof ApiError && cause.status === 409
           ? "Alert уже изменился на сервере. Обновите его перед следующим действием."
           : "Не удалось выполнить команду alert. Ничего не считается подтверждённым.";
+      if (cause instanceof ApiError && cause.status === 409)
+        await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
       return false;
     } finally {
       if (
@@ -311,6 +379,67 @@ export function createSupportOperationalAlertsController(
     return command("RESOLVE", reasonCode);
   }
 
+  async function changeOwner(
+    ownerCmsUserId: string | null,
+    reasonCode: "LEAD_ASSIGNMENT" | "LOAD_BALANCE" | "SHIFT_HANDOFF" | "SKILL_MATCH" | "OWNER_UNAVAILABLE",
+  ): Promise<boolean> {
+    const projectId = context.projectId();
+    const current = detail.value;
+    const alertId = detailAlertId.value;
+    if (
+      !projectId ||
+      !current ||
+      !alertId ||
+      !canManage() ||
+      mutating.value ||
+      appliedReceiptVersion.value !== null ||
+      !source.changeOwner
+    )
+      return false;
+    const requestGeneration = detailGeneration;
+    const identity = `${projectId}\u001f${alertId}\u001fOWNER\u001f${current.alert.version}\u001f${ownerCmsUserId ?? "none"}\u001f${reasonCode}`;
+    mutating.value = "OWNER";
+    mutationError.value = "";
+    mutationNotice.value = "";
+    try {
+      const receipt = await source.changeOwner(projectId, alertId, {
+        ownerCmsUserId,
+        reasonCode,
+        expectedVersion: current.alert.version,
+        idempotencyKey: commandKey(identity),
+      });
+      if (
+        receipt.alertId !== alertId ||
+        receipt.ownerCmsUserId !== ownerCmsUserId ||
+        receipt.version <= current.alert.version
+      )
+        throw new ApiError(0, "Некорректная owner command receipt от сервера");
+      appliedReceiptVersion.value = receipt.version;
+      if (!isCurrentDetail(projectId, requestGeneration) || !canManage()) return false;
+      attempts.delete(identity);
+      await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
+      if (error.value || detailError.value)
+        mutationNotice.value = "Владелец изменён, но свежий снимок пока не загрузился.";
+      return true;
+    } catch (cause) {
+      if (!isCurrentDetail(projectId, requestGeneration)) return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        reset();
+        await context.onForbidden?.();
+        return false;
+      }
+      mutationError.value =
+        cause instanceof ApiError && cause.status === 409
+          ? "Владелец alert уже изменился. Данные обновлены — выберите владельца заново."
+          : "Не удалось изменить владельца alert.";
+      if (cause instanceof ApiError && cause.status === 409) await loadDetail(alertId);
+      return false;
+    } finally {
+      if (context.projectId() === projectId && detailAlertId.value === alertId && mutating.value === "OWNER")
+        mutating.value = null;
+    }
+  }
+
   return {
     page,
     loading,
@@ -320,13 +449,19 @@ export function createSupportOperationalAlertsController(
     detailError,
     mutating,
     mutationError,
+    mutationNotice,
+    appliedReceiptVersion,
+    ownerTargets,
+    ownerTargetsLoading,
     load,
     loadMore,
     openDetail,
     loadMoreDetail,
     closeDetail,
+    resetManagement,
     acknowledge,
     resolve,
+    changeOwner,
     reset,
   };
 }

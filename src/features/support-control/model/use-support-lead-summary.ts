@@ -61,7 +61,7 @@ export function createSupportLeadSummaryController(
         !context.canRead()
       )
         return;
-      if (cause instanceof ApiError && cause.status === 403) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;

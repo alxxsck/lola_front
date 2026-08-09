@@ -4,14 +4,15 @@
 
 **Blocked by:** 03 — Синхронизировать content, Lead Control и notification-контракты; 10 — Добавить server search, filters и sort; 18 — Добавить назначение и override для лида; 19 — Добавить SLA, routing и availability context.
 
-**Status:** partially-blocked-by-backend
+**Status:** frontend-complete
 
-**Backend gate (audit 2026-08-07):** summary/risks/alerts доступны; capacity и routing facts
-публикуются как `UNAVAILABLE`, а safe target catalogs/drill-down search отсутствуют. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#26--lead-control).
+**Backend gate (validated 2026-08-09):** commit `0e3f35d9` публикует admission/readiness,
+capacity risks, routing investigation, protected Activity и безопасные Lead target catalogs.
+Pinned OpenAPI синхронизирован с этим fixed point. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#26--lead-control).
 
-- [ ] Summary KPI показывают definition, computedAt/freshness и корректный shadow/degraded state.
-- [ ] Risk tables покрывают unassigned, SLA breach/risk, overloaded, stuck routing и delivery failures.
-- [ ] Drill-down открывает точный отфильтрованный inbox/Case по canonical URL.
-- [ ] Assign/reassign/override использует общий lead assignment use case, а не отдельную упрощённую команду.
-- [ ] Alerts поддерживают open/acknowledged/closed, owner, occurrence count и audited reason.
-- [ ] Causal investigation timeline связывает routing, assignment, SLA и delivery sources.
+- [x] Summary KPI показывают definition, computedAt/freshness и корректный shadow/degraded state.
+- [x] Risk tables покрывают unassigned, SLA breach/risk, capacity/routing и delivery failures.
+- [x] Drill-down открывает точный отфильтрованный inbox/Case по canonical URL.
+- [x] Assign/reassign/override использует общий lead assignment use case, а не отдельную упрощённую команду.
+- [x] Alerts поддерживают NEW/ACKNOWLEDGED/RESOLVED, owner, occurrence count и audited reason.
+- [x] Causal investigation timeline связывает routing, assignment, SLA, reply и delivery sources.

@@ -42636,6 +42636,127 @@
         ],
         "type": "object"
       },
+      "SupportLeadAdmissionCapabilitiesDto": {
+        "additionalProperties": false,
+        "properties": {
+          "activity": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "capacityRisks": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "caseRisks": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "investigation": {
+            "enum": [
+              "AVAILABLE",
+              "OWNER_FALLBACK",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "realtime": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "enum": [
+              "AVAILABLE",
+              "UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "caseRisks",
+          "capacityRisks",
+          "investigation",
+          "activity",
+          "realtime"
+        ],
+        "type": "object"
+      },
+      "SupportLeadAdmissionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "capabilities": {
+            "$ref": "#/components/schemas/SupportLeadAdmissionCapabilitiesDto"
+          },
+          "checkpoint": {
+            "nullable": true,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "computedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projectionGeneration": {
+            "nullable": true,
+            "type": "number"
+          },
+          "readinessState": {
+            "enum": [
+              "NOT_PROVISIONED",
+              "BUILDING",
+              "READY",
+              "STALE",
+              "DEGRADED"
+            ],
+            "type": "string"
+          },
+          "rolloutState": {
+            "enum": [
+              "DISABLED",
+              "ENABLED"
+            ],
+            "type": "string"
+          },
+          "rolloutVersion": {
+            "nullable": true,
+            "type": "number"
+          },
+          "sourceHighWater": {
+            "nullable": true,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rolloutState",
+          "rolloutVersion",
+          "readinessState",
+          "projectionGeneration",
+          "checkpoint",
+          "sourceHighWater",
+          "computedAt",
+          "evaluatedAt",
+          "capabilities"
+        ],
+        "type": "object"
+      },
       "SupportLeadAvailabilityActionTokenDto": {
         "additionalProperties": false,
         "properties": {
@@ -94413,6 +94534,200 @@
             "scope": "PROJECT"
           }
         ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/lead/admission": {
+      "get": {
+        "operationId": "SupportLead_admission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportLeadAdmissionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "BAD_REQUEST",
+                            "SUPPORT_LEAD_QUERY_INVALID"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN",
+                            "PERMISSION_DENIED"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read Project-owned Team Lead Control admission and readiness",
+        "tags": [
+          "admin support lead control"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.lead_control.read",
+          "scope": "PROJECT"
+        }
       }
     },
     "/api/v1/admin/projects/{projectId}/support/lead/cases/{caseId}/investigation": {

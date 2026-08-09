@@ -90,7 +90,7 @@ export function createSupportLeadRisksController(
       };
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration)) return;
-      if (cause instanceof ApiError && cause.status === 403) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;
