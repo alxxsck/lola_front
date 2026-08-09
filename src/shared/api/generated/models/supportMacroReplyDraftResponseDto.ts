@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportMacroReplyDraftResponseDtoState } from "./supportMacroReplyDraftResponseDtoState";
+import type { SupportMacroReplyDraftResponseDtoTargetKind } from "./supportMacroReplyDraftResponseDtoTargetKind";
 
 export interface SupportMacroReplyDraftResponseDto {
   /** @pattern ^"smd1\.[A-Za-z0-9_-]{43}"$ */
   actionEtag: string;
-  conversationId: string;
+  /** @nullable */
+  conversationId: string | null;
   createdAt: string;
   /** @nullable */
   endUserCaseId: string | null;
@@ -23,6 +25,7 @@ export interface SupportMacroReplyDraftResponseDto {
   /** @pattern ^[a-f0-9]{64}$ */
   renderedHash: string;
   state: SupportMacroReplyDraftResponseDtoState;
+  targetKind: SupportMacroReplyDraftResponseDtoTargetKind;
   /** @nullable */
   text: string | null;
   updatedAt: string;

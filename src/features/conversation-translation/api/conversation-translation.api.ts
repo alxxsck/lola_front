@@ -244,6 +244,11 @@ export const conversationTranslationApi = {
     targetLocale: string,
     endUserCaseId?: string,
     idempotencyKey?: string,
+    macroReplyDraft?: {
+      id: string;
+      sourceHash: string;
+      version: number;
+    },
   ): Promise<ReplyTranslationDraftResponseDto> {
     if (isMockMode) {
       const now = new Date();
@@ -278,10 +283,19 @@ export const conversationTranslationApi = {
       endUserId,
       conversationId,
       {
-        sourceText,
+        ...(!macroReplyDraft ? { sourceText } : {}),
         sourceLocale,
         targetLocale,
         ...(endUserCaseId ? { endUserCaseId } : {}),
+        ...(macroReplyDraft
+          ? {
+              macroReplyDraftId: macroReplyDraft.id,
+              macroReplyDraftSourceHash: macroReplyDraft.sourceHash.startsWith("sha256:")
+                ? macroReplyDraft.sourceHash
+                : `sha256:${macroReplyDraft.sourceHash}`,
+              macroReplyDraftVersion: macroReplyDraft.version,
+            }
+          : {}),
       },
       {
         headers: {

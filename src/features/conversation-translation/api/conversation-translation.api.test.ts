@@ -54,6 +54,7 @@ describe("conversation translation API adapter", () => {
       "de",
       "case-1",
       "key-draft",
+      { id: "macro-draft-1", sourceHash: "a".repeat(64), version: 2 },
     );
     await conversationTranslationApi.retryReplyDraft(
       "project-1",
@@ -72,6 +73,14 @@ describe("conversation translation API adapter", () => {
     expect(mocks.createDraft.mock.calls[0].at(-1)).toEqual({
       headers: { "Idempotency-Key": "key-draft" },
     });
+    expect(mocks.createDraft.mock.calls[0]?.[3]).toEqual(
+      expect.objectContaining({
+        macroReplyDraftId: "macro-draft-1",
+        macroReplyDraftSourceHash: `sha256:${"a".repeat(64)}`,
+        macroReplyDraftVersion: 2,
+      }),
+    );
+    expect(mocks.createDraft.mock.calls[0]?.[3]).not.toHaveProperty("sourceText");
     expect(mocks.retryDraft.mock.calls[0].at(-1)).toEqual({
       headers: { "Idempotency-Key": "key-draft-retry" },
     });

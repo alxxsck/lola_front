@@ -36,11 +36,9 @@ import type {
   ConversationSurfaceTranslation,
 } from "@/features/conversation-surface/model/conversation-surface-contract";
 import { clearConversationSurfaceProjectSession } from "@/features/conversation-surface/model/conversation-surface-session";
-import {
-  defaultConversationReplyTemplates,
-  type ConversationReplyTemplate,
-} from "@/features/conversation-surface/model/conversation-reply-templates";
 import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
+import { supportMacroSource } from "@/features/support-macros/api/support-macros-source";
+import { createSupportMacroController } from "@/features/support-macros/model/use-support-macros";
 import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
 import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
 import { supportConversationCollaborationSource } from "@/features/support-conversation-collaboration/api/support-conversation-collaboration-source";
@@ -116,6 +114,7 @@ import type {
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
   StartConversationAISuspensionDto,
+  SupportMacroResponseDto,
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 
@@ -503,6 +502,7 @@ const reply = createSupportReplyController(
     onAccepted(attempt) {
       if (attempt.attachmentIds?.length) publicAttachments.consumeDraft();
     },
+    onMacroDraftRejected: handleSupportMacroRejected,
   },
   repository,
 );
@@ -532,6 +532,90 @@ const canReadTranslationDetails = computed(() =>
 );
 const replyTranslationRequested = ref(false);
 const replyTemplateGalleryVisible = ref(false);
+const supportComposerMode = ref<"PUBLIC_REPLY" | "INTERNAL_NOTE">(
+  "PUBLIC_REPLY",
+);
+const internalNoteDraft = ref("");
+const internalNoteDraftPurgeRevision = ref(0);
+const supportMacrosAccessDenied = ref(false);
+const hasSupportMacrosReadPermission = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.support.macros.read",
+  ),
+);
+const hasSupportMacrosUsePermission = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.support.macros.use",
+  ),
+);
+const canReadSupportMacros = computed(
+  () => !supportMacrosAccessDenied.value && hasSupportMacrosReadPermission.value,
+);
+const canUseSupportMacros = computed(
+  () =>
+    canReadSupportMacros.value &&
+    hasSupportMacrosUsePermission.value,
+);
+const supportMacros = createSupportMacroController(
+  {
+    projectId: () => auth.project?.id,
+    actorId: () => auth.user?.id,
+    canRead: () => canReadSupportMacros.value,
+    canUse: () => canUseSupportMacros.value,
+    catalogContext: () => ({
+      ...(conversation.selection.value?.case?.groupCode
+        ? { topicCode: conversation.selection.value.case.groupCode }
+        : {}),
+      ...(conversation.selection.value?.endUser.locale
+        ? { locale: conversation.selection.value.endUser.locale }
+        : {}),
+    }),
+    target: () => {
+      const selection = conversation.selection.value;
+      if (!selection) return null;
+      if (supportComposerMode.value === "INTERNAL_NOTE") {
+        return selection.case
+          ? { kind: "INTERNAL_NOTE" as const, caseId: selection.case.id }
+          : null;
+      }
+      return selection.conversation
+        ? {
+            kind: "PUBLIC_REPLY" as const,
+            endUserId: selection.endUser.id,
+            conversationId: selection.conversation.id,
+            ...(selection.case ? { caseId: selection.case.id } : {}),
+          }
+        : null;
+    },
+    async onForbidden() {
+      supportMacrosAccessDenied.value = true;
+      replyTemplateGalleryVisible.value = false;
+      try {
+        await auth.refreshContext();
+      } catch {
+        // Macro catalog and draft are already purged before context recovery.
+      }
+      await conversation.reconcile().catch(() => undefined);
+    },
+  },
+  supportMacroSource,
+);
+
+async function handleSupportMacroRejected(): Promise<void> {
+  supportMacros.reset({ keepQuery: true });
+  supportMacros.requireRecovery();
+  replyTemplateGalleryVisible.value = false;
+  try {
+    await auth.refreshContext();
+  } catch {
+    // The rejected Macro draft is already purged; the typed text stays local.
+  }
+  supportMacrosAccessDenied.value =
+    !hasSupportMacrosReadPermission.value || !hasSupportMacrosUsePermission.value;
+  if (!supportMacrosAccessDenied.value) await supportMacros.load();
+}
 const translationSettingsVisible = ref(false);
 const sendWithoutTranslationVisible = ref(false);
 const sendWithoutTranslationReason = ref("");
@@ -544,6 +628,16 @@ const translation = createConversationTranslationController({
   conversationId: () => conversation.selection.value?.conversation?.id,
   selectedCaseId: () => conversation.selection.value?.case?.id,
   sourceText: () => reply.draft.value,
+  macroReplyDraft: () => {
+    const active = supportMacros.activeDraft.value;
+    return active?.target.kind === "PUBLIC_REPLY"
+      ? {
+          id: active.receipt.id,
+          sourceHash: active.receipt.renderedHash,
+          version: active.receipt.version,
+        }
+      : null;
+  },
   restoreSourceText: (value) => {
     reply.draft.value = value;
   },
@@ -573,7 +667,11 @@ const replyPolicyChecking = computed(
   () => canManageTranslation.value && !translation.state.value,
 );
 const canSubmitPublicReply = computed(() => {
-  if (!reply.canReply.value || (replyHasText.value && replyPolicyChecking.value))
+  if (
+    !reply.canReply.value ||
+    supportMacros.recoveryRequired.value ||
+    (replyHasText.value && replyPolicyChecking.value)
+  )
     return false;
   if (
     replyHasText.value &&
@@ -589,6 +687,7 @@ const canSubmitPublicReply = computed(() => {
 });
 const publicReplyBlockedReason = computed(() => {
   if (!reply.canReply.value) return "";
+  if (supportMacros.recoveryRequired.value) return supportMacros.error.value;
   if (replyHasText.value && replyPolicyChecking.value)
     return translation.error.value || "Проверяем правила перевода…";
   if (
@@ -605,11 +704,6 @@ const supportComposerWorkingLocale = computed(
   () =>
     translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
 );
-const supportComposerMode = ref<"PUBLIC_REPLY" | "INTERNAL_NOTE">(
-  "PUBLIC_REPLY",
-);
-const internalNoteDraft = ref("");
-const internalNoteDraftPurgeRevision = ref(0);
 const supportConversationComposer = computed<ConversationSurfaceComposer>(
   () => {
     const selection = conversation.selection.value;
@@ -617,21 +711,25 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
     const noteAvailable = noteCapabilities?.state === "AVAILABLE";
     const modeSwitch = {
       publicReply: {
-        visibility: reply.canReply.value
+        visibility: reply.canReply.value && !supportMacros.recoveryRequired.value
           ? ("ENABLED" as const)
           : ("DISABLED" as const),
-        reason: reply.canReply.value
+        reason: reply.canReply.value && !supportMacros.recoveryRequired.value
           ? undefined
-          : "Ответ пользователю в этом диалоге недоступен.",
+          : supportMacros.recoveryRequired.value
+            ? supportMacros.error.value
+            : "Ответ пользователю в этом диалоге недоступен.",
       },
       internalNote: {
         visibility:
-          noteAvailable && noteCapabilities.create
+          noteAvailable && noteCapabilities.create && !supportMacros.recoveryRequired.value
             ? ("ENABLED" as const)
             : ("DISABLED" as const),
-        reason: noteAvailable
-          ? "Для этого обращения доступен только просмотр заметок."
-          : "Внутренние заметки недоступны для текущего обращения.",
+        reason: supportMacros.recoveryRequired.value
+          ? supportMacros.error.value
+          : noteAvailable
+            ? "Для этого обращения доступен только просмотр заметок."
+            : "Внутренние заметки недоступны для текущего обращения.",
       },
     };
     if (supportComposerMode.value === "INTERNAL_NOTE") {
@@ -673,16 +771,20 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
           internalNotes: {
             visibility: noteCapabilities?.read ? "ENABLED" : "HIDDEN",
           },
-          templates: { visibility: "HIDDEN" },
+          templates: {
+            visibility: canUseSupportMacros.value ? "ENABLED" : "HIDDEN",
+          },
           improveWithAI: { visibility: "HIDDEN" },
           sendWithoutTranslation: { visibility: "HIDDEN" },
         },
         modeSwitch,
-        sendCapability: enabled
+        sendCapability: enabled && !supportMacros.recoveryRequired.value
           ? { kind: "SOURCE" }
           : {
               kind: "BLOCKED",
-              reason: "Добавление заметки больше недоступно. Черновик очищен.",
+              reason: supportMacros.recoveryRequired.value
+                ? supportMacros.error.value
+                : "Добавление заметки больше недоступно. Черновик очищен.",
             },
         replyPreview: null,
         translationAssist: null,
@@ -820,7 +922,11 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
             : "Внутренние заметки доступны после привязки обращения.",
         },
         templates: {
-          visibility: busy ? "DISABLED" : "ENABLED",
+          visibility: canUseSupportMacros.value
+            ? busy
+              ? "DISABLED"
+              : "ENABLED"
+            : "HIDDEN",
           reason: busy ? "Дождитесь завершения текущего действия." : undefined,
         },
         improveWithAI: {
@@ -1162,6 +1268,7 @@ const internalNotes = createSupportInternalNotesController(
     async onReconcileRequired() {
       await Promise.all([inbox.load(), conversation.reconcile()]);
     },
+    onMacroDraftRejected: handleSupportMacroRejected,
     async onForbidden() {
       internalNotesAccessDenied.value = true;
       purgeInternalNoteDraft();
@@ -1928,6 +2035,13 @@ async function reconcileCaseOperations(expiresAt: string): Promise<void> {
 async function sendReply(
   attachments?: { attachmentIds: string[]; attachmentDraftKey: string },
 ): Promise<void> {
+  if (supportMacros.recoveryRequired.value) return;
+  const activeMacro = supportMacros.activeDraft.value;
+  const macroReplyDraftId =
+    activeMacro?.target.kind === "PUBLIC_REPLY"
+      ? await supportMacros.prepareForSend(reply.draft.value)
+      : undefined;
+  if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
   if (!replyHasText.value) {
     await reply.send(attachments);
     return;
@@ -1951,7 +2065,10 @@ async function sendReply(
     await prepareReplyTranslation();
     return;
   }
-  await reply.send(attachments);
+  await reply.send({
+    ...attachments,
+    ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+  });
 }
 
 function setSendWithoutTranslationVisible(visible: boolean): void {
@@ -1960,16 +2077,24 @@ function setSendWithoutTranslationVisible(visible: boolean): void {
 }
 
 async function sendReplyWithoutTranslation(): Promise<void> {
+  if (supportMacros.recoveryRequired.value) return;
   const reason = sendWithoutTranslationReason.value.trim();
   if (!reason || !reply.canSendWithoutTranslation.value) return;
+  const activeMacro = supportMacros.activeDraft.value;
+  const macroReplyDraftId =
+    activeMacro?.target.kind === "PUBLIC_REPLY"
+      ? await supportMacros.prepareForSend(reply.draft.value)
+      : undefined;
+  if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
   await reply.sendWithoutTranslation(
     reason,
     publicAttachments.readyIds.value.length && publicAttachments.draftKey.value
       ? {
           attachmentIds: publicAttachments.readyIds.value,
           attachmentDraftKey: publicAttachments.draftKey.value,
-        }
+      }
       : undefined,
+    macroReplyDraftId ?? undefined,
   );
   if (!reply.draft.value.trim()) {
     setSendWithoutTranslationVisible(false);
@@ -2047,6 +2172,7 @@ function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
 async function sendSupportComposer(
   request: ConversationSurfaceSendRequest,
 ): Promise<void> {
+  if (supportMacros.recoveryRequired.value) return;
   if (request.mode === "INTERNAL_NOTE") {
     if (!canWriteSelectedInternalNotes.value) return;
     internalNoteDraft.value = request.text;
@@ -2054,8 +2180,22 @@ async function sendSupportComposer(
     const attachmentDraft = request.attachmentIds?.length && request.attachmentDraftKey
       ? { ids: request.attachmentIds, draftKey: request.attachmentDraftKey }
       : undefined;
-    if (await internalNotes.create(request.text, conversationId, attachmentDraft)) {
+    const activeMacro = supportMacros.activeDraft.value;
+    const macroDraftId =
+      activeMacro?.target.kind === "INTERNAL_NOTE"
+        ? await supportMacros.prepareForSend(request.text)
+        : undefined;
+    if (activeMacro?.target.kind === "INTERNAL_NOTE" && !macroDraftId) return;
+    if (
+      await internalNotes.create(
+        request.text,
+        conversationId,
+        attachmentDraft,
+        macroDraftId ?? undefined,
+      )
+    ) {
       internalNoteDraft.value = "";
+      supportMacros.detachIfChanged("");
       if (attachmentDraft) noteAttachments.consumeDraft();
       await internalNotes.reconcile();
     }
@@ -2074,6 +2214,9 @@ function changeSupportComposerMode(
   mode: "PUBLIC_REPLY" | "INTERNAL_NOTE",
 ): void {
   if (mode === supportComposerMode.value) return;
+  if (supportMacros.recoveryRequired.value) return;
+  supportMacros.reset({ keepQuery: true });
+  replyTemplateGalleryVisible.value = false;
   if (mode === "INTERNAL_NOTE") {
     if (!canWriteSelectedInternalNotes.value) return;
     supportComposerMode.value = mode;
@@ -2108,6 +2251,7 @@ function handleSupportComposerAction(
   switch (action) {
     case "TEMPLATES":
       replyTemplateGalleryVisible.value = true;
+      void supportMacros.load();
       break;
     case "CLASSIFY_CASE":
       void classifySelectedCase();
@@ -2163,12 +2307,30 @@ function downloadSupportAttachment(
     : publicAttachments.download(request.attachmentId));
 }
 
-function applySupportReplyTemplate(template: ConversationReplyTemplate): void {
-  reply.draft.value = template.text;
+async function applySupportReplyTemplate(
+  macro: SupportMacroResponseDto,
+): Promise<void> {
+  const text = await supportMacros.apply(macro);
+  if (!text) return;
+  if (supportComposerMode.value === "INTERNAL_NOTE")
+    internalNoteDraft.value = text;
+  else reply.draft.value = text;
   replyTemplateGalleryVisible.value = false;
 }
 
+function searchSupportMacros(query: string): void {
+  supportMacros.query.value = query;
+  void supportMacros.load();
+}
+
 async function prepareReplyTranslation(): Promise<void> {
+  if (supportMacros.recoveryRequired.value) return;
+  const activeMacro = supportMacros.activeDraft.value;
+  if (
+    activeMacro?.target.kind === "PUBLIC_REPLY" &&
+    !(await supportMacros.prepareForSend(reply.draft.value))
+  )
+    return;
   if (!(await ensureReplyTranslationLoaded())) return;
   const targetLocale = translation.targetLocale.value;
   const workingLocale = translation.state.value?.preference.workingLocale;
@@ -2203,7 +2365,11 @@ async function sendTranslatedReply(
   }
   const ready = translation.readyDraft.value;
   if (!ready) return;
-  await reply.sendTranslatedReply(ready.id, attachments);
+  const macroReplyDraftId =
+    supportMacros.activeDraft.value?.target.kind === "PUBLIC_REPLY"
+      ? supportMacros.activeDraft.value.receipt.id
+      : undefined;
+  await reply.sendTranslatedReply(ready.id, attachments, macroReplyDraftId);
   if (!reply.draft.value.trim()) {
     translation.clearReplyDraft();
     replyTranslationRequested.value = false;
@@ -2379,6 +2545,7 @@ watch(
     assignmentAccessDenied.value = false;
     aiSuspensionAccessDenied.value = false;
     internalNotesAccessDenied.value = false;
+    supportMacrosAccessDenied.value = false;
     publicAttachmentsAccessDenied.value = false;
     noteAttachmentsAccessDenied.value = false;
     aiSuspensionDialogVisible.value = false;
@@ -2391,6 +2558,7 @@ watch(
     internalNotes.reset();
     caseDesk.reset();
     reply.reset();
+    supportMacros.reset();
     messageDelivery.reset();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
@@ -2572,6 +2740,20 @@ watch(
     selectedInternalNotesAuthorityKey,
   ],
   syncInternalNotesReconciliation,
+);
+
+watch(
+  [
+    () => auth.user?.id,
+    hasSupportMacrosReadPermission,
+    hasSupportMacrosUsePermission,
+  ],
+  ([actorId, canRead, canUse], [previousActorId]) => {
+    if (actorId === previousActorId && canRead && canUse) return;
+    supportMacros.reset({ keepQuery: actorId === previousActorId });
+    replyTemplateGalleryVisible.value = false;
+  },
+  { flush: "sync" },
 );
 
 watch(selectedAiSuspensionKey, (selectionKey, previousSelectionKey) => {
@@ -2777,9 +2959,11 @@ watch(
   [
     () => conversation.selection.value?.conversation?.id,
     () => conversation.selection.value?.endUser.id,
+    () => conversation.selection.value?.case?.id,
   ],
   () => {
     reply.syncSelection();
+    supportMacros.reset({ keepQuery: true });
     if (reply.outcomeState.value === "CHECKING_OUTCOME")
       void reply.checkOutcome();
     replyTranslationRequested.value = false;
@@ -2795,6 +2979,7 @@ watch(
 watch(
   () => reply.draft.value,
   (draft) => {
+    supportMacros.detachIfChanged(draft);
     const active = Boolean(draft.trim());
     void workspaceLive.setDraftActive(active);
     if (!active) {
@@ -2841,6 +3026,7 @@ onBeforeUnmount(() => {
   publicAttachments.dispose();
   noteAttachments.dispose();
   reply.reset();
+  supportMacros.reset();
   replyTemplateGalleryVisible.value = false;
   translation.reset();
   setSendWithoutTranslationVisible(false);
@@ -3125,6 +3311,15 @@ onBeforeUnmount(() => {
               Выбранный диалог недоступен.
             </p>
             <Message
+              v-if="supportMacros.recoveryRequired.value"
+              severity="warn"
+              :closable="false"
+              class="support-reply-error"
+              role="alert"
+            >
+              {{ supportMacros.error.value }}
+            </Message>
+            <Message
               v-if="reply.error.value && reply.outcomeState.value === 'IDLE'"
               severity="error"
               :closable="false"
@@ -3135,9 +3330,17 @@ onBeforeUnmount(() => {
             </Message>
             <ConversationTemplateGallery
               :visible="replyTemplateGalleryVisible"
-              :templates="defaultConversationReplyTemplates"
+              :macros="supportMacros.items.value"
+              :query="supportMacros.query.value"
+              :loading="supportMacros.loading.value || supportMacros.loadingMore.value"
+              :applying-id="supportMacros.applyingId.value"
+              :error="supportMacros.error.value"
+              :has-more="Boolean(supportMacros.nextCursor.value)"
+              :freshness="supportMacros.freshness.value"
               @close="replyTemplateGalleryVisible = false"
               @select="applySupportReplyTemplate"
+              @search="searchSupportMacros"
+              @load-more="supportMacros.load(supportMacros.nextCursor.value ?? undefined)"
             />
             <Message
               v-if="canManageTranslation && translation.error.value"

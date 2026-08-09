@@ -92,6 +92,7 @@ export interface SupportInternalNotesSource {
       conversationId?: string;
       messageId?: string;
       macroRevisionId?: string;
+      macroDraftId?: string;
       knowledgeDocumentId?: string;
       idempotencyKey: string;
     },
@@ -263,6 +264,7 @@ const apiSource: SupportInternalNotesSource = {
           ...(input.conversationId ? { conversationId: input.conversationId } : {}),
           ...(input.messageId ? { messageId: input.messageId } : {}),
           ...(input.macroRevisionId ? { macroRevisionId: input.macroRevisionId } : {}),
+          ...(input.macroDraftId ? { macroDraftId: input.macroDraftId } : {}),
           ...(input.knowledgeDocumentId
             ? { knowledgeDocumentId: input.knowledgeDocumentId }
             : {}),

@@ -410,6 +410,7 @@ import type {
   PreviewScenarioGoalResponseDto,
   PreviewScenarioRuleDto,
   PreviewScenarioRuleResponseDto,
+  PreviewSupportMacroDto,
   PreviewTelegramBroadcastDto,
   ProductApiRequestLogDetailDto,
   ProductApiRequestLogListParams,
@@ -491,6 +492,7 @@ import type {
   RevokeSupportRoutingAdmissionReceiptDto,
   RollbackScenarioDto,
   RollbackSupportKnowledgeAdmissionDto,
+  RollbackSupportMacroDto,
   RotateAmplitudeCredentialDto,
   RotateAmplitudeInboundCredentialDto,
   RotateCustomerIoCredentialDto,
@@ -605,10 +607,14 @@ import type {
   SupportLeadSummaryResponseDto,
   SupportLeadTargetCatalogResponseDto,
   SupportLeadTargetListParams,
+  SupportMacroAuthoringCatalogParams,
   SupportMacroCatalogParams,
   SupportMacroCatalogResponseDto,
+  SupportMacroListRevisionsParams,
+  SupportMacroPreviewResponseDto,
   SupportMacroReplyDraftResponseDto,
   SupportMacroResponseDto,
+  SupportMacroRevisionPageResponseDto,
   SupportMessageSearchQueryDto,
   SupportOperationalAlertCommandReceiptDto,
   SupportOperationalAlertDetailParams,
@@ -2237,6 +2243,56 @@ export const supportInternalNoteAttachmentStartUpload = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createSupportInternalNoteAttachmentUploadDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroNoteDraftCreate = (
+  projectId: string,
+  caseId: string,
+  createSupportMacroReplyDraftDto: BodyType<CreateSupportMacroReplyDraftDto>,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/macro-note-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportMacroReplyDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroNoteDraftRead = (
+  projectId: string,
+  caseId: string,
+  draftId: string,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/macro-note-drafts/${draftId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportMacroNoteDraftEdit = (
+  projectId: string,
+  caseId: string,
+  draftId: string,
+  editSupportMacroReplyDraftDto: BodyType<EditSupportMacroReplyDraftDto>,
+  options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
+) => {
+  return request<SupportMacroReplyDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/macro-note-drafts/${draftId}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: editSupportMacroReplyDraftDto,
     },
     options,
   );
@@ -7104,6 +7160,20 @@ export const supportMacroArchive = (
   );
 };
 
+export const supportMacroReadAuthoring = (
+  projectId: string,
+  macroId: string,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/authoring`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportMacroReplaceDraft = (
   projectId: string,
   macroId: string,
@@ -7130,6 +7200,73 @@ export const supportMacroPublish = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/publish`,
       method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportMacroListRevisions = (
+  projectId: string,
+  macroId: string,
+  params?: SupportMacroListRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportMacroRevisionPageResponseDto>
+  >,
+) => {
+  return request<SupportMacroRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportMacroRollback = (
+  projectId: string,
+  macroId: string,
+  revisionId: string,
+  rollbackSupportMacroDto: BodyType<RollbackSupportMacroDto>,
+  options?: SecondParameter<typeof request<SupportMacroResponseDto>>,
+) => {
+  return request<SupportMacroResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/${macroId}/revisions/${revisionId}/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackSupportMacroDto,
+    },
+    options,
+  );
+};
+
+export const supportMacroAuthoringCatalog = (
+  projectId: string,
+  params?: SupportMacroAuthoringCatalogParams,
+  options?: SecondParameter<typeof request<SupportMacroCatalogResponseDto>>,
+) => {
+  return request<SupportMacroCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/authoring`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportMacroPreview = (
+  projectId: string,
+  previewSupportMacroDto: BodyType<PreviewSupportMacroDto>,
+  options?: SecondParameter<typeof request<SupportMacroPreviewResponseDto>>,
+) => {
+  return request<SupportMacroPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewSupportMacroDto,
     },
     options,
   );
@@ -11599,6 +11736,15 @@ export type SupportInternalNoteAttachmentRevokeResult = NonNullable<
 export type SupportInternalNoteAttachmentStartUploadResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteAttachmentStartUpload>>
 >;
+export type SupportMacroNoteDraftCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroNoteDraftCreate>>
+>;
+export type SupportMacroNoteDraftReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroNoteDraftRead>>
+>;
+export type SupportMacroNoteDraftEditResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroNoteDraftEdit>>
+>;
 export type ConversationMessageContentCurrentResult = NonNullable<
   Awaited<ReturnType<typeof conversationMessageContentCurrent>>
 >;
@@ -12480,11 +12626,26 @@ export type SupportMacroReadResult = NonNullable<
 export type SupportMacroArchiveResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroArchive>>
 >;
+export type SupportMacroReadAuthoringResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroReadAuthoring>>
+>;
 export type SupportMacroReplaceDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroReplaceDraft>>
 >;
 export type SupportMacroPublishResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroPublish>>
+>;
+export type SupportMacroListRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroListRevisions>>
+>;
+export type SupportMacroRollbackResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroRollback>>
+>;
+export type SupportMacroAuthoringCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroAuthoringCatalog>>
+>;
+export type SupportMacroPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroPreview>>
 >;
 export type PersonalSupportNotificationPreferencesGetResult = NonNullable<
   Awaited<ReturnType<typeof personalSupportNotificationPreferencesGet>>

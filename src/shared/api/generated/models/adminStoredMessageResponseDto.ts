@@ -8,6 +8,7 @@
 import type { ChatAttachmentMessageSnapshotResponseDto } from "./chatAttachmentMessageSnapshotResponseDto";
 import type { AdminStoredMessageResponseDtoAuthor } from "./adminStoredMessageResponseDtoAuthor";
 import type { AdminStoredMessageResponseDtoContent } from "./adminStoredMessageResponseDtoContent";
+import type { AdminStoredMessageResponseDtoMacroProvenance } from "./adminStoredMessageResponseDtoMacroProvenance";
 import type { AdminStoredMessageResponseDtoMetadata } from "./adminStoredMessageResponseDtoMetadata";
 import type { MessageRole } from "./messageRole";
 import type { MessageStatus } from "./messageStatus";
@@ -31,6 +32,8 @@ export interface AdminStoredMessageResponseDto {
   idempotencyKey?: string | null;
   /** @nullable */
   inputTokens?: number | null;
+  /** @nullable */
+  macroProvenance: AdminStoredMessageResponseDtoMacroProvenance;
   metadata: AdminStoredMessageResponseDtoMetadata;
   /** @nullable */
   model?: string | null;

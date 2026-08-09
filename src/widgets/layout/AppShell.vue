@@ -192,6 +192,13 @@ const navigation = computed(() =>
       supportLeadControl: true,
     },
     {
+      label: "Macros поддержки",
+      icon: "pi pi-file-edit",
+      to: "/support/settings/macros",
+      project: true,
+      projectPermission: "project.support.macros.manage",
+    },
+    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",

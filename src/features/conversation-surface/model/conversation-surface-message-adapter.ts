@@ -95,6 +95,14 @@ export function adaptConversationSurfaceMessages(
         status: messageStatus(message),
         delivery: deliveryStatus(message),
         attachments: message.attachments,
+        ...(message.macroProvenance
+          ? {
+              macroProvenance: {
+                revisionNumber: message.macroProvenance.revisionNumber,
+                edited: message.macroProvenance.edited,
+              },
+            }
+          : {}),
       },
     ];
   });

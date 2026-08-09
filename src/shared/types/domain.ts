@@ -381,6 +381,14 @@ export interface ConversationMessage {
     contentType: string;
     sizeBytes: number;
   }>;
+  /** CMS-only immutable Support Macro origin. Never exposed to End User surfaces. */
+  macroProvenance?: {
+    macroId: string;
+    revisionId: string;
+    revisionNumber: number;
+    edited: boolean;
+    usedAt: string;
+  };
   status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
   /** Current server-confirmed delivery state for a public outbound message. */
   delivery?: {
@@ -649,6 +657,7 @@ export interface AdminMessageRequest {
   actions?: DirectAdminAction[];
   aiSuspension?: AdminMessageAISuspensionDto;
   replyTranslationDraftId?: string;
+  macroReplyDraftId?: string;
   sendWithoutTranslation?: { reason: string };
   idempotencyKey?: string;
 }

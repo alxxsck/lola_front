@@ -42,6 +42,7 @@ const macroReplyDraft = {
   macroRevisionNumber: 7,
   conversationId: "52000000-0000-4000-8000-000000000004",
   endUserCaseId: "51000000-0000-4000-8000-000000000002",
+  targetKind: "PUBLIC_REPLY",
   state: "READY",
   version: 1,
   text: "Здравствуйте! Чем могу помочь?",

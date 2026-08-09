@@ -508,6 +508,9 @@ export const apiRepository: ReteniveRepository = {
         ...(message.replyTranslationDraftId
           ? { replyTranslationDraftId: message.replyTranslationDraftId }
           : {}),
+        ...(message.macroReplyDraftId
+          ? { macroReplyDraftId: message.macroReplyDraftId }
+          : {}),
         ...(message.sendWithoutTranslation
           ? { sendWithoutTranslation: message.sendWithoutTranslation }
           : {}),

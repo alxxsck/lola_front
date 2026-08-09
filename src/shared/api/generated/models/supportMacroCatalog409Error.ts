@@ -5,5 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportMacroCatalog409ErrorCode } from "./supportMacroCatalog409ErrorCode";
 
-export type SupportContentPanelMacrosDtoItemsItem = { [key: string]: unknown };
+export type SupportMacroCatalog409Error = {
+  code?: SupportMacroCatalog409ErrorCode;
+};

@@ -18,6 +18,7 @@ export interface SupportInternalNotesContext {
   canRedact?(): boolean;
   onForbidden?(): void | Promise<void>;
   onReconcileRequired?(): void | Promise<void>;
+  onMacroDraftRejected?(cause: ApiError): void | Promise<void>;
 }
 
 interface Scope {
@@ -36,6 +37,10 @@ const tombstoneReasons = new Set<SupportInternalNoteTombstoneReason>([
   "POLICY_VIOLATION",
   "PRIVACY_REQUEST",
 ]);
+
+function isMacroDraftFailure(cause: unknown): cause is ApiError {
+  return cause instanceof ApiError && Boolean(cause.code?.startsWith("SUPPORT_MACRO_DRAFT_"));
+}
 
 /** Owns one selected Case's private notes; no data survives a scope or authority change. */
 export function createSupportInternalNotesController(
@@ -358,6 +363,7 @@ export function createSupportInternalNotesController(
     body: string,
     conversationId?: string,
     attachments?: { ids: string[]; draftKey: string },
+    macroDraftId?: string,
   ): Promise<boolean> {
     const scope = currentScope();
     const normalizedBody = body.trim();
@@ -370,13 +376,13 @@ export function createSupportInternalNotesController(
       return false;
     const generation = notesGeneration;
     const mutationToken = Symbol("create-internal-note");
-    const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCREATE\u001f${normalizedBody}\u001f${conversationId ?? ""}\u001f${attachments?.draftKey ?? ""}\u001f${attachments?.ids.join(",") ?? ""}`;
+    const identity = `${scope.projectId}\u001f${scope.caseId}\u001fCREATE\u001f${normalizedBody}\u001f${conversationId ?? ""}\u001f${attachments?.draftKey ?? ""}\u001f${attachments?.ids.join(",") ?? ""}\u001f${macroDraftId ?? ""}`;
     creating.value = true;
     createMutationToken = mutationToken;
     mutationError.value = "";
     try {
       const note = await source.create(scope.projectId, scope.caseId, {
-        ...(normalizedBody ? { body: normalizedBody } : {}),
+        ...(normalizedBody && !macroDraftId ? { body: normalizedBody } : {}),
         ...(attachments?.ids.length
           ? {
               attachmentIds: attachments.ids,
@@ -384,6 +390,7 @@ export function createSupportInternalNotesController(
             }
           : {}),
         ...(conversationId ? { conversationId } : {}),
+        ...(macroDraftId ? { macroDraftId } : {}),
         idempotencyKey: commandKey(identity),
       });
       if (!isCurrentMutation(scope, generation)) return false;
@@ -391,6 +398,14 @@ export function createSupportInternalNotesController(
       upsert(note);
       return true;
     } catch (cause) {
+      if (macroDraftId && isMacroDraftFailure(cause)) {
+        if (isCurrentMutation(scope, generation)) {
+          await context.onMacroDraftRejected?.(cause);
+          mutationError.value =
+            "Macro изменился или больше недоступен. Текст заметки сохранён — выберите актуальный macro.";
+        }
+        return false;
+      }
       await handleMutationError(
         cause,
         scope,

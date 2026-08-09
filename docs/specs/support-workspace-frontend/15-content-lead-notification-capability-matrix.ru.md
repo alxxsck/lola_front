@@ -6,9 +6,9 @@
 
 Дата: 7 августа 2026 года
 
-Pinned contract: `sha256:75b825f98afe9306678964691841029e36bb293a5846354b3e3651d5409c002b`
+Pinned contract: `sha256:ed5a4f68e0594348f3d3b708ad7e85ca94099242d20835550d87af9f12412a40`
 
-Backend docs/source review: `0ca33c93e52d689de388187091e6aa2f6c05639b`
+Backend docs/source review: `565762c42654ba789470648d76d26d3d5747d294`
 
 Frontend реализует только то, что опубликовано в pinned OpenAPI. Backend main
 содержит internal browser-notification policy/intent slices, но не публикует
@@ -42,10 +42,10 @@ Physical purge не является пользовательской delete-к�
 
 | Capability     | Operation                                 | Permission / OCC                                                                                     | Status                                                                               |
 | -------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Catalog/detail | `SupportMacro_catalog/read`               | `project.support.macros.read`; limit ≤ 100                                                           | `PARTIAL`: cursor string ошибочно описан numeric `maximum`, typed errors отсутствуют |
-| Authoring      | create/replaceDraft/publish/archive       | `project.support.macros.manage`; idempotency; existing root uses `sm1` If-Match                      | `RELEASE_GATED`; 4xx/503 body `NOT_PUBLISHED`                                        |
-| Reply draft    | `SupportMacroReplyDraft_create/read/edit` | all-of: conversation reply + macro read + macro use; actor/Conversation binding; `smd1` ETag on edit | `RELEASE_GATED`; target allowed action и typed conflict/expiry errors отсутствуют    |
-| Provenance     | `SupportMacroReplyDraftResponseDto`       | macro revision ID/number, rendered hash, draft version, expiry                                       | `READY`; result remains editable and never auto-sends                                |
+| Catalog/detail | catalog/read + authoring catalog/read     | `project.support.macros.read/manage`; opaque cursor, freshness generation                            | `READY`; stale catalog has closed 409                                                |
+| Authoring      | create/replaceDraft/preview/publish/archive/revisions/rollback | manage; idempotency; existing root uses `sm1` If-Match                         | `READY`; local edits survive OCC reconcile                                           |
+| Reply/note draft | reply/note draft create/read/edit       | target reply/note authority + macro read/use; `smd1` If-Match                                        | `READY`; editable server-owned draft, never auto-sends                               |
+| Provenance     | Message `macroProvenance`                 | CMS projections only; immutable macro revision identity                                               | `READY`; End User projection remains clean                                           |
 
 Macro `read`, `use` и `manage` зарегистрированы как независимые frontend
 permissions. Published revision не меняет immutable Message author. Unknown

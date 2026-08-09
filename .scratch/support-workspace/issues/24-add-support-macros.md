@@ -4,14 +4,15 @@
 
 **Blocked by:** 03 — Синхронизировать content, Lead Control и notification-контракты; 22 — Встроить internal-note composer mode.
 
-**Status:** partially-blocked-by-backend
+**Status:** frontend-complete
 
-**Backend gate (audit 2026-08-07):** catalog/draft/send доступны; version history,
-rollback и typed Message provenance не опубликованы. См. [аудит 01–33](../../../docs/research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md#24--support-macros).
+**Backend gate (re-audit 2026-08-09):** снят backend commit
+`565762c42654ba789470648d76d26d3d5747d294`: опубликованы preview, revision
+history, rollback, closed failures и CMS-only Message provenance.
 
-- [ ] Settings поддерживает create/draft/preview/publish/version/rollback/archive по permissions.
-- [ ] Macro catalog ищется из composer с category/scope/freshness states.
-- [ ] Variables валидируются серверным compiler contract и не подставляются из скрытых client данных.
-- [ ] Выбор macro создаёт редактируемый public или note draft и ничего не отправляет автоматически.
-- [ ] Message сохраняет macro/revision provenance после отправки.
-- [ ] Stale/revoked macro не применяется и предлагает безопасное обновление catalog.
+- [x] Settings поддерживает create/draft/preview/publish/version/rollback/archive по permissions.
+- [x] Macro catalog ищется из composer с category/scope/freshness states.
+- [x] Variables валидируются серверным compiler contract и не подставляются из скрытых client данных.
+- [x] Выбор macro создаёт редактируемый public или note draft и ничего не отправляет автоматически.
+- [x] Message сохраняет macro/revision provenance после отправки.
+- [x] Stale/revoked macro не применяется и предлагает безопасное обновление catalog.

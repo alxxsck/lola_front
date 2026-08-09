@@ -15,10 +15,16 @@ export interface SupportReplyContext {
   selection(): SupportWorkspaceSelection | null;
   reconcile(): Promise<void>;
   onAccepted?(attempt: { attachmentDraftKey?: string; attachmentIds?: string[] }): void;
+  onMacroDraftRejected?(cause: ApiError): void | Promise<void>;
+}
+
+function isMacroDraftFailure(cause: unknown): cause is ApiError {
+  return cause instanceof ApiError && Boolean(cause.code?.startsWith("SUPPORT_MACRO_DRAFT_"));
 }
 
 interface SupportReplyDelivery {
   replyTranslationDraftId?: string;
+  macroReplyDraftId?: string;
   sendWithoutTranslationReason?: string;
   attachmentDraftKey?: string;
   attachmentIds?: string[];
@@ -64,7 +70,7 @@ function attemptIdentity(
   delivery: SupportReplyDelivery,
   endUserCaseId?: string,
 ): string {
-  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}\u001f${delivery.attachmentDraftKey ?? ""}\u001f${delivery.attachmentIds?.join(",") ?? ""}`;
+  return `${scope}\u001f${text}\u001f${endUserCaseId ?? ""}\u001f${delivery.replyTranslationDraftId ?? ""}\u001f${delivery.macroReplyDraftId ?? ""}\u001f${delivery.sendWithoutTranslationReason ?? ""}\u001f${delivery.attachmentDraftKey ?? ""}\u001f${delivery.attachmentIds?.join(",") ?? ""}`;
 }
 
 function storageKey(scope: string): string {
@@ -126,6 +132,11 @@ function restoreAttempt(scope: string): PendingReplyAttempt | undefined {
         (typeof value.attachmentDraftKey !== "string" ||
           !value.attachmentDraftKey.trim() ||
           value.attachmentDraftKey.length > 200)) ||
+      ("macroReplyDraftId" in value &&
+        value.macroReplyDraftId !== undefined &&
+        (typeof value.macroReplyDraftId !== "string" ||
+          !value.macroReplyDraftId.trim() ||
+          value.macroReplyDraftId.length > 200)) ||
       !("key" in value) ||
       typeof value.key !== "string" ||
       value.key.length < 8 ||
@@ -407,6 +418,9 @@ export function createSupportReplyController(
 
     const normalizedDelivery: SupportReplyDelivery = {
       ...(replyTranslationDraftId ? { replyTranslationDraftId } : {}),
+      ...(delivery.macroReplyDraftId?.trim()
+        ? { macroReplyDraftId: delivery.macroReplyDraftId.trim() }
+        : {}),
       ...(sendWithoutTranslationReason ? { sendWithoutTranslationReason } : {}),
       ...(attachmentIds.length ? { attachmentIds, attachmentDraftKey } : {}),
     };
@@ -468,6 +482,9 @@ export function createSupportReplyController(
         ...(attempt.replyTranslationDraftId
           ? { replyTranslationDraftId: attempt.replyTranslationDraftId }
           : {}),
+        ...(attempt.macroReplyDraftId
+          ? { macroReplyDraftId: attempt.macroReplyDraftId }
+          : {}),
         ...(attempt.sendWithoutTranslationReason
           ? {
               sendWithoutTranslation: {
@@ -486,7 +503,13 @@ export function createSupportReplyController(
       return true;
     } catch (caught) {
       if (!currentScopeMatches(attempt)) return false;
-      if (isAmbiguousOutcome(caught)) {
+      if (attempt.macroReplyDraftId && isMacroDraftFailure(caught)) {
+        pendingAttempts.delete(scope);
+        forgetAttempt(scope);
+        outcomeState.value = "IDLE";
+        await context.onMacroDraftRejected?.(caught);
+        error.value = "Macro изменился или больше недоступен. Текст сохранён — выберите актуальный macro.";
+      } else if (isAmbiguousOutcome(caught)) {
         await checkAttemptOutcome(scope, attempt);
       } else if (
         caught instanceof ApiError &&
@@ -540,17 +563,27 @@ export function createSupportReplyController(
   async function sendTranslatedReply(
     replyTranslationDraftId: string,
     attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
+    macroReplyDraftId?: string,
   ): Promise<boolean> {
     if (!replyTranslationDraftId.trim()) return false;
-    return send({ replyTranslationDraftId, ...attachments });
+    return send({
+      replyTranslationDraftId,
+      ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+      ...attachments,
+    });
   }
 
   async function sendWithoutTranslation(
     reason: string,
     attachments?: { attachmentDraftKey: string; attachmentIds: string[] },
+    macroReplyDraftId?: string,
   ): Promise<void> {
     if (!reason.trim()) return;
-    await send({ sendWithoutTranslationReason: reason, ...attachments });
+    await send({
+      sendWithoutTranslationReason: reason,
+      ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
+      ...attachments,
+    });
   }
 
   return {

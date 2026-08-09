@@ -17,6 +17,7 @@ export interface CreateSupportInternalNoteDto {
   body?: string;
   conversationId?: string;
   knowledgeDocumentId?: string;
+  macroDraftId?: string;
   macroRevisionId?: string;
   messageId?: string;
 }

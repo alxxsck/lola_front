@@ -767,6 +767,15 @@ onBeforeUnmount(() => {
             :requested="message.requestedTranslation"
             :view-mode="translation.mode"
           />
+          <span
+            v-if="message.macroProvenance"
+            class="conversation-surface__macro-provenance"
+            :title="`Отправлено из опубликованного macro revision ${message.macroProvenance.revisionNumber}`"
+          >
+            <i class="pi pi-file-edit" aria-hidden="true" />
+            Macro v{{ message.macroProvenance.revisionNumber }}
+            {{ message.macroProvenance.edited ? "· изменён оператором" : "" }}
+          </span>
           <ul
             v-if="message.attachments?.length"
             class="conversation-surface__message-attachments"
@@ -1045,6 +1054,19 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 .conversation-surface__message-attachments small { color: var(--text-muted); font-size: 10px; }
+.conversation-surface__macro-provenance {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+}
 .conversation-surface__internal-notes {
   display: grid;
   gap: 4px;

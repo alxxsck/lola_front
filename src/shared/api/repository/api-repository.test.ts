@@ -660,6 +660,7 @@ describe("api repository adapter", () => {
       interactionSessionId: "session-1",
       actions: [{ type: "OPEN_PAGE", config: { pageId: "home" } }],
       aiSuspension: { durationSeconds: 3600, reason: "OPERATOR_TAKEOVER" },
+      macroReplyDraftId: "macro-draft-1",
       idempotencyKey: "2d77b597-1bc0-4b0f-a783-77597bb71483",
     });
 
@@ -672,6 +673,7 @@ describe("api repository adapter", () => {
         interactionSessionId: "session-1",
         actions: [{ type: "OPEN_PAGE", config: { pageId: "home" } }],
         aiSuspension: { durationSeconds: 3600, reason: "OPERATOR_TAKEOVER" },
+        macroReplyDraftId: "macro-draft-1",
       },
       {
         headers: { "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483" },
@@ -960,6 +962,7 @@ describe("api repository adapter", () => {
           contentVersion: 1,
           revisionNumber: 1,
           attachments: [],
+          macroProvenance: null,
           createdAt: "2026-07-13T08:59:00.000Z",
           updatedAt: "2026-07-13T08:59:00.000Z",
         },

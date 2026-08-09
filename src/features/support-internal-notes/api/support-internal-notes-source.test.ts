@@ -149,6 +149,7 @@ describe("support internal notes source", () => {
     await supportInternalNotesSource.create("project-1", "case-1", {
       body: "Проверить оплату",
       conversationId: "conversation-1",
+      macroDraftId: "macro-note-draft-1",
       idempotencyKey: "create-note-1",
     });
     await supportInternalNotesSource.correct("project-1", "case-1", "note-1", {
@@ -171,7 +172,11 @@ describe("support internal notes source", () => {
     expect(generated.create).toHaveBeenCalledWith(
       "project-1",
       "case-1",
-      { body: "Проверить оплату", conversationId: "conversation-1" },
+      {
+        body: "Проверить оплату",
+        conversationId: "conversation-1",
+        macroDraftId: "macro-note-draft-1",
+      },
       { headers: { "Idempotency-Key": "create-note-1" } },
     );
     expect(generated.correct).toHaveBeenCalledWith(

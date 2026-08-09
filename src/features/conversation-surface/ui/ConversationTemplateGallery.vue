@@ -1,209 +1,330 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Skeleton from "primevue/skeleton";
+import Tag from "primevue/tag";
+import type {
+  SupportMacroCatalogFreshnessDto,
+  SupportMacroResponseDto,
+} from "@/shared/api/generated/models";
 import type { ConversationReplyTemplate } from "../model/conversation-reply-templates";
 
-const props = defineProps<{
+type TemplateGalleryItem = SupportMacroResponseDto | ConversationReplyTemplate;
+
+const props = withDefaults(defineProps<{
   visible: boolean;
-  templates: readonly ConversationReplyTemplate[];
-}>();
+  macros?: readonly SupportMacroResponseDto[];
+  templates?: readonly ConversationReplyTemplate[];
+  query?: string;
+  loading?: boolean;
+  applyingId?: string | null;
+  error?: string;
+  hasMore?: boolean;
+  freshness?: SupportMacroCatalogFreshnessDto | null;
+}>(), {
+  macros: () => [],
+  templates: () => [],
+  query: "",
+  loading: false,
+  applyingId: null,
+  error: "",
+  hasMore: false,
+  freshness: null,
+});
 
-const emit = defineEmits<{
-  close: [];
-  select: [template: ConversationReplyTemplate];
-}>();
+// Runtime emits keep the shared gallery compatible with the legacy User workspace
+// while Support passes the server-owned macro projection.
+const emit = defineEmits(["close", "select", "search", "loadMore"]);
 
-function handleKeydown(event: KeyboardEvent): void {
-  if (event.key === "Escape") emit("close");
-}
-
-function releaseModalState(): void {
-  document.body.classList.remove("conversation-template-gallery-open");
-  window.removeEventListener("keydown", handleKeydown);
-}
+const localQuery = ref(props.query);
+const searchInput = ref<{ $el?: HTMLInputElement } | null>(null);
+const items = computed<readonly TemplateGalleryItem[]>(() =>
+  props.macros.length ? props.macros : props.templates,
+);
+const serverOwned = computed(() => props.macros.length > 0 || props.templates.length === 0);
 
 watch(
+  () => props.query,
+  (value) => (localQuery.value = value),
+);
+watch(
   () => props.visible,
-  (visible) => {
-    releaseModalState();
+  async (visible) => {
     if (!visible) return;
-    document.body.classList.add("conversation-template-gallery-open");
-    window.addEventListener("keydown", handleKeydown);
+    localQuery.value = props.query;
+    await nextTick();
+    searchInput.value?.$el?.focus();
   },
-  { immediate: true },
 );
 
-onBeforeUnmount(releaseModalState);
+function isMacro(item: TemplateGalleryItem): item is SupportMacroResponseDto {
+  return "stableCode" in item;
+}
+
+function title(item: TemplateGalleryItem): string {
+  if (!isMacro(item)) return item.label;
+  return (
+    item.publishedRevision?.configuration.title ??
+    item.draft?.configuration.title ??
+    item.stableCode
+  );
+}
+
+function body(item: TemplateGalleryItem): string {
+  if (!isMacro(item)) return item.text;
+  return item.publishedRevision?.configuration.body ?? "Macro ещё не опубликован.";
+}
+
+function description(item: TemplateGalleryItem): string {
+  return isMacro(item) ? item.stableCode : item.description;
+}
+
+function shortcuts(item: TemplateGalleryItem): string[] {
+  return isMacro(item) ? item.publishedRevision?.configuration.shortcuts ?? [] : [];
+}
+
+function applicability(item: TemplateGalleryItem): string[] {
+  if (!isMacro(item)) return [];
+  return [
+    item.applicability.locale ?? "любой язык",
+    item.applicability.visibility === "PROJECT" ? "весь проект" : "команды",
+    ...item.applicability.categoryCodes.slice(0, 2),
+  ];
+}
+
+function disabled(item: TemplateGalleryItem): boolean {
+  return Boolean(props.applyingId) || (isMacro(item) && (item.lifecycle !== "ACTIVE" || !item.publishedRevision));
+}
+
+function submitSearch(): void {
+  emit("search", localQuery.value.trim());
+}
 </script>
 
 <template>
-  <div
-    v-if="visible"
-    class="template-gallery-backdrop"
-    @click.self="emit('close')"
+  <Dialog
+    :visible="visible"
+    modal
+    dismissable-mask
+    class="support-macro-dialog"
+    :style="{ width: 'min(720px, calc(100vw - 24px))' }"
+    :draggable="false"
+    @update:visible="!$event && emit('close')"
   >
-    <section
-      class="template-gallery"
-      data-testid="reply-template-gallery"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="reply-template-gallery-title"
-    >
-      <header>
-        <div>
-          <span>Быстрые ответы</span>
-          <h3 id="reply-template-gallery-title">Галерея шаблонов</h3>
-        </div>
-        <button
-          type="button"
-          aria-label="Закрыть галерею шаблонов"
-          @click="emit('close')"
-        >
-          <i class="pi pi-times" aria-hidden="true" />
-        </button>
-      </header>
-      <div class="template-gallery__grid">
-        <button
-          v-for="template in templates"
-          :key="template.id"
-          type="button"
-          @click="emit('select', template)"
-        >
-          <span>{{ template.label }}</span>
-          <strong>{{ template.text }}</strong>
-          <small>{{ template.description }}</small>
-        </button>
+    <template #header>
+      <div class="macro-dialog__heading">
+        <span>{{ serverOwned ? "Support macros" : "Быстрый ответ" }}</span>
+        <h3>Шаблоны ответа</h3>
+        <p>
+          {{ serverOwned
+            ? "Выберите опубликованный macro — он появится как обычный редактируемый черновик."
+            : "Выберите быстрый ответ — перед отправкой его можно изменить." }}
+        </p>
       </div>
-    </section>
-  </div>
+    </template>
+
+    <form v-if="serverOwned" class="macro-search" role="search" @submit.prevent="submitSearch">
+      <i class="pi pi-search" aria-hidden="true" />
+      <InputText
+        ref="searchInput"
+        v-model="localQuery"
+        aria-label="Найти macro"
+        placeholder="Название, код или быстрый вызов"
+      />
+      <Button type="submit" label="Найти" :disabled="loading" />
+    </form>
+
+    <Message v-if="error" severity="warn" :closable="false" role="status">
+      {{ error }}
+    </Message>
+    <p v-if="serverOwned && freshness" class="macro-freshness" role="status">
+      <i class="pi pi-database" aria-hidden="true" />
+      Каталог: актуален
+      <span>· generation {{ freshness.generation }}</span>
+    </p>
+
+    <div v-if="loading && !items.length" class="macro-list" aria-label="Загрузка macros">
+      <Skeleton v-for="index in 3" :key="index" height="94px" border-radius="14px" />
+    </div>
+    <p v-else-if="!items.length" class="macro-empty">
+      <i class="pi pi-file-edit" aria-hidden="true" />
+      <strong>Подходящих macros нет</strong>
+      <span>Измените запрос или попросите администратора опубликовать шаблон.</span>
+    </p>
+    <div v-else class="macro-list" aria-live="polite">
+      <button
+        v-for="item in items"
+        :key="item.id"
+        type="button"
+        class="macro-row"
+        :disabled="disabled(item)"
+        @click="emit('select', item)"
+      >
+        <span class="macro-row__icon"><i class="pi pi-file-edit" aria-hidden="true" /></span>
+        <span class="macro-row__content">
+          <span class="macro-row__title">
+            <strong>{{ title(item) }}</strong>
+            <Tag
+              v-if="isMacro(item)"
+              :value="`v${item.publishedRevision?.revisionNumber ?? '—'}`"
+              severity="secondary"
+            />
+          </span>
+          <span class="macro-row__body">{{ body(item) }}</span>
+          <span class="macro-row__meta">
+            <span>{{ description(item) }}</span>
+            <span v-for="shortcut in shortcuts(item).slice(0, 3)" :key="shortcut">/{{ shortcut }}</span>
+            <span v-for="fact in applicability(item)" :key="fact">{{ fact }}</span>
+          </span>
+        </span>
+        <span class="macro-row__action" aria-hidden="true">
+          <i v-if="applyingId === item.id" class="pi pi-spin pi-spinner" />
+          <i v-else class="pi pi-arrow-right" />
+        </span>
+      </button>
+    </div>
+
+    <Button
+      v-if="hasMore"
+      label="Показать ещё"
+      severity="secondary"
+      outlined
+      class="macro-load-more"
+      :loading="loading"
+      @click="emit('loadMore')"
+    />
+  </Dialog>
 </template>
 
 <style scoped>
-.template-gallery-backdrop {
-  position: fixed;
-  z-index: 35;
-  inset: 0;
+.macro-dialog__heading {
   display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--overlay-backdrop);
+  gap: 3px;
 }
-
-:global(body.conversation-template-gallery-open) {
-  overflow: hidden;
-}
-
-.template-gallery {
-  width: min(680px, 100%);
-  max-height: min(620px, calc(100dvh - 80px));
-  overflow-y: auto;
-  padding: 18px;
-  border: 1px solid var(--border-default);
-  border-radius: 18px;
-  background: var(--surface-card);
-  box-shadow: var(--shadow-dialog);
-}
-
-.template-gallery > header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.template-gallery > header span {
+.macro-dialog__heading > span {
   color: var(--text-tertiary);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 750;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-
-.template-gallery > header h3 {
-  margin: 3px 0 0;
+.macro-dialog__heading h3,
+.macro-dialog__heading p {
+  margin: 0;
+}
+.macro-dialog__heading h3 {
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 1rem;
+  font-weight: 780;
+  letter-spacing: -0.01em;
 }
-
-.template-gallery > header button {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid var(--border-default);
-  border-radius: 9px;
-  background: var(--surface-card);
-  color: var(--text-secondary);
-  cursor: pointer;
+.macro-dialog__heading p {
+  max-width: 580px;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
-
-.template-gallery__grid {
+.macro-search {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.template-gallery__grid > button {
-  display: grid;
-  min-height: 126px;
-  align-content: start;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: 8px;
-  padding: 14px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 13px;
+  margin-bottom: 12px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
   background: var(--surface-subtle);
+}
+.macro-search > i {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+}
+.macro-search :deep(.p-inputtext) {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.macro-search :deep(.p-button) {
+  min-height: 40px;
+}
+.macro-freshness { display: flex; align-items: center; gap: 5px; margin: 0 0 8px; color: var(--text-tertiary); font-size: 0.68rem; }
+.macro-freshness span { color: var(--text-muted); }
+.macro-list {
+  display: grid;
+  max-height: min(480px, 58dvh);
+  gap: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.macro-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 32px;
+  min-height: 92px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-card);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.template-gallery__grid > button:hover,
-.template-gallery__grid > button:focus-visible {
+.macro-row:hover,
+.macro-row:focus-visible {
   border-color: var(--palette-blue-200);
   background: var(--status-accent-soft);
   outline: none;
-  transform: translateY(-1px);
 }
-
-.template-gallery__grid span,
-.template-gallery__grid small {
+.macro-row:active { transform: scale(0.99); }
+.macro-row:disabled { cursor: not-allowed; opacity: 0.58; }
+.macro-row__icon,
+.macro-row__action {
+  display: grid;
+  place-items: center;
+}
+.macro-row__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--text-brand);
+}
+.macro-row__action { color: var(--text-tertiary); }
+.macro-row__content { display: grid; min-width: 0; gap: 5px; }
+.macro-row__title { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.macro-row__title strong { overflow: hidden; font-size: 0.86rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.macro-row__body { display: -webkit-box; overflow: hidden; color: var(--text-secondary); font-size: 0.76rem; line-height: 1.42; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.macro-row__meta { display: flex; min-width: 0; flex-wrap: wrap; gap: 6px; color: var(--text-tertiary); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 0.64rem; }
+.macro-empty {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  margin: 0;
   color: var(--text-tertiary);
-  font-size: 11px;
+  text-align: center;
 }
-
-.template-gallery__grid span {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-weight: 700;
-}
-
-.template-gallery__grid strong {
-  font-size: 13px;
-  line-height: 1.45;
-}
+.macro-empty > i { font-size: 1.4rem; }
+.macro-empty strong { color: var(--text-primary); font-size: 0.9rem; }
+.macro-empty span { max-width: 360px; font-size: 0.76rem; line-height: 1.45; }
+.macro-load-more { width: 100%; margin-top: 10px; }
 
 @media (max-width: 640px) {
-  .template-gallery-backdrop {
-    place-items: end stretch;
-    padding: 0;
-  }
+  .macro-search { grid-template-columns: auto minmax(0, 1fr); padding-right: 8px; }
+  .macro-search :deep(.p-button) { grid-column: 1 / -1; width: 100%; }
+  .macro-list { max-height: 52dvh; }
+  .macro-row { grid-template-columns: 32px minmax(0, 1fr) 28px; min-height: 104px; padding: 10px; }
+  .macro-row__icon { width: 32px; height: 32px; }
+}
 
-  .template-gallery {
-    width: 100%;
-    max-height: 78dvh;
-    padding: 16px;
-    border-radius: 20px 20px 0 0;
-  }
-
-  .template-gallery__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .template-gallery__grid > button {
-    min-height: 96px;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .macro-row { transition: none; }
 }
 </style>

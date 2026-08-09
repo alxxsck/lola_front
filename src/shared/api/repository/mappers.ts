@@ -316,6 +316,9 @@ export function mapConversationMessage(
       contentType: attachment.contentType,
       sizeBytes: attachment.sizeBytes,
     })),
+    ...(dto.macroProvenance
+      ? { macroProvenance: { ...dto.macroProvenance } }
+      : {}),
     status,
     ...(dto.delivery
       ? {

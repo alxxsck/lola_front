@@ -1,0 +1,573 @@
+import { computed, ref } from "vue";
+import { ApiError } from "@/shared/api/http/api-error";
+import type { SupportMacroSource } from "@/features/support-macros/api/support-macros-source";
+import type {
+  RollbackSupportMacroDtoReasonCode,
+  SupportMacroDraftDto,
+  SupportMacroPreviewResponseDto,
+  SupportMacroResponseDto,
+  SupportMacroRevisionResponseDto,
+  SupportMacroVariableDto,
+} from "@/shared/api/generated/models";
+
+export interface SupportMacroAuthoringContext {
+  projectId(): string | undefined;
+  canManage(): boolean;
+  onForbidden?(): void | Promise<void>;
+}
+
+export interface SupportMacroAuthoringForm {
+  stableCode: string;
+  title: string;
+  locale: string;
+  body: string;
+  shortcutsText: string;
+  visibility: "PROJECT" | "TEAMS";
+  teamIdsText: string;
+  topicCodesText: string;
+  variables: SupportMacroVariableDto[];
+}
+
+function emptyForm(): SupportMacroAuthoringForm {
+  return {
+    stableCode: "",
+    title: "",
+    locale: "ru",
+    body: "",
+    shortcutsText: "",
+    visibility: "PROJECT",
+    teamIdsText: "",
+    topicCodesText: "",
+    variables: [],
+  };
+}
+
+function lines(value: string, limit: number): string[] {
+  return [...new Set(value.split(/[\n,]/u).map((item) => item.trim()).filter(Boolean))].slice(0, limit);
+}
+
+function toDraft(form: SupportMacroAuthoringForm): SupportMacroDraftDto {
+  return {
+    title: form.title.trim(),
+    locale: form.locale.trim(),
+    body: form.body,
+    shortcuts: lines(form.shortcutsText, 10),
+    visibility: {
+      mode: form.visibility,
+      ...(form.visibility === "TEAMS" ? { teamIds: lines(form.teamIdsText, 50) } : {}),
+      topicCodes: lines(form.topicCodesText, 50),
+    },
+    variables: form.variables.map((variable) => ({ ...variable })),
+  };
+}
+
+function fromMacro(value: SupportMacroResponseDto): SupportMacroAuthoringForm {
+  const configuration = value.draft?.configuration ?? value.publishedRevision?.configuration;
+  return configuration
+    ? {
+        stableCode: value.stableCode,
+        title: configuration.title,
+        locale: configuration.locale,
+        body: configuration.body,
+        shortcutsText: configuration.shortcuts.join("\n"),
+        visibility: configuration.visibility.mode,
+        teamIdsText: configuration.visibility.teamIds.join("\n"),
+        topicCodesText: configuration.visibility.topicCodes.join("\n"),
+        variables: configuration.variables.map((variable) => ({
+          name: variable.name,
+          required: variable.required,
+          ...(variable.fallback === null || variable.fallback === undefined
+            ? {}
+            : { fallback: variable.fallback }),
+        })),
+      }
+    : { ...emptyForm(), stableCode: value.stableCode };
+}
+
+function valid(form: SupportMacroAuthoringForm): boolean {
+  return Boolean(
+    form.stableCode.trim().length >= 2 &&
+      form.title.trim() &&
+      form.locale.trim().length >= 2 &&
+      form.body.trim() &&
+      (form.visibility === "PROJECT" || lines(form.teamIdsText, 50).length),
+  );
+}
+
+function cloneForm(form: SupportMacroAuthoringForm): SupportMacroAuthoringForm {
+  return {
+    ...form,
+    variables: form.variables.map((variable) => ({ ...variable })),
+  };
+}
+
+/** Owns the versioned Macro authoring lifecycle and preserves local edits across OCC conflicts. */
+export function createSupportMacroAuthoringController(
+  context: SupportMacroAuthoringContext,
+  source: SupportMacroSource,
+) {
+  const items = ref<SupportMacroResponseDto[]>([]);
+  const selected = ref<SupportMacroResponseDto | null>(null);
+  const revisions = ref<SupportMacroRevisionResponseDto[]>([]);
+  const nextCursor = ref<string | null>(null);
+  const revisionsNextCursor = ref<string | null>(null);
+  const form = ref<SupportMacroAuthoringForm>(emptyForm());
+  const preview = ref<SupportMacroPreviewResponseDto | null>(null);
+  const loading = ref(false);
+  const saving = ref(false);
+  const error = ref("");
+  const conflict = ref("");
+  let generation = 0;
+  let abort: AbortController | null = null;
+  let scopeProjectId: string | null = null;
+  let mutationToken: symbol | null = null;
+  const commandKeys = new Map<string, string>();
+
+  const canSubmit = computed(() => context.canManage() && valid(form.value) && !saving.value);
+
+  function commandKey(identity: string): string {
+    const existing = commandKeys.get(identity);
+    if (existing) return existing;
+    const key = globalThis.crypto.randomUUID();
+    commandKeys.set(identity, key);
+    return key;
+  }
+
+  function assertIdentity(value: SupportMacroResponseDto, expected: { id?: string; stableCode?: string }): void {
+    if (
+      (expected.id && value.id !== expected.id) ||
+      (expected.stableCode && value.stableCode !== expected.stableCode) ||
+      !value.actionEtag
+    )
+      throw new Error("Support Macro command receipt failed integrity validation");
+  }
+
+  function reset(): void {
+    generation += 1;
+    abort?.abort();
+    abort = null;
+    items.value = [];
+    selected.value = null;
+    revisions.value = [];
+    nextCursor.value = null;
+    revisionsNextCursor.value = null;
+    form.value = emptyForm();
+    preview.value = null;
+    loading.value = false;
+    saving.value = false;
+    error.value = "";
+    conflict.value = "";
+    commandKeys.clear();
+    mutationToken = null;
+    scopeProjectId = null;
+  }
+
+  function isCurrent(
+    projectId: string,
+    requestGeneration: number,
+    macroId?: string | null,
+  ): boolean {
+    return Boolean(
+      requestGeneration === generation &&
+        context.canManage() &&
+        context.projectId() === projectId &&
+        (macroId === undefined || (selected.value?.id ?? null) === macroId),
+    );
+  }
+
+  function formMatches(snapshot: SupportMacroAuthoringForm): boolean {
+    return JSON.stringify(form.value) === JSON.stringify(snapshot);
+  }
+
+  async function forbidden(): Promise<void> {
+    reset();
+    await context.onForbidden?.();
+  }
+
+  async function load(cursor?: string): Promise<void> {
+    const projectId = context.projectId();
+    if (!projectId || !context.canManage()) {
+      reset();
+      return;
+    }
+    if (scopeProjectId !== projectId) {
+      reset();
+      scopeProjectId = projectId;
+    }
+    abort?.abort();
+    const requestGeneration = ++generation;
+    const requestAbort = new AbortController();
+    abort = requestAbort;
+    loading.value = true;
+    error.value = "";
+    try {
+      const page = await source.authoringCatalog(
+        projectId,
+        { limit: 100, ...(cursor ? { cursor } : {}) },
+        requestAbort.signal,
+      );
+      if (!isCurrent(projectId, requestGeneration)) return;
+      items.value = cursor ? [...items.value, ...page.items] : page.items;
+      nextCursor.value = page.nextCursor;
+      if (selected.value) {
+        const current = page.items.find((item) => item.id === selected.value?.id);
+        if (current) selected.value = current;
+      }
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration)) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return;
+      }
+      if (cause instanceof ApiError && cause.status === 409 && cursor) {
+        await load();
+        if (context.projectId() === projectId)
+          conflict.value = "Каталог изменился. Список обновлён с первой страницы.";
+        return;
+      }
+      error.value = "Не удалось загрузить настройки macros.";
+    } finally {
+      if (requestGeneration === generation) {
+        loading.value = false;
+        abort = null;
+      }
+    }
+  }
+
+  function createNew(): void {
+    generation += 1;
+    abort?.abort();
+    abort = null;
+    selected.value = null;
+    revisions.value = [];
+    revisionsNextCursor.value = null;
+    form.value = emptyForm();
+    preview.value = null;
+    error.value = "";
+    conflict.value = "";
+  }
+
+  async function select(macro: SupportMacroResponseDto): Promise<void> {
+    const projectId = context.projectId();
+    if (!projectId || !context.canManage()) return;
+    if (scopeProjectId && scopeProjectId !== projectId) reset();
+    scopeProjectId = projectId;
+    abort?.abort();
+    const requestGeneration = ++generation;
+    const requestAbort = new AbortController();
+    abort = requestAbort;
+    loading.value = true;
+    error.value = "";
+    try {
+      const [detail, history] = await Promise.all([
+        source.readAuthoring(projectId, macro.id, requestAbort.signal),
+        source.revisions(projectId, macro.id, undefined, requestAbort.signal),
+      ]);
+      if (!isCurrent(projectId, requestGeneration)) return;
+      selected.value = detail;
+      revisions.value = history.items;
+      revisionsNextCursor.value = history.nextCursor;
+      form.value = fromMacro(detail);
+      preview.value = null;
+      error.value = "";
+      conflict.value = "";
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration)) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return;
+      }
+      error.value = "Не удалось открыть macro.";
+    } finally {
+      if (requestGeneration === generation) {
+        loading.value = false;
+        abort = null;
+      }
+    }
+  }
+
+  async function loadMoreRevisions(): Promise<void> {
+    const projectId = context.projectId();
+    const macroId = selected.value?.id;
+    const cursor = revisionsNextCursor.value;
+    if (!projectId || !macroId || !cursor || loading.value) return;
+    const requestGeneration = generation;
+    loading.value = true;
+    try {
+      const page = await source.revisions(projectId, macroId, cursor);
+      if (
+        requestGeneration !== generation ||
+        context.projectId() !== projectId ||
+        selected.value?.id !== macroId
+      )
+        return;
+      revisions.value = [...revisions.value, ...page.items];
+      revisionsNextCursor.value = page.nextCursor;
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, macroId)) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return;
+      }
+      if (cause instanceof ApiError && cause.status === 409) {
+        try {
+          const page = await source.revisions(projectId, macroId);
+          if (!isCurrent(projectId, requestGeneration, macroId)) return;
+          revisions.value = page.items;
+          revisionsNextCursor.value = page.nextCursor;
+          conflict.value = "История изменилась. Версии обновлены с первой страницы.";
+        } catch (recoveryCause) {
+          if (
+            recoveryCause instanceof ApiError &&
+            (recoveryCause.status === 403 || recoveryCause.status === 404)
+          )
+            await forbidden();
+          else error.value = "Не удалось обновить историю. Ваш текст остаётся в форме.";
+        }
+        return;
+      }
+      error.value = "Не удалось загрузить следующую страницу revisions.";
+    } finally {
+      if (requestGeneration === generation) loading.value = false;
+    }
+  }
+
+  async function validatePreview(): Promise<boolean> {
+    const projectId = context.projectId();
+    if (!projectId || !canSubmit.value) return false;
+    if (scopeProjectId && scopeProjectId !== projectId) {
+      reset();
+      return false;
+    }
+    scopeProjectId = projectId;
+    const requestGeneration = generation;
+    const macroId = selected.value?.id ?? null;
+    const token = Symbol("macro-preview");
+    mutationToken = token;
+    saving.value = true;
+    error.value = "";
+    try {
+      const next = await source.preview(projectId, toDraft(form.value));
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
+        return false;
+      preview.value = next;
+      return true;
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
+        return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return false;
+      }
+      error.value = "Macro не прошёл серверную проверку. Проверьте текст, locale и visibility.";
+      return false;
+    } finally {
+      if (mutationToken === token) {
+        mutationToken = null;
+        saving.value = false;
+      }
+    }
+  }
+
+  async function refreshConflict(
+    local: SupportMacroAuthoringForm,
+    projectId: string,
+    macroId: string,
+    requestGeneration: number,
+    token: symbol,
+  ): Promise<void> {
+    try {
+      const next = await source.readAuthoring(projectId, macroId);
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
+        return;
+      selected.value = next;
+      form.value = local;
+      conflict.value = "Macro изменился на сервере. Ваш текст сохранён — проверьте новую версию и повторите.";
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
+        return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return;
+      }
+      error.value = "Не удалось сверить конфликт. Ваш текст остаётся в форме.";
+    }
+  }
+
+  async function saveDraft(): Promise<boolean> {
+    const projectId = context.projectId();
+    if (!projectId || !canSubmit.value) return false;
+    if (scopeProjectId && scopeProjectId !== projectId) {
+      reset();
+      return false;
+    }
+    scopeProjectId = projectId;
+    const local = cloneForm(form.value);
+    const current = selected.value;
+    const requestGeneration = generation;
+    const token = Symbol("macro-save");
+    mutationToken = token;
+    saving.value = true;
+    error.value = "";
+    conflict.value = "";
+    try {
+      const draft = toDraft(local);
+      const identity = current
+        ? `REPLACE\u001f${current.id}\u001f${current.actionEtag}\u001f${JSON.stringify(draft)}`
+        : `CREATE\u001f${local.stableCode.trim()}\u001f${JSON.stringify(draft)}`;
+      const next = current
+        ? await source.replaceDraft(projectId, current.id, draft, current.actionEtag, commandKey(identity))
+        : await source.create(projectId, local.stableCode.trim(), draft, commandKey(identity));
+      if (!isCurrent(projectId, requestGeneration, current?.id ?? null) || mutationToken !== token)
+        return false;
+      assertIdentity(next, current ? { id: current.id } : { stableCode: local.stableCode.trim() });
+      commandKeys.delete(identity);
+      selected.value = next;
+      if (formMatches(local)) form.value = fromMacro(next);
+      else conflict.value = "Macro сохранён, а новые правки остались в форме. Сохраните их отдельно.";
+      preview.value = null;
+      await load();
+      return true;
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, current?.id ?? null) || mutationToken !== token)
+        return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return false;
+      }
+      if (cause instanceof ApiError && cause.status === 409 && current)
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
+      else error.value = "Не удалось сохранить draft macro.";
+      return false;
+    } finally {
+      if (mutationToken === token) {
+        mutationToken = null;
+        saving.value = false;
+      }
+    }
+  }
+
+  async function execute(kind: "PUBLISH" | "ARCHIVE"): Promise<boolean> {
+    const projectId = context.projectId();
+    const current = selected.value;
+    if (!projectId || !current || !context.canManage() || saving.value) return false;
+    if (scopeProjectId !== projectId) {
+      reset();
+      return false;
+    }
+    const requestGeneration = generation;
+    const token = Symbol(`macro-${kind.toLowerCase()}`);
+    mutationToken = token;
+    saving.value = true;
+    error.value = "";
+    const local = cloneForm(form.value);
+    const identity = `${kind}\u001f${current.id}\u001f${current.actionEtag}`;
+    try {
+      const next = kind === "PUBLISH"
+        ? await source.publish(projectId, current.id, current.actionEtag, commandKey(identity))
+        : await source.archive(projectId, current.id, current.actionEtag, commandKey(identity));
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
+        return false;
+      assertIdentity(next, { id: current.id });
+      commandKeys.delete(identity);
+      selected.value = next;
+      if (formMatches(local)) form.value = fromMacro(next);
+      else conflict.value = "Статус Macro обновлён, а новые правки остались в форме.";
+      await load();
+      return true;
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
+        return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return false;
+      }
+      if (cause instanceof ApiError && cause.status === 409)
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
+      else error.value = kind === "PUBLISH" ? "Не удалось опубликовать macro." : "Не удалось архивировать macro.";
+      return false;
+    } finally {
+      if (mutationToken === token) {
+        mutationToken = null;
+        saving.value = false;
+      }
+    }
+  }
+
+  async function rollback(
+    revision: SupportMacroRevisionResponseDto,
+    reason: RollbackSupportMacroDtoReasonCode,
+  ): Promise<boolean> {
+    const projectId = context.projectId();
+    const current = selected.value;
+    if (!projectId || !current || !context.canManage() || saving.value) return false;
+    if (scopeProjectId !== projectId) {
+      reset();
+      return false;
+    }
+    const requestGeneration = generation;
+    const token = Symbol("macro-rollback");
+    mutationToken = token;
+    saving.value = true;
+    const local = cloneForm(form.value);
+    const identity = `ROLLBACK\u001f${current.id}\u001f${revision.id}\u001f${reason}\u001f${current.actionEtag}`;
+    try {
+      const next = await source.rollback(projectId, current.id, revision.id, reason, current.actionEtag, commandKey(identity));
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
+        return false;
+      assertIdentity(next, { id: current.id });
+      commandKeys.delete(identity);
+      selected.value = next;
+      if (formMatches(local)) form.value = fromMacro(next);
+      else conflict.value = "Rollback выполнен, а новые правки остались в форме.";
+      const history = await source.revisions(projectId, current.id);
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
+        return false;
+      revisions.value = history.items;
+      revisionsNextCursor.value = history.nextCursor;
+      await load();
+      return true;
+    } catch (cause) {
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
+        return false;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden();
+        return false;
+      }
+      if (cause instanceof ApiError && cause.status === 409)
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
+      else error.value = "Не удалось выполнить rollback macro.";
+      return false;
+    } finally {
+      if (mutationToken === token) {
+        mutationToken = null;
+        saving.value = false;
+      }
+    }
+  }
+
+  return {
+    items,
+    selected,
+    revisions,
+    nextCursor,
+    revisionsNextCursor,
+    form,
+    preview,
+    loading,
+    saving,
+    error,
+    conflict,
+    canSubmit,
+    load,
+    createNew,
+    select,
+    loadMoreRevisions,
+    validatePreview,
+    saveDraft,
+    publish: () => execute("PUBLISH"),
+    archive: () => execute("ARCHIVE"),
+    rollback,
+    reset,
+  };
+}

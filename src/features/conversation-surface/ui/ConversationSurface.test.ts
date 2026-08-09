@@ -190,6 +190,15 @@ runConversationSurfaceBehaviorSuite({
 });
 
 describe("ConversationSurface", () => {
+  it("opens server macros with slash only from an empty public draft", async () => {
+    const wrapper = mountSurface();
+    const textarea = wrapper.get('textarea[aria-label="Ответ пользователю"]');
+
+    await textarea.trigger("keydown", { key: "/" });
+
+    expect(wrapper.emitted("composer-action")).toEqual([["TEMPLATES"]]);
+  });
+
   it("allows an attachment-only send and keeps file actions keyboard reachable", async () => {
     const wrapper = mountSurface({
       composer: {
@@ -541,6 +550,25 @@ describe("ConversationSurface", () => {
     expect(labels.filter((label) => label.includes("Отправить"))).toEqual([
       "Отправить",
     ]);
+  });
+
+  it("keeps Templates available as the recovery action while sending is blocked", async () => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        sendCapability: {
+          kind: "BLOCKED",
+          reason: "Выберите актуальный macro перед отправкой.",
+        },
+      } as PublicComposer,
+    });
+    const templates = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Шаблоны")!;
+
+    expect(templates.attributes("disabled")).toBeUndefined();
+    await templates.trigger("click");
+    expect(wrapper.emitted("composer-action")?.[0]).toEqual(["TEMPLATES"]);
   });
 
   it("keeps an unknown send outcome inside the compact composer and checks without resending", async () => {

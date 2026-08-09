@@ -110,6 +110,19 @@ function requestTranslatedSend(text?: string): void {
 }
 
 function handleKeydown(event: KeyboardEvent): void {
+  if (
+    event.key === "/" &&
+    !event.isComposing &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !props.draft &&
+    props.composer.actions.templates.visibility === "ENABLED"
+  ) {
+    event.preventDefault();
+    emit("action", "TEMPLATES");
+    return;
+  }
   if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
   const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
   const command = (event.ctrlKey || event.metaKey) && !event.altKey;
@@ -553,7 +566,9 @@ function runOutcomeAction(): void {
           severity="secondary"
           outlined
           :disabled="
-            composer.actions.templates.visibility === 'DISABLED' || blocked
+            composer.actions.templates.visibility === 'DISABLED' ||
+            composer.sending ||
+            composer.outcome?.state === 'CHECKING_OUTCOME'
           "
           :title="composer.actions.templates.reason"
           @click="emit('action', 'TEMPLATES')"

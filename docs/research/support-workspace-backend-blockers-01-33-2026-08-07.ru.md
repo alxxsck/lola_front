@@ -113,7 +113,7 @@ core.
 |  21 | Viewers/typing/collision                 | **Полный**                              | Нет operator watch/viewer/typing TTL/generation contract                            |
 |  22 | Internal-note composer                   | **Частичный**                           | Нет Case-scoped note actions, reason catalog и typed conflict/lifecycle errors      |
 |  23 | Public/note attachments                  | **Полный**                              | Нет upload/scan/grant/attachment-send контрактов                                    |
-|  24 | Support Macros                           | **Частичный**                           | Нет полного preview/history/rollback и typed failure/provenance read contract       |
+|  24 | Support Macros                           | Нет (снят `565762c4`); frontend complete | Preview/history/rollback, closed failures и CMS-only provenance опубликованы         |
 |  25 | Support Internal Knowledge               | **Частичный**                           | Нет document revision rollback и отдельного Knowledge retention/rollout contract    |
 |  26 | Lead Control                             | **Частичный**                           | Capacity/routing facts готовы; отдельный project rollout/admission ещё не опубликован |
 |  27 | Browser notification settings            | **Полный**                              | Нет browser preference/subscription/device/deep-link API в main                     |
@@ -457,7 +457,7 @@ Evidence: в OpenAPI нет schemas/operations с typing/viewer/watcher/collisio
 
 ### 22 — Internal-note composer mode
 
-**Статус: частичный backend-блокер.**
+**Статус: backend-блокер снят; frontend complete.**
 
 Готово: `SupportInternalNote_list/revisions/create/correction/tombstone`, separate permissions,
 idempotency и `If-Match` для versioned mutations.
@@ -495,19 +495,14 @@ attachment schemas.
 
 **Статус: частичный backend-блокер.**
 
-Готово: typed catalog/detail/create/draft/publish/archive, variables/compiled draft, reply-draft
-create/read/edit и atomic `macroReplyDraftId` consumption в `AdminMessaging_send`.
+Backend `565762c4` публикует typed catalog/detail/create/draft/preview/publish/archive,
+revision history/rollback, compiled variables, public/note macro drafts, closed failure
+bodies и CMS-only Message provenance. Atomic consumption идёт через
+`macroReplyDraftId`/`macroDraftId`; End User projection provenance не получает.
 
-Не хватает полного authoring lifecycle, заявленного ticket:
-
-- отдельного preview/validation receipt;
-- revision history и rollback operation;
-- typed 4xx/409/503 error bodies у macro authoring;
-- typed Message read projection macro/revision provenance: send принимает draft ID, но
-  `AdminConversationMessageResponseDto` не публикует macro provenance.
-
-Что может frontend сейчас: catalog search, create/edit/publish/archive и вставка редактируемого
-macro reply draft. Полный settings/version rollback и provenance history закрыть нельзя.
+Frontend подключил route `/support/settings/macros`, server preview, OCC/rollback,
+поиск из canonical Conversation Surface и редактируемый public/note draft без
+автоматической отправки.
 
 Evidence: `src/modules/support-operations/api/support-macro.controller.ts`,
 `SupportMacroResponseDto`, `SupportMacroReplyDraftResponseDto`, `SendAdminMessageDto`,

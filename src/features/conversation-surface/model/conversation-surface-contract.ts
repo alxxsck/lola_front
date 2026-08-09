@@ -44,6 +44,10 @@ export interface ConversationSurfaceMessage {
     contentType: string;
     sizeBytes: number;
   }>;
+  macroProvenance?: {
+    revisionNumber: number;
+    edited: boolean;
+  };
 }
 
 export interface ConversationSurfaceAttachments {

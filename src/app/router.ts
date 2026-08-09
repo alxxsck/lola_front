@@ -300,6 +300,12 @@ export const router = createRouter({
           meta: { supportLeadControlAccess: true },
         },
         {
+          path: "support/settings/macros",
+          name: "support-macro-settings",
+          component: () => import("@/pages/SupportMacroSettingsPage.vue"),
+          meta: { projectPermission: "project.support.macros.manage" },
+        },
+        {
           path: "ai-analyses",
           name: "ai-analyses",
           component: () => import("@/pages/AIAnalysesPage.vue"),

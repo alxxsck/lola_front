@@ -98,6 +98,13 @@ describe("repository domain mappers", () => {
       contentVersion: 1,
       revisionNumber: 1,
       attachments: [],
+      macroProvenance: {
+        macroId: "macro-1",
+        revisionId: "revision-3",
+        revisionNumber: 3,
+        edited: true,
+        usedAt: "2026-08-06T10:00:00.000Z",
+      },
       createdAt: "2026-08-06T10:00:00.000Z",
       updatedAt: "2026-08-06T10:00:00.000Z",
       author: {
@@ -139,6 +146,13 @@ describe("repository domain mappers", () => {
       acceptedAt: "2026-08-06T10:00:01.000Z",
       interactionSessionId: "session-1",
       commandIds: ["command-1"],
+    });
+    expect(message.macroProvenance).toEqual({
+      macroId: "macro-1",
+      revisionId: "revision-3",
+      revisionNumber: 3,
+      edited: true,
+      usedAt: "2026-08-06T10:00:00.000Z",
     });
   });
 
@@ -510,6 +524,7 @@ describe("repository domain mappers", () => {
         contentVersion: 1,
         revisionNumber: 1,
         attachments: [],
+        macroProvenance: null,
         createdAt: "2026-07-13T08:00:00.000Z",
         updatedAt: "2026-07-13T08:00:00.000Z",
       }),
@@ -533,6 +548,7 @@ describe("repository domain mappers", () => {
         contentVersion: 1,
         revisionNumber: 1,
         attachments: [],
+        macroProvenance: null,
         createdAt: "2026-07-13T08:01:00.000Z",
         updatedAt: "2026-07-13T08:01:00.000Z",
       }).status,

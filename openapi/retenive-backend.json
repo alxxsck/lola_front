@@ -528,6 +528,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "macroProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportMacroMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "ordinal": {
             "minimum": 1,
             "type": "integer"
@@ -582,6 +591,7 @@
           "ordinal",
           "author",
           "attachments",
+          "macroProvenance",
           "createdAt",
           "updatedAt"
         ],
@@ -1075,7 +1085,18 @@
               "CHAT_ATTACHMENT_ATTACH_CONFLICT",
               "CHAT_ATTACHMENT_UPLOAD_EXPIRED",
               "CHAT_ATTACHMENTS_DISABLED",
-              "CHAT_ATTACHMENT_RETENTION_NOT_READY"
+              "CHAT_ATTACHMENT_RETENTION_NOT_READY",
+              "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN",
+              "SUPPORT_MACRO_DRAFT_EXPIRED",
+              "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+              "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+              "SUPPORT_MACRO_DRAFT_SOURCE_MISMATCH",
+              "SUPPORT_MACRO_DRAFT_CASE_CONTEXT_MISMATCH",
+              "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED",
+              "SUPPORT_MACRO_DRAFT_REQUIRES_EXACT_CONVERSATION",
+              "SUPPORT_MACRO_DRAFT_TEXT_REQUIRED",
+              "SUPPORT_MACRO_DRAFT_DELIVERY_UNAVAILABLE",
+              "SUPPORT_CONTENT_CAPABILITY_DISABLED"
             ],
             "type": "string"
           },
@@ -1275,6 +1296,15 @@
             "nullable": true,
             "type": "number"
           },
+          "macroProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportMacroMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "metadata": {
             "additionalProperties": true,
             "type": "object"
@@ -1335,6 +1365,7 @@
           "ordinal",
           "author",
           "attachments",
+          "macroProvenance",
           "createdAt",
           "updatedAt",
           "thread"
@@ -10940,6 +10971,15 @@
             "format": "uuid",
             "type": "string"
           },
+          "macroProvenance": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SupportMacroMessageProvenanceResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "ordinal": {
             "minimum": 1,
             "type": "number"
@@ -10997,6 +11037,7 @@
           "ordinal",
           "author",
           "attachments",
+          "macroProvenance",
           "createdAt",
           "updatedAt"
         ],
@@ -15753,6 +15794,10 @@
             "type": "string"
           },
           "knowledgeDocumentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "macroDraftId": {
             "format": "uuid",
             "type": "string"
           },
@@ -27993,6 +28038,17 @@
         ],
         "type": "object"
       },
+      "PreviewSupportMacroDto": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/SupportMacroDraftDto"
+          }
+        },
+        "required": [
+          "draft"
+        ],
+        "type": "object"
+      },
       "PreviewTelegramBroadcastDto": {
         "properties": {
           "expectedVersion": {
@@ -33308,6 +33364,22 @@
               "CREDENTIAL_COMPROMISE",
               "OPERATIONAL_ROLLBACK",
               "SECURITY_INCIDENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "reasonCode"
+        ],
+        "type": "object"
+      },
+      "RollbackSupportMacroDto": {
+        "properties": {
+          "reasonCode": {
+            "enum": [
+              "INCIDENT_RECOVERY",
+              "CONTENT_REGRESSION",
+              "POLICY_ROLLBACK"
             ],
             "type": "string"
           }
@@ -39522,10 +39594,14 @@
           "code": {
             "type": "string"
           },
+          "freshness": {
+            "$ref": "#/components/schemas/SupportMacroCatalogFreshnessDto"
+          },
           "items": {
             "items": {
-              "type": "object"
+              "$ref": "#/components/schemas/SupportMacroResponseDto"
             },
+            "maxItems": 100,
             "type": "array"
           },
           "nextCursor": {
@@ -43482,8 +43558,77 @@
         ],
         "type": "object"
       },
+      "SupportMacroApplicabilityDto": {
+        "properties": {
+          "categoryCodes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "locale": {
+            "maxLength": 35,
+            "nullable": true,
+            "type": "string"
+          },
+          "teamIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          },
+          "visibility": {
+            "enum": [
+              "PROJECT",
+              "TEAMS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility",
+          "teamIds",
+          "categoryCodes",
+          "locale"
+        ],
+        "type": "object"
+      },
+      "SupportMacroCatalogFreshnessDto": {
+        "properties": {
+          "authorizationRevision": {
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "CURRENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "generation",
+          "evaluatedAt",
+          "authorizationRevision"
+        ],
+        "type": "object"
+      },
       "SupportMacroCatalogResponseDto": {
         "properties": {
+          "freshness": {
+            "$ref": "#/components/schemas/SupportMacroCatalogFreshnessDto"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/SupportMacroResponseDto"
@@ -43498,7 +43643,8 @@
         },
         "required": [
           "items",
-          "nextCursor"
+          "nextCursor",
+          "freshness"
         ],
         "type": "object"
       },
@@ -43678,6 +43824,72 @@
         ],
         "type": "object"
       },
+      "SupportMacroMessageProvenanceResponseDto": {
+        "properties": {
+          "edited": {
+            "type": "boolean"
+          },
+          "macroId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "usedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId",
+          "revisionId",
+          "revisionNumber",
+          "edited",
+          "usedAt"
+        ],
+        "type": "object"
+      },
+      "SupportMacroPreviewResponseDto": {
+        "properties": {
+          "compilerRevision": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "contentHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/SupportMacroCompiledDraftDto"
+          },
+          "validatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "warningCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "compilerRevision",
+          "contentHash",
+          "validatedAt",
+          "warningCodes",
+          "draft"
+        ],
+        "type": "object"
+      },
       "SupportMacroPublishedRevisionDto": {
         "properties": {
           "configuration": {
@@ -43716,6 +43928,7 @@
           },
           "conversationId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "createdAt": {
@@ -43759,6 +43972,13 @@
             ],
             "type": "string"
           },
+          "targetKind": {
+            "enum": [
+              "PUBLIC_REPLY",
+              "INTERNAL_NOTE"
+            ],
+            "type": "string"
+          },
           "text": {
             "nullable": true,
             "type": "string"
@@ -43777,6 +43997,7 @@
           "macroId",
           "macroRevisionId",
           "macroRevisionNumber",
+          "targetKind",
           "conversationId",
           "endUserCaseId",
           "state",
@@ -43794,6 +44015,9 @@
         "properties": {
           "actionEtag": {
             "type": "string"
+          },
+          "applicability": {
+            "$ref": "#/components/schemas/SupportMacroApplicabilityDto"
           },
           "draft": {
             "allOf": [
@@ -43839,7 +44063,88 @@
           "version",
           "draft",
           "publishedRevision",
-          "actionEtag"
+          "actionEtag",
+          "applicability"
+        ],
+        "type": "object"
+      },
+      "SupportMacroRevisionPageResponseDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupportMacroRevisionResponseDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "nextCursor": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object"
+      },
+      "SupportMacroRevisionResponseDto": {
+        "properties": {
+          "configuration": {
+            "$ref": "#/components/schemas/SupportMacroCompiledDraftDto"
+          },
+          "contentHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "macroId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publicationKind": {
+            "enum": [
+              "PUBLISH",
+              "ROLLBACK"
+            ],
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revisionNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "rollbackReasonCode": {
+            "enum": [
+              "INCIDENT_RECOVERY",
+              "CONTENT_REGRESSION",
+              "POLICY_ROLLBACK"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "macroId",
+          "revisionNumber",
+          "contentHash",
+          "publicationKind",
+          "sourceRevisionId",
+          "rollbackReasonCode",
+          "publishedAt",
+          "configuration"
         ],
         "type": "object"
       },
@@ -62007,7 +62312,8 @@
                             "SUPPORT_INTERNAL_NOTE_IDEMPOTENCY_KEY_INVALID",
                             "SUPPORT_INTERNAL_NOTE_BODY_INVALID",
                             "SUPPORT_INTERNAL_NOTE_ATTACHMENT_INVALID",
-                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_TOTAL_SIZE_EXCEEDED"
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_TOTAL_SIZE_EXCEEDED",
+                            "SUPPORT_INTERNAL_NOTE_MACRO_DRAFT_CONFLICT"
                           ],
                           "type": "string"
                         }
@@ -62121,7 +62427,11 @@
                             "SUPPORT_INTERNAL_NOTE_ATTACHMENT_NOT_READY",
                             "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ALREADY_ATTACHED",
                             "SUPPORT_INTERNAL_NOTE_ATTACHMENT_ATTACH_CONFLICT",
-                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED"
+                            "SUPPORT_INTERNAL_NOTE_ATTACHMENT_UPLOAD_EXPIRED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_MISMATCH",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED"
                           ],
                           "type": "string"
                         }
@@ -62151,7 +62461,8 @@
                             "SUPPORT_CONTENT_RETENTION_NOT_READY",
                             "SUPPORT_CONTENT_CAPABILITY_DISABLED",
                             "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY",
-                            "CHAT_ATTACHMENTS_DISABLED"
+                            "CHAT_ATTACHMENTS_DISABLED",
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
                           ],
                           "type": "string"
                         }
@@ -64494,6 +64805,911 @@
           "code": "project.support.internal_notes.write",
           "scope": "PROJECT"
         }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/macro-note-drafts": {
+      "post": {
+        "operationId": "SupportMacroNoteDraft_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportMacroReplyDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroReplyDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macro note drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.macros.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.macros.use",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.internal_notes.write",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/cases/{caseId}/macro-note-drafts/{draftId}": {
+      "get": {
+        "operationId": "SupportMacroNoteDraft_read",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroReplyDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macro note drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.macros.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.macros.use",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.internal_notes.write",
+            "scope": "PROJECT"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "SupportMacroNoteDraft_edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "draftId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "pattern": "^\"smd1\\.[A-Za-z0-9_-]{43}\"$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditSupportMacroReplyDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroReplyDraftResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macro note drafts"
+        ],
+        "x-iam-all-permissions": [
+          {
+            "code": "project.support.macros.read",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.macros.use",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.support.internal_notes.write",
+            "scope": "PROJECT"
+          }
+        ]
       }
     },
     "/api/v1/admin/projects/{projectId}/conversations/{conversationId}/messages/{messageId}/content": {
@@ -90142,7 +91358,7 @@
             "name": "cursor",
             "required": false,
             "schema": {
-              "maximum": 1024,
+              "maxLength": 1024,
               "type": "string"
             }
           },
@@ -90168,6 +91384,172 @@
               }
             },
             "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90175,6 +91557,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -90227,13 +91610,176 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed macro, cursor, idempotency key or optimistic version."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_ROLLBACK_REASON_INVALID",
+                            "SUPPORT_MACRO_CODE_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Idempotency, Macro version or lifecycle conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_ARCHIVED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "503": {
-            "description": "The Project Support Content capability is disabled."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90241,6 +91787,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -90282,8 +91829,171 @@
             },
             "description": ""
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
           "404": {
-            "description": "Macro is hidden, missing, archived or unavailable."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90291,6 +92001,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -90352,13 +92063,176 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed macro, cursor, idempotency key or optimistic version."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_ROLLBACK_REASON_INVALID",
+                            "SUPPORT_MACRO_CODE_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Idempotency, Macro version or lifecycle conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_ARCHIVED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "503": {
-            "description": "The Project Support Content capability is disabled."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90366,6 +92240,221 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "admin support macros"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.macros.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/macros/{macroId}/authoring": {
+      "get": {
+        "operationId": "SupportMacro_readAuthoring",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -90437,13 +92526,176 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed macro, cursor, idempotency key or optimistic version."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_ROLLBACK_REASON_INVALID",
+                            "SUPPORT_MACRO_CODE_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Idempotency, Macro version or lifecycle conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_ARCHIVED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "503": {
-            "description": "The Project Support Content capability is disabled."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90451,6 +92703,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -90512,13 +92765,176 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed macro, cursor, idempotency key or optimistic version."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_ROLLBACK_REASON_INVALID",
+                            "SUPPORT_MACRO_CODE_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Idempotency, Macro version or lifecycle conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_ARCHIVED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "503": {
-            "description": "The Project Support Content capability is disabled."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -90526,6 +92942,988 @@
             "bearer": []
           }
         ],
+        "summary": "",
+        "tags": [
+          "admin support macros"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.macros.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/macros/{macroId}/revisions": {
+      "get": {
+        "operationId": "SupportMacro_listRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroRevisionPageResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macros"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.macros.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/macros/{macroId}/revisions/{revisionId}/rollback": {
+      "post": {
+        "operationId": "SupportMacro_rollback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "macroId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "minLength": 8,
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "pattern": "^\"sm1\\.[A-Za-z0-9_-]{43}\"$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackSupportMacroDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_ROLLBACK_REASON_INVALID",
+                            "SUPPORT_MACRO_CODE_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_ARCHIVED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macros"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.macros.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/macros/authoring": {
+      "get": {
+        "operationId": "SupportMacro_authoringCatalog",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locale",
+            "required": false,
+            "schema": {
+              "maxLength": 35,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "teamId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "topicCode",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "shortcut",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 1024,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroCatalogResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "admin support macros"
+        ],
+        "x-iam-permission": {
+          "code": "project.support.macros.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/support/macros/preview": {
+      "post": {
+        "operationId": "SupportMacro_preview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewSupportMacroDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportMacroPreviewResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_QUERY_INVALID",
+                            "SUPPORT_MACRO_CURSOR_INVALID",
+                            "SUPPORT_MACRO_BODY_INVALID",
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_VISIBILITY_DENIED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_CATALOG_STALE"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+                            "SUPPORT_MACRO_CATALOG_NOT_READY"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
         "tags": [
           "admin support macros"
         ],
@@ -108251,13 +111649,231 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed Macro draft request."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "404": {
-            "description": "Macro, case or Conversation is hidden or unavailable."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Macro visibility, idempotency or revision conflict."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED",
+                            "SUPPORT_MACRO_DRAFT_CASE_CONTEXT_MISMATCH"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -108265,6 +111881,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macro reply drafts"
         ],
@@ -108332,11 +111949,232 @@
             },
             "description": ""
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
           "404": {
-            "description": "The actor-bound Macro Reply Draft is unavailable."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED",
+                            "SUPPORT_MACRO_DRAFT_CASE_CONTEXT_MISMATCH"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "410": {
-            "description": "The Macro Reply Draft expired or has been consumed."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -108344,6 +112182,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macro reply drafts"
         ],
@@ -108429,16 +112268,231 @@
             "description": ""
           },
           "400": {
-            "description": "Malformed text or action ETag."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "REQUEST_VALIDATION_FAILED",
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_INVALID",
+                            "SUPPORT_MACRO_IF_MATCH_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "UNAUTHORIZED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "404": {
-            "description": "The actor-bound Macro Reply Draft is unavailable."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_NOT_FOUND_OR_FORBIDDEN",
+                            "SUPPORT_MACRO_DRAFT_NOT_FOUND_OR_FORBIDDEN"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "409": {
-            "description": "Macro Reply Draft was changed or consumed."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_IDEMPOTENCY_KEY_REUSED",
+                            "SUPPORT_MACRO_VERSION_CONFLICT",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_ARCHIVED",
+                            "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+                            "SUPPORT_MACRO_DRAFT_ALREADY_CONSUMED",
+                            "SUPPORT_MACRO_DRAFT_CASE_CONTEXT_MISMATCH"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           },
           "410": {
-            "description": "Macro Reply Draft expired."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_DRAFT_EXPIRED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_MACRO_VARIABLE_INVALID",
+                            "SUPPORT_MACRO_RENDER_LIMIT_EXCEEDED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiErrorResponseDto"
+                    }
+                  ],
+                  "properties": {
+                    "error": {
+                      "properties": {
+                        "code": {
+                          "enum": [
+                            "SUPPORT_CONTENT_CAPABILITY_DISABLED"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         },
         "security": [
@@ -108446,6 +112500,7 @@
             "bearer": []
           }
         ],
+        "summary": "",
         "tags": [
           "admin support macro reply drafts"
         ],

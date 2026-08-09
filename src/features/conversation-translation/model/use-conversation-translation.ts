@@ -15,6 +15,11 @@ export interface ConversationTranslationContext {
   conversationId(): string | undefined;
   selectedCaseId(): string | undefined;
   sourceText(): string;
+  macroReplyDraft?(): {
+    id: string;
+    sourceHash: string;
+    version: number;
+  } | null;
   restoreSourceText?(value: string): void;
   reconcileMessages?(): Promise<void>;
 }
@@ -63,6 +68,11 @@ export interface ConversationTranslationApi {
     targetLocale: string,
     endUserCaseId?: string,
     idempotencyKey?: string,
+    macroReplyDraft?: {
+      id: string;
+      sourceHash: string;
+      version: number;
+    },
   ): Promise<ReplyTranslationDraftResponseDto>;
   getReplyDraft(
     projectId: string,
@@ -874,6 +884,16 @@ export function createConversationTranslationController(
     previewStale.value = false;
     error.value = "";
     try {
+      const macroReplyDraft = context.macroReplyDraft?.() ?? undefined;
+      const fingerprint = [
+        ids.conversationId,
+        sourceText,
+        current.preference.workingLocale,
+        locale,
+        macroReplyDraft?.id ?? "",
+        macroReplyDraft?.sourceHash ?? "",
+        macroReplyDraft?.version ?? "",
+      ].join("\u001f");
       let response = await api.createReplyDraft(
         ids.projectId,
         ids.endUserId,
@@ -883,16 +903,14 @@ export function createConversationTranslationController(
         locale,
         context.selectedCaseId(),
         (() => {
-          const fingerprint = `${ids.conversationId}:${sourceText}:${current.preference.workingLocale}:${locale}`;
           const key =
             draftAttemptKeys.get(fingerprint) ?? globalThis.crypto.randomUUID();
           draftAttemptKeys.set(fingerprint, key);
           return key;
         })(),
+        ...(macroReplyDraft ? [macroReplyDraft] : []),
       );
-      draftAttemptKeys.delete(
-        `${ids.conversationId}:${sourceText}:${current.preference.workingLocale}:${locale}`,
-      );
+      draftAttemptKeys.delete(fingerprint);
       if (!isCurrent(key, requestGeneration)) return null;
       draft.value = response;
       persistDraftEnvelope(response);

@@ -119,6 +119,67 @@ describe("support internal notes controller", () => {
     expect(controller.notes.value.map((item) => item.id)).toEqual(["note-2"]);
   });
 
+  it("consumes an edited macro-note draft without duplicating its body", async () => {
+    const create = vi.fn().mockResolvedValue(note("note-macro"));
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+      },
+      source({ create }),
+    );
+
+    expect(
+      await controller.create(
+        "Отредактированная заметка",
+        "conversation-1",
+        undefined,
+        "macro-note-draft-1",
+      ),
+    ).toBe(true);
+    expect(create).toHaveBeenCalledWith("project-1", "case-1", {
+      conversationId: "conversation-1",
+      macroDraftId: "macro-note-draft-1",
+      idempotencyKey: expect.any(String),
+    });
+  });
+
+  it("keeps the note surface authorized when only a Macro draft becomes stale", async () => {
+    const onForbidden = vi.fn();
+    const onMacroDraftRejected = vi.fn();
+    const create = vi.fn().mockRejectedValue(
+      new ApiError(
+        409,
+        "stale macro",
+        undefined,
+        undefined,
+        "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+      ),
+    );
+    const controller = createSupportInternalNotesController(
+      {
+        projectId: () => "project-1",
+        caseId: () => "case-1",
+        canRead: () => true,
+        canReadHistory: () => false,
+        canWrite: () => true,
+        onForbidden,
+        onMacroDraftRejected,
+      },
+      source({ create }),
+    );
+
+    expect(
+      await controller.create("Текст заметки", "conversation-1", undefined, "macro-draft-1"),
+    ).toBe(false);
+    expect(onMacroDraftRejected).toHaveBeenCalledOnce();
+    expect(onForbidden).not.toHaveBeenCalled();
+    expect(controller.mutationError.value).toContain("Текст заметки сохранён");
+  });
+
   it("allows an attachment-only internal note with the exact Case draft", async () => {
     const create = vi.fn().mockResolvedValue(note("note-attachment"));
     const controller = createSupportInternalNotesController(

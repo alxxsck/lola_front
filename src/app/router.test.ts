@@ -867,5 +867,12 @@ describe("authentication routes", () => {
     ];
     await router.push("/support/control");
     expect(router.currentRoute.value.name).toBe("support-control");
+
+    await router.push("/support/settings/macros");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = ["project.support.macros.manage"];
+    await router.push("/support/settings/macros");
+    expect(router.currentRoute.value.name).toBe("support-macro-settings");
   });
 });

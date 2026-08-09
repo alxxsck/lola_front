@@ -25,7 +25,7 @@ export type SupportMacroCatalogParams = {
    */
   shortcut?: string;
   /**
-   * @maximum 1024
+   * @maxLength 1024
    */
   cursor?: string;
   /**

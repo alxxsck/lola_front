@@ -140,6 +140,61 @@ describe("support reply controller", () => {
     );
   });
 
+  it("keeps the server macro draft bound to the durable send attempt", async () => {
+    const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+      },
+      replySource(sendAdminMessage),
+    );
+    controller.draft.value = "Отредактированный macro";
+
+    await controller.send({ macroReplyDraftId: "macro-draft-1" });
+
+    expect(sendAdminMessage).toHaveBeenCalledWith(
+      "project-1",
+      "user-1",
+      expect.objectContaining({
+        text: "Отредактированный macro",
+        macroReplyDraftId: "macro-draft-1",
+      }),
+    );
+  });
+
+  it("preserves text and refreshes only Macro state after a stale macro draft", async () => {
+    const onMacroDraftRejected = vi.fn();
+    const sendAdminMessage = vi.fn().mockRejectedValue(
+      new ApiError(
+        409,
+        "stale macro",
+        undefined,
+        undefined,
+        "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+      ),
+    );
+    const controller = createSupportReplyController(
+      {
+        projectId: () => "project-1",
+        actorId: () => "operator-1",
+        selection: () => selection(),
+        reconcile: vi.fn(),
+        onMacroDraftRejected,
+      },
+      replySource(sendAdminMessage),
+    );
+    controller.draft.value = "Текст оператора";
+
+    await controller.send({ macroReplyDraftId: "macro-draft-1" });
+
+    expect(controller.draft.value).toBe("Текст оператора");
+    expect(onMacroDraftRejected).toHaveBeenCalledOnce();
+    expect(controller.error.value).toContain("Macro изменился");
+  });
+
   it("binds a reviewed translation draft to the same authoritative reply", async () => {
     const sendAdminMessage = vi.fn().mockResolvedValue(delivered);
     const currentSelection = selection();
@@ -169,13 +224,18 @@ describe("support reply controller", () => {
     );
     controller.draft.value = "Добрый день";
 
-    await controller.sendTranslatedReply("translation-draft-1");
+    await controller.sendTranslatedReply(
+      "translation-draft-1",
+      undefined,
+      "macro-draft-1",
+    );
 
     expect(sendAdminMessage).toHaveBeenCalledWith("project-1", "user-1", {
       conversationId: "conversation-1",
       endUserCaseId: "case-1",
       idempotencyKey: expect.any(String),
       replyTranslationDraftId: "translation-draft-1",
+      macroReplyDraftId: "macro-draft-1",
       text: "Добрый день",
     });
     expect(controller.draft.value).toBe("");
