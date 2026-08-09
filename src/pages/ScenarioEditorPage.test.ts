@@ -13,6 +13,7 @@ import {
 import type { AudienceDraft } from "@/features/scenario-audience/model";
 import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import ScenarioActionChangeDialog from "@/features/scenarios/ScenarioActionChangeDialog.vue";
 import ScenarioFlowControls from "@/features/scenarios/ScenarioFlowControls.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker from "@/features/actions/ScenarioActionTargetPicker.vue";
@@ -865,7 +866,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
       .toContain("Сказать текст");
     expect(wrapper.text()).not.toContain("Смена корня отключена");
     await wrapper
-      .get('button-stub[label="Настроить первое действие"]')
+      .get('button-stub[label="Заменить первое действие"]')
       .trigger("click");
 
     expect(stageButton(wrapper, "Действия").classes()).toContain("active");
@@ -1043,7 +1044,7 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     expect(fitView).not.toHaveBeenCalled();
   });
 
-  it("changes the first action of a linear scenario without deleting its steps", async () => {
+  it("previews a linear entry-point change and never connects the old prefix after the selected branch", async () => {
     mocks.projectActions = [
       projectAction("OPEN_MODAL"),
       projectAction("OPEN_CHAT"),
@@ -1076,27 +1077,60 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     await flushPromises();
 
     const firstActionPicker = wrapper.getComponent(ScenarioActionTargetPicker);
-    expect(firstActionPicker.props("title")).toBe("Выберите первое действие");
+    expect(firstActionPicker.props("title")).toBe("Изменить точку входа");
     expect(firstActionPicker.props("description")).toContain(
-      "начнётся выполнение сценария",
+      "какие связи и действия изменятся",
     );
     firstActionPicker.vm.$emit("update:modelValue", "open_chat");
+    firstActionPicker.vm.$emit("closed");
     await wrapper.vm.$nextTick();
 
     const page = wrapper.vm as unknown as {
       form: { actions: Array<Record<string, unknown>> };
     };
+    expect(page.form.actions[0]).toMatchObject({ nodeKey: "open_form", nextNodeKey: "open_chat" });
+    const dialog = wrapper.getComponent(ScenarioActionChangeDialog);
+    expect(dialog.props("preview")).toMatchObject({
+      kind: "entry-point",
+      targetNodeKey: "open_chat",
+      plan: {
+        status: "ready",
+        unreachableNodeKeys: ["open_form"],
+      },
+    });
+
+    dialog.vm.$emit("cancel");
+    await wrapper.vm.$nextTick();
+    expect(page.form.actions[0]).toMatchObject({ nodeKey: "open_form", nextNodeKey: "open_chat" });
+
+    firstActionPicker.vm.$emit("update:modelValue", "open_chat");
+    firstActionPicker.vm.$emit("closed");
+    await wrapper.vm.$nextTick();
+    page.form.actions[2]!.config = { lateTranslation: "Свежий перевод" };
+    await wrapper.vm.$nextTick();
+    wrapper.getComponent(ScenarioActionChangeDialog).vm.$emit("apply");
+    await wrapper.vm.$nextTick();
+    expect(page.form.actions[0]).toMatchObject({ nodeKey: "open_form" });
+    expect(wrapper.getComponent(ScenarioActionChangeDialog).props("preview"))
+      .toMatchObject({ refreshed: true });
+
+    wrapper.getComponent(ScenarioActionChangeDialog).vm.$emit("apply");
+    await wrapper.vm.$nextTick();
     expect(page.form.actions).toMatchObject([
       { position: 0, nodeKey: "open_chat", nextNodeKey: "say_hello" },
-      { position: 1, nodeKey: "say_hello", nextNodeKey: "open_form" },
-      { position: 2, nodeKey: "open_form", nextNodeKey: null },
+      {
+        position: 1,
+        nodeKey: "say_hello",
+        nextNodeKey: null,
+        config: { lateTranslation: "Свежий перевод" },
+      },
     ]);
-    expect(page.form.actions).toHaveLength(3);
+    expect(page.form.actions).toHaveLength(2);
     expect(wrapper.get('[data-testid="scenario-first-action"]').text())
       .toContain("OPEN_CHAT");
   });
 
-  it("keeps first-action editing available without rewriting a branching graph", async () => {
+  it("explains why a branch target cannot become the entry point and keeps the graph unchanged", async () => {
     mocks.projectActions = [
       projectAction("ASK_CHOICE"),
       projectAction("SAY"),
@@ -1129,17 +1163,157 @@ describe("ScenarioEditorPage V2 rule journey", () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    expect(
-      wrapper.find('[input-id="scenario-first-action"]').exists(),
-    ).toBe(false);
-    expect(wrapper.text()).toContain(
-      "Смена корня отключена, чтобы не потерять ветки",
-    );
+    const firstActionPicker = wrapper.getComponent(ScenarioActionTargetPicker);
+    firstActionPicker.vm.$emit("update:modelValue", "answer");
+    firstActionPicker.vm.$emit("closed");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.getComponent(ScenarioActionChangeDialog).props("preview"))
+      .toMatchObject({
+        kind: "entry-point",
+        plan: {
+          status: "blocked",
+          reason: expect.stringContaining("обязательная ветка «Да»"),
+        },
+      });
+    const page = wrapper.vm as unknown as {
+      form: { actions: Array<Record<string, unknown>> };
+    };
+    expect(page.form.actions).toMatchObject([
+      { position: 0, nodeKey: "question" },
+      { position: 1, nodeKey: "answer" },
+    ]);
     expect(
       wrapper
-        .get('button-stub[label="Настроить первое действие"]')
+        .get('button-stub[label="Заменить первое действие"]')
         .attributes("label"),
-    ).toBe("Настроить первое действие");
+    ).toBe("Заменить первое действие");
+  });
+
+  it("previews incompatible fields and transitions before replacing the first action type", async () => {
+    mocks.projectActions = [
+      projectActionFromCatalogItem({
+        type: "ASK_CHOICE",
+        name: "Вопрос",
+        description: null,
+        executor: "SERVER",
+        configSchema: {
+          type: "object",
+          properties: {
+            message: { type: "string" },
+            options: { type: "array" },
+            onTimeout: { type: "string" },
+          },
+          required: ["message", "options"],
+        },
+        uiSchema: {
+          fields: [
+            { key: "message", label: "Вопрос", control: "textarea" },
+            { key: "options", label: "Варианты", control: "json" },
+            { key: "onTimeout", label: "Тайм-аут", control: "node" },
+          ],
+        },
+      }),
+      projectActionFromCatalogItem({
+        type: "SAY",
+        name: "Сообщение",
+        description: null,
+        executor: "SERVER",
+        configSchema: {
+          type: "object",
+          properties: { text: { type: "string", default: "" } },
+          required: ["text"],
+        },
+        uiSchema: { fields: [{ key: "text", label: "Текст", control: "textarea" }] },
+      }),
+    ];
+    setAuthoringActions([
+      {
+        position: 0,
+        nodeKey: "question",
+        nextNodeKey: null,
+        type: "ASK_CHOICE",
+        config: {
+          message: "Продолжить?",
+          options: [{ id: "yes", label: "Да", nextNodeKey: "finish" }],
+          onTimeout: "finish",
+        },
+      },
+      { position: 1, nodeKey: "finish", nextNodeKey: null, type: "COMPLETE_SCENARIO", config: {} },
+    ]);
+    const wrapper = mountPage();
+    await flushPromises();
+    await stageButton(wrapper, "Действия").trigger("click");
+    wrapper.getComponent({ name: "VueFlow" }).vm.$emit("node-click", { node: { id: "question" } });
+    await wrapper.vm.$nextTick();
+    const inspector = wrapper.getComponent(ScenarioNodeInspector);
+    inspector.vm.$emit("changeType", "SAY");
+    inspector.vm.$emit("typePickerClosed");
+    await wrapper.vm.$nextTick();
+
+    const page = wrapper.vm as unknown as { form: { actions: Array<Record<string, unknown>> } };
+    expect(page.form.actions[0]).toMatchObject({ type: "ASK_CHOICE" });
+    expect(wrapper.getComponent(ScenarioActionChangeDialog).props("preview"))
+      .toMatchObject({
+        kind: "type-replacement",
+        targetName: "Сообщение",
+        plan: {
+          transitionImpact: "reset-required",
+          removedTransitionCount: 2,
+          removedConfigKeys: ["message", "options", "onTimeout"],
+        },
+      });
+
+    wrapper.getComponent(ScenarioActionChangeDialog).vm.$emit("apply");
+    await wrapper.vm.$nextTick();
+    expect(page.form.actions[0]).toMatchObject({
+      nodeKey: "question",
+      type: "SAY",
+      nextNodeKey: null,
+      config: { text: "" },
+    });
+  });
+
+  it("requires an explicit change draft for a published head and saves it against the immutable revision", async () => {
+    mocks.getScenarios.mockResolvedValueOnce([{ ...scenario, status: "ACTIVE" }]);
+    mocks.projectActions = [projectAction("SAY")];
+    setAuthoringActions([
+      { position: 0, nodeKey: "message", nextNodeKey: null, type: "SAY", config: {} },
+    ]);
+    mocks.getScenarioDocument.mockResolvedValueOnce({
+      scenarioId: scenario.id,
+      projectId: "project-1",
+      code: scenario.code,
+      name: scenario.name,
+      status: "ACTIVE",
+      triggerEventDefinitionRevisionId: event.id,
+      currentRevisionId: "revision-9",
+      editable: true,
+      source: { graph: { actions: mocks.authoringActions } },
+      draft: undefined,
+      createdAt: "now",
+      updatedAt: "now",
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Опубликованная версия revision-9 не изменится");
+    expect(wrapper.find('button-stub[label="Сохранить"]').attributes("disabled")).toBeDefined();
+    expect(wrapper.find('[data-testid="scenario-first-action"]').exists()).toBe(false);
+    await wrapper.get('button-stub[label="Создать черновик изменений"]').trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).toContain("Новые запуски перейдут на неё только после публикации");
+    expect(wrapper.get('[data-testid="scenario-first-action"] button-stub').attributes("disabled")).toBe("false");
+
+    await wrapper.find('button-stub[label="Сохранить"]').trigger("click");
+    await flushPromises();
+    expect(mocks.saveScenarioDraft).toHaveBeenCalledWith(
+      "project-1",
+      "scenario-1",
+      expect.objectContaining({
+        expectedCurrentRevisionId: "revision-9",
+        expectedDraftVersion: null,
+      }),
+    );
   });
 
   it("opens the Rule Builder only for the exact catalog Event revision", async () => {

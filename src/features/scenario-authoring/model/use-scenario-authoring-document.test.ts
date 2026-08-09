@@ -61,4 +61,30 @@ describe('useScenarioAuthoringDocument', () => {
     }))
     expect(document.currentDraftVersion.value).toBe(8)
   })
+
+  it('creates a change draft against a published head without mutating the revision', async () => {
+    mocks.get.mockResolvedValue({
+      currentRevisionId: 'revision-9',
+      editable: true,
+      unavailableReason: null,
+      draft: null,
+      source: { graph: { actions: [] } },
+    })
+    mocks.save.mockResolvedValue({ version: 1, baseRevisionId: 'revision-9' })
+    const document = useScenarioAuthoringDocument()
+
+    await document.load('project-1', 'scenario-1')
+    await document.save('project-1', 'scenario-1', {
+      catalogRevision: 'catalog-2',
+      deliveryPolicy: { kind: 'IMMEDIATE' },
+      graph: { actions: [] },
+    })
+
+    expect(mocks.save).toHaveBeenCalledWith('project-1', 'scenario-1', expect.objectContaining({
+      expectedCurrentRevisionId: 'revision-9',
+      expectedDraftVersion: null,
+    }))
+    expect(document.currentRevisionId.value).toBe('revision-9')
+    expect(document.currentDraftVersion.value).toBe(1)
+  })
 })

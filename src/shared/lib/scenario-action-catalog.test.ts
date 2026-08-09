@@ -67,6 +67,19 @@ describe('scenario action catalog schema helpers', () => {
     })).toThrow('must reference a config property')
   })
 
+  it('rejects a malformed config pattern while parsing the catalog', () => {
+    expect(() => parseScenarioActionCatalogItem({
+      ...rawDefinition,
+      configSchema: {
+        ...rawDefinition.configSchema,
+        properties: {
+          ...rawDefinition.configSchema.properties,
+          label: { type: 'string', pattern: '[' },
+        },
+      },
+    })).toThrow('pattern must be a valid regular expression')
+  })
+
   it('uses schema defaults and removes hidden or unknown config values', () => {
     const definition = parseScenarioActionCatalogItem(rawDefinition)
     expect(createActionConfig(definition)).toEqual({ timeoutMs: 30000 })

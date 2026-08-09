@@ -100,6 +100,7 @@ describe("ScenarioNodeInspector", () => {
       "update:modelValue",
       "CLOSE_CHAT",
     );
+    wrapper.getComponent(ActionPicker).vm.$emit("closed");
     const targetPicker = wrapper.getComponent(ScenarioActionTargetPicker);
     expect(targetPicker.props("options")).toEqual(
       expect.arrayContaining([
@@ -121,6 +122,7 @@ describe("ScenarioNodeInspector", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted("changeType")).toEqual([["CLOSE_CHAT"]]);
+    expect(wrapper.emitted("typePickerClosed")).toHaveLength(1);
     expect(wrapper.emitted("update")?.[0]?.[0]).toMatchObject({
       nextNodeKey: "close_2",
     });

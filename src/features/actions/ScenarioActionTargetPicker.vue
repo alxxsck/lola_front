@@ -56,6 +56,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: string];
   select: [target: ScenarioActionTargetOption];
+  closed: [];
 }>();
 
 const kinds = computed(() => new Set(props.options.map((option) => option.kind)));
@@ -175,5 +176,6 @@ function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
     test-id-prefix="action-target-picker"
     @update:model-value="updateModel"
     @select="select"
+    @closed="emit('closed')"
   />
 </template>

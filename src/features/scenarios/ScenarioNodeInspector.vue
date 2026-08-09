@@ -59,6 +59,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   changeType: [type: string];
+  typePickerClosed: [];
   createTarget: [
     type: string,
     kind:
@@ -341,6 +342,7 @@ function updateNodeKey(value: string | undefined) {
           placeholder="Выберите действие"
           apply-label="Заменить действие"
           @update:model-value="emit('changeType', $event)"
+          @closed="emit('typePickerClosed')"
         />
       </div>
       <div class="field">

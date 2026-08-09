@@ -92,6 +92,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: string | string[]];
   select: [option: CatalogPickerOption | CatalogPickerOption[]];
+  closed: [];
 }>();
 
 const visible = ref(false);
@@ -242,6 +243,10 @@ function close(): void {
   visible.value = false;
 }
 
+function afterHide(): void {
+  emit("closed");
+}
+
 function apply(): void {
   const candidates = [
     ...draftOptions.value,
@@ -346,11 +351,13 @@ watch(
     <Dialog
       v-model:visible="visible"
       modal
+      :aria-label="dialogTitle"
       :draggable="false"
       :append-to="appendTarget"
       class="catalog-picker-dialog"
       :style="{ width: 'min(920px, calc(100vw - 24px))' }"
       @hide="close"
+      @after-hide="afterHide"
     >
       <template #header>
         <div class="catalog-picker__dialog-heading">

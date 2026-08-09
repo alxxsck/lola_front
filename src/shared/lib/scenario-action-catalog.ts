@@ -50,7 +50,14 @@ function parseSchemaProperty(value: unknown, path: string): ActionConfigProperty
       throw new Error(`${path}.${keyword} must be a finite number`)
     }
   }
-  if (value.pattern !== undefined && typeof value.pattern !== 'string') throw new Error(`${path}.pattern must be a string`)
+  if (value.pattern !== undefined) {
+    if (typeof value.pattern !== 'string') throw new Error(`${path}.pattern must be a string`)
+    try {
+      new RegExp(value.pattern)
+    } catch {
+      throw new Error(`${path}.pattern must be a valid regular expression`)
+    }
+  }
   if (value.items !== undefined && !isRecord(value.items)) throw new Error(`${path}.items must be a schema object`)
   if (value.properties !== undefined && !isRecord(value.properties)) throw new Error(`${path}.properties must be an object`)
   const properties = value.properties === undefined ? undefined : Object.fromEntries(
@@ -184,6 +191,16 @@ export function isActionFieldVisible(field: ActionUiField, config: Record<string
   return Object.entries(field.visibleWhen ?? {}).every(([key, expected]) => config[key] === expected)
 }
 
+export function requiredActionConfigKeys(
+  definition: ScenarioActionCatalogItem,
+  config: Record<string, unknown>,
+): string[] {
+  return definition.uiSchema.fields
+    .filter((field) => isActionFieldVisible(field, config))
+    .filter((field) => definition.configSchema.required.includes(field.key) || field.control === 'target')
+    .map((field) => field.key)
+}
+
 export function actionFieldOptions(field: ActionUiField, property?: ActionConfigPropertySchema): ActionUiOption[] {
   return field.options ?? property?.enum ?? []
 }
@@ -204,12 +221,12 @@ function typeError(schema: ActionConfigPropertySchema, value: unknown): string {
   return typeof value === schema.type ? '' : `должно иметь тип ${schema.type}`
 }
 
-function propertyError(schema: ActionConfigPropertySchema, value: unknown, allowLocalized = false): string {
+export function actionConfigPropertyError(schema: ActionConfigPropertySchema, value: unknown, allowLocalized = false): string {
   if (allowLocalized && schema.type === 'string' && isRecord(value)) {
     if (!Object.keys(value).length) return 'не содержит ни одного языкового варианта'
     for (const text of Object.values(value)) {
       if (typeof text !== 'string') return 'содержит перевод не строкового типа'
-      const error = propertyError(schema, text)
+      const error = actionConfigPropertyError(schema, text)
       if (error) return error
     }
     return ''
@@ -220,6 +237,7 @@ function propertyError(schema: ActionConfigPropertySchema, value: unknown, allow
   if (typeof value === 'string') {
     if (schema.minLength !== undefined && value.length < schema.minLength) return `должно содержать минимум ${schema.minLength} симв.`
     if (schema.maxLength !== undefined && value.length > schema.maxLength) return `должно содержать максимум ${schema.maxLength} симв.`
+    if (schema.pattern !== undefined && !new RegExp(schema.pattern).test(value)) return 'не соответствует требуемому формату'
   }
   if (typeof value === 'number') {
     if (schema.minimum !== undefined && value < schema.minimum) return `должно быть не меньше ${schema.minimum}`
@@ -230,22 +248,29 @@ function propertyError(schema: ActionConfigPropertySchema, value: unknown, allow
     if (schema.maxItems !== undefined && value.length > schema.maxItems) return `должно содержать максимум ${schema.maxItems} знач.`
     if (schema.items) {
       for (const item of value) {
-        const error = propertyError(schema.items, item)
+        const error = actionConfigPropertyError(schema.items, item)
         if (error) return `содержит значение, которое ${error}`
       }
     }
   }
-  if (isRecord(value) && schema.properties) {
+  if (isRecord(value) && schema.type === 'object') {
+    const properties = schema.properties ?? {}
     const missing = schema.required?.find((key) => value[key] === undefined || value[key] === null || value[key] === '')
     if (missing) return `не содержит обязательное поле ${missing}`
-    for (const [key, nestedSchema] of Object.entries(schema.properties)) {
+    for (const [key, nestedSchema] of Object.entries(properties)) {
       if (value[key] === undefined) continue
-      const error = propertyError(nestedSchema, value[key])
+      const error = actionConfigPropertyError(nestedSchema, value[key])
       if (error) return `поле ${key} ${error}`
     }
     if (schema.additionalProperties === false) {
-      const allowed = new Set(Object.keys(schema.properties))
+      const allowed = new Set(Object.keys(properties))
       if (Object.keys(value).some((key) => !allowed.has(key))) return 'содержит лишние поля'
+    } else if (isRecord(schema.additionalProperties)) {
+      for (const [key, nestedValue] of Object.entries(value)) {
+        if (key in properties) continue
+        const error = actionConfigPropertyError(schema.additionalProperties, nestedValue)
+        if (error) return `поле ${key} ${error}`
+      }
     }
   }
   return ''
@@ -256,13 +281,13 @@ export function validateActionConfig(
   config: Record<string, unknown>,
   localizedKeys = new Set<string>(),
 ): string {
+  const requiredKeys = new Set(requiredActionConfigKeys(definition, config))
   for (const field of definition.uiSchema.fields) {
     if (!isActionFieldVisible(field, config)) continue
     const value = config[field.key]
-    const required = definition.configSchema.required.includes(field.key) || field.control === 'target'
-    if (required && (value === undefined || value === null || value === '')) return `${field.label}: обязательное поле`
+    if (requiredKeys.has(field.key) && (value === undefined || value === null || value === '')) return `${field.label}: обязательное поле`
     if (value === undefined || value === null || value === '') continue
-    const error = propertyError(
+    const error = actionConfigPropertyError(
       definition.configSchema.properties[field.key] ?? {},
       value,
       localizedKeys.has(field.key),

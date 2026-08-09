@@ -34,6 +34,9 @@ import {
 import { createScenarioGraphLayoutWorker } from "@/features/scenarios/model/scenario-graph-layout-worker";
 import { measureScenarioGraphEdgeLabel } from "@/features/scenarios/scenario-graph-label-measurer";
 import ScenarioNodeInspector from "@/features/scenarios/ScenarioNodeInspector.vue";
+import ScenarioActionChangeDialog, {
+  type ScenarioActionChangePreview,
+} from "@/features/scenarios/ScenarioActionChangeDialog.vue";
 import ActionPicker from "@/features/actions/ActionPicker.vue";
 import ScenarioActionTargetPicker, {
   type ScenarioActionTargetOption,
@@ -134,12 +137,15 @@ import {
   graphTransitions,
   normalizePositions,
   renameScenarioNode,
-  rotateLinearScenarioStart,
   sortScenarioActions,
   toPlainScenarioAction,
   usesExplicitTransitions,
   validateScenarioGraph,
 } from "@/features/scenarios/model/scenario-graph";
+import {
+  planScenarioActionTypeReplacement,
+  planScenarioEntryPointChange,
+} from "@/features/scenarios/model/scenario-action-change";
 import { buildScenarioGraphViewModel } from "@/features/scenarios/model/scenario-graph-view-model";
 
 interface ScenarioForm {
@@ -257,6 +263,9 @@ const audienceBuilder = ref<{
 } | null>(null);
 const deliveryEditor = ref<{ focusIssue: (path: string) => void } | null>(null);
 const selectedNodeKey = ref<string | null>(null);
+const actionChangePreview = ref<ScenarioActionChangePreview | null>(null);
+const pendingActionChangePreview = ref<ScenarioActionChangePreview | null>(null);
+const changeDraftStarted = ref(false);
 const focusedLocalizedFieldPath = ref("");
 const focusedLocale = ref("");
 const inspectorMode = ref<"node" | "settings">("settings");
@@ -454,12 +463,9 @@ const firstActionOptions = computed<ScenarioActionTargetOption[]>(() =>
     };
   }),
 );
-const canChooseFirstAction = computed(() => {
-  const alternative = form.actions[1]?.nodeKey;
-  return Boolean(
-    alternative && rotateLinearScenarioStart(form.actions, alternative),
-  );
-});
+const canChooseFirstAction = computed(
+  () => canEdit.value && form.actions.length > 1,
+);
 const graphIssues = computed(() => validateScenarioGraph(form.actions));
 const goalIssues = computed(() =>
   form.actions.flatMap((action) => {
@@ -575,7 +581,14 @@ const selectableImportanceClasses = computed(() =>
 const usesGlobalFrequency = computed(
   () => admissionSettings.value?.mode === "PROJECT_GLOBAL_V1",
 );
-const canEdit = computed(() => canManage.value && authoringEditable.value);
+const publishedHeadWithoutDraft = computed(
+  () => Boolean(form.id && currentRevisionId.value && currentDraftVersion.value === null),
+);
+const canEdit = computed(
+  () => canManage.value && authoringEditable.value && (
+    !publishedHeadWithoutDraft.value || changeDraftStarted.value
+  ),
+);
 const sourceSnapshotUnavailable = computed(
   () =>
     !authoringEditable.value &&
@@ -1083,6 +1096,9 @@ async function load() {
   templateAttributeKeys.value = null;
   templateAttributes.value = [];
   templatePolicyWarnings.value = [];
+  changeDraftStarted.value = false;
+  pendingActionChangePreview.value = null;
+  actionChangePreview.value = null;
   resetAuthoringDocument();
   ruleDraft.value = createRuleDraft();
   audienceDraft.value = createAudienceDraft();
@@ -1467,12 +1483,15 @@ function published(
   form.status = "ACTIVE";
   if (currentAuthoringSnapshot === snapshot.authoringSnapshot)
     initialSnapshot.value = JSON.stringify(form);
-  saveNotice.value =
+  const publishedStateUnchanged =
     currentRuleSnapshot === snapshot.ruleSnapshot &&
     (!snapshot.audienceSnapshot ||
       currentAudienceSnapshot === snapshot.audienceSnapshot) &&
     currentDeliverySnapshot === snapshot.deliverySnapshot &&
-    currentAuthoringSnapshot === snapshot.authoringSnapshot
+    currentAuthoringSnapshot === snapshot.authoringSnapshot;
+  changeDraftStarted.value = !publishedStateUnchanged;
+  saveNotice.value =
+    publishedStateUnchanged
       ? `Опубликована неизменяемая версия ${revisionId}. Новые запуски будут использовать её.`
       : `Опубликована неизменяемая версия ${revisionId}, но в этой вкладке уже есть более новые изменения. Проверьте и опубликуйте их отдельно.`;
 }
@@ -1681,10 +1700,19 @@ function openFirstAction() {
   if (firstAction.value?.nodeKey) openNode(firstAction.value.nodeKey);
 }
 
+function actionChangeFingerprint() {
+  return JSON.stringify(form.actions.map(toPlainScenarioAction));
+}
+
 function changeFirstAction(nodeKey: string) {
-  const rotated = rotateLinearScenarioStart(form.actions, nodeKey);
-  if (!rotated) return;
-  form.actions.splice(0, form.actions.length, ...rotated);
+  if (!canEdit.value || !firstAction.value?.nodeKey) return;
+  scheduleActionChangePreview({
+    kind: "entry-point",
+    currentNodeKey: firstAction.value.nodeKey,
+    targetNodeKey: nodeKey,
+    plan: planScenarioEntryPointChange(form.actions, nodeKey),
+    sourceFingerprint: actionChangeFingerprint(),
+  });
 }
 
 function closeNodeInspector() {
@@ -1695,24 +1723,120 @@ function closeNodeInspector() {
 
 function changeType(type: string) {
   if (!selectedAction.value) return;
+  const preview = createTypeReplacementPreview(selectedAction.value, type);
+  if (preview) scheduleActionChangePreview(preview);
+}
+
+function createTypeReplacementPreview(
+  action: ScenarioAction,
+  type: string,
+  refreshed = false,
+): ScenarioActionChangePreview | null {
   const definition = findScenarioActionCatalogItem(actionCatalog.value, type);
-  selectedAction.value.type = type;
-  selectedAction.value.config = {
+  const currentDefinition = findScenarioActionCatalogItem(
+    actionCatalog.value,
+    action.type,
+  );
+  if (!definition || type === action.type) return null;
+  const defaultConfig = {
     ...(definition ? createActionConfig(definition) : {}),
     ...createScenarioNode(
       type,
-      selectedAction.value.position,
+      action.position,
       form.actions.map((item) => item.nodeKey ?? ""),
     ).config,
   };
-  selectedAction.value.nextNodeKey = null;
-  if (authoringContract.value?.localization?.enabled) {
-    const [localizedAction] = normalizeLocalizedActionContent(
-      [selectedAction.value],
-      authoringContract.value.localization,
-    );
-    if (localizedAction) updateSelected(localizedAction);
+  const localizedKeys = new Set(
+    authoringContract.value?.localization?.paths.flatMap((descriptor) => {
+      if (descriptor.actionType !== type) return [];
+      const match = descriptor.path.match(/^config\.([^.]+)$/);
+      return match?.[1] ? [match[1]] : [];
+    }) ?? [],
+  );
+  return {
+    kind: "type-replacement",
+    currentName: currentDefinition?.name ?? action.type,
+    targetName: definition.name,
+    targetType: type,
+    plan: planScenarioActionTypeReplacement(
+      action,
+      definition,
+      defaultConfig,
+      localizedKeys,
+    ),
+    sourceFingerprint: actionChangeFingerprint(),
+    ...(refreshed ? { refreshed: true } : {}),
+  };
+}
+
+function scheduleActionChangePreview(
+  preview: ScenarioActionChangePreview,
+) {
+  pendingActionChangePreview.value = preview;
+}
+
+function showPendingActionChange() {
+  if (!pendingActionChangePreview.value) return;
+  actionChangePreview.value = pendingActionChangePreview.value;
+  pendingActionChangePreview.value = null;
+}
+
+function cancelActionChange() {
+  pendingActionChangePreview.value = null;
+  actionChangePreview.value = null;
+}
+
+function applyActionChange() {
+  const preview = actionChangePreview.value;
+  if (!preview || !canEdit.value) return;
+  const currentFingerprint = actionChangeFingerprint();
+  if (currentFingerprint !== preview.sourceFingerprint) {
+    if (preview.kind === "entry-point") {
+      const currentRoot = firstAction.value?.nodeKey;
+      actionChangePreview.value = {
+        ...preview,
+        currentNodeKey: currentRoot ?? preview.currentNodeKey,
+        plan: planScenarioEntryPointChange(form.actions, preview.targetNodeKey),
+        sourceFingerprint: currentFingerprint,
+        refreshed: true,
+      };
+    } else {
+      const currentAction = form.actions.find(
+        (action) => action.nodeKey === preview.plan.replacement.nodeKey,
+      );
+      const refreshed = currentAction
+        ? createTypeReplacementPreview(currentAction, preview.targetType, true)
+        : null;
+      if (refreshed) actionChangePreview.value = refreshed;
+      else cancelActionChange();
+    }
+    return;
   }
+  if (preview.kind === "entry-point") {
+    if (preview.plan.status !== "ready") return;
+    form.actions.splice(0, form.actions.length, ...preview.plan.actions);
+    selectedNodeKey.value = preview.targetNodeKey;
+  } else {
+    const index = form.actions.findIndex(
+      (action) => action.nodeKey === preview.plan.replacement.nodeKey,
+    );
+    if (index < 0) return;
+    let replacement = preview.plan.replacement;
+    if (authoringContract.value?.localization?.enabled) {
+      const [localizedAction] = normalizeLocalizedActionContent(
+        [replacement],
+        authoringContract.value.localization,
+      );
+      if (localizedAction) replacement = localizedAction;
+    }
+    form.actions.splice(index, 1, replacement);
+  }
+  actionChangePreview.value = null;
+}
+
+function startChangeDraft() {
+  if (!canManage.value || !authoringEditable.value) return;
+  changeDraftStarted.value = true;
 }
 
 function updateSelected(action: ScenarioAction) {
@@ -2100,6 +2224,33 @@ function leave() {
           severity="secondary"
           outlined
           @click="router.push({ name: 'scenario-create' })"
+        />
+      </section>
+      <section
+        v-else-if="publishedHeadWithoutDraft"
+        class="readonly-notice change-draft-notice"
+        role="status"
+        aria-label="Редактирование опубликованной версии"
+      >
+        <i :class="changeDraftStarted ? 'pi pi-file-edit' : 'pi pi-lock'" />
+        <div>
+          <strong v-if="!changeDraftStarted">
+            Опубликованная версия {{ currentRevisionId }} не изменится
+          </strong>
+          <strong v-else>Черновик изменений открыт</strong>
+          <p v-if="!changeDraftStarted">
+            Создайте черновик на её основе. Новые запуски получат изменения только после публикации, а активные продолжат исходную версию.
+          </p>
+          <p v-else>
+            Новые запуски перейдут на неё только после публикации. Активные запуски останутся на исходной версии; их миграция выполняется отдельно.
+          </p>
+        </div>
+        <Button
+          v-if="!changeDraftStarted && canManage"
+          label="Создать черновик изменений"
+          icon="pi pi-plus"
+          size="small"
+          @click="startChangeDraft"
         />
       </section>
       <div
@@ -2756,6 +2907,7 @@ function leave() {
           :focus-field-path="focusedLocalizedFieldPath"
           :focus-locale="focusedLocale"
           @change-type="changeType"
+          @type-picker-closed="showPendingActionChange"
           @create-target="createTarget"
           @remove="removeSelected"
           @update="updateSelected"
@@ -2922,32 +3074,27 @@ function leave() {
                   v-if="canChooseFirstAction"
                   :model-value="firstAction.nodeKey ?? ''"
                   :options="firstActionOptions"
-                  label="Выбрать первое действие"
+                  label="Изменить точку входа"
                   placeholder="Выберите действие"
                   hide-label
-                  apply-label="Сделать первым"
+                  apply-label="Проверить изменение"
                   eyebrow="Маршрут сценария"
-                  title="Выберите первое действие"
-                  description="Назначьте шаг, с которого начнётся выполнение сценария."
+                  title="Изменить точку входа"
+                  description="Выберите шаг запуска и проверьте, какие связи и действия изменятся."
                   @update:model-value="changeFirstAction"
+                  @closed="showPendingActionChange"
                 />
                 <Button
-                  label="Настроить первое действие"
+                  label="Заменить первое действие"
                   icon="pi pi-pencil"
                   severity="secondary"
                   outlined
+                  :disabled="!canEdit"
                   @click="openFirstAction"
                 />
               </div>
-              <small
-                v-if="
-                  firstAction &&
-                  form.actions.length > 1 &&
-                  !canChooseFirstAction
-                "
-              >
-                Для ветвящегося графа можно настроить текущий первый узел. Смена
-                корня отключена, чтобы не потерять ветки.
+              <small v-if="firstAction && form.actions.length > 1 && canEdit">
+                Сначала покажем влияние на связи и недостижимые шаги. Изменение применится только после подтверждения.
               </small>
               <small v-else-if="!firstAction"
                 >Добавьте действие на этапе «Действия» — оно станет первым после
@@ -3118,6 +3265,12 @@ function leave() {
           </p>
         </aside>
       </div>
+      <ScenarioActionChangeDialog
+        :visible="Boolean(actionChangePreview)"
+        :preview="actionChangePreview"
+        @cancel="cancelActionChange"
+        @apply="applyActionChange"
+      />
     </template>
   </div>
 </template>
@@ -4072,6 +4225,30 @@ function leave() {
   color: var(--text-secondary);
   font-size: var(--font-size-body-small);
   line-height: 1.45;
+}
+.change-draft-notice {
+  border-color: color-mix(in srgb, var(--brand) 42%, var(--border-default));
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-card));
+  color: var(--text-primary);
+  animation: change-draft-enter 180ms ease-out;
+}
+.change-draft-notice > i {
+  color: var(--brand);
+}
+@keyframes change-draft-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .change-draft-notice {
+    animation: none;
+  }
 }
 .audience-canvas {
   position: relative;

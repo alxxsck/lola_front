@@ -42,6 +42,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: string];
   select: [action: ActionPickerItem];
+  closed: [];
 }>();
 
 const availableCatalog = computed(() => {
@@ -115,5 +116,6 @@ function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
       !Array.isArray($event) && emit('update:modelValue', $event)
     "
     @select="select"
+    @closed="emit('closed')"
   />
 </template>

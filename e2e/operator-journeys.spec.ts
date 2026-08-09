@@ -1051,6 +1051,148 @@ test("scenario graph labels use the project default locale and stable branch ide
   ).toBeVisible();
 });
 
+test("scenario first action changes are previewed, atomic and version-aware", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "chromium",
+    "First-action authoring is covered once across responsive Chromium viewports",
+  );
+  const fixture = await installScenarioAuthoringFixtures(page);
+  fixture.savedDraft = {
+    deliveryPolicy: { kind: "IMMEDIATE" },
+    graph: {
+      actions: [
+        {
+          position: 0,
+          nodeKey: "intro",
+          nextNodeKey: "offer",
+          type: "SAY",
+          config: { text: "Вступление" },
+        },
+        {
+          position: 1,
+          nodeKey: "offer",
+          nextNodeKey: "finish",
+          type: "SAY",
+          config: { text: "Предложение" },
+        },
+        {
+          position: 2,
+          nodeKey: "finish",
+          nextNodeKey: null,
+          type: "SAY",
+          config: { text: "Готово" },
+        },
+      ],
+    },
+  };
+
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.goto("/scenarios/scn_1");
+  const firstActionCard = page.locator('[data-testid="scenario-first-action"]');
+  await expect(firstActionCard).toContainText("intro");
+  await firstActionCard
+    .locator('[data-testid="action-target-picker-trigger"]')
+    .click();
+  const entryPicker = page.getByRole("dialog", { name: "Изменить точку входа" });
+  await expect(entryPicker).toBeVisible();
+  await entryPicker.getByRole("option").filter({ hasText: "offer" }).click();
+  await entryPicker.locator('[data-testid="action-target-picker-apply"]').click();
+
+  const preview = page.locator(".scenario-action-change-dialog");
+  await expect(preview).toBeVisible();
+  await expect(preview).toContainText("intro");
+  await expect(preview).toContainText("Будут удалены из черновика как недостижимые");
+  await page.waitForTimeout(250);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-first-action-entry-preview-desktop.png"),
+  });
+  await expectNoSeriousAccessibilityViolations(page);
+  await preview.getByRole("button", { name: "Изменить точку входа" }).click();
+
+  await expect(firstActionCard).toContainText("offer");
+  await page.getByRole("button", { name: "Сохранить" }).click();
+  await expect.poll(() => fixture.calls.draft).toBe(1);
+  expect(fixture.savedDraft).toMatchObject({
+    expectedCurrentRevisionId: null,
+    expectedDraftVersion: null,
+    graph: {
+      actions: [
+        expect.objectContaining({
+          position: 0,
+          nodeKey: "offer",
+          nextNodeKey: "finish",
+        }),
+        expect.objectContaining({
+          position: 1,
+          nodeKey: "finish",
+          nextNodeKey: null,
+        }),
+      ],
+    },
+  });
+  expect(
+    (fixture.savedDraft as { graph: { actions: unknown[] } }).graph.actions,
+  ).toHaveLength(2);
+
+  await firstActionCard
+    .getByRole("button", { name: "Заменить первое действие" })
+    .click();
+  const inspector = page.locator(".inspector");
+  await expect(inspector).toBeVisible();
+  await inspector.locator('[data-testid="action-picker-trigger"]').click();
+  const typePicker = page.getByRole("dialog", { name: "Выберите действие" });
+  await typePicker
+    .getByRole("option", { name: "Задать вопрос с вариантами" })
+    .click();
+  await typePicker.locator('[data-testid="action-picker-apply"]').click();
+  const typePreview = page.locator(".scenario-action-change-dialog");
+  await expect(typePreview).toContainText("1 переход будет сброшен");
+  await expect(typePreview).toContainText("После замены нужно заполнить");
+  await page.waitForTimeout(250);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-first-action-type-preview-desktop.png"),
+  });
+  await typePreview.getByRole("button", { name: "Отмена" }).click();
+  await expect(inspector.getByRole("heading", { name: "Сказать текст" })).toBeVisible();
+
+  fixture.currentRevisionId = "revision-e2e-9";
+  fixture.draftVersion = 0;
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.reload();
+  const versionNotice = page.getByRole("status", {
+    name: "Редактирование опубликованной версии",
+  });
+  await expect(versionNotice).toContainText(
+    "Опубликованная версия revision-e2e-9 не изменится",
+  );
+  await expect(page.getByRole("button", { name: "Сохранить" })).toBeDisabled();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await versionNotice
+    .getByRole("button", { name: "Создать черновик изменений" })
+    .click();
+  await expect(versionNotice).toContainText(
+    "Новые запуски перейдут на неё только после публикации",
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(versionNotice).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("scenario-change-draft-mobile.png"),
+  });
+  await expectNoSeriousAccessibilityViolations(page);
+});
+
 test("scenario graph constrains long trigger, title and summary inside measured boxes", async ({
   page,
 }, testInfo) => {

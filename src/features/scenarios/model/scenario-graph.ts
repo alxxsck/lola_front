@@ -54,6 +54,16 @@ export interface GraphValidationIssue {
   message: string
 }
 
+export type ScenarioTransitionContract = 'linear' | 'choice' | 'condition' | 'goal' | 'terminal'
+
+export function scenarioTransitionContract(type: string): ScenarioTransitionContract {
+  if (type === 'ASK_CHOICE') return 'choice'
+  if (type === 'CONDITION') return 'condition'
+  if (type === 'WAIT_FOR_GOAL') return 'goal'
+  if (type === 'COMPLETE_SCENARIO') return 'terminal'
+  return 'linear'
+}
+
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 
@@ -256,36 +266,7 @@ export function sortScenarioActions(actions: ScenarioAction[]): ScenarioAction[]
 }
 
 export function usesExplicitTransitions(type: string): boolean {
-  return ['ASK_CHOICE', 'CONDITION', 'WAIT_FOR_GOAL'].includes(type)
-}
-
-export function rotateLinearScenarioStart(
-  actions: readonly ScenarioAction[],
-  nodeKey: string,
-): ScenarioAction[] | null {
-  const ordered = [...actions].sort((left, right) => left.position - right.position)
-  const selectedIndex = ordered.findIndex((action) => action.nodeKey === nodeKey)
-  if (selectedIndex < 0) return null
-  const keys = ordered.map((action) => action.nodeKey ?? '')
-  if (
-    keys.some((key) => !key) ||
-    new Set(keys).size !== keys.length ||
-    ordered.some((action, index) =>
-      usesExplicitTransitions(action.type) ||
-      (action.nextNodeKey ?? null) !== (ordered[index + 1]?.nodeKey ?? null),
-    )
-  ) {
-    return null
-  }
-  const rotated = [
-    ...ordered.slice(selectedIndex),
-    ...ordered.slice(0, selectedIndex),
-  ]
-  return rotated.map((action, position) => ({
-    ...action,
-    position,
-    nextNodeKey: rotated[position + 1]?.nodeKey ?? null,
-  }))
+  return ['choice', 'condition', 'goal'].includes(scenarioTransitionContract(type))
 }
 
 export function validateScenarioGraph(actions: ScenarioAction[]): GraphValidationIssue[] {
