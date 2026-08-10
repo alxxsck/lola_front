@@ -18,7 +18,17 @@ const number = new Intl.NumberFormat("ru");
 const percent = new Intl.NumberFormat("ru", { maximumFractionDigits: 1 });
 const nonRenderableState = computed(() => {
   const result = props.result;
-  if (!result || (result.data && result.receipt)) return null;
+  if (!result) return null;
+  const terminalWithoutData = [
+    "queued",
+    "running",
+    "empty",
+    "suppressed",
+    "forbidden",
+    "failed",
+    "expired",
+  ].includes(result.status);
+  if (!terminalWithoutData && result.data && result.receipt) return null;
   const copy = {
     queued: ["Запрос в очереди", "Результат появится после запуска."],
     running: ["Идёт расчёт", "Данные обновятся после завершения."],

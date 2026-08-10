@@ -30,14 +30,13 @@ describe("ReportingChartRenderer", () => {
   });
 
   it("removes sensitive data and Evidence for a forbidden result", () => {
+    const stalePayload = resultFixtureFor("unique_users");
     const wrapper = mount(ReportingChartRenderer, {
       props: {
         visualization: "LINE",
         result: {
-          runId: "run-forbidden",
+          ...stalePayload,
           status: "forbidden",
-          data: null,
-          receipt: null,
           summary: "",
           safeMessage: "Доступ к результату отозван.",
         },
@@ -46,6 +45,7 @@ describe("ReportingChartRenderer", () => {
 
     expect(wrapper.get('[role="alert"]').text()).toContain("Доступ отозван");
     expect(wrapper.text()).not.toContain("Точные данные");
+    expect(wrapper.text()).not.toContain("12 840");
     expect(wrapper.find("[role=img]").exists()).toBe(false);
   });
 });

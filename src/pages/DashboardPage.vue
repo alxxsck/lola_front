@@ -51,6 +51,8 @@ const appliedDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
 const refreshKey = ref(0);
 const reportSearch = ref("");
 const activePageId = ref("overview");
+let autosaveReady = false;
+let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const editor = reactive({
   title: "Новый дашборд",
@@ -134,6 +136,7 @@ async function loadPage(): Promise<void> {
     return;
   }
   coordinator.purge();
+  autosaveReady = false;
   loading.value = true;
   error.value = "";
   try {
@@ -171,6 +174,7 @@ async function loadPage(): Promise<void> {
       cause instanceof Error ? cause.message : "Не удалось открыть дашборд";
   } finally {
     loading.value = false;
+    autosaveReady = true;
   }
 }
 
@@ -228,6 +232,8 @@ async function saveDraft(): Promise<Dashboard | null> {
     (dashboard.value && !dashboard.value.allowedActions.includes("EDIT"))
   )
     return null;
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = null;
   saving.value = true;
   error.value = "";
   try {
@@ -235,16 +241,20 @@ async function saveDraft(): Promise<Dashboard | null> {
       projectId.value,
       {
         ...(dashboard.value ? { id: dashboard.value.id } : {}),
+        ...(dashboard.value
+          ? { expectedVersion: dashboard.value.version }
+          : {}),
         title: editor.title.trim(),
         description: editor.description.trim(),
         space: editor.space,
         collection: editor.collection.trim() || "Без коллекции",
         pages: [
           {
-            id: "overview",
-            title: "Обзор",
+            id: dashboard.value?.pages[0]?.id ?? "overview",
+            title: dashboard.value?.pages[0]?.title ?? "Обзор",
             widgets: editor.widgets.map((widget) => ({ ...widget })),
           },
+          ...structuredClone(dashboard.value?.pages.slice(1) ?? []),
         ],
       },
     );
@@ -286,6 +296,21 @@ async function publish(): Promise<void> {
 
 watch(activePageId, () => beginViewerScope());
 watch(
+  editor,
+  () => {
+    if (
+      !autosaveReady ||
+      !isEditing.value ||
+      !canEdit.value ||
+      publishing.value
+    )
+      return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => void saveDraft(), 800);
+  },
+  { deep: true },
+);
+watch(
   () => [
     route.fullPath,
     projectId.value,
@@ -294,7 +319,10 @@ watch(
   () => void loadPage(),
 );
 onMounted(() => void loadPage());
-onBeforeUnmount(() => coordinator.purge());
+onBeforeUnmount(() => {
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  coordinator.purge();
+});
 </script>
 
 <template>

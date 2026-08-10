@@ -5,6 +5,17 @@ import type {
   SavedReport,
 } from "../model/reporting-types";
 
+const aggregateField = {
+  classification: "INTERNAL" as const,
+  analyticsReady: true,
+  allowedOperations: ["AGGREGATE"] as Array<"AGGREGATE">,
+};
+const dimensionField = {
+  classification: "INTERNAL" as const,
+  analyticsReady: true,
+  allowedOperations: ["BREAKDOWN", "FILTER"] as Array<"BREAKDOWN" | "FILTER">,
+};
+
 export const reportingDatasetFixtures: ReportingDataset[] = [
   {
     id: "events-product",
@@ -13,13 +24,33 @@ export const reportingDatasetFixtures: ReportingDataset[] = [
     title: "Продуктовые события",
     description: "Опубликованные события и их безопасные аналитические поля.",
     metrics: [
-      { key: "unique_users", label: "Уникальные пользователи", unit: "users" },
-      { key: "total_events", label: "Количество событий", unit: "events" },
-      { key: "orders", label: "Заказы", unit: "orders" },
+      {
+        key: "unique_users",
+        label: "Уникальные пользователи",
+        unit: "users",
+        ...aggregateField,
+      },
+      {
+        key: "total_events",
+        label: "Количество событий",
+        unit: "events",
+        ...aggregateField,
+      },
+      { key: "orders", label: "Заказы", unit: "orders", ...aggregateField },
     ],
     dimensions: [
-      { key: "channel", label: "Канал", cardinality: "LOW" },
-      { key: "event_name", label: "Событие", cardinality: "HIGH" },
+      {
+        key: "channel",
+        label: "Канал",
+        cardinality: "LOW",
+        ...dimensionField,
+      },
+      {
+        key: "event_name",
+        label: "Событие",
+        cardinality: "HIGH",
+        ...dimensionField,
+      },
     ],
   },
   {
@@ -29,8 +60,17 @@ export const reportingDatasetFixtures: ReportingDataset[] = [
     title: "Профили пользователей",
     description: "Текущие опубликованные поля профиля.",
     currentStateDisclosure: "Текущее состояние на момент запроса",
-    metrics: [{ key: "profile_count", label: "Профили", unit: "users" }],
-    dimensions: [{ key: "plan", label: "Тариф", cardinality: "LOW" }],
+    metrics: [
+      {
+        key: "profile_count",
+        label: "Профили",
+        unit: "users",
+        ...aggregateField,
+      },
+    ],
+    dimensions: [
+      { key: "plan", label: "Тариф", cardinality: "LOW", ...dimensionField },
+    ],
   },
   {
     id: "segments-current",
@@ -40,8 +80,22 @@ export const reportingDatasetFixtures: ReportingDataset[] = [
     description: "Текущий состав опубликованных ревизий сегментов.",
     currentStateDisclosure: "Состав пересчитывается по текущему профилю",
     segmentRevisionId: "segment-catalog-r5",
-    metrics: [{ key: "segment_size", label: "Размер сегмента", unit: "users" }],
-    dimensions: [{ key: "segment", label: "Сегмент", cardinality: "LOW" }],
+    metrics: [
+      {
+        key: "segment_size",
+        label: "Размер сегмента",
+        unit: "users",
+        ...aggregateField,
+      },
+    ],
+    dimensions: [
+      {
+        key: "segment",
+        label: "Сегмент",
+        cardinality: "LOW",
+        ...dimensionField,
+      },
+    ],
   },
 ];
 

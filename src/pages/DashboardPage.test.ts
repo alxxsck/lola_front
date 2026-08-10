@@ -114,6 +114,21 @@ describe("DashboardPage", () => {
     expect(wrapper.text()).toContain("Опубликовать");
   });
 
+  it("preserves hidden pages when editing the Overview Draft", async () => {
+    const { wrapper, router } = await mountPage(
+      "/dashboards/dashboard-product-pulse/edit",
+    );
+
+    await wrapper.get(".dashboard-actions button:first-child").trigger("click");
+    await flushPromises();
+
+    const draftId = String(router.currentRoute.value.params.dashboardId);
+    const saved = await reportingRepository.getDashboard("project-1", draftId);
+    expect(saved.pages).toHaveLength(2);
+    expect(saved.pages[1]?.title).toBe("Диагностика");
+    expect(saved.pages[1]?.widgets).toHaveLength(50);
+  });
+
   it("purges rendered Widgets immediately when aggregate read is revoked", async () => {
     const { wrapper, router, auth } = await mountPage(
       "/dashboards/dashboard-product-pulse",

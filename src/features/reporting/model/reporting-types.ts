@@ -6,6 +6,13 @@ export type ReportingDateRange =
 export type ReportingTimeGrain = "HOUR" | "DAY" | "WEEK" | "MONTH";
 export type ReportingDatasetOwner = "EVENT" | "PROFILE" | "SEGMENT";
 export type ReportingArtifactSpace = "PERSONAL" | "TEAM" | "PROJECT";
+export type ReportingFieldClassification = "PUBLIC" | "INTERNAL" | "RESTRICTED";
+export type ReportingCompatibilityCode =
+  | "NO_TEMPORAL_HISTORY"
+  | "RESTRICTED_FIELD"
+  | "DIMENSION_TOO_HIGH_CARDINALITY"
+  | "SMALL_GROUP_SUPPRESSED"
+  | "NOT_ANALYTICS_READY";
 
 export type ReportingAllowedAction =
   "EDIT" | "PUBLISH" | "DUPLICATE" | "ARCHIVE" | "ADD_TO_DASHBOARD";
@@ -38,11 +45,21 @@ export type ReportingDataset = {
   description: string;
   currentStateDisclosure?: string;
   segmentRevisionId?: string;
-  metrics: Array<{ key: string; label: string; unit: string }>;
+  metrics: Array<{
+    key: string;
+    label: string;
+    unit: string;
+    classification: ReportingFieldClassification;
+    analyticsReady: boolean;
+    allowedOperations: Array<"AGGREGATE">;
+  }>;
   dimensions: Array<{
     key: string;
     label: string;
     cardinality: "LOW" | "HIGH";
+    classification: ReportingFieldClassification;
+    analyticsReady: boolean;
+    allowedOperations: Array<"BREAKDOWN" | "FILTER">;
   }>;
 };
 
@@ -62,6 +79,7 @@ export type ReportingArtifactSummary = {
 
 export type SavedReportDraftInput = {
   id?: string;
+  expectedVersion?: number;
   title: string;
   description?: string;
   space: ReportingArtifactSpace;
@@ -100,6 +118,7 @@ export type DashboardPageDefinition = {
 
 export type DashboardDraftInput = {
   id?: string;
+  expectedVersion?: number;
   title: string;
   description?: string;
   space: ReportingArtifactSpace;
@@ -229,5 +248,12 @@ export class ReportingVersionConflictError extends Error {
       "Отчёт изменился в другой сессии. Обновите данные или создайте копию.",
     );
     this.name = "ReportingVersionConflictError";
+  }
+}
+
+export class ReportingCompatibilityError extends Error {
+  constructor(readonly code: ReportingCompatibilityCode) {
+    super(code);
+    this.name = "ReportingCompatibilityError";
   }
 }

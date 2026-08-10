@@ -16,6 +16,7 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import {
   canCreateSavedReport,
+  canCreateDashboard,
   canEditSavedReport,
   canPublishSavedReport,
   canReadReporting,
@@ -49,6 +50,8 @@ const previewing = ref(false);
 const saving = ref(false);
 const publishing = ref(false);
 const error = ref("");
+let autosaveReady = false;
+let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const form = reactive({
   title: "Новый отчёт",
@@ -77,13 +80,32 @@ const canEdit = computed(() =>
     : canEditSavedReport(permissions.value),
 );
 const canPublish = computed(() => canPublishSavedReport(permissions.value));
+const canAddToDashboard = computed(
+  () =>
+    canCreateDashboard(permissions.value) &&
+    Boolean(report.value?.allowedActions.includes("ADD_TO_DASHBOARD")),
+);
 const selectedDataset = computed(
   () => datasets.value.find((dataset) => dataset.id === form.datasetId) ?? null,
 );
-const metricOptions = computed(() => selectedDataset.value?.metrics ?? []);
+const metricOptions = computed(
+  () =>
+    selectedDataset.value?.metrics.filter(
+      (metric) =>
+        metric.analyticsReady &&
+        metric.classification !== "RESTRICTED" &&
+        metric.allowedOperations.includes("AGGREGATE"),
+    ) ?? [],
+);
 const dimensionOptions = computed(() => [
   { key: "", label: "Без разбивки" },
-  ...(selectedDataset.value?.dimensions ?? []),
+  ...(selectedDataset.value?.dimensions.filter(
+    (dimension) =>
+      dimension.analyticsReady &&
+      dimension.classification !== "RESTRICTED" &&
+      dimension.cardinality === "LOW" &&
+      dimension.allowedOperations.includes("BREAKDOWN"),
+  ) ?? []),
 ]);
 const dateRangeOptions = reportingDateRangeOptions;
 const spaceOptions = reportingSpaceOptions;
@@ -155,6 +177,7 @@ async function loadPage(): Promise<void> {
     return;
   }
   coordinator.purge();
+  autosaveReady = false;
   result.value = null;
   loading.value = true;
   error.value = "";
@@ -180,6 +203,7 @@ async function loadPage(): Promise<void> {
       cause instanceof Error ? cause.message : "Не удалось открыть отчёт";
   } finally {
     loading.value = false;
+    autosaveReady = true;
   }
 }
 
@@ -219,11 +243,14 @@ async function saveDraft(): Promise<SavedReport | null> {
     (report.value && !report.value.allowedActions.includes("EDIT"))
   )
     return null;
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  autosaveTimer = null;
   saving.value = true;
   error.value = "";
   try {
     const saved = await reportingRepository.saveSavedReportDraft(projectId, {
       ...(report.value ? { id: report.value.id } : {}),
+      ...(report.value ? { expectedVersion: report.value.version } : {}),
       title: form.title.trim(),
       description: form.description.trim(),
       space: form.space,
@@ -283,6 +310,21 @@ watch(
   },
 );
 watch(
+  form,
+  () => {
+    if (
+      !autosaveReady ||
+      !isEditing.value ||
+      !canEdit.value ||
+      publishing.value
+    )
+      return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => void saveDraft(), 800);
+  },
+  { deep: true },
+);
+watch(
   () => [
     route.fullPath,
     auth.project?.id ?? "",
@@ -291,7 +333,10 @@ watch(
   () => void loadPage(),
 );
 onMounted(() => void loadPage());
-onBeforeUnmount(() => coordinator.purge());
+onBeforeUnmount(() => {
+  if (autosaveTimer) clearTimeout(autosaveTimer);
+  coordinator.purge();
+});
 </script>
 
 <template>
@@ -328,6 +373,7 @@ onBeforeUnmount(() => coordinator.purge());
         </template>
         <template v-else>
           <Button
+            v-if="canAddToDashboard"
             label="Добавить в дашборд"
             icon="pi pi-plus"
             severity="secondary"

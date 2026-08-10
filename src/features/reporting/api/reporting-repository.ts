@@ -16,7 +16,10 @@ import type {
   SavedReport,
   SavedReportDraftInput,
 } from "../model/reporting-types";
-import { ReportingVersionConflictError } from "../model/reporting-types";
+import {
+  ReportingCompatibilityError,
+  ReportingVersionConflictError,
+} from "../model/reporting-types";
 
 type MockState = {
   reports: SavedReport[];
@@ -123,7 +126,8 @@ class MockReportingRepository implements ReportingRepository {
     });
   }
 
-  async listDatasets(_projectId: string): Promise<ReportingDataset[]> {
+  async listDatasets(projectId: string): Promise<ReportingDataset[]> {
+    stateForProject(projectId);
     return clone(reportingDatasetFixtures);
   }
 
@@ -148,6 +152,8 @@ class MockReportingRepository implements ReportingRepository {
   ): Promise<SavedReport> {
     const state = stateForProject(projectId);
     const existing = draft.id ? requireReport(projectId, draft.id) : null;
+    if (existing && draft.expectedVersion !== existing.version)
+      throw new ReportingVersionConflictError();
     const branchFromPublished = existing?.lifecycle === "PUBLISHED";
     const report: SavedReport = {
       id:
@@ -217,6 +223,8 @@ class MockReportingRepository implements ReportingRepository {
   ): Promise<Dashboard> {
     const state = stateForProject(projectId);
     const existing = draft.id ? requireDashboard(projectId, draft.id) : null;
+    if (existing && draft.expectedVersion !== existing.version)
+      throw new ReportingVersionConflictError();
     const branchFromPublished = existing?.lifecycle === "PUBLISHED";
     const dashboard: Dashboard = {
       id:
@@ -289,15 +297,34 @@ class MockReportingRepository implements ReportingRepository {
   }
 
   async runQuery(
-    _projectId: string,
+    projectId: string,
     query: ReportingQueryDefinition,
     signal: AbortSignal,
   ): Promise<ReportingQueryResult> {
+    stateForProject(projectId);
     await waitForFixture(signal);
     const dataset = reportingDatasetFixtures.find(
       ({ id }) => id === query.datasetId,
     );
     if (!dataset) throw new Error("Источник данных недоступен");
+    const metric = dataset.metrics.find(({ key }) => key === query.metric);
+    if (!metric || metric.classification === "RESTRICTED")
+      throw new ReportingCompatibilityError("RESTRICTED_FIELD");
+    if (!metric.analyticsReady)
+      throw new ReportingCompatibilityError("NOT_ANALYTICS_READY");
+    const selectedFields = [
+      ...(query.breakdown ? [query.breakdown] : []),
+      ...query.filters.map(({ field }) => field),
+    ];
+    for (const field of selectedFields) {
+      const dimension = dataset.dimensions.find(({ key }) => key === field);
+      if (!dimension || dimension.classification === "RESTRICTED")
+        throw new ReportingCompatibilityError("RESTRICTED_FIELD");
+      if (!dimension.analyticsReady)
+        throw new ReportingCompatibilityError("NOT_ANALYTICS_READY");
+      if (dimension.cardinality === "HIGH")
+        throw new ReportingCompatibilityError("DIMENSION_TOO_HIGH_CARDINALITY");
+    }
     const invalidTemporalMode =
       (dataset.owner === "EVENT" && query.population.mode !== "EVENT_TIME") ||
       (dataset.owner === "PROFILE" &&
@@ -310,7 +337,7 @@ class MockReportingRepository implements ReportingRepository {
           query.dateRange !== null ||
           query.grain !== null));
     if (invalidTemporalMode)
-      throw new Error("NO_TEMPORAL_HISTORY: доступно только текущее состояние");
+      throw new ReportingCompatibilityError("NO_TEMPORAL_HISTORY");
     return clone(resultFixtureFor(query.metric, query.breakdown));
   }
 }

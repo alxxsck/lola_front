@@ -63,6 +63,7 @@ describe("Reporting repository", () => {
     );
     const draft = await repository.saveSavedReportDraft("project-1", {
       id: original.id,
+      expectedVersion: original.version,
       title: "Локальная правка",
       space: original.space,
       collection: original.collection,
@@ -174,6 +175,7 @@ describe("Reporting repository", () => {
 
     const draft = await repository.saveDashboardDraft("project-1", {
       id: original.id,
+      expectedVersion: original.version,
       title: original.title,
       description: original.description,
       space: original.space,
@@ -194,5 +196,27 @@ describe("Reporting repository", () => {
     expect(await repository.getDashboard("project-1", original.id)).toEqual(
       original,
     );
+  });
+
+  it("rejects an obsolete Draft autosave with OCC", async () => {
+    const repository = createMockReportingRepository();
+    const current = await repository.getSavedReport(
+      "project-1",
+      "report-orders",
+    );
+    const input = {
+      id: current.id,
+      expectedVersion: current.version,
+      title: current.title,
+      space: current.space,
+      collection: current.collection,
+      visualization: current.visualization,
+      query: current.query,
+    };
+
+    await repository.saveSavedReportDraft("project-1", input);
+    await expect(
+      repository.saveSavedReportDraft("project-1", input),
+    ).rejects.toThrow("изменился в другой сессии");
   });
 });
