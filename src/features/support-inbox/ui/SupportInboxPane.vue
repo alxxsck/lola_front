@@ -222,6 +222,10 @@ function itemKey(item: SupportInboxItem): string {
   return `${item.kind}:${item.id}`;
 }
 
+function searchSelectionKey(item: SupportSearchResult): string {
+  return `${item.selection.kind}:${item.selection.id}`;
+}
+
 function caseStatus(value: string): string {
   return (
     {
@@ -511,6 +515,13 @@ function unreadLabel(
               :key="`${item.kind}:${item.id}`"
               type="button"
               class="search-result-row"
+              :class="{
+                selected: selectedKey === searchSelectionKey(item),
+              }"
+              :data-selection-key="searchSelectionKey(item)"
+              :aria-current="
+                selectedKey === searchSelectionKey(item) ? 'true' : undefined
+              "
               @click="emit('selectSearch', item)"
             >
               <span class="search-result-icon"
@@ -1039,6 +1050,7 @@ function unreadLabel(
   overscroll-behavior: contain;
 }
 .search-result-row {
+  position: relative;
   width: 100%;
   min-height: 72px;
   padding: 11px 14px;
@@ -1051,9 +1063,24 @@ function unreadLabel(
   color: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.search-result-row:hover {
+.search-result-row::before {
+  content: "";
+  position: absolute;
+  inset: 6px auto 6px 0;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+}
+.search-result-row:hover:not(.selected) {
   background: var(--surface-hover);
+}
+.search-result-row.selected {
+  background: var(--brand-soft);
+}
+.search-result-row.selected::before {
+  background: var(--brand);
 }
 .search-result-row:focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -1486,6 +1513,7 @@ function unreadLabel(
   .inbox-modes__selection,
   .inbox-modes button,
   .inbox-row,
+  .search-result-row,
   .inbox-tools__trigger,
   .inbox-tools__chevron,
   .inbox-tools-panel-enter-active,

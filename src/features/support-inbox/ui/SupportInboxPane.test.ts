@@ -369,6 +369,36 @@ describe("SupportInboxPane", () => {
     });
   });
 
+  it("marks the search result for the open chat as selected", () => {
+    const wrapper = render({
+      selectedKey: "CONVERSATION:conversation-1",
+      searchActive: true,
+      searchItems: [
+        {
+          id: "conversation-1",
+          kind: "CONVERSATION",
+          selection: { kind: "CONVERSATION", id: "conversation-1" },
+          snippet: "Открытая переписка",
+          activityAt: "2026-08-08T10:00:00.000Z",
+          matchProvenance: "ORIGINAL",
+          locale: "ru",
+        },
+      ],
+      searchFreshness: {
+        state: "READY",
+        lagSeconds: 0,
+        indexedThrough: "2026-08-08T10:00:00.000Z",
+      },
+    });
+
+    const row = wrapper.get(".search-result-row");
+    expect(row.classes()).toContain("selected");
+    expect(row.attributes("aria-current")).toBe("true");
+    expect(row.attributes("data-selection-key")).toBe(
+      "CONVERSATION:conversation-1",
+    );
+  });
+
   it("renders no-results after a successful filter-only search", () => {
     const wrapper = render({
       searchState: {
