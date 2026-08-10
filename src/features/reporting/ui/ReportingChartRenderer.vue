@@ -16,6 +16,38 @@ const props = defineProps<{
 
 const number = new Intl.NumberFormat("ru");
 const percent = new Intl.NumberFormat("ru", { maximumFractionDigits: 1 });
+const nonRenderableState = computed(() => {
+  const result = props.result;
+  if (!result || (result.data && result.receipt)) return null;
+  const copy = {
+    queued: ["Запрос в очереди", "Результат появится после запуска."],
+    running: ["Идёт расчёт", "Данные обновятся после завершения."],
+    empty: [
+      "Данных нет",
+      result.safeMessage ?? "За выбранный период ничего не найдено.",
+    ],
+    suppressed: [
+      "Результат скрыт",
+      result.safeMessage ?? "Группа слишком мала для безопасного показа.",
+    ],
+    forbidden: [
+      "Доступ отозван",
+      result.safeMessage ?? "Результат и его схема удалены.",
+    ],
+    failed: [
+      "Расчёт не выполнен",
+      result.safeMessage ?? "Повторите запрос позже.",
+    ],
+    expired: [
+      "Результат устарел",
+      result.safeMessage ?? "Запустите расчёт ещё раз.",
+    ],
+    complete: ["Результат недоступен", "Ответ не содержит данных."],
+    stale: ["Результат недоступен", "Ответ не содержит данных."],
+    partial: ["Результат недоступен", "Ответ не содержит данных."],
+  } satisfies Record<string, [string, string]>;
+  return copy[result.status];
+});
 
 const values = computed(() => {
   const data = props.result?.data;
@@ -130,9 +162,29 @@ function unitLabel(unit: string): string {
       <p>Настройте запрос и нажмите «Предпросмотр».</p>
     </div>
 
-    <template v-else>
+    <div
+      v-else-if="nonRenderableState"
+      class="chart-empty result-state"
+      :role="result?.status === 'forbidden' ? 'alert' : 'status'"
+    >
+      <span class="empty-orbit" aria-hidden="true"
+        ><i class="pi pi-info-circle"
+      /></span>
+      <strong>{{ nonRenderableState[0] }}</strong>
+      <p>{{ nonRenderableState[1] }}</p>
+    </div>
+
+    <template v-else-if="result?.data && result.receipt">
       <div class="result-header">
-        <span class="result-kicker">Результат</span>
+        <div class="result-heading-line">
+          <span class="result-kicker">Результат</span>
+          <span
+            v-if="result.status === 'stale' || result.status === 'partial'"
+            class="result-status"
+          >
+            {{ result.status === "stale" ? "Данные устарели" : "Частично" }}
+          </span>
+        </div>
         <p>{{ result.summary }}</p>
       </div>
 
@@ -313,6 +365,7 @@ function unitLabel(unit: string): string {
 
 <style scoped>
 .chart-shell {
+  container-type: inline-size;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
@@ -351,6 +404,18 @@ function unitLabel(unit: string): string {
 .compact .bar-chart,
 .compact .donut-layout {
   min-height: 240px;
+}
+
+.compact .donut-layout {
+  grid-template-columns: minmax(150px, 0.7fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.compact .donut-legend-item {
+  grid-template-columns: 8px minmax(0, 1fr) auto 40px;
+  gap: 6px;
+  padding: 6px 2px;
 }
 
 .compact .line-chart svg {
@@ -403,6 +468,19 @@ function unitLabel(unit: string): string {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.result-heading-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.result-status {
+  color: var(--status-warning-text);
+  font-size: var(--font-size-caption);
+  font-weight: 650;
 }
 
 .result-header p {
@@ -731,6 +809,19 @@ td {
   .table-result {
     padding-right: 16px;
     padding-left: 16px;
+  }
+}
+
+@container (max-width: 480px) {
+  .donut-layout,
+  .compact .donut-layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 20px 16px;
+  }
+
+  .donut-visual {
+    max-width: 190px;
   }
 }
 

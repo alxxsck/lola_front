@@ -29,7 +29,10 @@ let observer: IntersectionObserver | null = null;
 
 const query = computed(() => ({
   ...props.report.query,
-  dateRange: props.dateRange,
+  dateRange:
+    props.report.query.population.mode === "EVENT_TIME"
+      ? props.dateRange
+      : null,
 }));
 
 async function load(): Promise<void> {
@@ -37,8 +40,10 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const outcome = await props.coordinator.schedule((signal) =>
-      reportingRepository.runQuery(props.projectId, query.value, signal),
+    const outcome = await props.coordinator.schedule(
+      (signal) =>
+        reportingRepository.runQuery(props.projectId, query.value, signal),
+      JSON.stringify(query.value),
     );
     if (outcome.status === "committed") result.value = outcome.value;
   } catch (cause) {

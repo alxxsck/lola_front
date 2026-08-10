@@ -26,8 +26,10 @@ import {
 import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
 import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
 import {
-  canAuthorDashboard,
-  canAuthorSavedReport,
+  canCreateDashboard,
+  canCreateSavedReport,
+  canEditDashboard,
+  canEditSavedReport,
   canReadReporting,
 } from "@/features/reporting/model/reporting-permissions";
 import { ensureSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
@@ -139,7 +141,7 @@ export const router = createRouter({
           path: "reports/new",
           name: "saved-report-create",
           component: () => import("@/pages/SavedReportPage.vue"),
-          meta: { reportingAccess: "SAVED_REPORT_AUTHOR" },
+          meta: { reportingAccess: "SAVED_REPORT_CREATE" },
         },
         {
           path: "reports/:reportId",
@@ -151,13 +153,13 @@ export const router = createRouter({
           path: "reports/:reportId/edit",
           name: "saved-report-edit",
           component: () => import("@/pages/SavedReportPage.vue"),
-          meta: { reportingAccess: "SAVED_REPORT_AUTHOR" },
+          meta: { reportingAccess: "SAVED_REPORT_EDIT" },
         },
         {
           path: "dashboards/new",
           name: "dashboard-create",
           component: () => import("@/pages/DashboardPage.vue"),
-          meta: { reportingAccess: "DASHBOARD_AUTHOR" },
+          meta: { reportingAccess: "DASHBOARD_CREATE" },
         },
         {
           path: "dashboards/:dashboardId",
@@ -169,7 +171,7 @@ export const router = createRouter({
           path: "dashboards/:dashboardId/edit",
           name: "dashboard-edit",
           component: () => import("@/pages/DashboardPage.vue"),
-          meta: { reportingAccess: "DASHBOARD_AUTHOR" },
+          meta: { reportingAccess: "DASHBOARD_EDIT" },
         },
         {
           path: "settings/security",
@@ -385,7 +387,8 @@ export const router = createRouter({
         {
           path: "support/settings/notifications",
           name: "support-notification-settings",
-          component: () => import("@/pages/SupportNotificationSettingsPage.vue"),
+          component: () =>
+            import("@/pages/SupportNotificationSettingsPage.vue"),
           meta: { supportNotificationSettingsAccess: true },
         },
         {
@@ -670,21 +673,28 @@ router.beforeEach(async (to) => {
     const canEnter =
       canRead &&
       (reportingAccess === "READ" ||
-        (reportingAccess === "SAVED_REPORT_AUTHOR" &&
-          canAuthorSavedReport(projectPermissions)) ||
-        (reportingAccess === "DASHBOARD_AUTHOR" &&
-          canAuthorDashboard(projectPermissions)));
+        (reportingAccess === "SAVED_REPORT_CREATE" &&
+          canCreateSavedReport(projectPermissions)) ||
+        (reportingAccess === "SAVED_REPORT_EDIT" &&
+          canEditSavedReport(projectPermissions)) ||
+        (reportingAccess === "DASHBOARD_CREATE" &&
+          canCreateDashboard(projectPermissions)) ||
+        (reportingAccess === "DASHBOARD_EDIT" &&
+          canEditDashboard(projectPermissions)));
     if (!canEnter) return auth.authenticatedLandingPath;
   }
-  const legacyEntryPoint = to.meta
-    .legacySupportEntryPoint as LegacySupportEntryPoint | undefined;
+  const legacyEntryPoint = to.meta.legacySupportEntryPoint as
+    LegacySupportEntryPoint | undefined;
   if (legacyEntryPoint && actorId && projectId) {
     const target: SupportWorkspaceTarget =
       legacyEntryPoint === "CASES" ? "CASES" : "CONVERSATIONS";
     const hasTargetPermission =
       target === "CASES"
         ? hasProjectPermission(projectPermissions, "project.cases.read")
-        : hasProjectPermission(projectPermissions, "project.conversations.read");
+        : hasProjectPermission(
+            projectPermissions,
+            "project.conversations.read",
+          );
     if (hasTargetPermission) {
       const admission = await ensureSupportWorkspaceShellAdmission({
         actorId,
@@ -714,7 +724,10 @@ router.beforeEach(async (to) => {
     const hasTargetPermission =
       target === "CASES"
         ? hasProjectPermission(projectPermissions, "project.cases.read")
-        : hasProjectPermission(projectPermissions, "project.conversations.read");
+        : hasProjectPermission(
+            projectPermissions,
+            "project.conversations.read",
+          );
     if (!hasTargetPermission) return auth.authenticatedLandingPath;
     const admission = await ensureSupportWorkspaceShellAdmission({
       actorId,

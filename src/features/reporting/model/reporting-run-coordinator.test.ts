@@ -81,4 +81,19 @@ describe("ReportingRunCoordinator", () => {
       true,
     );
   });
+
+  it("coalesces duplicate Widget query descriptors into one cold run", async () => {
+    const coordinator = new ReportingRunCoordinator(4);
+    coordinator.beginScope("project-1:dashboard-duplicates");
+    const task = vi.fn(async () => "shared result");
+
+    const outcomes = await Promise.all(
+      Array.from({ length: 12 }, () =>
+        coordinator.schedule(task, "query-active-users-r2:last-30-days"),
+      ),
+    );
+
+    expect(task).toHaveBeenCalledTimes(1);
+    expect(outcomes).toHaveLength(12);
+  });
 });

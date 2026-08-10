@@ -15,13 +15,19 @@ import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import {
-  canAuthorSavedReport,
+  canCreateSavedReport,
+  canEditSavedReport,
   canPublishSavedReport,
   canReadReporting,
   canRunReportingQuery,
 } from "@/features/reporting/model/reporting-permissions";
 import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
+import {
+  reportingDateRangeOptions,
+  reportingSpaceOptions,
+} from "@/features/reporting/model/reporting-options";
 import type {
+  ReportingArtifactSpace,
   ReportingDataset,
   ReportingDateRange,
   ReportingQueryResult,
@@ -47,7 +53,8 @@ const error = ref("");
 const form = reactive({
   title: "Новый отчёт",
   description: "",
-  collection: "Личные",
+  collection: "Без коллекции",
+  space: "PERSONAL" as ReportingArtifactSpace,
   datasetId: "events-product",
   metric: "unique_users",
   dateRange: "LAST_30_DAYS" as ReportingDateRange,
@@ -64,7 +71,11 @@ const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
 const canExecute = computed(() => canRunReportingQuery(permissions.value));
-const canEdit = computed(() => canAuthorSavedReport(permissions.value));
+const canEdit = computed(() =>
+  isCreate.value
+    ? canCreateSavedReport(permissions.value)
+    : canEditSavedReport(permissions.value),
+);
 const canPublish = computed(() => canPublishSavedReport(permissions.value));
 const selectedDataset = computed(
   () => datasets.value.find((dataset) => dataset.id === form.datasetId) ?? null,
@@ -74,11 +85,8 @@ const dimensionOptions = computed(() => [
   { key: "", label: "Без разбивки" },
   ...(selectedDataset.value?.dimensions ?? []),
 ]);
-const dateRangeOptions: Array<{ value: ReportingDateRange; label: string }> = [
-  { value: "LAST_7_DAYS", label: "Последние 7 дней" },
-  { value: "LAST_30_DAYS", label: "Последние 30 дней" },
-  { value: "LAST_90_DAYS", label: "Последние 90 дней" },
-];
+const dateRangeOptions = reportingDateRangeOptions;
+const spaceOptions = reportingSpaceOptions;
 const grainOptions: Array<{ value: ReportingTimeGrain; label: string }> = [
   { value: "DAY", label: "По дням" },
   { value: "WEEK", label: "По неделям" },
@@ -92,7 +100,6 @@ const visualizationOptions: Array<{
   { value: "KPI", label: "Число", icon: "pi pi-hashtag" },
   { value: "LINE", label: "Линия", icon: "pi pi-chart-line" },
   { value: "BAR", label: "Столбцы", icon: "pi pi-chart-bar" },
-  { value: "DONUT", label: "Кольцо", icon: "pi pi-chart-pie" },
   { value: "TABLE", label: "Таблица", icon: "pi pi-table" },
 ];
 
@@ -100,21 +107,37 @@ function applyReport(next: SavedReport): void {
   report.value = next;
   form.title = next.title;
   form.description = next.description;
+  form.space = next.space;
   form.collection = next.collection;
   form.datasetId = next.query.datasetId;
   form.metric = next.query.metric;
-  form.dateRange = next.query.dateRange;
-  form.grain = next.query.grain;
+  form.dateRange = next.query.dateRange ?? "LAST_30_DAYS";
+  form.grain = next.query.grain ?? "DAY";
   form.breakdown = next.query.breakdown ?? "";
   form.visualization = next.visualization;
 }
 
 function queryDefinition() {
+  const dataset = selectedDataset.value;
+  const population =
+    dataset?.owner === "PROFILE"
+      ? ({ mode: "CURRENT_PROFILE" } as const)
+      : dataset?.owner === "SEGMENT"
+        ? ({
+            mode: "CURRENT_SEGMENT",
+            segmentRevisionId: dataset.segmentRevisionId ?? "",
+          } as const)
+        : ({ mode: "EVENT_TIME" } as const);
   return {
+    definitionRevisionId:
+      !isEditing.value && report.value
+        ? report.value.query.definitionRevisionId
+        : `query-draft-${report.value?.id ?? "new"}-${form.datasetId}-${form.metric}-v${(report.value?.version ?? 0) + 1}`,
     datasetId: form.datasetId,
     metric: form.metric,
-    dateRange: form.dateRange,
-    grain: form.grain,
+    population,
+    dateRange: population.mode === "EVENT_TIME" ? form.dateRange : null,
+    grain: population.mode === "EVENT_TIME" ? form.grain : null,
     ...(form.breakdown ? { breakdown: form.breakdown } : {}),
     filters: [],
   };
@@ -143,6 +166,14 @@ async function loadPage(): Promise<void> {
       applyReport(
         await reportingRepository.getSavedReport(projectId, reportId),
       );
+    if (
+      isEditing.value &&
+      reportId &&
+      (!canEdit.value || !report.value?.allowedActions.includes("EDIT"))
+    ) {
+      await router.replace(`/reports/${reportId}`);
+      return;
+    }
     if (!isEditing.value && reportId) await runPreview();
   } catch (cause) {
     error.value =
@@ -181,7 +212,13 @@ async function runPreview(): Promise<void> {
 
 async function saveDraft(): Promise<SavedReport | null> {
   const projectId = auth.project?.id;
-  if (!projectId || !form.title.trim()) return null;
+  if (
+    !projectId ||
+    !canEdit.value ||
+    !form.title.trim() ||
+    (report.value && !report.value.allowedActions.includes("EDIT"))
+  )
+    return null;
   saving.value = true;
   error.value = "";
   try {
@@ -189,12 +226,13 @@ async function saveDraft(): Promise<SavedReport | null> {
       ...(report.value ? { id: report.value.id } : {}),
       title: form.title.trim(),
       description: form.description.trim(),
-      collection: form.collection.trim() || "Личные",
+      space: form.space,
+      collection: form.collection.trim() || "Без коллекции",
       visualization: form.visualization,
       query: queryDefinition(),
     });
     applyReport(saved);
-    if (route.name !== "saved-report-edit") {
+    if (route.params.reportId !== saved.id) {
       await router.replace(`/reports/${saved.id}/edit`);
     }
     return saved;
@@ -336,6 +374,15 @@ onBeforeUnmount(() => coordinator.purge());
               <Textarea v-model="form.description" rows="2" auto-resize />
             </label>
             <label>
+              <span>Пространство</span>
+              <Select
+                v-model="form.space"
+                :options="spaceOptions"
+                option-label="label"
+                option-value="value"
+              />
+            </label>
+            <label>
               <span>Коллекция</span>
               <InputText v-model="form.collection" />
             </label>
@@ -388,7 +435,7 @@ onBeforeUnmount(() => coordinator.purge());
                 option-value="key"
               />
             </label>
-            <div class="field-pair">
+            <div v-if="selectedDataset?.owner === 'EVENT'" class="field-pair">
               <label>
                 <span>Период</span>
                 <Select
@@ -474,7 +521,10 @@ onBeforeUnmount(() => coordinator.purge());
 
     <section v-else class="viewer-layout">
       <div class="viewer-toolbar">
-        <div class="viewer-filters">
+        <div
+          v-if="report?.query.population.mode === 'EVENT_TIME'"
+          class="viewer-filters"
+        >
           <Select
             v-model="form.dateRange"
             :options="dateRangeOptions"

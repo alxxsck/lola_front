@@ -17,8 +17,15 @@ export function canRunReportingQuery(permissions: readonly string[]): boolean {
 }
 
 export function canAuthorSavedReport(permissions: readonly string[]): boolean {
+  return canCreateSavedReport(permissions) || canEditSavedReport(permissions);
+}
+
+export function canCreateSavedReport(permissions: readonly string[]): boolean {
+  return permissions.includes("project.saved_reports.create");
+}
+
+export function canEditSavedReport(permissions: readonly string[]): boolean {
   return includesAny(permissions, [
-    "project.saved_reports.create",
     "project.saved_reports.edit_own",
     "project.saved_reports.edit_any",
   ]);
@@ -29,8 +36,15 @@ export function canPublishSavedReport(permissions: readonly string[]): boolean {
 }
 
 export function canAuthorDashboard(permissions: readonly string[]): boolean {
+  return canCreateDashboard(permissions) || canEditDashboard(permissions);
+}
+
+export function canCreateDashboard(permissions: readonly string[]): boolean {
+  return permissions.includes("project.dashboards.create");
+}
+
+export function canEditDashboard(permissions: readonly string[]): boolean {
   return includesAny(permissions, [
-    "project.dashboards.create",
     "project.dashboards.edit_own",
     "project.dashboards.edit_any",
   ]);

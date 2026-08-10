@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
@@ -9,61 +9,52 @@ import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import {
-  canAuthorDashboard,
-  canAuthorSavedReport,
+  canCreateDashboard,
+  canCreateSavedReport,
+  canEditDashboard,
+  canEditSavedReport,
   canReadReporting,
 } from "@/features/reporting/model/reporting-permissions";
-import type {
-  ReportingArtifactKind,
-  ReportingArtifactSummary,
-} from "@/features/reporting/model/reporting-types";
+import type { ReportingArtifactSummary } from "@/features/reporting/model/reporting-types";
+import { reportingSpaceLabel } from "@/features/reporting/model/reporting-options";
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const artifacts = ref<ReportingArtifactSummary[]>([]);
 const loading = ref(true);
 const error = ref("");
-const search = ref("");
-const activeTab = ref<"dashboards" | "reports">("dashboards");
-const collection = ref("Все коллекции");
+const search = ref(
+  typeof route.query.search === "string" ? route.query.search : "",
+);
+const activeTab = ref<"dashboards" | "reports">(
+  route.query.tab === "reports" ? "reports" : "dashboards",
+);
+const collection = ref(
+  typeof route.query.collection === "string"
+    ? route.query.collection
+    : "Все коллекции",
+);
+let catalogGeneration = 0;
+const catalogCollections = ref<string[]>([]);
+const dashboardCount = ref(0);
+const reportCount = ref(0);
 
 const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
-const canCreateReport = computed(() => canAuthorSavedReport(permissions.value));
-const canCreateDashboard = computed(() =>
-  canAuthorDashboard(permissions.value),
+const canCreateReport = computed(() => canCreateSavedReport(permissions.value));
+const canCreateDashboardArtifact = computed(() =>
+  canCreateDashboard(permissions.value),
 );
 const collections = computed(() => [
   "Все коллекции",
-  ...new Set(artifacts.value.map((artifact) => artifact.collection)),
+  ...catalogCollections.value,
 ]);
-const dashboardCount = computed(
-  () =>
-    artifacts.value.filter((artifact) => artifact.kind === "DASHBOARD").length,
-);
-const reportCount = computed(
-  () =>
-    artifacts.value.filter((artifact) => artifact.kind === "SAVED_REPORT")
-      .length,
-);
-const visibleArtifacts = computed(() => {
-  const kind: ReportingArtifactKind =
-    activeTab.value === "dashboards" ? "DASHBOARD" : "SAVED_REPORT";
-  const needle = search.value.trim().toLocaleLowerCase("ru");
-  return artifacts.value.filter(
-    (artifact) =>
-      artifact.kind === kind &&
-      (collection.value === "Все коллекции" ||
-        artifact.collection === collection.value) &&
-      (!needle ||
-        `${artifact.title} ${artifact.description} ${artifact.ownerName}`
-          .toLocaleLowerCase("ru")
-          .includes(needle)),
-  );
-});
+const visibleArtifacts = computed(() => artifacts.value);
 
 async function loadArtifacts(): Promise<void> {
+  const generation = ++catalogGeneration;
   const projectId = auth.project?.id;
   if (!projectId || !canReadReporting(permissions.value)) {
     artifacts.value = [];
@@ -74,13 +65,25 @@ async function loadArtifacts(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    artifacts.value = await reportingRepository.listArtifacts(projectId);
+    const catalog = await reportingRepository.listArtifacts(projectId, {
+      kind: activeTab.value === "dashboards" ? "DASHBOARD" : "SAVED_REPORT",
+      search: search.value,
+      collection:
+        collection.value === "Все коллекции" ? null : collection.value,
+    });
+    if (generation !== catalogGeneration || auth.project?.id !== projectId)
+      return;
+    artifacts.value = catalog.items;
+    dashboardCount.value = catalog.counts.dashboards;
+    reportCount.value = catalog.counts.savedReports;
+    catalogCollections.value = catalog.collections;
   } catch (cause) {
+    if (generation !== catalogGeneration) return;
     artifacts.value = [];
     error.value =
       cause instanceof Error ? cause.message : "Не удалось загрузить отчёты";
   } finally {
-    loading.value = false;
+    if (generation === catalogGeneration) loading.value = false;
   }
 }
 
@@ -98,8 +101,8 @@ function artifactPath(
 function canEditArtifact(artifact: ReportingArtifactSummary): boolean {
   if (!artifact.allowedActions.includes("EDIT")) return false;
   return artifact.kind === "DASHBOARD"
-    ? canCreateDashboard.value
-    : canCreateReport.value;
+    ? canEditDashboard(permissions.value)
+    : canEditSavedReport(permissions.value);
 }
 
 async function archiveArtifact(
@@ -112,7 +115,7 @@ async function archiveArtifact(
     artifact.kind,
     artifact.id,
   );
-  artifacts.value = artifacts.value.filter((item) => item.id !== artifact.id);
+  await loadArtifacts();
 }
 
 function lifecycleLabel(
@@ -140,11 +143,40 @@ function formatUpdatedAt(value: string): string {
   }).format(new Date(value));
 }
 
+let previousProjectId = auth.project?.id ?? "";
 watch(
-  () => [auth.project?.id ?? "", [...permissions.value].sort().join(",")],
-  () => void loadArtifacts(),
+  () => auth.project?.id ?? "",
+  (nextProjectId) => {
+    if (nextProjectId === previousProjectId) return;
+    previousProjectId = nextProjectId;
+    search.value = "";
+    collection.value = "Все коллекции";
+    activeTab.value = "dashboards";
+  },
 );
-onMounted(() => void loadArtifacts());
+
+watch(
+  () => [
+    auth.project?.id ?? "",
+    [...permissions.value].sort().join(","),
+    activeTab.value,
+    search.value,
+    collection.value,
+  ],
+  () => {
+    void router.replace({
+      query: {
+        ...(activeTab.value === "reports" ? { tab: "reports" } : {}),
+        ...(search.value ? { search: search.value } : {}),
+        ...(collection.value !== "Все коллекции"
+          ? { collection: collection.value }
+          : {}),
+      },
+    });
+    void loadArtifacts();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -155,7 +187,10 @@ onMounted(() => void loadArtifacts());
         <h1 id="reports-title">Отчёты</h1>
         <p>Сохранённые ответы и дашборды с понятным происхождением данных.</p>
       </div>
-      <div v-if="canCreateReport || canCreateDashboard" class="header-actions">
+      <div
+        v-if="canCreateReport || canCreateDashboardArtifact"
+        class="header-actions"
+      >
         <Button
           v-if="canCreateReport"
           label="Создать отчёт"
@@ -165,7 +200,7 @@ onMounted(() => void loadArtifacts());
           @click="router.push('/reports/new')"
         />
         <Button
-          v-if="canCreateDashboard"
+          v-if="canCreateDashboardArtifact"
           label="Создать дашборд"
           icon="pi pi-th-large"
           @click="router.push('/dashboards/new')"
@@ -276,6 +311,10 @@ onMounted(() => void loadArtifacts());
             </span>
           </button>
           <dl class="artifact-meta">
+            <div>
+              <dt>Пространство</dt>
+              <dd>{{ reportingSpaceLabel(artifact.space) }}</dd>
+            </div>
             <div>
               <dt>Коллекция</dt>
               <dd>{{ artifact.collection }}</dd>

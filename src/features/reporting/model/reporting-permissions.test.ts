@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   canAuthorDashboard,
   canAuthorSavedReport,
+  canCreateSavedReport,
+  canEditSavedReport,
   canPublishDashboard,
   canReadReporting,
   canRunReportingQuery,
@@ -20,6 +22,8 @@ describe("Reporting permissions", () => {
     expect(canReadReporting(permissions)).toBe(true);
     expect(canRunReportingQuery(permissions)).toBe(true);
     expect(canAuthorSavedReport(permissions)).toBe(true);
+    expect(canCreateSavedReport(permissions)).toBe(true);
+    expect(canEditSavedReport(permissions)).toBe(false);
     expect(canAuthorDashboard(permissions)).toBe(true);
     expect(canPublishDashboard(permissions)).toBe(true);
   });

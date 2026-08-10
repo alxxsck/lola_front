@@ -8,6 +8,7 @@ import type {
 export const reportingDatasetFixtures: ReportingDataset[] = [
   {
     id: "events-product",
+    definitionRevisionId: "dataset-events-product-r3",
     owner: "EVENT",
     title: "Продуктовые события",
     description: "Опубликованные события и их безопасные аналитические поля.",
@@ -23,6 +24,7 @@ export const reportingDatasetFixtures: ReportingDataset[] = [
   },
   {
     id: "profiles-current",
+    definitionRevisionId: "dataset-profiles-current-r2",
     owner: "PROFILE",
     title: "Профили пользователей",
     description: "Текущие опубликованные поля профиля.",
@@ -32,10 +34,12 @@ export const reportingDatasetFixtures: ReportingDataset[] = [
   },
   {
     id: "segments-current",
+    definitionRevisionId: "dataset-segments-current-r5",
     owner: "SEGMENT",
     title: "Сегменты",
     description: "Текущий состав опубликованных ревизий сегментов.",
     currentStateDisclosure: "Состав пересчитывается по текущему профилю",
+    segmentRevisionId: "segment-catalog-r5",
     metrics: [{ key: "segment_size", label: "Размер сегмента", unit: "users" }],
     dimensions: [{ key: "segment", label: "Сегмент", cardinality: "LOW" }],
   },
@@ -47,6 +51,7 @@ export const savedReportFixtures: SavedReport[] = [
     kind: "SAVED_REPORT",
     title: "Активные пользователи",
     description: "Динамика уникальных пользователей за 30 дней",
+    space: "TEAM",
     collection: "Продукт",
     ownerName: "Команда продукта",
     lifecycle: "PUBLISHED",
@@ -55,20 +60,24 @@ export const savedReportFixtures: SavedReport[] = [
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE", "ADD_TO_DASHBOARD"],
     visualization: "LINE",
     query: {
+      definitionRevisionId: "query-active-users-r2",
       datasetId: "events-product",
       metric: "unique_users",
+      population: { mode: "EVENT_TIME" },
       dateRange: "LAST_30_DAYS",
       grain: "DAY",
       filters: [],
     },
     version: 3,
     publishedRevision: 2,
+    chartRevision: 2,
   },
   {
     id: "report-total-events",
     kind: "SAVED_REPORT",
     title: "Всего событий",
     description: "Объём продуктовых событий",
+    space: "TEAM",
     collection: "Продукт",
     ownerName: "Команда продукта",
     lifecycle: "PUBLISHED",
@@ -77,20 +86,24 @@ export const savedReportFixtures: SavedReport[] = [
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE", "ADD_TO_DASHBOARD"],
     visualization: "KPI",
     query: {
+      definitionRevisionId: "query-total-events-r1",
       datasetId: "events-product",
       metric: "total_events",
+      population: { mode: "EVENT_TIME" },
       dateRange: "LAST_30_DAYS",
       grain: "DAY",
       filters: [],
     },
     version: 2,
     publishedRevision: 1,
+    chartRevision: 1,
   },
   {
     id: "report-channel-share",
     kind: "SAVED_REPORT",
     title: "Каналы привлечения",
     description: "Распределение активных пользователей по каналам",
+    space: "TEAM",
     collection: "Маркетинг",
     ownerName: "Growth",
     lifecycle: "PUBLISHED",
@@ -99,8 +112,10 @@ export const savedReportFixtures: SavedReport[] = [
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE", "ADD_TO_DASHBOARD"],
     visualization: "DONUT",
     query: {
+      definitionRevisionId: "query-channel-share-r3",
       datasetId: "events-product",
       metric: "unique_users",
+      population: { mode: "EVENT_TIME" },
       dateRange: "LAST_30_DAYS",
       grain: "DAY",
       breakdown: "channel",
@@ -108,12 +123,14 @@ export const savedReportFixtures: SavedReport[] = [
     },
     version: 4,
     publishedRevision: 3,
+    chartRevision: 3,
   },
   {
     id: "report-orders",
     kind: "SAVED_REPORT",
     title: "Заказы по дням",
     description: "Количество заказов с разбивкой по дням",
+    space: "PERSONAL",
     collection: "Продажи",
     ownerName: "Revenue",
     lifecycle: "DRAFT",
@@ -122,14 +139,17 @@ export const savedReportFixtures: SavedReport[] = [
     allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
     visualization: "BAR",
     query: {
+      definitionRevisionId: "query-orders-draft-r1",
       datasetId: "events-product",
       metric: "orders",
+      population: { mode: "EVENT_TIME" },
       dateRange: "LAST_7_DAYS",
       grain: "DAY",
       filters: [],
     },
     version: 1,
     publishedRevision: null,
+    chartRevision: null,
   },
 ];
 
@@ -139,27 +159,55 @@ export const dashboardFixtures: Dashboard[] = [
     kind: "DASHBOARD",
     title: "Пульс продукта",
     description: "Главные сигналы продукта и привлечения",
+    space: "PROJECT",
     collection: "Общие",
     ownerName: "Команда продукта",
     lifecycle: "PUBLISHED",
     updatedAt: "2026-08-10T09:05:00.000Z",
     freshness: "FRESH",
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE"],
-    widgets: [
+    pages: [
       {
-        id: "widget-active",
-        savedReportId: "report-active-users",
-        width: "TWO_THIRDS",
+        id: "overview",
+        title: "Обзор",
+        widgets: [
+          {
+            id: "widget-active",
+            savedReportId: "report-active-users",
+            savedReportRevision: 2,
+            queryRevisionId: "query-active-users-r2",
+            chartRevision: 2,
+            width: "TWO_THIRDS",
+          },
+          {
+            id: "widget-total",
+            savedReportId: "report-total-events",
+            savedReportRevision: 1,
+            queryRevisionId: "query-total-events-r1",
+            chartRevision: 1,
+            width: "ONE_THIRD",
+          },
+          {
+            id: "widget-channel",
+            savedReportId: "report-channel-share",
+            savedReportRevision: 3,
+            queryRevisionId: "query-channel-share-r3",
+            chartRevision: 3,
+            width: "HALF",
+          },
+        ],
       },
       {
-        id: "widget-total",
-        savedReportId: "report-total-events",
-        width: "ONE_THIRD",
-      },
-      {
-        id: "widget-channel",
-        savedReportId: "report-channel-share",
-        width: "HALF",
+        id: "diagnostics",
+        title: "Диагностика",
+        widgets: Array.from({ length: 50 }, (_, index) => ({
+          id: `widget-hidden-${index + 1}`,
+          savedReportId: "report-active-users",
+          savedReportRevision: 2,
+          queryRevisionId: "query-active-users-r2",
+          chartRevision: 2,
+          width: "HALF" as const,
+        })),
       },
     ],
     version: 6,
@@ -170,17 +218,27 @@ export const dashboardFixtures: Dashboard[] = [
     kind: "DASHBOARD",
     title: "Growth review",
     description: "Черновик еженедельного обзора",
+    space: "TEAM",
     collection: "Маркетинг",
     ownerName: "Growth",
     lifecycle: "DRAFT",
     updatedAt: "2026-08-09T17:20:00.000Z",
     freshness: "UNKNOWN",
     allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
-    widgets: [
+    pages: [
       {
-        id: "widget-growth-channel",
-        savedReportId: "report-channel-share",
-        width: "FULL",
+        id: "overview",
+        title: "Обзор",
+        widgets: [
+          {
+            id: "widget-growth-channel",
+            savedReportId: "report-channel-share",
+            savedReportRevision: 3,
+            queryRevisionId: "query-channel-share-r3",
+            chartRevision: 3,
+            width: "FULL",
+          },
+        ],
       },
     ],
     version: 2,
@@ -195,6 +253,11 @@ const receipt = {
   completeness: "COMPLETE" as const,
   exactness: "EXACT" as const,
   exclusions: [],
+  definitionPins: {
+    queryRevisionId: "query-active-users-r2",
+    datasetRevisionId: "dataset-events-product-r3",
+  },
+  execution: { route: "SYNC" as const, costUnits: 1 },
 };
 
 export function resultFixtureFor(
@@ -210,6 +273,10 @@ export function resultFixtureFor(
         ...receipt,
         periodLabel: "Текущее состояние",
         dataAsOf: "2026-08-10T09:12:00.000Z",
+        definitionPins: {
+          queryRevisionId: "query-profile-current-r1",
+          datasetRevisionId: "dataset-profiles-current-r2",
+        },
       },
       summary: "18 420 профилей на текущий момент запроса.",
     };
@@ -231,6 +298,10 @@ export function resultFixtureFor(
         ...receipt,
         periodLabel: "Текущий состав",
         dataAsOf: "2026-08-10T09:12:00.000Z",
+        definitionPins: {
+          queryRevisionId: "query-segment-current-r1",
+          datasetRevisionId: "dataset-segments-current-r5",
+        },
       },
       summary: "Текущий состав опубликованных ревизий сегментов.",
     };
@@ -304,3 +375,77 @@ export function resultFixtureFor(
       "12 840 активных пользователей; устойчивый рост в течение периода.",
   };
 }
+
+const completeStateFixture = resultFixtureFor("unique_users");
+
+export const reportingResultStateFixtures: Record<
+  Exclude<ReportingQueryResult["status"], "complete">,
+  ReportingQueryResult
+> = {
+  queued: {
+    runId: "run-queued",
+    status: "queued",
+    data: null,
+    receipt: null,
+    summary: "Запрос ожидает запуска.",
+  },
+  running: {
+    runId: "run-running",
+    status: "running",
+    data: null,
+    receipt: null,
+    summary: "Идёт расчёт.",
+  },
+  empty: {
+    runId: "run-empty",
+    status: "empty",
+    data: null,
+    receipt: null,
+    summary: "Данных нет.",
+  },
+  stale: {
+    ...completeStateFixture,
+    runId: "run-stale",
+    status: "stale",
+    safeMessage: "Данные обновляются с задержкой.",
+  },
+  partial: {
+    ...completeStateFixture,
+    runId: "run-partial",
+    status: "partial",
+    receipt: completeStateFixture.receipt
+      ? { ...completeStateFixture.receipt, completeness: "PARTIAL" }
+      : null,
+    safeMessage: "Часть источников исключена.",
+  },
+  suppressed: {
+    runId: "run-suppressed",
+    status: "suppressed",
+    data: null,
+    receipt: null,
+    summary: "Результат скрыт.",
+    safeMessage: "SMALL_GROUP_SUPPRESSED",
+  },
+  forbidden: {
+    runId: "run-forbidden",
+    status: "forbidden",
+    data: null,
+    receipt: null,
+    summary: "",
+    safeMessage: "Доступ к результату отозван.",
+  },
+  failed: {
+    runId: "run-failed",
+    status: "failed",
+    data: null,
+    receipt: null,
+    summary: "Расчёт не выполнен.",
+  },
+  expired: {
+    runId: "run-expired",
+    status: "expired",
+    data: null,
+    receipt: null,
+    summary: "Результат истёк.",
+  },
+};

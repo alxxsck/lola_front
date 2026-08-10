@@ -2,18 +2,13 @@ export type ReportingArtifactKind = "SAVED_REPORT" | "DASHBOARD";
 export type ReportingLifecycle = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type ReportingVisualization = "KPI" | "LINE" | "BAR" | "DONUT" | "TABLE";
 export type ReportingDateRange =
-  | "LAST_7_DAYS"
-  | "LAST_30_DAYS"
-  | "LAST_90_DAYS";
+  "LAST_7_DAYS" | "LAST_30_DAYS" | "LAST_90_DAYS";
 export type ReportingTimeGrain = "HOUR" | "DAY" | "WEEK" | "MONTH";
 export type ReportingDatasetOwner = "EVENT" | "PROFILE" | "SEGMENT";
+export type ReportingArtifactSpace = "PERSONAL" | "TEAM" | "PROJECT";
 
 export type ReportingAllowedAction =
-  | "EDIT"
-  | "PUBLISH"
-  | "DUPLICATE"
-  | "ARCHIVE"
-  | "ADD_TO_DASHBOARD";
+  "EDIT" | "PUBLISH" | "DUPLICATE" | "ARCHIVE" | "ADD_TO_DASHBOARD";
 
 export type ReportingFilter = {
   field: string;
@@ -22,22 +17,33 @@ export type ReportingFilter = {
 };
 
 export type ReportingQueryDefinition = {
+  definitionRevisionId: string;
   datasetId: string;
   metric: string;
-  dateRange: ReportingDateRange;
-  grain: ReportingTimeGrain;
+  population:
+    | { mode: "EVENT_TIME" }
+    | { mode: "CURRENT_PROFILE" }
+    | { mode: "CURRENT_SEGMENT"; segmentRevisionId: string };
+  dateRange: ReportingDateRange | null;
+  grain: ReportingTimeGrain | null;
   breakdown?: string;
   filters: ReportingFilter[];
 };
 
 export type ReportingDataset = {
   id: string;
+  definitionRevisionId: string;
   owner: ReportingDatasetOwner;
   title: string;
   description: string;
   currentStateDisclosure?: string;
+  segmentRevisionId?: string;
   metrics: Array<{ key: string; label: string; unit: string }>;
-  dimensions: Array<{ key: string; label: string; cardinality: "LOW" | "HIGH" }>;
+  dimensions: Array<{
+    key: string;
+    label: string;
+    cardinality: "LOW" | "HIGH";
+  }>;
 };
 
 export type ReportingArtifactSummary = {
@@ -45,6 +51,7 @@ export type ReportingArtifactSummary = {
   kind: ReportingArtifactKind;
   title: string;
   description: string;
+  space: ReportingArtifactSpace;
   collection: string;
   ownerName: string;
   lifecycle: ReportingLifecycle;
@@ -57,6 +64,7 @@ export type SavedReportDraftInput = {
   id?: string;
   title: string;
   description?: string;
+  space: ReportingArtifactSpace;
   collection: string;
   visualization: ReportingVisualization;
   query: ReportingQueryDefinition;
@@ -68,6 +76,8 @@ export type SavedReport = ReportingArtifactSummary & {
   query: ReportingQueryDefinition;
   version: number;
   publishedRevision: number | null;
+  chartRevision: number | null;
+  sourceArtifactId?: string;
 };
 
 export type DashboardWidgetWidth = "ONE_THIRD" | "HALF" | "TWO_THIRDS" | "FULL";
@@ -75,23 +85,34 @@ export type DashboardWidgetWidth = "ONE_THIRD" | "HALF" | "TWO_THIRDS" | "FULL";
 export type DashboardWidget = {
   id: string;
   savedReportId: string;
+  savedReportRevision: number;
+  queryRevisionId: string;
+  chartRevision: number;
   titleOverride?: string;
   width: DashboardWidgetWidth;
+};
+
+export type DashboardPageDefinition = {
+  id: string;
+  title: string;
+  widgets: DashboardWidget[];
 };
 
 export type DashboardDraftInput = {
   id?: string;
   title: string;
   description?: string;
+  space: ReportingArtifactSpace;
   collection: string;
-  widgets: DashboardWidget[];
+  pages: DashboardPageDefinition[];
 };
 
 export type Dashboard = ReportingArtifactSummary & {
   kind: "DASHBOARD";
-  widgets: DashboardWidget[];
+  pages: DashboardPageDefinition[];
   version: number;
   publishedRevision: number | null;
+  sourceArtifactId?: string;
 };
 
 export type ResourceReceipt = {
@@ -101,6 +122,14 @@ export type ResourceReceipt = {
   completeness: "COMPLETE" | "PARTIAL";
   exactness: "EXACT" | "ESTIMATED";
   exclusions: string[];
+  definitionPins: {
+    queryRevisionId: string;
+    datasetRevisionId: string;
+  };
+  execution: {
+    route: "SYNC" | "ASYNC";
+    costUnits: number;
+  };
 };
 
 export type ReportingResultData =
@@ -137,14 +166,29 @@ export type ReportingResultStatus =
 export type ReportingQueryResult = {
   runId: string;
   status: ReportingResultStatus;
-  data: ReportingResultData;
-  receipt: ResourceReceipt;
+  data: ReportingResultData | null;
+  receipt: ResourceReceipt | null;
   summary: string;
   safeMessage?: string;
 };
 
+export type ReportingArtifactCatalogQuery = {
+  kind: ReportingArtifactKind;
+  search: string;
+  collection: string | null;
+};
+
+export type ReportingArtifactCatalog = {
+  items: ReportingArtifactSummary[];
+  counts: { dashboards: number; savedReports: number };
+  collections: string[];
+};
+
 export type ReportingRepository = {
-  listArtifacts(projectId: string): Promise<ReportingArtifactSummary[]>;
+  listArtifacts(
+    projectId: string,
+    query: ReportingArtifactCatalogQuery,
+  ): Promise<ReportingArtifactCatalog>;
   listDatasets(projectId: string): Promise<ReportingDataset[]>;
   listSavedReports(projectId: string): Promise<SavedReport[]>;
   getSavedReport(projectId: string, reportId: string): Promise<SavedReport>;
@@ -181,7 +225,9 @@ export type ReportingRepository = {
 
 export class ReportingVersionConflictError extends Error {
   constructor() {
-    super("Отчёт изменился в другой сессии. Обновите данные или создайте копию.");
+    super(
+      "Отчёт изменился в другой сессии. Обновите данные или создайте копию.",
+    );
     this.name = "ReportingVersionConflictError";
   }
 }

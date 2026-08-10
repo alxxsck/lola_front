@@ -16,13 +16,19 @@ import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import {
-  canAuthorDashboard,
+  canCreateDashboard,
+  canEditDashboard,
   canPublishDashboard,
   canReadReporting,
 } from "@/features/reporting/model/reporting-permissions";
 import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
+import {
+  reportingDateRangeOptions,
+  reportingSpaceOptions,
+} from "@/features/reporting/model/reporting-options";
 import type {
   Dashboard,
+  ReportingArtifactSpace,
   DashboardWidget,
   DashboardWidgetWidth,
   ReportingDateRange,
@@ -44,11 +50,13 @@ const pendingDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
 const appliedDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
 const refreshKey = ref(0);
 const reportSearch = ref("");
+const activePageId = ref("overview");
 
 const editor = reactive({
   title: "Новый дашборд",
   description: "",
-  collection: "Личные",
+  space: "PERSONAL" as ReportingArtifactSpace,
+  collection: "Без коллекции",
   widgets: [] as DashboardWidget[],
 });
 
@@ -61,7 +69,18 @@ const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
 const canPublish = computed(() => canPublishDashboard(permissions.value));
-const canEdit = computed(() => canAuthorDashboard(permissions.value));
+const canEdit = computed(() =>
+  isCreate.value
+    ? canCreateDashboard(permissions.value)
+    : canEditDashboard(permissions.value),
+);
+const activePage = computed(
+  () =>
+    dashboard.value?.pages.find(({ id }) => id === activePageId.value) ??
+    dashboard.value?.pages[0] ??
+    null,
+);
+const activeWidgets = computed(() => activePage.value?.widgets ?? []);
 const publishedReports = computed(() =>
   reports.value.filter((report) => report.lifecycle === "PUBLISHED"),
 );
@@ -74,11 +93,8 @@ const filteredReports = computed(() => {
       .includes(needle),
   );
 });
-const dateRangeOptions: Array<{ value: ReportingDateRange; label: string }> = [
-  { value: "LAST_7_DAYS", label: "Последние 7 дней" },
-  { value: "LAST_30_DAYS", label: "Последние 30 дней" },
-  { value: "LAST_90_DAYS", label: "Последние 90 дней" },
-];
+const dateRangeOptions = reportingDateRangeOptions;
+const spaceOptions = reportingSpaceOptions;
 const widthOptions: Array<{ value: DashboardWidgetWidth; label: string }> = [
   { value: "ONE_THIRD", label: "1/3" },
   { value: "HALF", label: "1/2" },
@@ -94,14 +110,16 @@ function applyDashboard(next: Dashboard): void {
   dashboard.value = next;
   editor.title = next.title;
   editor.description = next.description;
+  editor.space = next.space;
   editor.collection = next.collection;
-  editor.widgets = structuredClone(next.widgets);
+  activePageId.value = next.pages[0]?.id ?? "overview";
+  editor.widgets = structuredClone(next.pages[0]?.widgets ?? []);
 }
 
 function beginViewerScope(): void {
   if (!projectId.value || !dashboard.value) return;
   coordinator.beginScope(
-    `${projectId.value}:${dashboard.value.id}:${appliedDateRange.value}:${refreshKey.value}`,
+    `${projectId.value}:${dashboard.value.id}:${activePageId.value}:${appliedDateRange.value}:${refreshKey.value}`,
   );
 }
 
@@ -128,11 +146,19 @@ async function loadPage(): Promise<void> {
       applyDashboard(
         await reportingRepository.getDashboard(projectId.value, dashboardId),
       );
+      if (
+        isEditing.value &&
+        (!canEdit.value || !dashboard.value?.allowedActions.includes("EDIT"))
+      ) {
+        await router.replace(`/dashboards/${dashboardId}`);
+        return;
+      }
     } else {
       dashboard.value = null;
       editor.title = "Новый дашборд";
       editor.description = "";
-      editor.collection = "Личные";
+      editor.space = "PERSONAL";
+      editor.collection = "Без коллекции";
       editor.widgets = [];
       const initialReportId =
         typeof route.query.reportId === "string" ? route.query.reportId : "";
@@ -162,9 +188,20 @@ function refreshDashboard(): void {
 function addReport(reportId: string): void {
   if (editor.widgets.some((widget) => widget.savedReportId === reportId))
     return;
+  const report = reportById(reportId);
+  if (
+    !report ||
+    report.lifecycle !== "PUBLISHED" ||
+    report.publishedRevision === null ||
+    report.chartRevision === null
+  )
+    return;
   editor.widgets.push({
     id: `widget-local-${Date.now()}-${editor.widgets.length}`,
     savedReportId: reportId,
+    savedReportRevision: report.publishedRevision,
+    queryRevisionId: report.query.definitionRevisionId,
+    chartRevision: report.chartRevision,
     width: editor.widgets.length === 0 ? "TWO_THIRDS" : "ONE_THIRD",
   });
 }
@@ -184,7 +221,13 @@ function removeWidget(widgetId: string): void {
 }
 
 async function saveDraft(): Promise<Dashboard | null> {
-  if (!projectId.value || !editor.title.trim()) return null;
+  if (
+    !projectId.value ||
+    !canEdit.value ||
+    !editor.title.trim() ||
+    (dashboard.value && !dashboard.value.allowedActions.includes("EDIT"))
+  )
+    return null;
   saving.value = true;
   error.value = "";
   try {
@@ -194,12 +237,19 @@ async function saveDraft(): Promise<Dashboard | null> {
         ...(dashboard.value ? { id: dashboard.value.id } : {}),
         title: editor.title.trim(),
         description: editor.description.trim(),
-        collection: editor.collection.trim() || "Личные",
-        widgets: editor.widgets.map((widget) => ({ ...widget })),
+        space: editor.space,
+        collection: editor.collection.trim() || "Без коллекции",
+        pages: [
+          {
+            id: "overview",
+            title: "Обзор",
+            widgets: editor.widgets.map((widget) => ({ ...widget })),
+          },
+        ],
       },
     );
     applyDashboard(saved);
-    if (route.name !== "dashboard-edit") {
+    if (route.params.dashboardId !== saved.id) {
       await router.replace(`/dashboards/${saved.id}/edit`);
     }
     return saved;
@@ -234,6 +284,7 @@ async function publish(): Promise<void> {
   }
 }
 
+watch(activePageId, () => beginViewerScope());
 watch(
   () => [
     route.fullPath,
@@ -328,6 +379,14 @@ onBeforeUnmount(() => coordinator.purge());
           <label
             ><span>Описание</span
             ><Textarea v-model="editor.description" rows="2" auto-resize
+          /></label>
+          <label
+            ><span>Пространство</span
+            ><Select
+              v-model="editor.space"
+              :options="spaceOptions"
+              option-label="label"
+              option-value="value"
           /></label>
           <label
             ><span>Коллекция</span><InputText v-model="editor.collection"
@@ -442,6 +501,22 @@ onBeforeUnmount(() => coordinator.purge());
     </section>
 
     <template v-else>
+      <nav
+        v-if="(dashboard?.pages.length ?? 0) > 1"
+        class="dashboard-pages"
+        aria-label="Страницы дашборда"
+      >
+        <button
+          v-for="page in dashboard?.pages ?? []"
+          :key="page.id"
+          type="button"
+          :aria-current="activePageId === page.id ? 'page' : undefined"
+          :class="{ active: activePageId === page.id }"
+          @click="activePageId = page.id"
+        >
+          {{ page.title }}
+        </button>
+      </nav>
       <section class="dashboard-toolbar" aria-label="Фильтры дашборда">
         <div class="dashboard-filters">
           <Select
@@ -459,8 +534,7 @@ onBeforeUnmount(() => coordinator.purge());
         </div>
         <span class="compatibility-status">
           <i class="pi pi-check-circle" aria-hidden="true" />
-          Применено к {{ dashboard?.widgets.length ?? 0 }} из
-          {{ dashboard?.widgets.length ?? 0 }}
+          Применено к {{ activeWidgets.length }} из {{ activeWidgets.length }}
         </span>
       </section>
 
@@ -474,7 +548,7 @@ onBeforeUnmount(() => coordinator.purge());
 
       <section v-else class="dashboard-grid" aria-label="Виджеты дашборда">
         <ReportingDashboardWidget
-          v-for="(widget, index) in dashboard?.widgets ?? []"
+          v-for="(widget, index) in activeWidgets"
           :key="`${widget.id}:${refreshKey}`"
           :class="`width-${widget.width.toLowerCase().replace('_', '-')}`"
           :project-id="projectId"
@@ -499,6 +573,7 @@ onBeforeUnmount(() => coordinator.purge());
 }
 
 .dashboard-header,
+.dashboard-pages,
 .dashboard-toolbar,
 .dashboard-grid,
 .dashboard-editor,
@@ -506,6 +581,29 @@ onBeforeUnmount(() => coordinator.purge());
   max-width: 1480px;
   margin-right: auto;
   margin-left: auto;
+}
+
+.dashboard-pages {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+}
+
+.dashboard-pages button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 650 var(--font-size-body-small) var(--font-display);
+  cursor: pointer;
+}
+
+.dashboard-pages button.active {
+  background: var(--surface-active);
+  color: var(--text-primary);
 }
 
 .dashboard-header {

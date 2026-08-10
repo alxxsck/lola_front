@@ -1,6 +1,5 @@
 export type ReportingRunOutcome<T> =
-  | { status: "committed"; value: T }
-  | { status: "obsolete" };
+  { status: "committed"; value: T } | { status: "obsolete" };
 
 type ReportingTask<T> = (signal: AbortSignal) => Promise<T>;
 
@@ -22,6 +21,10 @@ export class ReportingRunCoordinator {
   private activeCount = 0;
   private readonly queue: Array<QueuedRun<unknown>> = [];
   private readonly activeRuns = new Set<ActiveRun>();
+  private readonly sharedRuns = new Map<
+    string,
+    Promise<ReportingRunOutcome<unknown>>
+  >();
 
   constructor(private readonly maxConcurrency = 4) {
     if (!Number.isInteger(maxConcurrency) || maxConcurrency < 1) {
@@ -35,9 +38,14 @@ export class ReportingRunCoordinator {
     this.scopeKey = scopeKey;
   }
 
-  schedule<T>(task: ReportingTask<T>): Promise<ReportingRunOutcome<T>> {
+  schedule<T>(
+    task: ReportingTask<T>,
+    dedupeKey?: string,
+  ): Promise<ReportingRunOutcome<T>> {
+    const shared = dedupeKey ? this.sharedRuns.get(dedupeKey) : undefined;
+    if (shared) return shared as Promise<ReportingRunOutcome<T>>;
     const generation = this.generation;
-    return new Promise<ReportingRunOutcome<T>>((resolve, reject) => {
+    const scheduled = new Promise<ReportingRunOutcome<T>>((resolve, reject) => {
       this.queue.push({
         generation,
         task,
@@ -46,6 +54,14 @@ export class ReportingRunCoordinator {
       } as QueuedRun<unknown>);
       this.pump();
     });
+    if (dedupeKey) {
+      this.sharedRuns.set(dedupeKey, scheduled);
+      void scheduled.finally(() => {
+        if (this.sharedRuns.get(dedupeKey) === scheduled)
+          this.sharedRuns.delete(dedupeKey);
+      });
+    }
+    return scheduled;
   }
 
   purge(): void {
@@ -62,6 +78,7 @@ export class ReportingRunCoordinator {
     while (this.queue.length > 0) {
       this.queue.shift()?.resolve({ status: "obsolete" });
     }
+    this.sharedRuns.clear();
   }
 
   private pump(): void {

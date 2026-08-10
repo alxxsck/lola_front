@@ -380,17 +380,20 @@ describe("authentication routes", () => {
   it("declares fail-closed Reporting routes for readers and authors", () => {
     expect(router.resolve("/reports").meta.reportingAccess).toBe("READ");
     expect(router.resolve("/reports/new").meta.reportingAccess).toBe(
-      "SAVED_REPORT_AUTHOR",
+      "SAVED_REPORT_CREATE",
     );
     expect(router.resolve("/reports/report-1/edit").meta.reportingAccess).toBe(
-      "SAVED_REPORT_AUTHOR",
+      "SAVED_REPORT_EDIT",
     );
     expect(router.resolve("/dashboards/dashboard-1").meta.reportingAccess).toBe(
       "READ",
     );
+    expect(router.resolve("/dashboards/new").meta.reportingAccess).toBe(
+      "DASHBOARD_CREATE",
+    );
     expect(
       router.resolve("/dashboards/dashboard-1/edit").meta.reportingAccess,
-    ).toBe("DASHBOARD_AUTHOR");
+    ).toBe("DASHBOARD_EDIT");
   });
 
   it("selects the Project encoded by an AI Analysis deep link before checking access", async () => {

@@ -28,4 +28,24 @@ describe("ReportingChartRenderer", () => {
     expect(wrapper.text()).toContain("5 240");
     expect(wrapper.findAll(".donut-legend-item")).toHaveLength(4);
   });
+
+  it("removes sensitive data and Evidence for a forbidden result", () => {
+    const wrapper = mount(ReportingChartRenderer, {
+      props: {
+        visualization: "LINE",
+        result: {
+          runId: "run-forbidden",
+          status: "forbidden",
+          data: null,
+          receipt: null,
+          summary: "",
+          safeMessage: "Доступ к результату отозван.",
+        },
+      },
+    });
+
+    expect(wrapper.get('[role="alert"]').text()).toContain("Доступ отозван");
+    expect(wrapper.text()).not.toContain("Точные данные");
+    expect(wrapper.find("[role=img]").exists()).toBe(false);
+  });
 });

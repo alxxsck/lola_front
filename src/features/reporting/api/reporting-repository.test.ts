@@ -10,16 +10,18 @@ describe("Reporting repository", () => {
   it("lists authority-filtered artifacts without executing widget queries", async () => {
     const repository = createMockReportingRepository();
 
-    const artifacts = await repository.listArtifacts("project-1");
+    const catalog = await repository.listArtifacts("project-1", {
+      kind: "DASHBOARD",
+      search: "",
+      collection: null,
+    });
 
-    expect(artifacts.some((artifact) => artifact.kind === "DASHBOARD")).toBe(
-      true,
-    );
-    expect(artifacts.some((artifact) => artifact.kind === "SAVED_REPORT")).toBe(
-      true,
-    );
     expect(
-      artifacts.every((artifact) => artifact.lifecycle !== "ARCHIVED"),
+      catalog.items.every((artifact) => artifact.kind === "DASHBOARD"),
+    ).toBe(true);
+    expect(catalog.counts).toEqual({ dashboards: 2, savedReports: 4 });
+    expect(
+      catalog.items.every((artifact) => artifact.lifecycle !== "ARCHIVED"),
     ).toBe(true);
   });
 
@@ -27,11 +29,14 @@ describe("Reporting repository", () => {
     const repository = createMockReportingRepository();
     const draft = await repository.saveSavedReportDraft("project-1", {
       title: "Новый отчёт",
-      collection: "Личные",
+      space: "PERSONAL",
+      collection: "Без коллекции",
       visualization: "KPI",
       query: {
+        definitionRevisionId: "query-new-draft",
         datasetId: "events-product",
         metric: "unique_users",
+        population: { mode: "EVENT_TIME" },
         dateRange: "LAST_30_DAYS",
         grain: "DAY",
         filters: [],
@@ -47,6 +52,32 @@ describe("Reporting repository", () => {
     expect(published.lifecycle).toBe("PUBLISHED");
     expect(published.publishedRevision).toBe(1);
     expect(published.version).toBe(draft.version + 1);
+    expect(published.chartRevision).toBe(1);
+  });
+
+  it("isolates mutations by Project and branches edits from published revisions", async () => {
+    const repository = createMockReportingRepository();
+    const original = await repository.getSavedReport(
+      "project-1",
+      "report-active-users",
+    );
+    const draft = await repository.saveSavedReportDraft("project-1", {
+      id: original.id,
+      title: "Локальная правка",
+      space: original.space,
+      collection: original.collection,
+      visualization: original.visualization,
+      query: original.query,
+    });
+
+    expect(draft.id).not.toBe(original.id);
+    expect(draft.sourceArtifactId).toBe(original.id);
+    expect(await repository.getSavedReport("project-1", original.id)).toEqual(
+      original,
+    );
+    expect(await repository.getSavedReport("project-2", original.id)).toEqual(
+      original,
+    );
   });
 
   it("returns a typed result and Resource Receipt through the query seam", async () => {
@@ -55,8 +86,10 @@ describe("Reporting repository", () => {
     const result = await repository.runQuery(
       "project-1",
       {
+        definitionRevisionId: "query-active-users-r2",
         datasetId: "events-product",
         metric: "unique_users",
+        population: { mode: "EVENT_TIME" },
         dateRange: "LAST_30_DAYS",
         grain: "DAY",
         filters: [],
@@ -69,7 +102,7 @@ describe("Reporting repository", () => {
       timezone: "Europe/Madrid",
       exactness: "EXACT",
     });
-    expect(result.data.kind).toBe("TIME_SERIES");
+    expect(result.data?.kind).toBe("TIME_SERIES");
   });
 
   it("keeps Profile and Segment populations explicitly current-state", async () => {
@@ -90,15 +123,76 @@ describe("Reporting repository", () => {
     const result = await repository.runQuery(
       "project-1",
       {
+        definitionRevisionId: "query-profile-current-r1",
         datasetId: "profiles-current",
         metric: "profile_count",
-        dateRange: "LAST_30_DAYS",
-        grain: "DAY",
+        population: { mode: "CURRENT_PROFILE" },
+        dateRange: null,
+        grain: null,
         filters: [],
       },
       new AbortController().signal,
     );
     expect(result.summary).toContain("текущий момент");
-    expect(result.receipt.periodLabel).toBe("Текущее состояние");
+    expect(result.receipt?.periodLabel).toBe("Текущее состояние");
+  });
+
+  it("rejects an event-time fallback for current Profile data", async () => {
+    const repository = createMockReportingRepository();
+    await expect(
+      repository.runQuery(
+        "project-1",
+        {
+          definitionRevisionId: "query-invalid",
+          datasetId: "profiles-current",
+          metric: "profile_count",
+          population: { mode: "EVENT_TIME" },
+          dateRange: "LAST_30_DAYS",
+          grain: "DAY",
+          filters: [],
+        },
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("NO_TEMPORAL_HISTORY");
+  });
+
+  it("keeps published Dashboard pins immutable across layout-only Draft edits", async () => {
+    const repository = createMockReportingRepository();
+    const original = await repository.getDashboard(
+      "project-1",
+      "dashboard-product-pulse",
+    );
+    const originalPins = original.pages[0]?.widgets.map(
+      ({ savedReportRevision, queryRevisionId, chartRevision }) => ({
+        savedReportRevision,
+        queryRevisionId,
+        chartRevision,
+      }),
+    );
+    const pages = structuredClone(original.pages);
+    if (pages[0]?.widgets[0]) pages[0].widgets[0].width = "FULL";
+
+    const draft = await repository.saveDashboardDraft("project-1", {
+      id: original.id,
+      title: original.title,
+      description: original.description,
+      space: original.space,
+      collection: original.collection,
+      pages,
+    });
+
+    expect(draft.id).not.toBe(original.id);
+    expect(
+      draft.pages[0]?.widgets.map(
+        ({ savedReportRevision, queryRevisionId, chartRevision }) => ({
+          savedReportRevision,
+          queryRevisionId,
+          chartRevision,
+        }),
+      ),
+    ).toEqual(originalPins);
+    expect(await repository.getDashboard("project-1", original.id)).toEqual(
+      original,
+    );
   });
 });

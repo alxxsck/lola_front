@@ -1,9 +1,10 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { resetMockReportingRepository } from "@/features/reporting/api/reporting-repository";
+import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import DashboardPage from "./DashboardPage.vue";
 
 const stubs = {
@@ -81,6 +82,7 @@ describe("DashboardPage", () => {
   beforeEach(() => resetMockReportingRepository());
 
   it("renders the Dashboard shell before independently loaded Widgets", async () => {
+    const runQuery = vi.spyOn(reportingRepository, "runQuery");
     const { wrapper } = await mountPage("/dashboards/dashboard-product-pulse");
 
     expect(wrapper.text()).toContain("Пульс продукта");
@@ -89,6 +91,14 @@ describe("DashboardPage", () => {
     expect(wrapper.text()).toContain("12 840 активных пользователей");
     expect(wrapper.text()).toContain("Каналы привлечения");
     expect(wrapper.text()).toContain("Объяснить");
+    expect(wrapper.text()).toContain("Диагностика");
+    expect(runQuery).toHaveBeenCalledTimes(3);
+
+    await wrapper.findAll(".dashboard-pages button")[1]?.trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll("[data-dashboard-widget]")).toHaveLength(50);
+    expect(runQuery).toHaveBeenCalledTimes(4);
+    runQuery.mockRestore();
   });
 
   it("builds a Dashboard Draft from published Saved Reports", async () => {
