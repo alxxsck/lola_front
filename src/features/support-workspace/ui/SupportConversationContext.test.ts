@@ -270,6 +270,19 @@ describe("support conversation inspector", () => {
     expect(wrapper.find("[data-assignment-actions]").exists()).toBe(false);
   });
 
+  it("places the assignment surface before SLA and routing", () => {
+    const wrapper = render();
+    const assignmentDesk = wrapper.get(".assignment-desk").element;
+    const operationsContext = wrapper.get(
+      "support-case-operations-context-stub",
+    ).element;
+
+    expect(
+      assignmentDesk.compareDocumentPosition(operationsContext) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("renders the five permission-aware tabs with Case as the default", () => {
     const wrapper = render();
 

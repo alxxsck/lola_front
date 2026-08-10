@@ -431,6 +431,16 @@ defineExpose({ requestClassification });
             <p>Для этого диалога обращение не создано.</p>
           </div>
 
+          <div v-if="selection.case" class="assignment-context">
+            <SupportAssignmentDesk
+              :controller="assignmentController"
+              :assignment="selection.case.assignment"
+              :claimant-label="claimantLabel"
+              viewers-label="Список наблюдателей ещё не подключён"
+              :availability-label="availabilityLabel"
+            />
+          </div>
+
           <SupportCaseOperationsContext
             v-if="selection.case"
             :case-id="selection.case.id"
@@ -449,13 +459,6 @@ defineExpose({ requestClassification });
               </div>
             </div>
             <div v-if="selection.case" class="action-stack">
-              <SupportAssignmentDesk
-                :controller="assignmentController"
-                :assignment="selection.case.assignment"
-                :claimant-label="claimantLabel"
-                viewers-label="Список наблюдателей ещё не подключён"
-                :availability-label="availabilityLabel"
-              />
               <SupportLeadAssignmentDesk
                 v-if="leadAssignmentController && selection.case"
                 :controller="leadAssignmentController"
@@ -1070,6 +1073,11 @@ defineExpose({ requestClassification });
 .priority-badge {
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
+}
+.assignment-context {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
 }
 .action-stack {
   display: grid;

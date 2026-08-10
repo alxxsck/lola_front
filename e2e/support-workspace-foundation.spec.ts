@@ -1067,6 +1067,15 @@ test("keeps assignment actions in the Case inspector without exposing capabiliti
   const desk = page.getByRole("region", { name: "Кто ведёт обращение" });
 
   await expect(desk).toBeVisible();
+  const operationsContext = page.getByRole("region", {
+    name: "SLA и маршрутизация",
+  });
+  await expect(operationsContext).toBeVisible();
+  const [deskBox, operationsBox] = await Promise.all([
+    desk.boundingBox(),
+    operationsContext.boundingBox(),
+  ]);
+  expect(deskBox?.y).toBeLessThan(operationsBox?.y ?? 0);
   await expect(desk).toContainText("Назначение");
   await expect(desk).toContainText("Взял в работу");
   await expect(desk).toContainText("Наблюдатели");
