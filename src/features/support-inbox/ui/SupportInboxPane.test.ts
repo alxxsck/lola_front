@@ -209,7 +209,7 @@ describe("SupportInboxPane", () => {
     await wrapper.setProps({ items: [], loading: true });
 
     expect(wrapper.get(".support-inbox-heading p").text()).toBe("Загружено: 1");
-    expect(wrapper.findAll(".inbox-skeleton-row")).toHaveLength(6);
+    expect(wrapper.findAll(".inbox-skeleton-row")).toHaveLength(14);
   });
 
   it("renders mode-shaped skeleton rows without PrimeVue stretch markers", () => {

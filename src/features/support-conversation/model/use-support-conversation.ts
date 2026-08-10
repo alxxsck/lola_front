@@ -2,10 +2,11 @@ import { ref } from "vue";
 import type { ConversationMessage } from "@/shared/types/domain";
 import { ApiError } from "@/shared/api/http/api-error";
 import { mergeConversationMessageDelivery } from "@/features/conversation-delivery/model/conversation-delivery-receipt";
-import type {
-  SupportConversationReadState,
-  SupportWorkspaceSelection,
-  SupportWorkspaceSource,
+import {
+  SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
+  type SupportConversationReadState,
+  type SupportWorkspaceSelection,
+  type SupportWorkspaceSource,
 } from "@/features/support-workspace/api/support-workspace-source";
 
 export type SupportConversationSource = Pick<
@@ -262,7 +263,9 @@ export function createSupportConversationController(
 
     loading.value = true;
     try {
-      const projection = await source.readSelection(projectId, target);
+      const projection = await source.readSelection(projectId, target, {
+        messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
+      });
       if (!isCurrent(projectId, target, requestGeneration)) return;
       const conversationId = projection.conversation?.id;
       if (!conversationId) {
@@ -332,7 +335,7 @@ export function createSupportConversationController(
     try {
       const projection = await source.readSelection(projectId, target, {
         messageCursor: cursor,
-        messageLimit: 50,
+        messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       });
       if (
         requestId !== olderRequestGeneration ||
@@ -391,7 +394,7 @@ export function createSupportConversationController(
     try {
       const projection = await source.readSelection(projectId, target, {
         messageNewerCursor: cursor,
-        messageLimit: 50,
+        messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       });
       if (
         requestId !== newerRequestGeneration ||
@@ -518,7 +521,7 @@ export function createSupportConversationController(
     const requestId = ++reconcileRequestGeneration;
     try {
       const projection = await source.readSelection(projectId, target, {
-        messageLimit: 50,
+        messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       });
       if (
         requestId !== reconcileRequestGeneration ||

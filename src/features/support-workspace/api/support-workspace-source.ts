@@ -20,6 +20,8 @@ import type {
 } from "@/shared/api/generated/models";
 import { readMockSupportAssignment } from "@/features/support-case-assignment/api/support-assignment-mock-state";
 
+export const SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT = 30;
+
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
 export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
 
@@ -657,7 +659,8 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
         ? { conversationId: target.conversationId }
         : {}),
       ...(target.caseId ? { caseId: target.caseId } : {}),
-      messageLimit: request?.messageLimit ?? 50,
+      messageLimit:
+        request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       ...(request?.messageCursor
         ? { messageCursor: request.messageCursor }
         : {}),
@@ -963,7 +966,8 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
           selected.endUser.id,
           selected.id,
           {
-            limit: request?.messageLimit ?? 50,
+            limit:
+              request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
             ...(request?.messageCursor
               ? { cursor: request.messageCursor }
               : {}),

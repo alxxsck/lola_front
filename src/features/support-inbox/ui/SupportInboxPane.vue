@@ -82,6 +82,7 @@ const emit = defineEmits<{
 const searchToolsExpanded = ref(false);
 const searchToolsPanel = ref<HTMLElement | null>(null);
 const searchToolsPanelId = "support-inbox-search-tools";
+const inboxSkeletonRowCount = 14;
 const lastLoadedCount = ref(props.items.length);
 const loadedCount = computed(() =>
   props.loading && !props.items.length
@@ -457,7 +458,7 @@ function unreadLabel(
           <SupportInboxSkeletonRows
             v-if="searchLoading && !searchItems.length"
             :mode="mode"
-            :count="5"
+            :count="inboxSkeletonRowCount"
           />
           <div
             v-else-if="searchFailure === 'FORBIDDEN'"
@@ -563,7 +564,7 @@ function unreadLabel(
           v-else-if="loading && !items.length"
           :key="`loading-${mode}`"
           :mode="mode"
-          :count="6"
+          :count="inboxSkeletonRowCount"
         />
 
         <div

@@ -133,6 +133,12 @@ describe("support conversation controller", () => {
     await controller.load();
     await controller.reconcile();
 
+    expect(source.readSelection).toHaveBeenNthCalledWith(
+      2,
+      "project-1",
+      { conversationId: "conversation-1" },
+      { messageLimit: 30 },
+    );
     expect(controller.messages.value[0]?.delivery).toMatchObject({
       status: "READ",
       generation: 2,
@@ -219,7 +225,7 @@ describe("support conversation controller", () => {
       2,
       "project-1",
       { conversationId: "conversation-1" },
-      { messageNewerCursor: "newer-page", messageLimit: 50 },
+      { messageNewerCursor: "newer-page", messageLimit: 30 },
     );
     expect(controller.messages.value.map((item) => item.ordinal)).toEqual([
       3, 4, 5, 6,
@@ -646,9 +652,11 @@ describe("support conversation controller", () => {
     response.resolve(selection("conversation-1", [message("stale", 1)]));
     await loading;
 
-    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
-      conversationId: "conversation-1",
-    });
+    expect(source.readSelection).toHaveBeenCalledWith(
+      "project-1",
+      { conversationId: "conversation-1" },
+      { messageLimit: 30 },
+    );
     expect(controller.messages.value).toEqual([]);
   });
 
@@ -716,9 +724,11 @@ describe("support conversation controller", () => {
 
     await controller.load();
 
-    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
-      conversationId: "conversation-outside-first-page",
-    });
+    expect(source.readSelection).toHaveBeenCalledWith(
+      "project-1",
+      { conversationId: "conversation-outside-first-page" },
+      { messageLimit: 30 },
+    );
     expect(controller.selection.value?.endUser.id).toBe(
       "user-conversation-outside-first-page",
     );
@@ -744,9 +754,11 @@ describe("support conversation controller", () => {
 
     await controller.load();
 
-    expect(source.readSelection).toHaveBeenCalledWith("project-1", {
-      caseId: "case-1",
-    });
+    expect(source.readSelection).toHaveBeenCalledWith(
+      "project-1",
+      { caseId: "case-1" },
+      { messageLimit: 30 },
+    );
     expect(controller.selection.value?.conversation?.id).toBe(
       "conversation-linked-to-case",
     );
@@ -824,7 +836,7 @@ describe("support conversation controller", () => {
       2,
       "project-1",
       { conversationId: "conversation-1" },
-      { messageCursor: "older-page", messageLimit: 50 },
+      { messageCursor: "older-page", messageLimit: 30 },
     );
     expect(controller.messages.value.map((item) => item.id)).toEqual([
       "first",

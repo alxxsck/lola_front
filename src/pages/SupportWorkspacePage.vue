@@ -129,6 +129,19 @@ import type {
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 
+const conversationLoadingSkeletons = Array.from(
+  { length: 16 },
+  (_, index) => {
+    const outbound = index % 3 === 1;
+    return {
+      id: index,
+      direction: outbound ? "outbound" : "inbound",
+      compact: !outbound && index % 5 === 4,
+      lineCount: index % 4 === 3 ? 2 : 3,
+    } as const;
+  },
+);
+
 const auth = useAuthStore();
 const aiSuspension = useConversationAISuspensionStore();
 const route = useRoute();
@@ -3743,32 +3756,25 @@ onBeforeUnmount(() => {
                 <span class="support-loading-shimmer" />
               </header>
               <div class="conversation-loading-messages" aria-hidden="true">
-                <article class="conversation-loading-message is-inbound">
-                  <span
-                    class="conversation-loading-avatar support-loading-shimmer"
-                  />
-                  <span class="conversation-loading-bubble">
-                    <i class="support-loading-shimmer" />
-                    <i class="support-loading-shimmer" />
-                    <i class="support-loading-shimmer" />
-                  </span>
-                </article>
-                <article class="conversation-loading-message is-outbound">
-                  <span class="conversation-loading-bubble">
-                    <i class="support-loading-shimmer" />
-                    <i class="support-loading-shimmer" />
-                    <i class="support-loading-shimmer" />
-                  </span>
-                </article>
                 <article
-                  class="conversation-loading-message is-inbound is-compact"
+                  v-for="skeleton in conversationLoadingSkeletons"
+                  :key="skeleton.id"
+                  :class="[
+                    'conversation-loading-message',
+                    `is-${skeleton.direction}`,
+                    { 'is-compact': skeleton.compact },
+                  ]"
                 >
                   <span
+                    v-if="skeleton.direction === 'inbound'"
                     class="conversation-loading-avatar support-loading-shimmer"
                   />
                   <span class="conversation-loading-bubble">
-                    <i class="support-loading-shimmer" />
-                    <i class="support-loading-shimmer" />
+                    <i
+                      v-for="line in skeleton.lineCount"
+                      :key="line"
+                      class="support-loading-shimmer"
+                    />
                   </span>
                 </article>
               </div>

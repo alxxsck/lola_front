@@ -338,7 +338,9 @@ test("selects a conversation immediately and swaps it through message skeletons"
   await expect(nextRow).toHaveAttribute("aria-current", "true");
   const loading = page.locator(".conversation-loading-overlay");
   await expect(loading).toBeVisible();
-  await expect(loading.locator(".conversation-loading-message")).toHaveCount(3);
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(
+    16,
+  );
   const loadingPresentation = await loading.evaluate((element) => {
     const style = getComputedStyle(element);
     const messages = Array.from(
@@ -347,7 +349,16 @@ test("selects a conversation immediately and swaps it through message skeletons"
       const bounds = message.getBoundingClientRect();
       return { width: bounds.width, height: bounds.height };
     });
-    return { background: style.backgroundColor, messages };
+    const messageList = element.querySelector<HTMLElement>(
+      ".conversation-loading-messages",
+    );
+    return {
+      background: style.backgroundColor,
+      messages,
+      fillsViewportWithReserve: messageList
+        ? messageList.scrollHeight > messageList.clientHeight
+        : false,
+    };
   });
   expect(loadingPresentation.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(
@@ -356,6 +367,7 @@ test("selects a conversation immediately and swaps it through message skeletons"
   expect(
     loadingPresentation.messages.every((message) => message.width <= 520),
   ).toBe(true);
+  expect(loadingPresentation.fillsViewportWithReserve).toBe(true);
   await expect(loading).toBeHidden();
 });
 
@@ -403,13 +415,21 @@ test("keeps availability and message loading visible on mobile", async ({
   await queue.locator(".inbox-row").first().click({ noWaitAfter: true });
   const loading = page.locator(".conversation-loading-overlay");
   await expect(loading).toBeVisible();
-  await expect(loading.locator(".conversation-loading-message")).toHaveCount(3);
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(
+    16,
+  );
   const geometry = await loading.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
+    const messageList = element.querySelector<HTMLElement>(
+      ".conversation-loading-messages",
+    );
     return {
       left: bounds.left,
       right: bounds.right,
       viewportWidth: window.innerWidth,
+      fillsViewportWithReserve: messageList
+        ? messageList.scrollHeight > messageList.clientHeight
+        : false,
       overflow:
         document.documentElement.scrollWidth -
         document.documentElement.clientWidth,
@@ -417,6 +437,7 @@ test("keeps availability and message loading visible on mobile", async ({
   });
   expect(geometry.left).toBeGreaterThanOrEqual(-0.5);
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 0.5);
+  expect(geometry.fillsViewportWithReserve).toBe(true);
   expect(geometry.overflow).toBe(0);
   await expect(loading).toBeHidden();
 });
