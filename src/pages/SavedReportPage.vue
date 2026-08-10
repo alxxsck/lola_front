@@ -36,6 +36,7 @@ import type {
   ReportingVisualization,
   SavedReport,
 } from "@/features/reporting/model/reporting-types";
+import { ReportingVersionConflictError } from "@/features/reporting/model/reporting-types";
 import ReportingChartRenderer from "@/features/reporting/ui/ReportingChartRenderer.vue";
 
 const auth = useAuthStore();
@@ -50,6 +51,7 @@ const previewing = ref(false);
 const saving = ref(false);
 const publishing = ref(false);
 const error = ref("");
+const versionConflict = ref(false);
 let autosaveReady = false;
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -234,7 +236,7 @@ async function runPreview(): Promise<void> {
   }
 }
 
-async function saveDraft(): Promise<SavedReport | null> {
+async function persistDraft(asCopy: boolean): Promise<SavedReport | null> {
   const projectId = auth.project?.id;
   if (
     !projectId ||
@@ -247,10 +249,13 @@ async function saveDraft(): Promise<SavedReport | null> {
   autosaveTimer = null;
   saving.value = true;
   error.value = "";
+  versionConflict.value = false;
   try {
     const saved = await reportingRepository.saveSavedReportDraft(projectId, {
-      ...(report.value ? { id: report.value.id } : {}),
-      ...(report.value ? { expectedVersion: report.value.version } : {}),
+      ...(report.value && !asCopy ? { id: report.value.id } : {}),
+      ...(report.value && !asCopy
+        ? { expectedVersion: report.value.version }
+        : {}),
       title: form.title.trim(),
       description: form.description.trim(),
       space: form.space,
@@ -264,12 +269,21 @@ async function saveDraft(): Promise<SavedReport | null> {
     }
     return saved;
   } catch (cause) {
+    versionConflict.value = cause instanceof ReportingVersionConflictError;
     error.value =
       cause instanceof Error ? cause.message : "Черновик не сохранён";
     return null;
   } finally {
     saving.value = false;
   }
+}
+
+function saveDraft(): Promise<SavedReport | null> {
+  return persistDraft(false);
+}
+
+async function duplicateDraft(): Promise<void> {
+  await persistDraft(true);
 }
 
 async function publish(): Promise<void> {
@@ -394,6 +408,15 @@ onBeforeUnmount(() => {
     <div v-if="error" class="report-error" role="alert">
       <i class="pi pi-exclamation-triangle" aria-hidden="true" />
       <span>{{ error }}</span>
+      <div v-if="versionConflict" class="conflict-actions">
+        <Button label="Перезагрузить" size="small" text @click="loadPage" />
+        <Button
+          label="Сохранить как копию"
+          size="small"
+          text
+          @click="duplicateDraft"
+        />
+      </div>
       <button type="button" @click="error = ''" aria-label="Закрыть сообщение">
         <i class="pi pi-times" aria-hidden="true" />
       </button>
@@ -679,7 +702,7 @@ h1 {
   font-size: var(--font-size-body-small);
 }
 
-.report-error button {
+.report-error > button {
   width: 36px;
   height: 36px;
   margin-left: auto;
@@ -688,6 +711,16 @@ h1 {
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.conflict-actions + button {
+  margin-left: 0;
 }
 
 .builder-layout {

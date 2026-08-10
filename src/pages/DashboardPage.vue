@@ -34,6 +34,7 @@ import type {
   ReportingDateRange,
   SavedReport,
 } from "@/features/reporting/model/reporting-types";
+import { ReportingVersionConflictError } from "@/features/reporting/model/reporting-types";
 import ReportingDashboardWidget from "@/features/reporting/ui/ReportingDashboardWidget.vue";
 
 const auth = useAuthStore();
@@ -46,6 +47,7 @@ const loading = ref(true);
 const saving = ref(false);
 const publishing = ref(false);
 const error = ref("");
+const versionConflict = ref(false);
 const pendingDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
 const appliedDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
 const refreshKey = ref(0);
@@ -224,7 +226,7 @@ function removeWidget(widgetId: string): void {
   editor.widgets = editor.widgets.filter((widget) => widget.id !== widgetId);
 }
 
-async function saveDraft(): Promise<Dashboard | null> {
+async function persistDraft(asCopy: boolean): Promise<Dashboard | null> {
   if (
     !projectId.value ||
     !canEdit.value ||
@@ -236,12 +238,13 @@ async function saveDraft(): Promise<Dashboard | null> {
   autosaveTimer = null;
   saving.value = true;
   error.value = "";
+  versionConflict.value = false;
   try {
     const saved = await reportingRepository.saveDashboardDraft(
       projectId.value,
       {
-        ...(dashboard.value ? { id: dashboard.value.id } : {}),
-        ...(dashboard.value
+        ...(dashboard.value && !asCopy ? { id: dashboard.value.id } : {}),
+        ...(dashboard.value && !asCopy
           ? { expectedVersion: dashboard.value.version }
           : {}),
         title: editor.title.trim(),
@@ -264,12 +267,21 @@ async function saveDraft(): Promise<Dashboard | null> {
     }
     return saved;
   } catch (cause) {
+    versionConflict.value = cause instanceof ReportingVersionConflictError;
     error.value =
       cause instanceof Error ? cause.message : "Черновик не сохранён";
     return null;
   } finally {
     saving.value = false;
   }
+}
+
+function saveDraft(): Promise<Dashboard | null> {
+  return persistDraft(false);
+}
+
+async function duplicateDraft(): Promise<void> {
+  await persistDraft(true);
 }
 
 async function publish(): Promise<void> {
@@ -391,7 +403,17 @@ onBeforeUnmount(() => {
     </header>
 
     <div v-if="error" class="dashboard-error" role="alert">
-      <i class="pi pi-exclamation-triangle" aria-hidden="true" /> {{ error }}
+      <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+      <span>{{ error }}</span>
+      <div v-if="versionConflict" class="conflict-actions">
+        <Button label="Перезагрузить" size="small" text @click="loadPage" />
+        <Button
+          label="Сохранить как копию"
+          size="small"
+          text
+          @click="duplicateDraft"
+        />
+      </div>
     </div>
 
     <section
@@ -606,8 +628,17 @@ onBeforeUnmount(() => {
 .dashboard-grid,
 .dashboard-editor,
 .dashboard-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   max-width: 1480px;
   margin-right: auto;
+  margin-left: auto;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 4px;
   margin-left: auto;
 }
 

@@ -3,6 +3,7 @@ import {
   createMockReportingRepository,
   resetMockReportingRepository,
 } from "./reporting-repository";
+import { reportingDatasetFixtures } from "./reporting-fixtures";
 
 describe("Reporting repository", () => {
   beforeEach(() => resetMockReportingRepository());
@@ -155,6 +156,53 @@ describe("Reporting repository", () => {
         new AbortController().signal,
       ),
     ).rejects.toThrow("NO_TEMPORAL_HISTORY");
+  });
+
+  it("enforces governed field readiness and cardinality with stable codes", async () => {
+    const repository = createMockReportingRepository();
+    const baseQuery = {
+      definitionRevisionId: "query-governance-test",
+      datasetId: "events-product",
+      metric: "unique_users",
+      population: { mode: "EVENT_TIME" as const },
+      dateRange: "LAST_30_DAYS" as const,
+      grain: "DAY" as const,
+      filters: [],
+    };
+
+    await expect(
+      repository.runQuery(
+        "project-1",
+        { ...baseQuery, breakdown: "event_name" },
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("DIMENSION_TOO_HIGH_CARDINALITY");
+    await expect(
+      repository.runQuery(
+        "project-1",
+        { ...baseQuery, metric: "restricted_metric" },
+        new AbortController().signal,
+      ),
+    ).rejects.toThrow("RESTRICTED_FIELD");
+
+    const dataset = reportingDatasetFixtures.find(
+      ({ id }) => id === "events-product",
+    );
+    const metric = dataset?.metrics.find(({ key }) => key === "unique_users");
+    expect(metric).toBeDefined();
+    if (!metric) return;
+    metric.analyticsReady = false;
+    try {
+      await expect(
+        repository.runQuery(
+          "project-1",
+          baseQuery,
+          new AbortController().signal,
+        ),
+      ).rejects.toThrow("NOT_ANALYTICS_READY");
+    } finally {
+      metric.analyticsReady = true;
+    }
   });
 
   it("keeps published Dashboard pins immutable across layout-only Draft edits", async () => {

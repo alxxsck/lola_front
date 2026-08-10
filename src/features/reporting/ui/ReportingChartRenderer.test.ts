@@ -1,6 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
-import { resultFixtureFor } from "../api/reporting-fixtures";
+import {
+  reportingResultStateFixtures,
+  resultFixtureFor,
+} from "../api/reporting-fixtures";
 import ReportingChartRenderer from "./ReportingChartRenderer.vue";
 
 describe("ReportingChartRenderer", () => {
@@ -46,6 +49,19 @@ describe("ReportingChartRenderer", () => {
     expect(wrapper.get('[role="alert"]').text()).toContain("Доступ отозван");
     expect(wrapper.text()).not.toContain("Точные данные");
     expect(wrapper.text()).not.toContain("12 840");
+    expect(wrapper.find("[role=img]").exists()).toBe(false);
+  });
+
+  it("renders a distinct privacy-safe suppressed state", () => {
+    const wrapper = mount(ReportingChartRenderer, {
+      props: {
+        visualization: "KPI",
+        result: reportingResultStateFixtures.suppressed,
+      },
+    });
+
+    expect(wrapper.text()).toContain("Результат скрыт");
+    expect(wrapper.text()).toContain("SMALL_GROUP_SUPPRESSED");
     expect(wrapper.find("[role=img]").exists()).toBe(false);
   });
 });
