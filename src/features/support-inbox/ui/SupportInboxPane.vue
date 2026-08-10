@@ -88,6 +88,12 @@ const loadedCount = computed(() =>
     ? lastLoadedCount.value
     : props.items.length,
 );
+const visibleModeCount = computed(
+  () => Number(props.canReadCases) + Number(props.canReadConversations),
+);
+const activeModeIsSecond = computed(
+  () => props.canReadCases && props.mode === "ALL_CONVERSATIONS",
+);
 
 watch(
   () => [props.items.length, props.loading] as const,
@@ -326,7 +332,16 @@ function unreadLabel(
       <span class="keyboard-hint" aria-hidden="true">J / K</span>
     </header>
 
-    <div class="inbox-modes" role="group" aria-label="Режим входящих">
+    <div
+      class="inbox-modes"
+      :class="{
+        'inbox-modes--single': visibleModeCount === 1,
+        'inbox-modes--second': activeModeIsSecond,
+      }"
+      role="group"
+      aria-label="Режим входящих"
+    >
+      <span class="inbox-modes__selection" aria-hidden="true" />
       <button
         v-if="canReadCases"
         type="button"
@@ -778,25 +793,49 @@ function unreadLabel(
   font-weight: 700;
 }
 .inbox-modes {
-  margin: 0 12px 10px;
-  padding: 3px;
+  margin: 0 12px 12px;
+  padding: 4px;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 3px;
+  gap: 4px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-muted);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.inbox-modes__selection {
+  position: absolute;
+  inset: 4px auto 4px 4px;
+  width: calc((100% - 12px) / 2);
+  box-sizing: border-box;
+  border: 1px solid
+    color-mix(in srgb, var(--text-brand) 28%, var(--line));
+  border-radius: 8px;
+  background: var(--brand-soft);
+  pointer-events: none;
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.inbox-modes--second .inbox-modes__selection {
+  transform: translateX(calc(100% + 4px));
+}
+.inbox-modes--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.inbox-modes--single .inbox-modes__selection {
+  width: calc(100% - 8px);
 }
 .inbox-modes button {
   min-width: 0;
   min-height: 40px;
+  position: relative;
+  z-index: 1;
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -806,15 +845,12 @@ function unreadLabel(
   cursor: pointer;
   transition:
     color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    background 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inbox-modes button.active {
-  background: var(--brand-soft);
+  background: transparent;
   color: var(--text-primary);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--text-brand) 28%, var(--line));
+  box-shadow: none;
 }
 .inbox-modes button:active {
   transform: scale(0.985);
@@ -854,7 +890,7 @@ function unreadLabel(
     background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inbox-tools__trigger:hover {
-  background: var(--surface-muted);
+  background: var(--surface-hover);
 }
 .inbox-tools__trigger.active {
   border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
@@ -872,7 +908,7 @@ function unreadLabel(
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: var(--surface-muted);
+  background: var(--surface-subtle);
   color: var(--text-secondary);
 }
 .inbox-tools__trigger.active .inbox-tools__icon {
@@ -986,7 +1022,7 @@ function unreadLabel(
   gap: 7px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: var(--surface-muted);
+  background: var(--surface-subtle);
   color: var(--text-secondary);
   font-size: 0.72rem;
 }
@@ -1016,7 +1052,7 @@ function unreadLabel(
   cursor: pointer;
 }
 .search-result-row:hover {
-  background: var(--surface-muted);
+  background: var(--surface-hover);
 }
 .search-result-row:focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -1096,8 +1132,8 @@ function unreadLabel(
   border-radius: 2px;
   background: transparent;
 }
-.inbox-row:hover {
-  background: var(--surface-muted);
+.inbox-row:hover:not(.selected) {
+  background: var(--surface-hover);
 }
 .inbox-row.selected {
   background: var(--brand-soft);
@@ -1119,7 +1155,7 @@ function unreadLabel(
   display: grid;
   place-items: center;
   border-radius: 9px;
-  background: var(--surface-muted);
+  background: var(--surface-subtle);
   color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 800;
@@ -1281,7 +1317,7 @@ function unreadLabel(
   flex: 0 0 auto;
   padding: 2px 6px;
   border-radius: 999px;
-  background: var(--surface-muted);
+  background: var(--surface-subtle);
   color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 650;
@@ -1363,8 +1399,7 @@ function unreadLabel(
   transform: translateY(3px);
 }
 .inbox-state button,
-.pagination-error button,
-.load-more {
+.pagination-error button {
   min-height: 40px;
   border: 0;
   background: transparent;
@@ -1386,12 +1421,32 @@ function unreadLabel(
   font-size: 0.75rem;
 }
 .load-more {
-  margin: 6px 12px;
+  min-height: 44px;
+  margin: 8px 12px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   justify-self: stretch;
+  border: 1px solid var(--line);
   border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .load-more:hover {
-  background: var(--surface-muted);
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+.load-more:active {
+  transform: translateY(1px);
 }
 @media (max-width: 767px) {
   .support-inbox-pane {
@@ -1427,6 +1482,7 @@ function unreadLabel(
   border: 0;
 }
 @media (prefers-reduced-motion: reduce) {
+  .inbox-modes__selection,
   .inbox-modes button,
   .inbox-row,
   .inbox-tools__trigger,
@@ -1434,7 +1490,8 @@ function unreadLabel(
   .inbox-tools-panel-enter-active,
   .inbox-tools-panel-leave-active,
   .inbox-content-enter-active,
-  .inbox-content-leave-active {
+  .inbox-content-leave-active,
+  .load-more {
     transition-duration: 0.01ms;
   }
 }

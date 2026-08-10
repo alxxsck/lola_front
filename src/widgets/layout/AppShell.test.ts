@@ -151,6 +151,52 @@ describe("AppShell", () => {
     );
   });
 
+  it("keeps a clicked Support destination active while its route guard resolves", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", [
+        "project.conversations.read",
+        "project.support.workspace.use",
+      ]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/support/inbox", component: { template: "<div />" } },
+      ],
+    });
+    let releaseSupportNavigation: () => void = () => undefined;
+    const supportNavigation = new Promise<void>((resolve) => {
+      releaseSupportNavigation = resolve;
+    });
+    router.beforeEach((to) =>
+      to.path === "/support/inbox"
+        ? supportNavigation.then(() => true)
+        : true,
+    );
+    await router.push("/overview");
+    await router.isReady();
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+    const supportLink = wrapper
+      .findAll(".sidebar-scroll nav a")
+      .find((link) => link.text().trim() === "Поддержка");
+    expect(supportLink).toBeDefined();
+
+    await supportLink!.trigger("click");
+
+    expect(router.currentRoute.value.path).toBe("/overview");
+    expect(supportLink!.classes()).toContain("active");
+
+    releaseSupportNavigation();
+    await flushPromises();
+    expect(router.currentRoute.value.path).toBe("/support/inbox");
+    expect(supportLink!.classes()).toContain("active");
+  });
+
   it("uses the compact application rail on the Support workspace route", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

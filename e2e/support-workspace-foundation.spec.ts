@@ -176,10 +176,73 @@ test("keeps support status controls legible and immediately understandable", asy
 
   const modeButtons = queue.locator('button[aria-pressed="true"]');
   await expect(modeButtons).toHaveCount(1);
-  await expect(modeButtons).toHaveCSS("box-shadow", /^(?!none$).+/);
+  await expect(queue.locator(".inbox-modes__selection")).toHaveCSS(
+    "border-style",
+    "solid",
+  );
   await expect(
     page.getByRole("button", { name: /^Моя доступность: / }),
   ).toBeVisible();
+});
+
+test("shows clear hover, tab motion and pagination contrast in the inbox", async ({
+  page,
+}) => {
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const row = queue.locator(".inbox-row").first();
+  const idleBackground = await row.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
+
+  await row.hover();
+  await expect
+    .poll(() =>
+      row.evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .not.toBe(idleBackground);
+
+  const indicator = queue.locator(".inbox-modes__selection");
+  await expect(indicator).toBeVisible();
+  const initialTransform = await indicator.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  await queue
+    .getByRole("button", { name: "Обращения", exact: true })
+    .click({ noWaitAfter: true });
+  await expect
+    .poll(() =>
+      indicator.evaluate((element) => getComputedStyle(element).transform),
+    )
+    .not.toBe(initialTransform);
+
+  const loadMorePresentation = await queue.evaluate((element) => {
+    const row = element.querySelector<HTMLElement>(".inbox-row");
+    const scopeAttribute = row
+      ?.getAttributeNames()
+      .find((name) => name.startsWith("data-v-"));
+    const button = document.createElement("button");
+    button.className = "load-more";
+    button.textContent = "Показать ещё";
+    if (scopeAttribute) button.setAttribute(scopeAttribute, "");
+    element.append(button);
+    const style = getComputedStyle(button);
+    const presentation = {
+      color: style.color,
+      background: style.backgroundColor,
+      borderStyle: style.borderStyle,
+    };
+    button.remove();
+    return presentation;
+  });
+  expect(loadMorePresentation.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(loadMorePresentation.borderStyle).toBe("solid");
+  expect(
+    colorContrast(
+      loadMorePresentation.color,
+      loadMorePresentation.background,
+    ),
+  ).toBeGreaterThanOrEqual(4.5);
 });
 
 test("keeps the inbox rail stable while switching modes", async ({ page }) => {

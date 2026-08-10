@@ -42,6 +42,7 @@ const projectActions = useProjectActionsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
+const navigationIntentPath = ref("");
 const sidebarCollapsedStorageKey = "retenive-cms-sidebar-collapsed-v1";
 
 function readSidebarCollapsedPreference(): boolean | null {
@@ -492,13 +493,38 @@ const navigationGroups = computed(() => {
   return groups;
 });
 
+function navigationPath(to: string): string {
+  return to.split("?", 1)[0] ?? to;
+}
+
 function isNavigationItemActive(to: string): boolean {
-  const targetPath = to.split("?", 1)[0] ?? to;
+  const targetPath = navigationPath(to);
+  const activePath = navigationIntentPath.value || route.path;
   return (
-    route.path === targetPath ||
-    (targetPath !== "/project" && route.path.startsWith(`${targetPath}/`))
+    activePath === targetPath ||
+    (targetPath !== "/project" && activePath.startsWith(`${targetPath}/`))
   );
 }
+
+function handleNavigationIntent(event: MouseEvent, to: string): void {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  navigationIntentPath.value = navigationPath(to);
+  sidebarOpen.value = false;
+}
+
+const removeNavigationIntentAfterEach = router.afterEach(() => {
+  navigationIntentPath.value = "";
+});
+const removeNavigationIntentOnError = router.onError(() => {
+  navigationIntentPath.value = "";
+});
 
 const profileItems = computed(() => [
   { label: auth.user?.email, disabled: true },
@@ -581,6 +607,8 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  removeNavigationIntentAfterEach();
+  removeNavigationIntentOnError();
   clearSupportWorkspaceShellAdmission();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
@@ -672,11 +700,14 @@ onBeforeUnmount(() => {
               class="nav-item"
               :title="sidebarCollapsed ? item.label : undefined"
               :aria-label="sidebarCollapsed ? item.label : undefined"
+              :aria-current="
+                isNavigationItemActive(item.to) ? 'page' : undefined
+              "
               :class="{
                 active: isNavigationItemActive(item.to),
                 'nav-item--nested': item.nested,
               }"
-              @click="sidebarOpen = false"
+              @click="handleNavigationIntent($event, item.to)"
             >
               <i
                 :class="item.icon"
