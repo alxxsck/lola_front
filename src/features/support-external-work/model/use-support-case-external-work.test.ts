@@ -199,6 +199,30 @@ describe("Support Case External Work controller", () => {
     expect(adapter.submitCaseCommand).toHaveBeenCalledOnce();
   });
 
+  it("keeps the Case panel available when no fresh create mapping exists", async () => {
+    const { controller } = setup(
+      {},
+      {
+        readCaseCreateOptions: vi.fn().mockRejectedValue(
+          new ApiError(
+            409,
+            "Mapping is stale",
+            undefined,
+            undefined,
+            "SUPPORT_EXTERNAL_MAPPING_STALE",
+          ),
+        ),
+      },
+    );
+
+    await controller.load();
+
+    expect(controller.links.value).toHaveLength(1);
+    expect(controller.commands.value).toEqual([]);
+    expect(controller.createOptions.value).toEqual([]);
+    expect(controller.error.value).toBe("");
+  });
+
   it("keeps create fail-closed without receipt recovery authority", async () => {
     const { controller, adapter } = setup({ read: false, create: true });
 

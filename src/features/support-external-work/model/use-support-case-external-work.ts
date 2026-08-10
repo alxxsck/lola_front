@@ -436,7 +436,15 @@ export function createSupportCaseExternalWorkController(
               scope.projectId,
               scope.caseId,
               abort.signal,
-            )
+            ).catch((cause: unknown) => {
+              if (
+                cause instanceof ApiError &&
+                cause.status === 409 &&
+                cause.code === "SUPPORT_EXTERNAL_MAPPING_STALE"
+              )
+                return { items: [] };
+              throw cause;
+            })
           : Promise.resolve({ items: [] }),
         permissions.inboxRead
           ? source.listInbox(scope.projectId, { limit: 50 }, abort.signal)
