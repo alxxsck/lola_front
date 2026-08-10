@@ -15,7 +15,9 @@ import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
 import {
+  canAuthorSavedReport,
   canPublishSavedReport,
+  canReadReporting,
   canRunReportingQuery,
 } from "@/features/reporting/model/reporting-permissions";
 import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
@@ -62,6 +64,7 @@ const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
 const canExecute = computed(() => canRunReportingQuery(permissions.value));
+const canEdit = computed(() => canAuthorSavedReport(permissions.value));
 const canPublish = computed(() => canPublishSavedReport(permissions.value));
 const selectedDataset = computed(
   () => datasets.value.find((dataset) => dataset.id === form.datasetId) ?? null,
@@ -119,7 +122,15 @@ function queryDefinition() {
 
 async function loadPage(): Promise<void> {
   const projectId = auth.project?.id;
-  if (!projectId) return;
+  if (!projectId || !canReadReporting(permissions.value)) {
+    coordinator.purge();
+    report.value = null;
+    result.value = null;
+    datasets.value = [];
+    loading.value = false;
+    await router.replace({ name: "overview" });
+    return;
+  }
   coordinator.purge();
   result.value = null;
   loading.value = true;
@@ -286,7 +297,7 @@ onBeforeUnmount(() => coordinator.purge());
             @click="router.push(`/dashboards/new?reportId=${report?.id ?? ''}`)"
           />
           <Button
-            v-if="report?.allowedActions.includes('EDIT')"
+            v-if="canEdit && report?.allowedActions.includes('EDIT')"
             label="Редактировать"
             icon="pi pi-pencil"
             severity="secondary"
@@ -782,6 +793,19 @@ h1 {
   }
 
   .report-actions :deep(button) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .viewer-filters {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .viewer-filters :deep(.p-select),
+  .viewer-filters :deep(button),
+  .viewer-toolbar > :deep(button) {
     width: 100%;
     justify-content: center;
   }

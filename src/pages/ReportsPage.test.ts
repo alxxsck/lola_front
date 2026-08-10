@@ -31,7 +31,10 @@ function mountPage(permissions: string[]) {
       { path: "/reports/:reportId/edit", component: { template: "<div />" } },
       { path: "/dashboards/new", component: { template: "<div />" } },
       { path: "/dashboards/:dashboardId", component: { template: "<div />" } },
-      { path: "/dashboards/:dashboardId/edit", component: { template: "<div />" } },
+      {
+        path: "/dashboards/:dashboardId/edit",
+        component: { template: "<div />" },
+      },
     ],
   });
   return { pinia, router, auth };
@@ -52,7 +55,10 @@ describe("ReportsPage", () => {
       global: {
         plugins: [pinia, router],
         stubs: {
-          Button: { props: ["label"], template: '<button>{{ label }}<slot /></button>' },
+          Button: {
+            props: ["label"],
+            template: "<button>{{ label }}<slot /></button>",
+          },
           InputText: {
             props: ["modelValue"],
             emits: ["update:modelValue"],
@@ -88,8 +94,11 @@ describe("ReportsPage", () => {
       global: {
         plugins: [pinia, router],
         stubs: {
-          Button: { props: ["label"], template: '<button>{{ label }}<slot /></button>' },
-          InputText: { template: "<input type=\"search\" />" },
+          Button: {
+            props: ["label"],
+            template: "<button>{{ label }}<slot /></button>",
+          },
+          InputText: { template: '<input type="search" />' },
           Select: { template: "<select />" },
           Tag: { template: "<span />" },
           Skeleton: { template: "<span />" },
@@ -100,5 +109,8 @@ describe("ReportsPage", () => {
 
     expect(wrapper.text()).not.toContain("Создать отчёт");
     expect(wrapper.text()).not.toContain("Создать дашборд");
+    expect(wrapper.find('button[aria-label^="Редактировать"]').exists()).toBe(
+      false,
+    );
   });
 });

@@ -57,4 +57,28 @@ describe("ReportingRunCoordinator", () => {
     expect(observedSignal?.aborted).toBe(true);
     await expect(run).resolves.toEqual({ status: "obsolete" });
   });
+
+  it("keeps a fifty-Widget dashboard inside the browser concurrency budget", async () => {
+    const coordinator = new ReportingRunCoordinator(4);
+    coordinator.beginScope("project-1:dashboard-50:last-30-days");
+    let active = 0;
+    let maximumActive = 0;
+
+    const outcomes = await Promise.all(
+      Array.from({ length: 50 }, (_, index) =>
+        coordinator.schedule(async () => {
+          active += 1;
+          maximumActive = Math.max(maximumActive, active);
+          await Promise.resolve();
+          active -= 1;
+          return index;
+        }),
+      ),
+    );
+
+    expect(maximumActive).toBe(4);
+    expect(outcomes.every((outcome) => outcome.status === "committed")).toBe(
+      true,
+    );
+  });
 });

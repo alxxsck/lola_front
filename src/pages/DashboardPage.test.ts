@@ -44,6 +44,11 @@ async function mountPage(path: string) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      {
+        path: "/overview",
+        name: "overview",
+        component: { template: "<div />" },
+      },
       { path: "/reports", component: { template: "<div />" } },
       { path: "/reports/:reportId", component: { template: "<div />" } },
       {
@@ -69,7 +74,7 @@ async function mountPage(path: string) {
     global: { plugins: [pinia, router], stubs },
   });
   await flushPromises();
-  return { wrapper, router };
+  return { wrapper, router, auth };
 }
 
 describe("DashboardPage", () => {
@@ -97,5 +102,18 @@ describe("DashboardPage", () => {
     expect(wrapper.text()).toContain("Ширина");
     expect(wrapper.text()).toContain("Сохранить черновик");
     expect(wrapper.text()).toContain("Опубликовать");
+  });
+
+  it("purges rendered Widgets immediately when aggregate read is revoked", async () => {
+    const { wrapper, router, auth } = await mountPage(
+      "/dashboards/dashboard-product-pulse",
+    );
+    expect(wrapper.findAll("[data-dashboard-widget]")).toHaveLength(3);
+
+    auth.project!.effectivePermissionCodes = [];
+    await flushPromises();
+
+    expect(wrapper.findAll("[data-dashboard-widget]")).toHaveLength(0);
+    expect(router.currentRoute.value.name).toBe("overview");
   });
 });

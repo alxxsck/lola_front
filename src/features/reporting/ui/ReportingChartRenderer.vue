@@ -111,7 +111,12 @@ function unitLabel(unit: string): string {
 
 <template>
   <section class="chart-shell" :class="{ compact }" :aria-busy="loading">
-    <div v-if="loading" class="chart-loading" aria-label="Расчёт отчёта">
+    <div
+      v-if="loading"
+      class="chart-loading"
+      role="status"
+      aria-label="Расчёт отчёта"
+    >
       <Skeleton width="32%" height="2.8rem" />
       <Skeleton width="100%" height="12rem" />
       <Skeleton width="64%" height="0.9rem" />
@@ -350,6 +355,14 @@ function unitLabel(unit: string): string {
 
 .compact .line-chart svg {
   height: 180px;
+}
+
+.compact :deep(.evidence-summary) {
+  flex-wrap: wrap;
+}
+
+.compact :deep(.evidence-summary button) {
+  margin-left: 0;
 }
 
 .chart-empty {

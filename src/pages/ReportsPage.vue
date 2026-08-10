@@ -31,16 +31,21 @@ const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
 const canCreateReport = computed(() => canAuthorSavedReport(permissions.value));
-const canCreateDashboard = computed(() => canAuthorDashboard(permissions.value));
+const canCreateDashboard = computed(() =>
+  canAuthorDashboard(permissions.value),
+);
 const collections = computed(() => [
   "Все коллекции",
   ...new Set(artifacts.value.map((artifact) => artifact.collection)),
 ]);
 const dashboardCount = computed(
-  () => artifacts.value.filter((artifact) => artifact.kind === "DASHBOARD").length,
+  () =>
+    artifacts.value.filter((artifact) => artifact.kind === "DASHBOARD").length,
 );
 const reportCount = computed(
-  () => artifacts.value.filter((artifact) => artifact.kind === "SAVED_REPORT").length,
+  () =>
+    artifacts.value.filter((artifact) => artifact.kind === "SAVED_REPORT")
+      .length,
 );
 const visibleArtifacts = computed(() => {
   const kind: ReportingArtifactKind =
@@ -79,7 +84,10 @@ async function loadArtifacts(): Promise<void> {
   }
 }
 
-function artifactPath(artifact: ReportingArtifactSummary, edit = false): string {
+function artifactPath(
+  artifact: ReportingArtifactSummary,
+  edit = false,
+): string {
   const base =
     artifact.kind === "DASHBOARD"
       ? `/dashboards/${artifact.id}`
@@ -87,14 +95,29 @@ function artifactPath(artifact: ReportingArtifactSummary, edit = false): string 
   return edit ? `${base}/edit` : base;
 }
 
-async function archiveArtifact(artifact: ReportingArtifactSummary): Promise<void> {
+function canEditArtifact(artifact: ReportingArtifactSummary): boolean {
+  if (!artifact.allowedActions.includes("EDIT")) return false;
+  return artifact.kind === "DASHBOARD"
+    ? canCreateDashboard.value
+    : canCreateReport.value;
+}
+
+async function archiveArtifact(
+  artifact: ReportingArtifactSummary,
+): Promise<void> {
   const projectId = auth.project?.id;
   if (!projectId || !artifact.allowedActions.includes("ARCHIVE")) return;
-  await reportingRepository.archiveArtifact(projectId, artifact.kind, artifact.id);
+  await reportingRepository.archiveArtifact(
+    projectId,
+    artifact.kind,
+    artifact.id,
+  );
   artifacts.value = artifacts.value.filter((item) => item.id !== artifact.id);
 }
 
-function lifecycleLabel(lifecycle: ReportingArtifactSummary["lifecycle"]): string {
+function lifecycleLabel(
+  lifecycle: ReportingArtifactSummary["lifecycle"],
+): string {
   if (lifecycle === "PUBLISHED") return "Опубликован";
   if (lifecycle === "DRAFT") return "Черновик";
   return "В архиве";
@@ -130,9 +153,7 @@ onMounted(() => void loadArtifacts());
       <div class="reports-heading">
         <span class="reports-eyebrow">Аналитика проекта</span>
         <h1 id="reports-title">Отчёты</h1>
-        <p>
-          Сохранённые ответы и дашборды с понятным происхождением данных.
-        </p>
+        <p>Сохранённые ответы и дашборды с понятным происхождением данных.</p>
       </div>
       <div v-if="canCreateReport || canCreateDashboard" class="header-actions">
         <Button
@@ -233,7 +254,13 @@ onMounted(() => void loadArtifacts());
             @click="router.push(artifactPath(artifact))"
           >
             <span class="artifact-icon" aria-hidden="true">
-              <i :class="artifact.kind === 'DASHBOARD' ? 'pi pi-th-large' : 'pi pi-chart-line'" />
+              <i
+                :class="
+                  artifact.kind === 'DASHBOARD'
+                    ? 'pi pi-th-large'
+                    : 'pi pi-chart-line'
+                "
+              />
             </span>
             <span class="artifact-copy">
               <span class="artifact-title-line">
@@ -243,7 +270,9 @@ onMounted(() => void loadArtifacts());
                   :severity="lifecycleSeverity(artifact.lifecycle)"
                 />
               </span>
-              <span class="artifact-description">{{ artifact.description }}</span>
+              <span class="artifact-description">{{
+                artifact.description
+              }}</span>
             </span>
           </button>
           <dl class="artifact-meta">
@@ -262,7 +291,7 @@ onMounted(() => void loadArtifacts());
           </dl>
           <div class="artifact-actions">
             <Button
-              v-if="artifact.allowedActions.includes('EDIT')"
+              v-if="canEditArtifact(artifact)"
               text
               rounded
               icon="pi pi-pencil"
@@ -379,7 +408,8 @@ h1 {
   color: var(--text-secondary);
   font: 600 var(--font-size-body) var(--font-display);
   cursor: pointer;
-  transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+  transition:
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -440,7 +470,6 @@ h1 {
   min-height: 92px;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-subtle);
-  opacity: 0;
   animation: row-enter 200ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
   animation-delay: calc(var(--row-index, 0) * 35ms);
 }
@@ -510,6 +539,16 @@ h1 {
   white-space: nowrap;
 }
 
+.artifact-title-line :deep(.p-tag-success) {
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+
+.artifact-title-line :deep(.p-tag-secondary) {
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
 .artifact-meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(90px, 1fr));
@@ -567,7 +606,6 @@ h1 {
 }
 
 .skeleton-row {
-  opacity: 1;
   animation: none;
 }
 
@@ -582,11 +620,9 @@ h1 {
 
 @keyframes row-enter {
   from {
-    opacity: 0;
     transform: translateY(5px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -654,13 +690,14 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .artifact-row {
-    opacity: 1;
     animation: none;
   }
 
   .artifact-tabs button,
   .artifact-main {
-    transition: color 120ms linear, background-color 120ms linear;
+    transition:
+      color 120ms linear,
+      background-color 120ms linear;
   }
 }
 </style>

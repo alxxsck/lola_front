@@ -15,7 +15,11 @@ import Skeleton from "primevue/skeleton";
 import Textarea from "primevue/textarea";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { reportingRepository } from "@/features/reporting/api/reporting-repository";
-import { canPublishDashboard } from "@/features/reporting/model/reporting-permissions";
+import {
+  canAuthorDashboard,
+  canPublishDashboard,
+  canReadReporting,
+} from "@/features/reporting/model/reporting-permissions";
 import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
 import type {
   Dashboard,
@@ -57,6 +61,7 @@ const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
 );
 const canPublish = computed(() => canPublishDashboard(permissions.value));
+const canEdit = computed(() => canAuthorDashboard(permissions.value));
 const publishedReports = computed(() =>
   reports.value.filter((report) => report.lifecycle === "PUBLISHED"),
 );
@@ -101,7 +106,15 @@ function beginViewerScope(): void {
 }
 
 async function loadPage(): Promise<void> {
-  if (!projectId.value) return;
+  if (!projectId.value || !canReadReporting(permissions.value)) {
+    coordinator.purge();
+    dashboard.value = null;
+    reports.value = [];
+    editor.widgets = [];
+    loading.value = false;
+    await router.replace({ name: "overview" });
+    return;
+  }
   coordinator.purge();
   loading.value = true;
   error.value = "";
@@ -182,7 +195,7 @@ async function saveDraft(): Promise<Dashboard | null> {
         title: editor.title.trim(),
         description: editor.description.trim(),
         collection: editor.collection.trim() || "Личные",
-        widgets: structuredClone(editor.widgets),
+        widgets: editor.widgets.map((widget) => ({ ...widget })),
       },
     );
     applyDashboard(saved);
@@ -289,7 +302,7 @@ onBeforeUnmount(() => coordinator.purge());
             @click="refreshDashboard"
           />
           <Button
-            v-if="dashboard?.allowedActions.includes('EDIT')"
+            v-if="canEdit && dashboard?.allowedActions.includes('EDIT')"
             label="Редактировать"
             icon="pi pi-pencil"
             @click="router.push(`/dashboards/${dashboard.id}/edit`)"
@@ -591,7 +604,6 @@ h1 {
 
 .dashboard-grid > * {
   grid-column: span 3;
-  opacity: 0;
   animation: widget-enter 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
   animation-delay: calc(var(--widget-index, 0) * 45ms);
 }
@@ -611,7 +623,6 @@ h1 {
 
 .dashboard-loading > * {
   grid-column: span 3;
-  opacity: 1;
   animation: none;
 }
 
@@ -835,11 +846,9 @@ h1 {
 
 @keyframes widget-enter {
   from {
-    opacity: 0;
     transform: translateY(7px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -914,7 +923,6 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-grid > * {
-    opacity: 1;
     animation: none;
   }
 }
