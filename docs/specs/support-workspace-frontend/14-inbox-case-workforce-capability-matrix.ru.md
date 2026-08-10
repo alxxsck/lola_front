@@ -78,6 +78,8 @@ role-shaped assignee list, inbox и presence не используются ка�
 | Case-desk workload     | `SupportLead_read`, `view=CAPACITY_RISKS`              | Lead Control read | current causal gap, immutable snapshot, signed cursor    | `READY` для Team/Queue gap; skill/language честно unavailable |
 
 Availability никогда не выводится из socket online или browser presence.
+Ручной declared state не сбрасывается при скрытии, навигации или закрытии вкладки;
+heartbeat остаётся только совместимым transport-механизмом и не владеет готовностью оператора.
 
 ## 5. Queues, routing и SLA
 

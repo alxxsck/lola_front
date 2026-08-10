@@ -67,7 +67,7 @@ export function createSupportAvailabilityController(
     return (
       context.canManage() &&
       availability.value !== null &&
-      availability.value.effectiveState !== "OFFLINE"
+      availability.value.declaredState !== "OFFLINE"
     );
   }
 

@@ -75,6 +75,39 @@ describe("support availability controller", () => {
     vi.useRealTimers();
   });
 
+  it("restores a manually declared AVAILABLE state after a legacy lease expiry", async () => {
+    const renewOwn = vi.fn().mockResolvedValue(snapshot({ version: 3 }));
+    const controller = createSupportAvailabilityController(
+      {
+        projectId: () => "project-1",
+        operatorId: () => "operator-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      source({
+        read: vi.fn().mockResolvedValue(
+          snapshot({
+            declaredState: "AVAILABLE",
+            effectiveState: "OFFLINE",
+            acceptsNewWork: false,
+            leaseRenewedAt: null,
+            leaseUntil: null,
+            reasonCode: "LEASE_EXPIRED",
+            source: "LEASE_EXPIRY",
+            version: 2,
+          }),
+        ),
+        renewOwn,
+      }),
+    );
+
+    await controller.load();
+    controller.startHeartbeat();
+    await vi.waitFor(() => expect(renewOwn).toHaveBeenCalledOnce());
+
+    expect(controller.availability.value?.effectiveState).toBe("AVAILABLE");
+  });
+
   it("does not commit an availability snapshot for another operator", async () => {
     const controller = createSupportAvailabilityController(
       {
