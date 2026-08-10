@@ -7,6 +7,7 @@ import {
   ref,
   watch,
 } from "vue";
+import "@/features/support-workspace/ui/support-loading-shimmer.css";
 import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
@@ -1868,7 +1869,10 @@ const inspector = createSupportInspectorController(
 async function openInboxItem(item: SupportInboxItem): Promise<void> {
   const selectionKey = `${item.kind}:${item.id}`;
   lastInboxSelectionKey.value = selectionKey;
-  if (selectionKey === requestedSelectionKey.value) {
+  if (
+    selectionKey === requestedSelectionKey.value &&
+    (!selectionIntentKey.value || selectionIntentKey.value === selectionKey)
+  ) {
     selectionIntentKey.value = "";
     return;
   }
@@ -1889,11 +1893,14 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
             query,
           },
     );
-    if (
-      requestedSelectionKey.value !== selectionKey &&
-      selectionIntentKey.value === selectionKey
-    )
-      selectionIntentKey.value = "";
+    if (selectionIntentKey.value === selectionKey) {
+      const alreadyPresented =
+        requestedSelectionKey.value === selectionKey &&
+        committedSelectionKey.value === selectionKey &&
+        !conversation.loading.value;
+      if (requestedSelectionKey.value !== selectionKey || alreadyPresented)
+        selectionIntentKey.value = "";
+    }
   } catch (error) {
     if (selectionIntentKey.value === selectionKey)
       selectionIntentKey.value = "";
@@ -3382,6 +3389,9 @@ watch(
 watch(
   requestedSelectionKey,
   (selectionKey, previousSelectionKey) => {
+    if (!selectionKey && selectionIntentKey.value) {
+      selectionIntentKey.value = "";
+    }
     if (selectionKey) lastInboxSelectionKey.value = selectionKey;
     if (!selectionKey && previousSelectionKey && isMobileWorkspace.value) {
       void nextTick(() => {
@@ -3728,23 +3738,37 @@ onBeforeUnmount(() => {
             >
               <span class="sr-only">Загружаем выбранный диалог</span>
               <header class="conversation-loading-header" aria-hidden="true">
-                <span />
-                <span />
-                <span />
+                <span class="support-loading-shimmer" />
+                <span class="support-loading-shimmer" />
+                <span class="support-loading-shimmer" />
               </header>
               <div class="conversation-loading-messages" aria-hidden="true">
                 <article class="conversation-loading-message is-inbound">
-                  <span class="conversation-loading-avatar" />
+                  <span
+                    class="conversation-loading-avatar support-loading-shimmer"
+                  />
                   <span class="conversation-loading-bubble">
-                    <i />
-                    <i />
-                    <i />
+                    <i class="support-loading-shimmer" />
+                    <i class="support-loading-shimmer" />
+                    <i class="support-loading-shimmer" />
                   </span>
                 </article>
                 <article class="conversation-loading-message is-outbound">
                   <span class="conversation-loading-bubble">
-                    <i />
-                    <i />
+                    <i class="support-loading-shimmer" />
+                    <i class="support-loading-shimmer" />
+                    <i class="support-loading-shimmer" />
+                  </span>
+                </article>
+                <article
+                  class="conversation-loading-message is-inbound is-compact"
+                >
+                  <span
+                    class="conversation-loading-avatar support-loading-shimmer"
+                  />
+                  <span class="conversation-loading-bubble">
+                    <i class="support-loading-shimmer" />
+                    <i class="support-loading-shimmer" />
                   </span>
                 </article>
               </div>
@@ -4425,7 +4449,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface-base);
+  background: var(--surface-card);
 }
 .conversation-loading-overlay {
   position: absolute;
@@ -4436,7 +4460,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface-base);
+  background: var(--surface-card);
 }
 .conversation-loading-header {
   min-height: 81px;
@@ -4450,14 +4474,6 @@ onBeforeUnmount(() => {
 .conversation-loading-bubble i,
 .conversation-loading-avatar {
   display: block;
-  background: linear-gradient(
-    100deg,
-    var(--surface-muted) 24%,
-    color-mix(in srgb, var(--brand-soft) 70%, var(--surface-card)) 42%,
-    var(--surface-muted) 60%
-  );
-  background-size: 220% 100%;
-  animation: conversation-loading-shimmer 1.4s ease-in-out infinite;
 }
 .conversation-loading-header span {
   height: 8px;
@@ -4491,6 +4507,9 @@ onBeforeUnmount(() => {
 .conversation-loading-message.is-outbound {
   width: min(54%, 440px);
   align-self: flex-end;
+}
+.conversation-loading-message.is-compact {
+  width: min(46%, 360px);
 }
 .conversation-loading-avatar {
   width: 28px;
@@ -4537,14 +4556,6 @@ onBeforeUnmount(() => {
 .conversation-loading-leave-to {
   opacity: 0;
   transform: translateY(3px);
-}
-@keyframes conversation-loading-shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -120% 0;
-  }
 }
 .case-without-conversation {
   min-height: 0;
@@ -4860,11 +4871,6 @@ onBeforeUnmount(() => {
   .conversation-loading-enter-active,
   .conversation-loading-leave-active {
     transition: none;
-  }
-  .conversation-loading-header span,
-  .conversation-loading-bubble i,
-  .conversation-loading-avatar {
-    animation: none;
   }
 }
 </style>

@@ -202,6 +202,36 @@ describe("SupportInboxPane", () => {
     expect(row.get("time").attributes("title")).toContain("2026");
   });
 
+  it("keeps the loaded count mounted while replacing rows with skeletons", async () => {
+    const wrapper = render();
+
+    expect(wrapper.get(".support-inbox-heading p").text()).toBe("Загружено: 1");
+    await wrapper.setProps({ items: [], loading: true });
+
+    expect(wrapper.get(".support-inbox-heading p").text()).toBe("Загружено: 1");
+    expect(wrapper.findAll(".inbox-skeleton-row")).toHaveLength(6);
+  });
+
+  it("renders mode-shaped skeleton rows without PrimeVue stretch markers", () => {
+    const cases = render({ items: [], loading: true });
+    const caseSkeleton = cases.get(".inbox-skeleton-row");
+
+    expect(caseSkeleton.classes()).toContain("is-case");
+    expect(caseSkeleton.find(".inbox-skeleton-marker").exists()).toBe(true);
+    expect(caseSkeleton.find(".inbox-skeleton-title").exists()).toBe(true);
+    expect(caseSkeleton.find(".inbox-skeleton-time").exists()).toBe(true);
+    expect(caseSkeleton.find(".p-skeleton").exists()).toBe(false);
+
+    const conversations = render({
+      mode: "ALL_CONVERSATIONS",
+      items: [],
+      loading: true,
+    });
+    expect(conversations.get(".inbox-skeleton-row").classes()).toContain(
+      "is-conversation",
+    );
+  });
+
   it("renders one compact SLA forecast with the full explanation available", () => {
     const wrapper = render({
       items: [

@@ -1,0 +1,27 @@
+.support-loading-shimmer {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--border-default) 42%, var(--surface-subtle)) 24%,
+    color-mix(in srgb, var(--border-default) 18%, var(--surface-card)) 42%,
+    color-mix(in srgb, var(--border-default) 42%, var(--surface-subtle)) 60%
+  );
+  background-size: 220% 100%;
+  animation: support-loading-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes support-loading-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support-loading-shimmer {
+    animation: none;
+  }
+}

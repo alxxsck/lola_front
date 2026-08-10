@@ -182,6 +182,82 @@ test("keeps support status controls legible and immediately understandable", asy
   ).toBeVisible();
 });
 
+test("keeps the inbox rail stable while switching modes", async ({ page }) => {
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const heading = queue.locator(".support-inbox-heading");
+  const tools = queue.locator(".inbox-tools");
+  const before = await Promise.all([
+    heading.boundingBox(),
+    tools.boundingBox(),
+  ]);
+
+  await queue.getByRole("button", { name: "Обращения", exact: true }).click({
+    noWaitAfter: true,
+  });
+
+  await expect(heading.getByText(/^Загружено:/)).toBeVisible();
+  await expect(queue.locator(".case-row").first()).toBeVisible();
+  const during = await Promise.all([
+    heading.boundingBox(),
+    tools.boundingBox(),
+  ]);
+  expect(
+    Math.abs((during[0]?.height ?? 0) - (before[0]?.height ?? 0)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs((during[1]?.y ?? 0) - (before[1]?.y ?? 0)),
+  ).toBeLessThanOrEqual(1);
+});
+
+test("aligns the Case sequence with the row headline", async ({ page }) => {
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+
+  await queue.getByRole("button", { name: "Обращения", exact: true }).click({
+    noWaitAfter: true,
+  });
+  const row = queue.locator(".case-row").first();
+  await expect(row).toBeVisible();
+  const geometry = await row.evaluate((element) => {
+    const sequence = element
+      .querySelector<HTMLElement>(".case-row__sequence > span")!
+      .getBoundingClientRect();
+    const headline = element
+      .querySelector<HTMLElement>(".case-row__headline > strong")!
+      .getBoundingClientRect();
+    return { sequenceTop: sequence.top, headlineTop: headline.top };
+  });
+  expect(
+    Math.abs(geometry.sequenceTop - geometry.headlineTop),
+  ).toBeLessThanOrEqual(4);
+});
+
+test("keeps the last inbox mode when the operator switches rapidly", async ({
+  page,
+}) => {
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const cases = queue.getByRole("button", { name: "Обращения", exact: true });
+  const conversations = queue.getByRole("button", {
+    name: "Все чаты",
+    exact: true,
+  });
+
+  await cases.click({ noWaitAfter: true });
+  await conversations.click({ noWaitAfter: true });
+  await cases.click({ noWaitAfter: true });
+  await conversations.click({ noWaitAfter: true });
+
+  await expect(conversations).toHaveAttribute("aria-pressed", "true");
+  await expect(queue.locator(".conversation-row").first()).toBeVisible();
+  await expect(queue.locator(".inbox-skeletons")).toBeHidden();
+  await expect(queue.getByText("Не удалось загрузить входящие")).toBeHidden();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("mode"))
+    .toBeNull();
+});
+
 test("selects a conversation immediately and swaps it through message skeletons", async ({
   page,
 }) => {
@@ -199,8 +275,55 @@ test("selects a conversation immediately and swaps it through message skeletons"
   await expect(nextRow).toHaveAttribute("aria-current", "true");
   const loading = page.locator(".conversation-loading-overlay");
   await expect(loading).toBeVisible();
-  await expect(loading.locator(".conversation-loading-message")).toHaveCount(2);
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(3);
+  const loadingPresentation = await loading.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const messages = Array.from(
+      element.querySelectorAll<HTMLElement>(".conversation-loading-message"),
+    ).map((message) => {
+      const bounds = message.getBoundingClientRect();
+      return { width: bounds.width, height: bounds.height };
+    });
+    return { background: style.backgroundColor, messages };
+  });
+  expect(loadingPresentation.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    loadingPresentation.messages.every((message) => message.height >= 44),
+  ).toBe(true);
+  expect(
+    loadingPresentation.messages.every((message) => message.width <= 520),
+  ).toBe(true);
   await expect(loading).toBeHidden();
+});
+
+test("keeps the last chat selection after rapid clicks and clears loading", async ({
+  page,
+}) => {
+  test.skip(
+    (page.viewportSize()?.width ?? 1_280) <= 760,
+    "Mobile route stack hides the inbox after the first selection",
+  );
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const rows = queue.locator(".conversation-row");
+  const finalConversationId = await rows
+    .nth(0)
+    .getAttribute("data-inbox-item-id");
+  expect(finalConversationId).toBeTruthy();
+
+  await rows.nth(0).click();
+  await expect(page.locator(".conversation-loading-overlay")).toBeHidden();
+  await rows.evaluateAll((items) => {
+    items[2]?.click();
+    items[0]?.click();
+  });
+
+  await expect(rows.nth(0)).toHaveAttribute("aria-current", "true");
+  await expect(page.locator(".conversation-loading-overlay")).toBeHidden();
+  await expect
+    .poll(() => new URL(page.url()).pathname)
+    .toBe(`/support/inbox/conversations/${finalConversationId}`);
+  await expect(page.locator(".conversation-surface")).toBeVisible();
 });
 
 test("keeps availability and message loading visible on mobile", async ({
@@ -217,7 +340,7 @@ test("keeps availability and message loading visible on mobile", async ({
   await queue.locator(".inbox-row").first().click({ noWaitAfter: true });
   const loading = page.locator(".conversation-loading-overlay");
   await expect(loading).toBeVisible();
-  await expect(loading.locator(".conversation-loading-message")).toHaveCount(2);
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(3);
   const geometry = await loading.evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     return {

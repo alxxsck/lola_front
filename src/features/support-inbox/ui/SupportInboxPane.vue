@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import Skeleton from "primevue/skeleton";
 import type {
   SupportInboxItem,
   SupportInboxMode,
@@ -12,6 +11,7 @@ import type {
 } from "@/features/support-search/api/support-search-source";
 import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
 import type { SupportSearchFailure } from "@/features/support-search/model/use-support-search";
+import SupportInboxSkeletonRows from "@/features/support-inbox/ui/SupportInboxSkeletonRows.vue";
 import SupportSearchToolbar from "@/features/support-search/ui/SupportSearchToolbar.vue";
 import type {
   SavedSupportViewResponseDto,
@@ -82,6 +82,19 @@ const emit = defineEmits<{
 const searchToolsExpanded = ref(false);
 const searchToolsPanel = ref<HTMLElement | null>(null);
 const searchToolsPanelId = "support-inbox-search-tools";
+const lastLoadedCount = ref(props.items.length);
+const loadedCount = computed(() =>
+  props.loading && !props.items.length
+    ? lastLoadedCount.value
+    : props.items.length,
+);
+
+watch(
+  () => [props.items.length, props.loading] as const,
+  ([count, loading]) => {
+    if (!loading) lastLoadedCount.value = count;
+  },
+);
 const systemViewNames: Record<string, string> = {
   MY_ACTIVE: "Мои обращения",
   MY_TEAM_UNASSIGNED: "Неназначенные команды",
@@ -308,7 +321,7 @@ function unreadLabel(
     <header class="support-inbox-heading">
       <div>
         <h2>Входящие</h2>
-        <p v-if="items.length">Загружено: {{ items.length }}</p>
+        <p>Загружено: {{ loadedCount }}</p>
       </div>
       <span class="keyboard-hint" aria-hidden="true">J / K</span>
     </header>
@@ -403,329 +416,328 @@ function unreadLabel(
       </Transition>
     </section>
 
-    <div
-      v-if="searchActive || viewActive"
-      class="search-results"
-      aria-live="polite"
-    >
-      <div
-        v-if="searchFreshness && searchFreshness.state !== 'READY'"
-        :class="['freshness-notice', searchFreshness.state.toLowerCase()]"
-        role="status"
-      >
-        <i class="pi pi-clock" aria-hidden="true" />
-        <span>
-          {{
-            searchFreshness.state === "BUILDING"
-              ? "Индекс обновляется"
-              : `Индекс отстаёт на ${searchFreshness.lagSeconds} сек.`
-          }}
-        </span>
-      </div>
+    <div class="inbox-content-stage">
+      <Transition name="inbox-content" mode="out-in">
+        <div
+          v-if="searchActive || viewActive"
+          key="search-results"
+          class="search-results"
+          aria-live="polite"
+        >
+          <div
+            v-if="searchFreshness && searchFreshness.state !== 'READY'"
+            :class="['freshness-notice', searchFreshness.state.toLowerCase()]"
+            role="status"
+          >
+            <i class="pi pi-clock" aria-hidden="true" />
+            <span>
+              {{
+                searchFreshness.state === "BUILDING"
+                  ? "Индекс обновляется"
+                  : `Индекс отстаёт на ${searchFreshness.lagSeconds} сек.`
+              }}
+            </span>
+          </div>
 
-      <div
-        v-if="searchLoading && !searchItems.length"
-        class="inbox-skeletons"
-        aria-busy="true"
-      >
-        <div v-for="index in 5" :key="index" class="inbox-skeleton-row">
-          <Skeleton shape="circle" size="32px" />
-          <div>
-            <Skeleton width="72%" height="14px" /><Skeleton
-              width="52%"
-              height="12px"
-            />
+          <SupportInboxSkeletonRows
+            v-if="searchLoading && !searchItems.length"
+            :mode="mode"
+            :count="5"
+          />
+          <div
+            v-else-if="searchFailure === 'FORBIDDEN'"
+            class="inbox-state"
+            role="alert"
+          >
+            <i class="pi pi-lock" aria-hidden="true" /><strong
+              >Поиск больше недоступен</strong
+            >
+            <p>Права обновлены; скрытые результаты удалены.</p>
+          </div>
+          <div
+            v-else-if="searchFailure === 'VALIDATION'"
+            class="inbox-state"
+            role="alert"
+          >
+            <i class="pi pi-info-circle" aria-hidden="true" /><strong
+              >Не удалось применить запрос</strong
+            >
+            <p>{{ searchError }}</p>
+          </div>
+          <div
+            v-else-if="searchError && !searchItems.length"
+            class="inbox-state"
+            role="alert"
+          >
+            <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong
+              >Поиск временно недоступен</strong
+            >
+            <p>{{ searchError }}</p>
+          </div>
+          <div
+            v-else-if="!searchItems.length && searchFreshness"
+            class="inbox-state"
+          >
+            <i class="pi pi-search" aria-hidden="true" /><strong
+              >Ничего не найдено</strong
+            >
+            <p>Измените запрос или снимите часть фильтров.</p>
+          </div>
+          <div v-else-if="!searchItems.length" class="inbox-state">
+            <i class="pi pi-search" aria-hidden="true" /><strong
+              >Введите запрос</strong
+            >
+            <p>Минимум два символа или выберите фильтр обращений.</p>
+          </div>
+          <div v-else class="search-result-list">
+            <button
+              v-for="item in searchItems"
+              :key="`${item.kind}:${item.id}`"
+              type="button"
+              class="search-result-row"
+              @click="emit('selectSearch', item)"
+            >
+              <span class="search-result-icon"
+                ><i
+                  :class="
+                    item.kind === 'CASE'
+                      ? 'pi pi-briefcase'
+                      : item.kind === 'CONVERSATION'
+                        ? 'pi pi-comments'
+                        : item.kind === 'MESSAGE'
+                          ? 'pi pi-comment'
+                          : 'pi pi-user'
+                  "
+                  aria-hidden="true"
+              /></span>
+              <span class="search-result-copy">
+                <span class="search-result-meta"
+                  ><strong>{{ searchKind(item.kind) }}</strong
+                  ><span
+                    >{{ matchReason(item.matchProvenance)
+                    }}<template v-if="item.locale">
+                      · {{ item.locale.toUpperCase() }}</template
+                    ></span
+                  ><time :datetime="item.activityAt">{{
+                    inboxTime(item.activityAt)
+                  }}</time></span
+                >
+                <span class="search-result-snippet">{{ item.snippet }}</span>
+              </span>
+            </button>
+            <div v-if="searchError" class="pagination-error" role="alert">
+              <span>{{ searchError }}</span
+              ><button type="button" @click="emit('submitSearch', searchState)">
+                Повторить
+              </button>
+            </div>
+            <button
+              v-if="searchHasMore"
+              type="button"
+              class="load-more"
+              :disabled="searchLoading"
+              @click="emit('loadMoreSearch')"
+            >
+              <i class="pi pi-chevron-down" aria-hidden="true" />
+              {{ searchLoading ? "Загружаем…" : "Показать ещё" }}
+            </button>
           </div>
         </div>
-      </div>
-      <div
-        v-else-if="searchFailure === 'FORBIDDEN'"
-        class="inbox-state"
-        role="alert"
-      >
-        <i class="pi pi-lock" aria-hidden="true" /><strong
-          >Поиск больше недоступен</strong
+
+        <SupportInboxSkeletonRows
+          v-else-if="loading && !items.length"
+          :key="`loading-${mode}`"
+          :mode="mode"
+          :count="6"
+        />
+
+        <div
+          v-else-if="!items.length && failure === 'FORBIDDEN'"
+          key="forbidden"
+          class="inbox-state"
+          role="alert"
         >
-        <p>Права обновлены; скрытые результаты удалены.</p>
-      </div>
-      <div
-        v-else-if="searchFailure === 'VALIDATION'"
-        class="inbox-state"
-        role="alert"
-      >
-        <i class="pi pi-info-circle" aria-hidden="true" /><strong
-          >Не удалось применить запрос</strong
+          <i class="pi pi-lock" aria-hidden="true" />
+          <strong>Входящие больше недоступны</strong>
+          <p>
+            Права доступа обновлены. Скрытые данные удалены из рабочего места.
+          </p>
+        </div>
+
+        <div
+          v-else-if="!items.length && error"
+          key="error"
+          class="inbox-state"
+          role="alert"
         >
-        <p>{{ searchError }}</p>
-      </div>
-      <div
-        v-else-if="searchError && !searchItems.length"
-        class="inbox-state"
-        role="alert"
-      >
-        <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong
-          >Поиск временно недоступен</strong
+          <i class="pi pi-exclamation-circle" aria-hidden="true" />
+          <strong>Не удалось загрузить входящие</strong>
+          <p>{{ error }}</p>
+          <button type="button" @click="emit('retry')">Повторить</button>
+        </div>
+
+        <div
+          v-else-if="!items.length"
+          :key="`empty-${mode}`"
+          class="inbox-state"
         >
-        <p>{{ searchError }}</p>
-      </div>
-      <div
-        v-else-if="!searchItems.length && searchFreshness"
-        class="inbox-state"
-      >
-        <i class="pi pi-search" aria-hidden="true" /><strong
-          >Ничего не найдено</strong
-        >
-        <p>Измените запрос или снимите часть фильтров.</p>
-      </div>
-      <div v-else-if="!searchItems.length" class="inbox-state">
-        <i class="pi pi-search" aria-hidden="true" /><strong
-          >Введите запрос</strong
-        >
-        <p>Минимум два символа или выберите фильтр обращений.</p>
-      </div>
-      <div v-else class="search-result-list">
-        <button
-          v-for="item in searchItems"
-          :key="`${item.kind}:${item.id}`"
-          type="button"
-          class="search-result-row"
-          @click="emit('selectSearch', item)"
-        >
-          <span class="search-result-icon"
-            ><i
-              :class="
-                item.kind === 'CASE'
-                  ? 'pi pi-briefcase'
-                  : item.kind === 'CONVERSATION'
-                    ? 'pi pi-comments'
-                    : item.kind === 'MESSAGE'
-                      ? 'pi pi-comment'
-                      : 'pi pi-user'
-              "
-              aria-hidden="true"
-          /></span>
-          <span class="search-result-copy">
-            <span class="search-result-meta"
-              ><strong>{{ searchKind(item.kind) }}</strong
-              ><span
-                >{{ matchReason(item.matchProvenance)
-                }}<template v-if="item.locale">
-                  · {{ item.locale.toUpperCase() }}</template
-                ></span
-              ><time :datetime="item.activityAt">{{
-                inboxTime(item.activityAt)
-              }}</time></span
+          <i
+            :class="mode === 'CASES' ? 'pi pi-briefcase' : 'pi pi-comments'"
+            aria-hidden="true"
+          />
+          <strong>{{
+            mode === "CASES" ? "Обращений пока нет" : "Чатов пока нет"
+          }}</strong>
+          <p>Новые элементы появятся здесь автоматически.</p>
+        </div>
+
+        <div v-else :key="`list-${mode}`" class="inbox-list conversation-list">
+          <button
+            v-for="item in items"
+            :key="itemKey(item)"
+            type="button"
+            class="inbox-row"
+            :data-selection-key="itemKey(item)"
+            :data-inbox-item-id="item.id"
+            :class="{
+              selected: selectedKey === itemKey(item),
+              'conversation-row': item.kind === 'CONVERSATION',
+              'case-row': item.kind === 'CASE',
+              'case-row--with-sla':
+                item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
+            }"
+            :aria-current="selectedKey === itemKey(item) ? 'true' : undefined"
+            :aria-label="
+              item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined
+            "
+            :aria-describedby="
+              item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE'
+                ? slaDescriptionId(item.id)
+                : undefined
+            "
+            :title="item.kind === 'CASE' ? caseTooltip(item) : undefined"
+            @click="emit('select', item)"
+          >
+            <span
+              class="inbox-row__avatar"
+              :class="{
+                attention: item.kind === 'CASE' && item.attentionRequired,
+                'case-row__sequence': item.kind === 'CASE',
+              }"
             >
-            <span class="search-result-snippet">{{ item.snippet }}</span>
-          </span>
-        </button>
-        <div v-if="searchError" class="pagination-error" role="alert">
-          <span>{{ searchError }}</span
-          ><button type="button" @click="emit('submitSearch', searchState)">
-            Повторить
+              <template v-if="item.kind === 'CASE'">
+                <span>{{ item.projectSequence }}</span>
+                <i
+                  v-if="item.attentionRequired"
+                  class="pi pi-bell case-row__attention-icon"
+                  aria-hidden="true"
+                />
+              </template>
+              <template v-else>{{ initials(item.title) }}</template>
+            </span>
+            <span class="inbox-row__body">
+              <span
+                class="inbox-row__headline"
+                :class="{ 'case-row__headline': item.kind === 'CASE' }"
+              >
+                <strong :title="item.title">{{ item.title }}</strong>
+                <time
+                  :datetime="
+                    item.kind === 'CASE'
+                      ? item.lastActivityAt
+                      : (item.lastMessageAt ?? item.updatedAt)
+                  "
+                  :title="
+                    item.kind === 'CASE'
+                      ? formatDate(item.lastActivityAt)
+                      : formatDate(item.lastMessageAt ?? item.updatedAt)
+                  "
+                >
+                  {{
+                    inboxTime(
+                      item.kind === "CASE"
+                        ? item.lastActivityAt
+                        : (item.lastMessageAt ?? item.updatedAt),
+                    )
+                  }}
+                </time>
+                <span
+                  v-if="
+                    item.kind === 'CONVERSATION' &&
+                    item.readState.unreadMessageCount
+                  "
+                  class="unread-count"
+                  :data-unread-conversation="item.id"
+                  :aria-label="unreadLabel(item)"
+                  :title="unreadLabel(item)"
+                  >{{ item.readState.unreadMessageCount }}</span
+                >
+              </span>
+              <template v-if="item.kind === 'CASE'">
+                <span class="inbox-row__meta case-row__metadata">
+                  <span class="case-row__status">{{
+                    caseStatus(item.status)
+                  }}</span>
+                  <span class="case-row__separator" aria-hidden="true">·</span>
+                  <span
+                    :class="[
+                      'case-row__priority',
+                      {
+                        'case-row__priority--emphasis': isPriorityEmphasized(
+                          item.priority,
+                        ),
+                        [`priority-${item.priority.toLowerCase()}`]:
+                          isPriorityEmphasized(item.priority),
+                      },
+                    ]"
+                    >{{ casePriority(item.priority) }}</span
+                  >
+                  <span class="case-row__separator" aria-hidden="true">·</span>
+                  <span class="case-row__topic" :title="item.groupCode">{{
+                    item.groupCode
+                  }}</span>
+                </span>
+                <span
+                  v-if="item.slaSignal?.state === 'AVAILABLE'"
+                  data-sla-signal
+                  :title="`${slaSignalCompactLabel(item.slaSignal)}. ${shadowSlaExplanation}`"
+                  :class="[
+                    'inbox-sla-signal case-row__sla',
+                    `signal-${item.slaSignal.signalCode.toLowerCase()}`,
+                  ]"
+                >
+                  <i class="pi pi-stopwatch" aria-hidden="true" />
+                  <span>{{ slaSignalCompactLabel(item.slaSignal) }}</span>
+                  <span :id="slaDescriptionId(item.id)" class="sr-only">{{
+                    shadowSlaExplanation
+                  }}</span>
+                </span>
+              </template>
+              <span v-else class="inbox-row__meta">
+                <span class="state-chip">{{
+                  item.status === "OPEN" ? "Открыт" : "Закрыт"
+                }}</span>
+                <span>{{ item.messageCount }} сообщ.</span>
+              </span>
+            </span>
+          </button>
+
+          <div v-if="error" class="pagination-error" role="alert">
+            <span>{{ error }}</span>
+            <button type="button" @click="emit('retry')">Повторить</button>
+          </div>
+          <button
+            v-if="hasMore"
+            type="button"
+            class="load-more"
+            :disabled="loading"
+            @click="emit('loadMore')"
+          >
+            <i class="pi pi-chevron-down" aria-hidden="true" />
+            {{ loading ? "Загружаем…" : "Показать ещё" }}
           </button>
         </div>
-        <button
-          v-if="searchHasMore"
-          type="button"
-          class="load-more"
-          :disabled="searchLoading"
-          @click="emit('loadMoreSearch')"
-        >
-          <i class="pi pi-chevron-down" aria-hidden="true" />
-          {{ searchLoading ? "Загружаем…" : "Показать ещё" }}
-        </button>
-      </div>
-    </div>
-
-    <div
-      v-else-if="loading && !items.length"
-      class="inbox-skeletons"
-      aria-busy="true"
-    >
-      <div v-for="index in 6" :key="index" class="inbox-skeleton-row">
-        <Skeleton shape="circle" size="32px" />
-        <div>
-          <Skeleton width="72%" height="14px" /><Skeleton
-            width="52%"
-            height="12px"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-else-if="!items.length && failure === 'FORBIDDEN'"
-      class="inbox-state"
-      role="alert"
-    >
-      <i class="pi pi-lock" aria-hidden="true" />
-      <strong>Входящие больше недоступны</strong>
-      <p>Права доступа обновлены. Скрытые данные удалены из рабочего места.</p>
-    </div>
-
-    <div v-else-if="!items.length && error" class="inbox-state" role="alert">
-      <i class="pi pi-exclamation-circle" aria-hidden="true" />
-      <strong>Не удалось загрузить входящие</strong>
-      <p>{{ error }}</p>
-      <button type="button" @click="emit('retry')">Повторить</button>
-    </div>
-
-    <div v-else-if="!items.length" class="inbox-state">
-      <i
-        :class="mode === 'CASES' ? 'pi pi-briefcase' : 'pi pi-comments'"
-        aria-hidden="true"
-      />
-      <strong>{{
-        mode === "CASES" ? "Обращений пока нет" : "Чатов пока нет"
-      }}</strong>
-      <p>Новые элементы появятся здесь автоматически.</p>
-    </div>
-
-    <div v-else class="inbox-list conversation-list">
-      <button
-        v-for="item in items"
-        :key="itemKey(item)"
-        type="button"
-        class="inbox-row"
-        :data-selection-key="itemKey(item)"
-        :class="{
-          selected: selectedKey === itemKey(item),
-          'conversation-row': item.kind === 'CONVERSATION',
-          'case-row': item.kind === 'CASE',
-          'case-row--with-sla':
-            item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
-        }"
-        :aria-current="selectedKey === itemKey(item) ? 'true' : undefined"
-        :aria-label="
-          item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined
-        "
-        :aria-describedby="
-          item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE'
-            ? slaDescriptionId(item.id)
-            : undefined
-        "
-        :title="item.kind === 'CASE' ? caseTooltip(item) : undefined"
-        @click="emit('select', item)"
-      >
-        <span
-          class="inbox-row__avatar"
-          :class="{
-            attention: item.kind === 'CASE' && item.attentionRequired,
-            'case-row__sequence': item.kind === 'CASE',
-          }"
-        >
-          <template v-if="item.kind === 'CASE'">
-            <span>{{ item.projectSequence }}</span>
-            <i
-              v-if="item.attentionRequired"
-              class="pi pi-bell case-row__attention-icon"
-              aria-hidden="true"
-            />
-          </template>
-          <template v-else>{{ initials(item.title) }}</template>
-        </span>
-        <span class="inbox-row__body">
-          <span
-            class="inbox-row__headline"
-            :class="{ 'case-row__headline': item.kind === 'CASE' }"
-          >
-            <strong :title="item.title">{{ item.title }}</strong>
-            <time
-              :datetime="
-                item.kind === 'CASE'
-                  ? item.lastActivityAt
-                  : (item.lastMessageAt ?? item.updatedAt)
-              "
-              :title="
-                item.kind === 'CASE'
-                  ? formatDate(item.lastActivityAt)
-                  : formatDate(item.lastMessageAt ?? item.updatedAt)
-              "
-            >
-              {{
-                inboxTime(
-                  item.kind === "CASE"
-                    ? item.lastActivityAt
-                    : (item.lastMessageAt ?? item.updatedAt),
-                )
-              }}
-            </time>
-            <span
-              v-if="
-                item.kind === 'CONVERSATION' &&
-                item.readState.unreadMessageCount
-              "
-              class="unread-count"
-              :data-unread-conversation="item.id"
-              :aria-label="unreadLabel(item)"
-              :title="unreadLabel(item)"
-              >{{ item.readState.unreadMessageCount }}</span
-            >
-          </span>
-          <template v-if="item.kind === 'CASE'">
-            <span class="inbox-row__meta case-row__metadata">
-              <span class="case-row__status">{{
-                caseStatus(item.status)
-              }}</span>
-              <span class="case-row__separator" aria-hidden="true">·</span>
-              <span
-                :class="[
-                  'case-row__priority',
-                  {
-                    'case-row__priority--emphasis': isPriorityEmphasized(
-                      item.priority,
-                    ),
-                    [`priority-${item.priority.toLowerCase()}`]:
-                      isPriorityEmphasized(item.priority),
-                  },
-                ]"
-                >{{ casePriority(item.priority) }}</span
-              >
-              <span class="case-row__separator" aria-hidden="true">·</span>
-              <span class="case-row__topic" :title="item.groupCode">{{
-                item.groupCode
-              }}</span>
-            </span>
-            <span
-              v-if="item.slaSignal?.state === 'AVAILABLE'"
-              data-sla-signal
-              :title="`${slaSignalCompactLabel(item.slaSignal)}. ${shadowSlaExplanation}`"
-              :class="[
-                'inbox-sla-signal case-row__sla',
-                `signal-${item.slaSignal.signalCode.toLowerCase()}`,
-              ]"
-            >
-              <i class="pi pi-stopwatch" aria-hidden="true" />
-              <span>{{ slaSignalCompactLabel(item.slaSignal) }}</span>
-              <span :id="slaDescriptionId(item.id)" class="sr-only">{{
-                shadowSlaExplanation
-              }}</span>
-            </span>
-          </template>
-          <span v-else class="inbox-row__meta">
-            <span class="state-chip">{{
-              item.status === "OPEN" ? "Открыт" : "Закрыт"
-            }}</span>
-            <span>{{ item.messageCount }} сообщ.</span>
-          </span>
-        </span>
-      </button>
-
-      <div v-if="error" class="pagination-error" role="alert">
-        <span>{{ error }}</span>
-        <button type="button" @click="emit('retry')">Повторить</button>
-      </div>
-      <button
-        v-if="hasMore"
-        type="button"
-        class="load-more"
-        :disabled="loading"
-        @click="emit('loadMore')"
-      >
-        <i class="pi pi-chevron-down" aria-hidden="true" />
-        {{ loading ? "Загружаем…" : "Показать ещё" }}
-      </button>
+      </Transition>
     </div>
   </aside>
 </template>
@@ -949,6 +961,16 @@ function unreadLabel(
   overflow: auto;
   overscroll-behavior: contain;
 }
+.inbox-content-stage {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inbox-content-stage > * {
+  width: 100%;
+}
 .search-results {
   min-height: 0;
   flex: 1;
@@ -1119,9 +1141,9 @@ function unreadLabel(
   width: 28px;
   height: auto;
   min-height: 24px;
-  align-self: stretch;
-  place-items: start center;
-  padding-top: 3px;
+  align-self: flex-start;
+  place-items: center;
+  padding-top: 1px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1305,32 +1327,6 @@ function unreadLabel(
 .inbox-sla-signal.signal-sla_breached {
   color: var(--status-danger-text);
 }
-.inbox-skeletons {
-  min-height: 0;
-  flex: 1;
-  display: grid;
-  grid-auto-rows: 72px;
-  align-content: start;
-  overflow: auto;
-  overscroll-behavior: contain;
-  animation: inbox-content-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-.inbox-skeleton-row {
-  height: 72px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  border-bottom: 1px solid var(--line);
-}
-.inbox-skeleton-row > div {
-  min-width: 0;
-  flex: 1;
-  display: grid;
-  grid-template-rows: 14px 12px;
-  align-content: center;
-  gap: 8px;
-}
 .inbox-state {
   min-height: 0;
   flex: 1;
@@ -1355,20 +1351,16 @@ function unreadLabel(
   margin: 0;
   font-size: 0.82rem;
 }
-.inbox-list,
-.search-results,
-.inbox-state {
-  animation: inbox-content-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+.inbox-content-enter-active,
+.inbox-content-leave-active {
+  transition:
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-@keyframes inbox-content-in {
-  from {
-    opacity: 0;
-    transform: translateY(3px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.inbox-content-enter-from,
+.inbox-content-leave-to {
+  opacity: 0;
+  transform: translateY(3px);
 }
 .inbox-state button,
 .pagination-error button,
@@ -1440,14 +1432,10 @@ function unreadLabel(
   .inbox-tools__trigger,
   .inbox-tools__chevron,
   .inbox-tools-panel-enter-active,
-  .inbox-tools-panel-leave-active {
+  .inbox-tools-panel-leave-active,
+  .inbox-content-enter-active,
+  .inbox-content-leave-active {
     transition-duration: 0.01ms;
-  }
-  .inbox-skeletons,
-  .inbox-list,
-  .search-results,
-  .inbox-state {
-    animation: none;
   }
 }
 </style>
