@@ -1661,6 +1661,15 @@ test("keeps all Case Inspector tabs usable on the mobile route", async ({
     "События",
     "Активность",
   ]);
+  const tabListGeometry = await inspector
+    .getByRole("tablist", { name: "Разделы контекста" })
+    .evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+  expect(tabListGeometry.scrollWidth).toBeLessThanOrEqual(
+    tabListGeometry.clientWidth,
+  );
   const tabs = inspector.getByRole("tab");
   const tabGeometry = await tabs.evaluateAll((elements) =>
     elements.map((element) => ({

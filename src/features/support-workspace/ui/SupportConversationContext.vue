@@ -822,15 +822,10 @@ defineExpose({ requestClassification });
 <style scoped>
 .inspector-tabs {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(82px, 1fr);
-  grid-template-columns: none;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 82px), 1fr));
   gap: 2px;
   margin: -4px -8px 20px;
   padding: 4px;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: inline proximity;
   border-bottom: 1px solid var(--line);
 }
 .inspector-tabs button {
@@ -847,7 +842,6 @@ defineExpose({ requestClassification });
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
-  scroll-snap-align: nearest;
   transition:
     color 140ms ease-out,
     background-color 140ms ease-out,
