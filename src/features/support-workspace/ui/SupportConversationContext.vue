@@ -7,6 +7,7 @@ import type { createSupportLeadAssignmentController } from "@/features/support-l
 import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
+import SupportCaseBrief from "@/features/support-case-desk/ui/SupportCaseBrief.vue";
 import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
 import type { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
 import SupportInspectorState from "@/features/support-inspector/ui/SupportInspectorState.vue";
@@ -398,6 +399,12 @@ defineExpose({ requestClassification });
                 }}</span>
               </div>
             </header>
+            <SupportCaseBrief
+              :case-title="selection.case.title"
+              :project-sequence="selection.case.projectSequence"
+              :summary="selection.case.summary"
+              :goal="selection.case.goal"
+            />
             <dl class="context-grid case-grid">
               <div class="context-field">
                 <dt>Категория</dt>

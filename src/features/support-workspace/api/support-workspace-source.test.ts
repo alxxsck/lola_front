@@ -15,8 +15,9 @@ const value: SupportWorkspaceSelectionCaseResponseDto = {
   id: "case-1",
   endUserId: "end-user-1",
   title: "Возврат",
-  summary: "",
-  goal: "",
+  summary:
+    "Пользователь не видит возврат после отмены покупки и ждёт подтверждения.",
+  goal: "Подтвердить статус возврата и назвать следующий шаг",
   groupCode: "billing",
   projectSequence: "42",
   status: "OPEN",
@@ -68,11 +69,14 @@ describe("support workspace Case mapper", () => {
     );
   });
 
-  it("keeps only the safe Case context for the selected end user", () => {
+  it("keeps the operator-facing Case brief for the selected end user", () => {
     expect(mapWorkspaceCase(value, "end-user-1")).toMatchObject({
       id: "case-1",
       title: "Возврат",
       projectSequence: "42",
+      summary:
+        "Пользователь не видит возврат после отмены покупки и ждёт подтверждения.",
+      goal: "Подтвердить статус возврата и назвать следующий шаг",
     });
   });
 

@@ -37,6 +37,8 @@ function selection(
     case: {
       id: "case-1",
       title: "Возврат",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "NORMAL",
       groupCode: "PAYMENTS",

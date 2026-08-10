@@ -9,6 +9,9 @@ function controller() {
     id: "case-1",
     projectSequence: "42",
     title: "Не поступил депозит",
+    summary:
+      "Платёж найден, но провайдер ещё не вернул окончательный результат.",
+    goal: "Подтвердить статус депозита и сообщить следующий шаг",
     status: "IN_PROGRESS",
     priority: "HIGH",
     groupCode: "PAYMENTS",
@@ -44,6 +47,16 @@ function controller() {
       source: "PLATFORM_RULE",
     },
     priorityReasons: ["Средства не зачислены"],
+    workSummary: {
+      aiCapabilities: [],
+      cmsParticipation: {
+        messageCount: 1,
+        actionCount: 0,
+        firstParticipatedAt: "2026-08-08T08:30:00.000Z",
+      },
+      blockers: ["Ожидается ответ платёжного провайдера"],
+      limitations: ["Нельзя обещать срок зачисления"],
+    },
   });
   return {
     exactCase,
@@ -101,6 +114,22 @@ const stubs = {
 };
 
 describe("SupportCaseDesk", () => {
+  it("shows the exact Case brief and its operational blockers", () => {
+    const wrapper = mount(SupportCaseDesk, {
+      props: {
+        controller: controller() as never,
+        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+      },
+      global: { stubs },
+    });
+
+    const brief = wrapper.get(".case-brief");
+    expect(brief.text()).toContain("Платёж найден");
+    expect(brief.text()).toContain("Подтвердить статус депозита");
+    expect(brief.text()).toContain("Блокеры · 1");
+    expect(brief.text()).toContain("Ожидается ответ платёжного провайдера");
+  });
+
   it("renders canonical classification, evidence and the pinned priority floor", () => {
     const wrapper = mount(SupportCaseDesk, {
       props: {

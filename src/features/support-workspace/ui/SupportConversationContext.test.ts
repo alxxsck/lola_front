@@ -60,6 +60,9 @@ const selection: SupportWorkspaceSelection = {
   case: {
     id: "case-1",
     title: "Проверить возврат бонусов",
+    summary:
+      "Возврат подтверждён, но баланс пользователя ещё не обновился.",
+    goal: "Проверить начисление и сообщить следующий шаг",
     status: "OPEN",
     priority: "HIGH",
     groupCode: "billing",
@@ -260,6 +263,15 @@ function render(
 }
 
 describe("support conversation inspector", () => {
+  it("shows the bounded Case brief when the exact Case desk is unavailable", () => {
+    const wrapper = render();
+
+    const brief = wrapper.get(".case-brief");
+    expect(brief.text()).toContain("Возврат подтверждён");
+    expect(brief.text()).toContain("Проверить начисление");
+    expect(brief.find(".case-brief__blockers").exists()).toBe(false);
+  });
+
   it("shows assignment context even when the role has no assignment actions", () => {
     const wrapper = render();
 

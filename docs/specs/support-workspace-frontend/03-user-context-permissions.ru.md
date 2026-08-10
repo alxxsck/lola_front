@@ -63,6 +63,11 @@ Email, телефон, адрес, raw external identifiers и arbitrary profile
 
 ### Case
 
+- компактный handoff brief: `summary` и `goal` из точной selection projection;
+- `workSummary.blockers/limitations` только из exact Case detail; пустой массив
+  означает подтверждённое отсутствие, а недоступное поле не подменяется пустым;
+- длинный brief не раздувает Inspector: в rail остаётся ограниченный preview, а
+  полный текст открывается в отдельной читаемой dialog surface;
 - category/workflow/status/waiting side;
 - priority и SLA clocks с pause reason;
 - assignment/team/claimant;

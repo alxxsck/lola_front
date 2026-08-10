@@ -302,6 +302,8 @@ describe("support reply controller", () => {
     currentSelection.case = {
       id: "case-1",
       title: "Проверка оплаты",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "NORMAL",
       groupCode: "payments",
@@ -516,6 +518,8 @@ describe("support reply controller", () => {
     currentSelection.case = {
       id: "case-original",
       title: "Исходное обращение",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "NORMAL",
       groupCode: "payments",
@@ -564,6 +568,8 @@ describe("support reply controller", () => {
     currentSelection.case = {
       id: "case-original",
       title: "Исходное обращение",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "NORMAL",
       groupCode: "payments",
@@ -593,6 +599,8 @@ describe("support reply controller", () => {
     currentSelection.case = {
       id: "case-current",
       title: "Текущее обращение",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "HIGH",
       groupCode: "retention",

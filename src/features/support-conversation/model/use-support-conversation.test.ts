@@ -776,6 +776,8 @@ describe("support conversation controller", () => {
     caseOnly.case = {
       id: "case-only",
       title: "Отдельное обращение",
+      summary: "",
+      goal: "",
       status: "OPEN",
       priority: "NORMAL",
       groupCode: "GENERAL",

@@ -232,6 +232,8 @@ export interface SupportWorkspaceActionRevisions {
 export interface SupportWorkspaceCase {
   id: string;
   title: string;
+  summary: string;
+  goal: string;
   status: string;
   priority: string;
   groupCode: string;
@@ -510,6 +512,8 @@ export function mapWorkspaceCase(
   return {
     id: value.id,
     title: value.title,
+    summary: value.summary,
+    goal: value.goal,
     status: value.status,
     priority: value.priority,
     groupCode: value.groupCode,
@@ -761,6 +765,8 @@ function mockConversationReadState(
 type MockSupportCase = SupportWorkspaceCaseRow & {
   conversationId: string | null;
   externalEndUserId: string;
+  summary: string;
+  goal: string;
 };
 
 const mockSupportCases: readonly MockSupportCase[] = [
@@ -771,6 +777,9 @@ const mockSupportCases: readonly MockSupportCase[] = [
     conversationId: "conv_1",
     projectSequence: "48",
     title: "Не поступил депозит",
+    summary:
+      "Платёж найден. Провайдер обрабатывает его дольше обычного; ожидаем проверяемый результат.",
+    goal: "Понять статус депозита и получить деньги на счёт",
     status: "WAITING_SYSTEM",
     priority: "URGENT",
     groupCode: "PAYMENTS",
@@ -797,6 +806,9 @@ const mockSupportCases: readonly MockSupportCase[] = [
     conversationId: "conv_3",
     projectSequence: "47",
     title: "Не запускается игра",
+    summary:
+      "Retenive собрала данные об устройстве и предложила безопасные шаги. Пользователь ждёт администратора.",
+    goal: "Запустить игру на мобильном устройстве",
     status: "WAITING_ADMIN",
     priority: "HIGH",
     groupCode: "GAMES",
@@ -823,6 +835,9 @@ const mockSupportCases: readonly MockSupportCase[] = [
     conversationId: null,
     projectSequence: "46",
     title: "Восстановление доступа",
+    summary:
+      "Доступ восстановлен после проверки аккаунта; обращение завершено.",
+    goal: "Вернуть пользователю доступ к аккаунту",
     status: "RESOLVED",
     priority: "NORMAL",
     groupCode: "ACCOUNT",
@@ -842,6 +857,8 @@ function mockCaseSelection(value: MockSupportCase): SupportWorkspaceCase {
   return {
     id: value.id,
     title: value.title,
+    summary: value.summary,
+    goal: value.goal,
     status: value.status,
     priority: value.priority,
     groupCode: value.groupCode,

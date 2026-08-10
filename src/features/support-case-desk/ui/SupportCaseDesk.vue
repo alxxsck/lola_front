@@ -17,6 +17,7 @@ import {
   type SupportCasePriority,
   type SupportCaseStatus,
 } from "../model/use-support-case-desk";
+import SupportCaseBrief from "./SupportCaseBrief.vue";
 
 type Controller = ReturnType<typeof createSupportCaseDeskController>;
 type CaseDetail = EndUserCaseDetailResponseDto;
@@ -376,6 +377,15 @@ defineExpose({ requestClassification });
           <small>v{{ value.version }}</small>
         </div>
       </header>
+
+      <SupportCaseBrief
+        :case-title="value.title"
+        :project-sequence="value.projectSequence"
+        :summary="value.summary"
+        :goal="value.goal"
+        :blockers="value.workSummary?.blockers"
+        :limitations="value.workSummary?.limitations"
+      />
 
       <section
         class="case-desk-classification"

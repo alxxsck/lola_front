@@ -1142,6 +1142,26 @@ test("changes Case classification through exact server authority and records the
         : page.locator(".context-pane");
   await context.getByRole("tab", { name: "Обращение" }).click();
   await expect(context).toContainText("Обращение #48");
+  const brief = context.locator(".case-brief");
+  await expect(brief).toContainText("Платёж найден");
+  await expect(brief).toContainText("Понять статус депозита");
+  await expect(brief).toContainText("Блокеры · 1");
+  await brief
+    .getByRole("button", { name: "Открыть полный контекст обращения" })
+    .click();
+  const briefDialog = page.getByRole("dialog", {
+    name: "Контекст обращения #48",
+  });
+  await expect(briefDialog).toContainText(
+    "Ожидается ответ платёжного провайдера",
+  );
+  await expect(briefDialog).toContainText(
+    "Точный срок зачисления пока неизвестен",
+  );
+  await briefDialog
+    .locator(".p-dialog-footer")
+    .getByRole("button", { name: "Закрыть" })
+    .click();
   await expect(context).toContainText("AI-классификация");
   await expect(context).toContainText("правила · версия 7");
 
