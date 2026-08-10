@@ -1216,6 +1216,11 @@ test("expands the workspace without leaving the operator workflow", async ({
   await page.goto("/support/inbox/cases/case-demo-deposit?mode=cases");
 
   const shell = page.getByTestId("workspace-presentation-shell");
+  await expect(shell).toHaveAttribute("data-presentation-mode", "windowed");
+  await expect(
+    page.getByRole("complementary", { name: "Основная навигация CMS" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "На весь экран" }).click();
   await expect(shell).toHaveAttribute("data-presentation-mode", "full-tab");
   const draft = page.getByRole("textbox", { name: "Ответ пользователю" });
   await draft.fill("Черновик переживает смену режима");
@@ -1235,7 +1240,7 @@ test("expands the workspace without leaving the operator workflow", async ({
     .evaluate((element) => (element as HTMLElement).offsetHeight);
 
   const leavingState = await page
-    .getByRole("button", { name: "Свернуть" })
+    .getByRole("button", { name: "Свернуть", exact: true })
     .evaluate(async (button: HTMLButtonElement) => {
       button.click();
       await new Promise<void>((resolve) =>
@@ -1278,8 +1283,12 @@ test("expands the workspace without leaving the operator workflow", async ({
   await launcher.evaluate((button: HTMLButtonElement) => button.click());
 
   await expect(shell).toHaveAttribute("data-presentation-mode", "full-tab");
-  await expect(page.getByRole("button", { name: "Свернуть" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Свернуть" })).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Свернуть", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Свернуть", exact: true }),
+  ).toBeFocused();
   await expect(draft).toHaveValue("Черновик переживает смену режима");
   await shell.evaluate(async (element) => {
     await Promise.all(
@@ -1335,6 +1344,7 @@ test("keeps the full-tab route open while Escape closes a nested dialog", async 
   page,
 }) => {
   const shell = page.getByTestId("workspace-presentation-shell");
+  await page.getByRole("button", { name: "На весь экран" }).click();
   await expect(shell).toHaveAttribute("data-presentation-mode", "full-tab");
   await page.getByRole("button", { name: "Моя доступность" }).click();
   const dialog = page.getByRole("dialog", { name: "Моя доступность" });
@@ -1350,6 +1360,7 @@ test("matches the browser viewport at every desktop and tablet breakpoint", asyn
   page,
 }) => {
   const shell = page.getByTestId("workspace-presentation-shell");
+  await page.getByRole("button", { name: "На весь экран" }).click();
   await shell.evaluate(async (element) => {
     await Promise.all(
       element.getAnimations().map((animation) => animation.finished),
@@ -1842,8 +1853,14 @@ test("keeps the full-tab shell stable for reduced motion and mobile focus", asyn
     .click();
 
   const shell = page.getByTestId("workspace-presentation-shell");
-  await expect(shell).toHaveCSS("animation-name", "none");
   const draft = page.getByRole("textbox", { name: "Ответ пользователю" });
+  await expect(draft).toBeVisible();
+  await expect(shell).toHaveAttribute("data-presentation-mode", "windowed");
+  await page
+    .getByRole("button", { name: "На весь экран", exact: true })
+    .click();
+  await expect(shell).toHaveAttribute("data-presentation-mode", "full-tab");
+  await expect(shell).toHaveCSS("animation-name", "none");
   await draft.focus();
 
   const geometry = await page.evaluate(() => {
@@ -1916,14 +1933,13 @@ test("restores readable CMS navigation when the mobile workspace is collapsed", 
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/support/inbox");
-  await page.getByRole("button", { name: "Свернуть" }).click();
   await page.getByRole("button", { name: "Открыть меню", exact: true }).click();
 
   const navigation = page.getByRole("complementary", {
     name: "Основная навигация CMS",
   });
   await expect(
-    navigation.getByRole("link", { name: "Поддержка" }),
+    navigation.getByRole("link", { name: "Рабочее место" }),
   ).toBeVisible();
   await expect(
     navigation.getByText("Пользователи", { exact: true }),

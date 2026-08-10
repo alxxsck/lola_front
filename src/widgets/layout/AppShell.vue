@@ -44,6 +44,10 @@ const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
 const navigationIntentPath = ref("");
+const expandedNavigationGroups = ref<Record<string, boolean>>({
+  project: true,
+  support: true,
+});
 const sidebarCollapsedStorageKey = "retenive-cms-sidebar-collapsed-v1";
 
 function readSidebarCollapsedPreference(): boolean | null {
@@ -72,6 +76,11 @@ function toggleSidebarCollapsed() {
     // The visible preference remains active for this session.
   }
 }
+
+function toggleNavigationGroup(key: string) {
+  expandedNavigationGroups.value[key] =
+    expandedNavigationGroups.value[key] === false;
+}
 const canReadProjectSettings = computed(() =>
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS.some((permission) =>
     hasProjectPermission(
@@ -90,15 +99,6 @@ const canReadRoles = computed(() =>
   canReadProjectRoles(
     auth.user?.platformPermissionCodes ?? [],
     auth.project?.effectivePermissionCodes ?? [],
-  ),
-);
-const canReadProjectIntegrations = computed(() =>
-  ["project.notifications.read", "project.integrations.read"].some(
-    (permission) =>
-      hasProjectPermission(
-        auth.project?.effectivePermissionCodes ?? [],
-        permission as Parameters<typeof hasProjectPermission>[1],
-      ),
   ),
 );
 const canReadSupportWorkspace = computed(
@@ -188,11 +188,13 @@ const navigationItems = computed(() => [
       reportingFeature: true,
     },
     {
-      label: "Проект",
+      label: "Настройки",
       icon: "pi pi-sliders-h",
       to: "/project",
       project: true,
       projectSectionRoot: true,
+      projectSection: true,
+      nested: true,
     },
     {
       label: "Интеграции",
@@ -203,6 +205,7 @@ const navigationItems = computed(() => [
         "project.notifications.read",
         "project.integrations.read",
       ],
+      projectSection: true,
       nested: true,
     },
     {
@@ -212,6 +215,7 @@ const navigationItems = computed(() => [
       nested: true,
       project: true,
       projectMemberships: true,
+      projectSection: true,
     },
     {
       label: "Роли",
@@ -220,6 +224,7 @@ const navigationItems = computed(() => [
       nested: true,
       project: true,
       projectRoles: true,
+      projectSection: true,
     },
     {
       label: "Поля профиля",
@@ -267,13 +272,13 @@ const navigationItems = computed(() => [
       projectPermission: "project.actions.read",
     },
     {
-      label: "Поддержка",
+      label: "Рабочее место",
       icon: "pi pi-headphones",
       to: supportWorkspacePath.value,
       project: true,
       supportWorkspace: true,
-      supportSectionRoot: true,
       supportSection: true,
+      nested: true,
     },
     {
       label: "Операционный обзор",
@@ -444,11 +449,7 @@ const navigation = computed(() => {
     (item) =>
       (!item.project || Boolean(auth.project)) &&
       (!item.reportingFeature || reportingMvpEnabled) &&
-      (!item.projectSectionRoot ||
-        canReadProjectSettings.value ||
-        canReadMemberships.value ||
-        canReadRoles.value ||
-        canReadProjectIntegrations.value) &&
+      (!item.projectSectionRoot || canReadProjectSettings.value) &&
       (!item.platformPermission ||
         auth.user?.platformPermissionCodes?.includes(
           item.platformPermission,
@@ -467,35 +468,44 @@ const navigation = computed(() => {
         )) &&
       (!item.projectMemberships || canReadMemberships.value) &&
       (!item.projectRoles || canReadRoles.value) &&
-      (!item.supportWorkspace ||
-        item.supportSectionRoot ||
-        canReadSupportWorkspace.value) &&
+      (!item.supportWorkspace || canReadSupportWorkspace.value) &&
       (!item.supportLeadControl || canReadSupportControl.value) &&
       (!item.supportNotificationSettings ||
         canReadSupportNotificationSettings.value),
   );
-  const hasVisibleSupportChild = visibleItems.some(
-    (item) => item.supportSection && !item.supportSectionRoot,
-  );
-  return visibleItems.filter(
-    (item) =>
-      !item.supportSectionRoot ||
-      canReadSupportWorkspace.value ||
-      hasVisibleSupportChild,
-  );
+  return visibleItems;
 });
 
 const navigationGroups = computed(() => {
   const groups: Array<{
     key: string;
     label?: string;
+    icon?: string;
     items: typeof navigation.value;
   }> = [];
   for (const item of navigation.value) {
+    if (item.projectSection) {
+      const projectGroup = groups.find((group) => group.key === "project");
+      if (projectGroup) projectGroup.items.push(item);
+      else
+        groups.push({
+          key: "project",
+          label: "Проект",
+          icon: "pi pi-sliders-h",
+          items: [item],
+        });
+      continue;
+    }
     if (item.supportSection) {
       const supportGroup = groups.find((group) => group.key === "support");
       if (supportGroup) supportGroup.items.push(item);
-      else groups.push({ key: "support", label: "Поддержка", items: [item] });
+      else
+        groups.push({
+          key: "support",
+          label: "Поддержка",
+          icon: "pi pi-headphones",
+          items: [item],
+        });
       continue;
     }
     groups.push({ key: item.to, items: [item] });
@@ -686,52 +696,78 @@ onBeforeUnmount(() => {
             v-for="group in navigationGroups"
             :key="group.key"
             class="nav-group"
+            :data-navigation-group="group.label ? group.key : undefined"
             :role="group.label ? 'group' : undefined"
             :aria-label="group.label"
           >
-            <template v-for="item in group.items" :key="item.to">
             <div
-              v-if="
-                (item.projectSectionRoot && !canReadProjectSettings) ||
-                (item.supportSectionRoot && !canReadSupportWorkspace)
-              "
-              class="nav-item nav-item--section"
+              v-if="group.label"
+              class="nav-group-heading"
               role="heading"
               aria-level="2"
-              :aria-label="item.label"
-              :title="sidebarCollapsed ? item.label : undefined"
+              :aria-label="group.label"
             >
-              <i :class="item.icon" />
-              <span>{{ item.label }}</span>
+              <button
+                type="button"
+                class="nav-item nav-item--section nav-section-toggle"
+                :aria-expanded="expandedNavigationGroups[group.key] !== false"
+                :aria-controls="`navigation-group-${group.key}`"
+                :aria-label="`${
+                  expandedNavigationGroups[group.key] !== false
+                    ? 'Свернуть'
+                    : 'Развернуть'
+                } раздел «${group.label}»`"
+                :title="sidebarCollapsed ? group.label : undefined"
+                @click="toggleNavigationGroup(group.key)"
+              >
+                <i :class="group.icon" aria-hidden="true" />
+                <span>{{ group.label }}</span>
+                <i
+                  class="pi pi-chevron-down nav-section-toggle__chevron"
+                  :class="{
+                    'nav-section-toggle__chevron--collapsed':
+                      expandedNavigationGroups[group.key] === false,
+                  }"
+                  aria-hidden="true"
+                />
+              </button>
             </div>
-            <RouterLink
-              v-else
-              :to="item.to"
-              class="nav-item"
-              :title="sidebarCollapsed ? item.label : undefined"
-              :aria-label="sidebarCollapsed ? item.label : undefined"
-              :aria-current="
-                isNavigationItemActive(item.to) ? 'page' : undefined
+            <div
+              :id="group.label ? `navigation-group-${group.key}` : undefined"
+              class="nav-group-items"
+              :hidden="
+                group.label && expandedNavigationGroups[group.key] === false
               "
-              :class="{
-                active: isNavigationItemActive(item.to),
-                'nav-item--nested': item.nested,
-              }"
-              @click="handleNavigationIntent($event, item.to)"
             >
-              <i
-                :class="item.icon"
-                aria-hidden="true"
-                :style="
-                  item.live
-                    ? 'font-size:.55rem;color:var(--status-success)'
-                    : ''
+              <RouterLink
+                v-for="item in group.items"
+                :key="item.to"
+                :to="item.to"
+                class="nav-item"
+                :title="sidebarCollapsed ? item.label : undefined"
+                :aria-label="sidebarCollapsed ? item.label : undefined"
+                :aria-current="
+                  isNavigationItemActive(item.to) ? 'page' : undefined
                 "
-              />
-              <span>{{ item.label }}</span>
-              <span v-if="item.live" class="live-pulse" />
-            </RouterLink>
-            </template>
+                :class="{
+                  active: isNavigationItemActive(item.to),
+                  'nav-item--nested': item.nested,
+                }"
+                @click="handleNavigationIntent($event, item.to)"
+              >
+                <i
+                  :class="item.icon"
+                  aria-hidden="true"
+                  :style="
+                    item.live
+                      ? 'font-size:.55rem;color:var(--status-success)'
+                      : ''
+                  "
+                />
+                <span>{{ item.label }}</span>
+                <span v-if="item.live" class="live-pulse" />
+              </RouterLink>
+            </div>
           </div>
         </nav>
       </div>
@@ -901,6 +937,9 @@ onBeforeUnmount(() => {
   padding: 10px;
 }
 .shell--sidebar-collapsed .nav-item--nested::after {
+  display: none;
+}
+.shell--sidebar-collapsed .nav-section-toggle__chevron {
   display: none;
 }
 .shell--sidebar-collapsed .nav-item.active::before {
@@ -1108,6 +1147,14 @@ nav {
   flex-direction: column;
   gap: 4px;
 }
+.nav-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-group-items[hidden] {
+  display: none;
+}
 .nav-item {
   position: relative;
   display: flex;
@@ -1121,6 +1168,29 @@ nav {
   transition:
     background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     color 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nav-section-toggle {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nav-section-toggle > span {
+  min-width: 0;
+  flex: 1;
+}
+.nav-section-toggle__chevron {
+  width: auto !important;
+  margin-left: auto;
+  color: var(--sidebar-text-subtle);
+  font-size: 0.72rem !important;
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nav-section-toggle__chevron--collapsed {
+  transform: rotate(-90deg);
 }
 .nav-item > i {
   width: 17px;
@@ -1148,8 +1218,15 @@ nav {
   color: var(--sidebar-text);
 }
 .nav-item--section:hover {
-  background: transparent;
-  color: var(--sidebar-text-muted);
+  background: var(--sidebar-surface-hover);
+  color: var(--sidebar-text);
+}
+.nav-item--section:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+.nav-item--section:active {
+  transform: scale(0.97);
 }
 .nav-item.active {
   background: var(--sidebar-active-background);
@@ -1397,6 +1474,10 @@ nav {
   }
   .shell--sidebar-collapsed .nav-item--nested::after {
     display: block;
+  }
+  .shell--sidebar-collapsed .nav-section-toggle__chevron {
+    display: inline-block;
+    margin-left: auto;
   }
   .shell--sidebar-collapsed .nav-item.active::before {
     left: -16px;

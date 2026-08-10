@@ -366,8 +366,8 @@ const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(
 const supportContext = ref<InstanceType<
   typeof SupportConversationContext
 > | null>(null);
-const workspaceFullscreen = ref(true);
-const workspacePresentedFullscreen = ref(true);
+const workspaceFullscreen = ref(false);
+const workspacePresentedFullscreen = ref(false);
 const workspacePresentationTransitioning = ref(false);
 let workspacePresentationLauncher: HTMLElement | null = null;
 let workspacePresentationFocusTarget: HTMLElement | null = null;

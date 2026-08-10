@@ -170,7 +170,7 @@ describe("AppShell", () => {
 
     const supportLink = wrapper
       .findAll(".sidebar-scroll nav a")
-      .find((link) => link.text().includes("Поддержка"));
+      .find((link) => link.text().includes("Рабочее место"));
     expect(supportLink?.attributes("href")).toBe(
       "/support/inbox?mode=cases",
     );
@@ -208,7 +208,7 @@ describe("AppShell", () => {
     await flushPromises();
     const supportLink = wrapper
       .findAll(".sidebar-scroll nav a")
-      .find((link) => link.text().trim() === "Поддержка");
+      .find((link) => link.text().trim() === "Рабочее место");
     expect(supportLink).toBeDefined();
 
     await supportLink!.trigger("click");
@@ -522,7 +522,7 @@ describe("AppShell", () => {
         ?.attributes("href"),
       supportWorkspaceLink: wrapper
         .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Поддержка"))
+        .find((link) => link.text().includes("Рабочее место"))
         ?.attributes("href"),
       supportControlLink: wrapper
         .findAll(".sidebar-scroll nav a")
@@ -592,15 +592,13 @@ describe("AppShell", () => {
     const wrapper = mountProjectMenu(pinia, router);
     await flushPromises();
 
-    const links = wrapper.findAll(".sidebar-scroll nav a");
-    const supportRootIndex = links.findIndex(
-      (link) => link.text().trim() === "Поддержка",
-    );
-    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 9);
+    const supportGroup = wrapper.get('[data-navigation-group="support"]');
+    const supportLinks = supportGroup.findAll("a");
 
-    expect(supportRootIndex).toBeGreaterThanOrEqual(0);
+    expect(supportGroup.get('[role="heading"]').text()).toContain("Поддержка");
+    expect(supportGroup.find('a[href="/support"]').exists()).toBe(false);
     expect(supportLinks.map((link) => link.text().trim())).toEqual([
-      "Поддержка",
+      "Рабочее место",
       "Операционный обзор",
       "Настройки обращений",
       "Календарь и SLA",
@@ -610,12 +608,19 @@ describe("AppShell", () => {
       "Интеграции",
       "Запуск и возврат",
     ]);
-    expect(supportLinks[0]?.classes()).not.toContain("nav-item--nested");
     expect(
-      supportLinks.slice(1).every((link) =>
+      supportLinks.every((link) =>
         link.classes().includes("nav-item--nested"),
       ),
     ).toBe(true);
+
+    const toggle = supportGroup.get(
+      'button[aria-label="Свернуть раздел «Поддержка»"]',
+    );
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(supportGroup.get(".nav-group-items").attributes("hidden")).toBe("");
   });
 
   it("shows a non-clickable Support heading when only a nested setting is allowed", async () => {
@@ -763,9 +768,20 @@ describe("AppShell", () => {
     expect(integrationsLink.classes()).toContain("nav-item--nested");
     expect(administratorsLink.classes()).toContain("nav-item--nested");
     expect(rolesLink.classes()).toContain("nav-item--nested");
+    expect(projectLink.text()).toBe("Настройки");
+    expect(projectLink.classes()).toContain("nav-item--nested");
     expect(projectLink.classes()).not.toContain("active");
     expect(administratorsLink.classes()).toContain("active");
     expect(rolesLink.classes()).not.toContain("active");
+
+    const projectGroup = wrapper.get('[data-navigation-group="project"]');
+    expect(projectGroup.get('[role="heading"]').text()).toContain("Проект");
+    expect(projectGroup.find('a[href="/project-section"]').exists()).toBe(false);
+    const toggle = projectGroup.get(
+      'button[aria-label="Свернуть раздел «Проект»"]',
+    );
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
   });
 
   it("shows a projectless Platform Operator only the available control-plane navigation", async () => {
