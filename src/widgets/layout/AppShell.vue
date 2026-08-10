@@ -30,6 +30,7 @@ import {
 import { isCanonicalSupportWorkspaceAdmission } from "@/features/support-workspace/model/support-workspace-entry-point";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
+import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
 import ThemeSwitch from "./ThemeSwitch.vue";
 
 const route = useRoute();
@@ -178,6 +179,14 @@ const navigationItems = computed(() => [
       platformPermission: "platform.ai_pricing.read",
     },
     { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
+    {
+      label: "Отчёты",
+      icon: "pi pi-chart-line",
+      to: "/reports",
+      project: true,
+      projectPermission: "project.analytics.read",
+      reportingFeature: true,
+    },
     {
       label: "Проект",
       icon: "pi pi-sliders-h",
@@ -434,6 +443,7 @@ const navigation = computed(() => {
   const visibleItems = navigationItems.value.filter(
     (item) =>
       (!item.project || Boolean(auth.project)) &&
+      (!item.reportingFeature || reportingMvpEnabled) &&
       (!item.projectSectionRoot ||
         canReadProjectSettings.value ||
         canReadMemberships.value ||

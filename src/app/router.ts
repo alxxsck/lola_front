@@ -24,6 +24,12 @@ import {
   canReadSupportWorkspace,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
+import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
+import {
+  canAuthorDashboard,
+  canAuthorSavedReport,
+  canReadReporting,
+} from "@/features/reporting/model/reporting-permissions";
 import { ensureSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
 import {
   canonicalSupportLocation,
@@ -122,6 +128,48 @@ export const router = createRouter({
           path: "overview",
           name: "overview",
           component: () => import("@/pages/OverviewPage.vue"),
+        },
+        {
+          path: "reports",
+          name: "reports",
+          component: () => import("@/pages/ReportsPage.vue"),
+          meta: { reportingAccess: "READ" },
+        },
+        {
+          path: "reports/new",
+          name: "saved-report-create",
+          component: () => import("@/pages/SavedReportPage.vue"),
+          meta: { reportingAccess: "SAVED_REPORT_AUTHOR" },
+        },
+        {
+          path: "reports/:reportId",
+          name: "saved-report-view",
+          component: () => import("@/pages/SavedReportPage.vue"),
+          meta: { reportingAccess: "READ" },
+        },
+        {
+          path: "reports/:reportId/edit",
+          name: "saved-report-edit",
+          component: () => import("@/pages/SavedReportPage.vue"),
+          meta: { reportingAccess: "SAVED_REPORT_AUTHOR" },
+        },
+        {
+          path: "dashboards/new",
+          name: "dashboard-create",
+          component: () => import("@/pages/DashboardPage.vue"),
+          meta: { reportingAccess: "DASHBOARD_AUTHOR" },
+        },
+        {
+          path: "dashboards/:dashboardId",
+          name: "dashboard-view",
+          component: () => import("@/pages/DashboardPage.vue"),
+          meta: { reportingAccess: "READ" },
+        },
+        {
+          path: "dashboards/:dashboardId/edit",
+          name: "dashboard-edit",
+          component: () => import("@/pages/DashboardPage.vue"),
+          meta: { reportingAccess: "DASHBOARD_AUTHOR" },
         },
         {
           path: "settings/security",
@@ -613,6 +661,21 @@ router.beforeEach(async (to) => {
   const projectPermissions = auth.project?.effectivePermissionCodes ?? [];
   const actorId = auth.user?.id;
   const projectId = auth.project?.id;
+  const reportingAccess = to.meta.reportingAccess;
+  if (typeof reportingAccess === "string") {
+    const canRead =
+      reportingMvpEnabled &&
+      Boolean(auth.project) &&
+      canReadReporting(projectPermissions);
+    const canEnter =
+      canRead &&
+      (reportingAccess === "READ" ||
+        (reportingAccess === "SAVED_REPORT_AUTHOR" &&
+          canAuthorSavedReport(projectPermissions)) ||
+        (reportingAccess === "DASHBOARD_AUTHOR" &&
+          canAuthorDashboard(projectPermissions)));
+    if (!canEnter) return auth.authenticatedLandingPath;
+  }
   const legacyEntryPoint = to.meta
     .legacySupportEntryPoint as LegacySupportEntryPoint | undefined;
   if (legacyEntryPoint && actorId && projectId) {

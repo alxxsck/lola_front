@@ -377,6 +377,22 @@ describe("authentication routes", () => {
     expect(router.resolve("/ai-costs").name).not.toBe("ai-operations");
   });
 
+  it("declares fail-closed Reporting routes for readers and authors", () => {
+    expect(router.resolve("/reports").meta.reportingAccess).toBe("READ");
+    expect(router.resolve("/reports/new").meta.reportingAccess).toBe(
+      "SAVED_REPORT_AUTHOR",
+    );
+    expect(router.resolve("/reports/report-1/edit").meta.reportingAccess).toBe(
+      "SAVED_REPORT_AUTHOR",
+    );
+    expect(router.resolve("/dashboards/dashboard-1").meta.reportingAccess).toBe(
+      "READ",
+    );
+    expect(
+      router.resolve("/dashboards/dashboard-1/edit").meta.reportingAccess,
+    ).toBe("DASHBOARD_AUTHOR");
+  });
+
   it("selects the Project encoded by an AI Analysis deep link before checking access", async () => {
     const auth = useAuthStore();
     const makeProject = (id: string, permissions: string[]) => ({

@@ -85,6 +85,31 @@ describe("AppShell", () => {
     clearSupportWorkspaceShellAdmission();
   });
 
+  it("shows Reporting navigation only to an exact aggregate reader", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", ["project.analytics.read"]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: "/overview", component: { template: "<div />" } },
+        { path: "/reports", component: { template: "<div />" } },
+      ],
+    });
+    await router.push("/overview");
+    await router.isReady();
+    const wrapper = mountProjectMenu(pinia, router);
+
+    expect(wrapper.find('a[href="/reports"]').text()).toContain("Отчёты");
+
+    auth.project!.effectivePermissionCodes = [];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('a[href="/reports"]').exists()).toBe(false);
+  });
+
   it("shows Support navigation only after exact Project shell admission", async () => {
     resetMockSupportWorkspaceRollout();
     clearSupportWorkspaceShellAdmission();
