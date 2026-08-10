@@ -52,7 +52,6 @@ export const demoProject: Project = {
     voiceEnabled: false,
     voiceTranscriptEnabled: true,
     voice: 'eve',
-    support_workspace_shell: true,
   },
   organization: { id: 'org_1', name: 'Lucky Group', slug: 'lucky_group' },
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },

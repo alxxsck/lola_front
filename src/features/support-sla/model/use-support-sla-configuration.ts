@@ -1,10 +1,12 @@
 import { computed, ref } from "vue";
 import type {
   ReplaceSupportSlaConfigurationDraftDto,
-  SupportSlaConfigurationSettingsResponseDto,
 } from "@/shared/api/generated/models";
 import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
-import type { SupportSlaConfigurationSource } from "../api/support-sla-configuration-source";
+import type {
+  SupportSlaConfigurationSnapshot,
+  SupportSlaConfigurationSource,
+} from "../api/support-sla-configuration-source";
 import {
   createEmptySupportSlaConfigurationForm,
   createSupportSlaConfigurationForm,
@@ -35,7 +37,7 @@ interface PendingSupportSlaCommand {
 export type SupportSlaRecovery = "UNKNOWN_OUTCOME" | "RETRYABLE_FAILURE";
 
 function publishedConfiguration(
-  snapshot: SupportSlaConfigurationSettingsResponseDto,
+  snapshot: SupportSlaConfigurationSnapshot,
 ): ReplaceSupportSlaConfigurationDraftDto | null {
   const calendar = snapshot.publishedConfiguration?.calendarRevision.calendar;
   const policy = snapshot.publishedConfiguration?.policyRevision.policy;
@@ -43,7 +45,7 @@ function publishedConfiguration(
 }
 
 function editableConfiguration(
-  snapshot: SupportSlaConfigurationSettingsResponseDto,
+  snapshot: SupportSlaConfigurationSnapshot,
   canManage: boolean,
 ): ReplaceSupportSlaConfigurationDraftDto | null {
   return (
@@ -99,7 +101,7 @@ export function createSupportSlaConfigurationController(
   context: SupportSlaConfigurationContext,
   source: SupportSlaConfigurationSource,
 ) {
-  const snapshot = ref<SupportSlaConfigurationSettingsResponseDto | null>(null);
+  const snapshot = ref<SupportSlaConfigurationSnapshot | null>(null);
   const form = ref<SupportSlaConfigurationForm>(
     createEmptySupportSlaConfigurationForm(),
   );
@@ -141,7 +143,7 @@ export function createSupportSlaConfigurationController(
   }
 
   function hydrateForm(
-    value: SupportSlaConfigurationSettingsResponseDto,
+    value: SupportSlaConfigurationSnapshot,
   ): void {
     const configuration = editableConfiguration(value, context.canManage());
     form.value = configuration
@@ -187,7 +189,7 @@ export function createSupportSlaConfigurationController(
     scope: string,
     requestGeneration: number,
     options: { preserveForm?: boolean; signal?: AbortSignal } = {},
-  ): Promise<SupportSlaConfigurationSettingsResponseDto | null> {
+  ): Promise<SupportSlaConfigurationSnapshot | null> {
     const projectId = context.projectId();
     if (!projectId) return null;
     try {

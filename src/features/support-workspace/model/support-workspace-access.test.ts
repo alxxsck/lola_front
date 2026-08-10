@@ -15,7 +15,6 @@ import {
   canReadSupportAvailability,
   canReadSupportControl,
   canReadSupportWorkspace,
-  canManageSupportWorkspaceRollout,
 } from "./support-workspace-access";
 
 describe("support workspace access", () => {
@@ -28,13 +27,13 @@ describe("support workspace access", () => {
   });
 
   it("does not infer workspace access from a role-shaped value", () => {
-    const legacyContext = {
+    const roleOnlyContext = {
       role: "SUPPORT_LEAD",
       effectivePermissionCodes: [],
     };
 
     expect(
-      canReadSupportWorkspace(legacyContext.effectivePermissionCodes),
+      canReadSupportWorkspace(roleOnlyContext.effectivePermissionCodes),
     ).toBe(false);
   });
 
@@ -43,20 +42,6 @@ describe("support workspace access", () => {
       true,
     );
     expect(canReadSupportControl(["project.conversations.read"])).toBe(false);
-  });
-
-  it("requires the exact rollout-manage permission for pilot operations", () => {
-    expect(
-      canManageSupportWorkspaceRollout([
-        "project.support.workspace.rollout.manage",
-      ]),
-    ).toBe(true);
-    expect(
-      canManageSupportWorkspaceRollout(["project.support.content_rollout.manage"]),
-    ).toBe(false);
-    expect(canManageSupportWorkspaceRollout(["project.settings.write"])).toBe(
-      false,
-    );
   });
 
   it("requires a read grant before exposing or changing self availability", () => {

@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef, watch, type Ref } from "vue";
 import type {
   ProfileProjectionResponseDto,
-  SupportActivityResponseDto,
+  SupportActivityResponseDto as GeneratedSupportActivityResponseDto,
   SupportInspectorEventPageResponseDto,
   SupportInspectorEventsListParams,
   SupportLeadActivityParams,
@@ -16,6 +16,20 @@ export type SupportInspectorTab =
   | "DATA"
   | "EVENTS"
   | "ACTIVITY";
+
+export type SupportActivitySnapshot = Pick<
+  GeneratedSupportActivityResponseDto,
+  | "capabilities"
+  | "checkpoint"
+  | "computedAt"
+  | "data"
+  | "effectiveWindow"
+  | "freshnessState"
+  | "kind"
+  | "nextCursor"
+  | "projectionGeneration"
+  | "sourceHighWater"
+>;
 
 export interface SupportInspectorTabItem {
   id: SupportInspectorTab;
@@ -56,7 +70,7 @@ export interface SupportInspectorSource {
     projectId: string,
     params: SupportLeadActivityParams,
     signal?: AbortSignal,
-  ): Promise<SupportActivityResponseDto>;
+  ): Promise<SupportActivitySnapshot>;
 }
 
 export interface SupportInspectorResource<T> {
@@ -159,7 +173,7 @@ export function createSupportInspectorController(
   const now = options.now ?? (() => new Date());
   const profile = resource<ProfileProjectionResponseDto>();
   const events = resource<SupportInspectorEventPageResponseDto>();
-  const activity = resource<SupportActivityResponseDto>();
+  const activity = resource<SupportActivitySnapshot>();
   const tabs = computed(() => {
     const permissions = context.permissions();
     const hasCase = Boolean(context.caseId());

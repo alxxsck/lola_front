@@ -13,7 +13,7 @@ import type { ConversationTranslationResponseDto } from "@/shared/api/generated/
 import {
   getRootScrollLockCount,
   releaseRootScrollLock,
-} from "@/features/support-workspace/presentation/root-scroll-lock";
+} from "@/shared/ui/workspace-presentation/root-scroll-lock";
 
 const mocks = vi.hoisted(() => ({
   getConversations: vi.fn(),

@@ -275,17 +275,14 @@ const canChangeAlertOwner = computed(
 );
 
 const freshness = computed(() => {
-  const admission = leadControl.admission.value;
-  if (!admission)
+  const readiness = leadControl.readiness.value;
+  if (!readiness)
     return { label: "Проверка готовности", severity: "secondary" as const };
-  if (
-    admission.rolloutState === "DISABLED" ||
-    admission.readinessState === "NOT_PROVISIONED"
-  )
-    return { label: "Не включено", severity: "secondary" as const };
-  if (admission.readinessState === "DEGRADED")
+  if (readiness.readinessState === "NOT_PROVISIONED")
+    return { label: "Не настроено", severity: "secondary" as const };
+  if (readiness.readinessState === "DEGRADED")
     return { label: "Ограниченный режим", severity: "danger" as const };
-  if (admission.readinessState === "STALE")
+  if (readiness.readinessState === "STALE")
     return { label: "Снимок устарел", severity: "warning" as const };
   const state = overview.summary.value?.freshnessState;
   if (state === "READY")
@@ -297,16 +294,13 @@ const freshness = computed(() => {
   return { label: "Снимок строится", severity: "secondary" as const };
 });
 
-const admissionState = computed(() => {
-  const value = leadControl.admission.value;
+const readinessState = computed(() => {
+  const value = leadControl.readiness.value;
   if (!value) return null;
-  if (
-    value.rolloutState === "DISABLED" ||
-    value.readinessState === "NOT_PROVISIONED"
-  )
+  if (value.readinessState === "NOT_PROVISIONED")
     return {
       severity: "secondary" as const,
-      title: "Панель руководителя ещё не включена",
+      title: "Операционный снимок ещё не подготовлен",
       detail:
         "Проекция не подготовлена. Нулевые показатели не показываются как достоверные.",
     };
@@ -345,20 +339,18 @@ function duration(value: number | null): string {
 
 async function reload(): Promise<void> {
   await leadControl.load();
-  const admission = leadControl.admission.value;
+  const readiness = leadControl.readiness.value;
   if (
-    admission?.rolloutState === "ENABLED" &&
-    (admission.readinessState === "READY" ||
-      admission.readinessState === "STALE") &&
-    admission.capabilities.summary === "AVAILABLE"
+    (readiness?.readinessState === "READY" ||
+      readiness?.readinessState === "STALE") &&
+    readiness.capabilities.summary === "AVAILABLE"
   )
     await overview.load();
   else overview.reset();
   if (
-    admission?.rolloutState === "ENABLED" &&
-    (admission.readinessState === "READY" ||
-      admission.readinessState === "STALE") &&
-    admission.capabilities.caseRisks === "AVAILABLE"
+    (readiness?.readinessState === "READY" ||
+      readiness?.readinessState === "STALE") &&
+    readiness.capabilities.caseRisks === "AVAILABLE"
   )
     await risks.load();
   else risks.reset();
@@ -665,7 +657,7 @@ onMounted(async () => {
       : "";
   if (
     routedCaseId &&
-    leadControl.admission.value?.capabilities.investigation !== "UNAVAILABLE"
+    leadControl.readiness.value?.capabilities.investigation !== "UNAVAILABLE"
   ) {
     fallbackCaseId.value = routedCaseId;
     await leadControl.selectCase(routedCaseId);
@@ -771,7 +763,7 @@ onBeforeUnmount(() => {
           severity="secondary"
           outlined
           :loading="
-            leadControl.loadingAdmission.value || overview.loading.value
+            leadControl.loadingReadiness.value || overview.loading.value
           "
           @click="reload"
         />
@@ -790,17 +782,17 @@ onBeforeUnmount(() => {
       {{ leadControl.error.value }}
     </Message>
     <Message
-      v-if="admissionState"
-      :severity="admissionState.severity"
+      v-if="readinessState"
+      :severity="readinessState.severity"
       :closable="false"
-      class="admission-state"
+      class="readiness-state"
     >
-      <strong>{{ admissionState.title }}</strong>
-      <span>{{ admissionState.detail }}</span>
+      <strong>{{ readinessState.title }}</strong>
+      <span>{{ readinessState.detail }}</span>
     </Message>
     <form
       v-if="
-        leadControl.admission.value?.capabilities.investigation ===
+        leadControl.readiness.value?.capabilities.investigation ===
         'OWNER_FALLBACK'
       "
       class="fallback-case-form"
@@ -829,8 +821,8 @@ onBeforeUnmount(() => {
       />
     </form>
     <div
-      v-if="leadControl.loadingAdmission.value && !leadControl.admission.value"
-      class="admission-skeleton"
+      v-if="leadControl.loadingReadiness.value && !leadControl.readiness.value"
+      class="readiness-skeleton"
       aria-label="Проверяем готовность панели руководителя"
     >
       <Skeleton height="72px" border-radius="14px" />
@@ -853,11 +845,8 @@ onBeforeUnmount(() => {
     <template v-if="overview.summary.value">
       <p class="computed-at">
         Серверный снимок: {{ relativeTime(overview.summary.value.computedAt) }}
-        <template v-if="leadControl.admission.value?.projectionGeneration">
-          · поколение {{ leadControl.admission.value.projectionGeneration }}
-        </template>
-        <template v-if="overview.summary.value.slaRolloutState === 'SHADOW'">
-          · SLA рассчитывается в фоновом режиме
+        <template v-if="leadControl.readiness.value?.projectionGeneration">
+          · поколение {{ leadControl.readiness.value.projectionGeneration }}
         </template>
       </p>
       <details class="metric-definitions">
@@ -903,28 +892,17 @@ onBeforeUnmount(() => {
         <article
           class="metric-card"
           :class="{
-            risk:
-              overview.summary.value.slaRolloutState !== 'DISABLED' &&
-              overview.summary.value.sla.breachedCount > 0,
+            risk: overview.summary.value.sla.breachedCount > 0,
           }"
         >
           <span class="eyebrow">SLA</span>
-          <template
-            v-if="overview.summary.value.slaRolloutState === 'DISABLED'"
-          >
-            <strong>—</strong>
-            <h2>SLA не включён</h2>
-            <p>Риски и нарушения пока не рассчитываются.</p>
-          </template>
-          <template v-else>
-            <strong>{{ overview.summary.value.sla.atRiskCount }}</strong>
-            <h2>Под риском</h2>
-            <p>
-              Нарушено: {{ overview.summary.value.sla.breachedCount }} ·
-              старейший срок:
-              {{ duration(overview.summary.value.sla.oldestDueAgeMs) }}
-            </p>
-          </template>
+          <strong>{{ overview.summary.value.sla.atRiskCount }}</strong>
+          <h2>Под риском</h2>
+          <p>
+            Нарушено: {{ overview.summary.value.sla.breachedCount }} ·
+            старейший срок:
+            {{ duration(overview.summary.value.sla.oldestDueAgeMs) }}
+          </p>
         </article>
         <article class="metric-card">
           <span class="eyebrow">Нагрузка</span>
@@ -997,7 +975,7 @@ onBeforeUnmount(() => {
 
       <section
         v-if="
-          leadControl.admission.value?.capabilities.capacityRisks ===
+          leadControl.readiness.value?.capabilities.capacityRisks ===
           'AVAILABLE'
         "
         class="control-section capacity-section"
@@ -1234,11 +1212,10 @@ onBeforeUnmount(() => {
 
     <section
       v-if="
-        leadControl.admission.value?.rolloutState === 'ENABLED' &&
         ['READY', 'STALE'].includes(
-          leadControl.admission.value.readinessState,
+          leadControl.readiness.value?.readinessState ?? '',
         ) &&
-        leadControl.admission.value.capabilities.caseRisks === 'AVAILABLE'
+        leadControl.readiness.value?.capabilities.caseRisks === 'AVAILABLE'
       "
       class="control-section risk-section"
       aria-labelledby="risk-heading"
@@ -1265,9 +1242,6 @@ onBeforeUnmount(() => {
       <p v-if="risks.page.value" class="section-freshness">
         Серверный снимок: {{ relativeTime(risks.page.value.computedAt) }} ·
         {{ labelRiskFreshness(risks.page.value.freshnessState) }}
-        <template v-if="risks.page.value.slaRolloutState === 'SHADOW'">
-          · SLA рассчитывается в фоновом режиме
-        </template>
       </p>
       <div
         v-if="canOverrideAssignments && risks.page.value?.items.length"
@@ -1552,7 +1526,7 @@ onBeforeUnmount(() => {
         <section
           v-if="
             canReadActivity &&
-            leadControl.admission.value?.capabilities.activity === 'AVAILABLE'
+            leadControl.readiness.value?.capabilities.activity === 'AVAILABLE'
           "
           class="activity-section"
           aria-labelledby="activity-heading"
@@ -1892,17 +1866,17 @@ onBeforeUnmount(() => {
   margin-top: 2px;
   font-size: 0.78rem;
 }
-.admission-state :deep(.p-message-text) {
+.readiness-state :deep(.p-message-text) {
   display: grid;
   gap: 3px;
 }
-.admission-state span,
+.readiness-state span,
 .section-description {
   color: var(--text-muted);
   font-size: 0.8rem;
   line-height: 1.45;
 }
-.admission-skeleton {
+.readiness-skeleton {
   margin-bottom: 16px;
 }
 .fallback-case-form {

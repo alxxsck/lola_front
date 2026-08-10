@@ -32,14 +32,6 @@ import {
   canEditSavedReport,
   canReadReporting,
 } from "@/features/reporting/model/reporting-permissions";
-import { ensureSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
-import {
-  canonicalSupportLocation,
-  isCanonicalSupportWorkspaceAdmission,
-  legacySupportLocation,
-  type LegacySupportEntryPoint,
-  type SupportWorkspaceTarget,
-} from "@/features/support-workspace/model/support-workspace-entry-point";
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
   ["ai-analyses", "analyses"],
@@ -304,38 +296,35 @@ export const router = createRouter({
         {
           path: "cases",
           name: "end-user-cases",
-          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
-          props: { entryPoint: "CASES" },
-          meta: {
-            projectPermission: "project.cases.read",
-            legacySupportEntryPoint: "CASES",
-          },
+          redirect: (route) => ({
+            name: "support-inbox",
+            query: { ...route.query, mode: "cases" },
+          }),
         },
         {
           path: "cases/settings",
           name: "end-user-case-settings",
           component: () => import("@/pages/EndUserCaseSettingsPage.vue"),
-          meta: { projectPermission: "project.cases.settings.manage" },
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.cases.settings.manage",
+          },
         },
         {
           path: "cases/:caseId",
           name: "end-user-case-detail",
-          component: () => import("@/pages/SupportLegacyLauncherPage.vue"),
-          props: (route) => ({
-            entryPoint: "CASES",
-            selectionKind: routeValue(route.params.caseId) ? "CASE" : undefined,
-            selectionId: routeValue(route.params.caseId),
+          redirect: (route) => ({
+            name: "support-inbox-case",
+            params: { caseId: route.params.caseId },
+            query: { ...route.query, mode: "cases" },
           }),
-          meta: {
-            projectPermission: "project.cases.read",
-            legacySupportEntryPoint: "CASES",
-          },
         },
         {
           path: "support/inbox",
           name: "support-inbox",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
+            supportPlatformAccess: true,
             supportWorkspaceAccess: true,
             supportWorkspaceTarget: "CONVERSATIONS",
             supportWorkspacePresentation: true,
@@ -346,6 +335,7 @@ export const router = createRouter({
           name: "support-inbox-case",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
+            supportPlatformAccess: true,
             supportWorkspaceAccess: true,
             supportWorkspaceTarget: "CASES",
             supportWorkspacePresentation: true,
@@ -356,6 +346,7 @@ export const router = createRouter({
           name: "support-inbox-conversation",
           component: () => import("@/pages/SupportWorkspacePage.vue"),
           meta: {
+            supportPlatformAccess: true,
             supportWorkspaceAccess: true,
             supportWorkspaceTarget: "CONVERSATIONS",
             supportWorkspacePresentation: true,
@@ -365,19 +356,26 @@ export const router = createRouter({
           path: "support/control",
           name: "support-control",
           component: () => import("@/pages/SupportControlPage.vue"),
-          meta: { supportLeadControlAccess: true },
+          meta: {
+            supportPlatformAccess: true,
+            supportLeadControlAccess: true,
+          },
         },
         {
           path: "support/settings/macros",
           name: "support-macro-settings",
           component: () => import("@/pages/SupportMacroSettingsPage.vue"),
-          meta: { projectPermission: "project.support.macros.manage" },
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.support.macros.manage",
+          },
         },
         {
           path: "support/settings/sla-calendars",
           name: "support-sla-settings",
           component: () => import("@/pages/SupportSlaSettingsPage.vue"),
           meta: {
+            supportPlatformAccess: true,
             projectPermissionsAny: [
               "project.support.sla.read",
               "project.support.sla.manage",
@@ -389,14 +387,9 @@ export const router = createRouter({
           name: "support-notification-settings",
           component: () =>
             import("@/pages/SupportNotificationSettingsPage.vue"),
-          meta: { supportNotificationSettingsAccess: true },
-        },
-        {
-          path: "support/settings/audit-rollout",
-          name: "support-workspace-rollout",
-          component: () => import("@/pages/SupportWorkspaceRolloutPage.vue"),
           meta: {
-            projectPermission: "project.support.workspace.rollout.manage",
+            supportPlatformAccess: true,
+            supportNotificationSettingsAccess: true,
           },
         },
         {
@@ -404,6 +397,7 @@ export const router = createRouter({
           name: "support-external-settings",
           component: () => import("@/pages/SupportExternalSettingsPage.vue"),
           meta: {
+            supportPlatformAccess: true,
             projectPermission: "project.support.external_work.manage",
           },
         },
@@ -412,6 +406,7 @@ export const router = createRouter({
           name: "support-external-work",
           component: () => import("@/pages/SupportExternalWorkPage.vue"),
           meta: {
+            supportPlatformAccess: true,
             projectPermissionsAny: [
               "project.support.external_work.inbox_read",
               "project.support.external_work.read_linked",
@@ -422,6 +417,7 @@ export const router = createRouter({
           path: "support/notifications/open",
           name: "support-notification-open",
           component: () => import("@/pages/SupportNotificationOpenPage.vue"),
+          meta: { supportPlatformAccess: true },
         },
         {
           path: "ai-analyses",
@@ -641,16 +637,11 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && !auth.isAuthenticated)
     return { name: "login", query: { redirect: to.fullPath } };
   if (
-    (to.meta.supportWorkspaceAccess ||
-      to.meta.legacySupportEntryPoint ||
+    (to.meta.supportPlatformAccess ||
       to.name === "ai-analysis-detail" ||
       to.name === "ai-operation-detail" ||
       to.name === "ai-costs" ||
-      to.name === "users" ||
-      to.name === "support-workspace-rollout" ||
-      to.name === "support-sla-settings" ||
-      to.name === "support-external-settings" ||
-      to.name === "support-external-work") &&
+      to.name === "users") &&
     typeof to.query.projectId === "string"
   ) {
     const target = auth.projects.find(
@@ -661,9 +652,9 @@ router.beforeEach(async (to) => {
   }
   if (to.name === "overview" && auth.isAuthenticated && !auth.project)
     return auth.authenticatedLandingPath;
+  if (to.meta.supportPlatformAccess && auth.supportEnabled !== true)
+    return auth.authenticatedLandingPath;
   const projectPermissions = auth.project?.effectivePermissionCodes ?? [];
-  const actorId = auth.user?.id;
-  const projectId = auth.project?.id;
   const reportingAccess = to.meta.reportingAccess;
   if (typeof reportingAccess === "string") {
     const canRead =
@@ -683,43 +674,13 @@ router.beforeEach(async (to) => {
           canEditDashboard(projectPermissions)));
     if (!canEnter) return auth.authenticatedLandingPath;
   }
-  const legacyEntryPoint = to.meta.legacySupportEntryPoint as
-    LegacySupportEntryPoint | undefined;
-  if (legacyEntryPoint && actorId && projectId) {
-    const target: SupportWorkspaceTarget =
-      legacyEntryPoint === "CASES" ? "CASES" : "CONVERSATIONS";
-    const hasTargetPermission =
-      target === "CASES"
-        ? hasProjectPermission(projectPermissions, "project.cases.read")
-        : hasProjectPermission(
-            projectPermissions,
-            "project.conversations.read",
-          );
-    if (hasTargetPermission) {
-      const admission = await ensureSupportWorkspaceShellAdmission({
-        actorId,
-        projectId,
-        effectivePermissionCodes: projectPermissions,
-      });
-      if (isCanonicalSupportWorkspaceAdmission(admission, target)) {
-        return canonicalSupportLocation({
-          entryPoint: legacyEntryPoint,
-          caseId: routeValue(to.params.caseId),
-          endUserId:
-            routeValue(to.params.endUserId) ?? routeValue(to.query.endUserId),
-          conversationId: routeValue(to.query.conversationId),
-          query: to.query,
-        });
-      }
-    }
-  }
   if (
     to.meta.supportWorkspaceAccess &&
-    (!auth.project || !actorId || !canReadSupportWorkspace(projectPermissions))
+    (!auth.project || !canReadSupportWorkspace(projectPermissions))
   ) {
     return auth.authenticatedLandingPath;
   }
-  if (to.meta.supportWorkspaceAccess && auth.project && actorId) {
+  if (to.meta.supportWorkspaceAccess && auth.project) {
     const target = supportWorkspaceTarget(to);
     const hasTargetPermission =
       target === "CASES"
@@ -729,32 +690,6 @@ router.beforeEach(async (to) => {
             "project.conversations.read",
           );
     if (!hasTargetPermission) return auth.authenticatedLandingPath;
-    // The route commits immediately; rollout revalidation can redirect it after entry.
-    const admissionRevalidation = ensureSupportWorkspaceShellAdmission({
-      actorId,
-      projectId: auth.project.id,
-      effectivePermissionCodes: projectPermissions,
-    });
-    const expectedFullPath = to.fullPath;
-    const removeAdmissionRevalidationHook = router.afterEach((resolvedTo) => {
-      removeAdmissionRevalidationHook();
-      if (resolvedTo.fullPath !== expectedFullPath) return;
-      void admissionRevalidation.then((result) => {
-        if (
-          router.currentRoute.value.fullPath !== expectedFullPath ||
-          isCanonicalSupportWorkspaceAdmission(result, target)
-        )
-          return;
-        void router.replace(
-          legacySupportLocation({
-            target,
-            caseId: routeValue(to.params.caseId),
-            conversationId: routeValue(to.params.conversationId),
-            query: to.query,
-          }),
-        );
-      });
-    });
   }
   if (
     to.meta.supportLeadControlAccess &&
@@ -839,6 +774,8 @@ function isEmailAction(value: unknown): value is EmailActionKind {
 function routeValue(value: unknown): string | undefined {
   return typeof value === "string" && value ? value : undefined;
 }
+
+type SupportWorkspaceTarget = "CASES" | "CONVERSATIONS";
 
 function supportWorkspaceTarget(to: {
   name?: unknown;

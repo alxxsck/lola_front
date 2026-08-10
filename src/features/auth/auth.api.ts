@@ -9,6 +9,7 @@ import {
 import type {
   CmsAuthenticatedResponseDto,
   CmsAuthenticatedUserResponseDto,
+  CmsSessionContextResponseDto,
   CmsSessionProjectContextDto,
 } from "@/shared/api/generated/models";
 import { demoProject } from "@/shared/api/mock-data";
@@ -91,6 +92,9 @@ function clearDemoSession() {
 export interface AuthContext {
   user: CmsUser;
   projects: AuthProject[];
+  capabilities: {
+    supportEnabled: boolean;
+  };
   selectedProjectId?: string;
 }
 
@@ -192,6 +196,7 @@ registerRefreshHandler(async () => {
 
 async function loadContext(): Promise<AuthContext> {
   const response = await cmsSessionContextMe();
+  const capabilities = readSessionCapabilities(response);
   const projects = response.projects.map(mapProject);
   const storedProjectId = getSelectedProjectId();
   const selectedProject =
@@ -200,8 +205,21 @@ async function loadContext(): Promise<AuthContext> {
   return {
     user: mapUser(response.user, response.platformPermissionCodes),
     projects,
+    capabilities,
     selectedProjectId: selectedProject?.id,
   };
+}
+
+function readSessionCapabilities(response: CmsSessionContextResponseDto): {
+  supportEnabled: boolean;
+} {
+  const capabilities = (response as CmsSessionContextResponseDto & {
+    capabilities?: { supportEnabled?: unknown };
+  }).capabilities;
+  if (typeof capabilities?.supportEnabled !== "boolean") {
+    throw new Error("Session context does not declare Support availability");
+  }
+  return { supportEnabled: capabilities.supportEnabled };
 }
 
 function demoContext(login: string): AuthContext {
@@ -220,6 +238,7 @@ function demoContext(login: string): AuthContext {
         effectivePermissionCodes: [...PROJECT_PERMISSION_CODES],
       },
     ],
+    capabilities: { supportEnabled: true },
     selectedProjectId: demoProject.id,
   };
 }
@@ -340,7 +359,12 @@ export const authApi = {
       const raw = sessionStorage.getItem(DEMO_SESSION_KEY);
       if (!raw) return null;
       try {
-        return JSON.parse(raw) as AuthContext;
+        const context = JSON.parse(raw) as AuthContext;
+        if (typeof context.capabilities?.supportEnabled !== "boolean") {
+          sessionStorage.removeItem(DEMO_SESSION_KEY);
+          return null;
+        }
+        return context;
       } catch {
         sessionStorage.removeItem(DEMO_SESSION_KEY);
         return null;

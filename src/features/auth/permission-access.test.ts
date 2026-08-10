@@ -23,7 +23,6 @@ describe("permission access", () => {
         "project.support.knowledge.manage",
         "project.support.content_retention.manage",
         "project.support.content_legal_hold.manage",
-        "project.support.content_rollout.manage",
         "project.support.external_work.manage",
         "project.support.external_work.inbox_read",
         "project.support.external_work.read_linked",

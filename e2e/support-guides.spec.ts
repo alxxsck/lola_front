@@ -38,17 +38,17 @@ test('new operator finds the shift guide and navigates it by headings', async ({
   await expectAccessibleDocument(page)
 })
 
-test('lead guide explains control, access and safe launch in one index', async ({ page }) => {
+test('lead guide explains control, access and integrations in one index', async ({ page }) => {
   await login(page)
   await page.goto('/docs/support-lead')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Работа лида поддержки' })).toBeVisible()
   await expect(page.locator('.guide-screen')).toHaveAttribute('aria-label', 'Панель лида')
-  await page.getByRole('link', { name: 'Запуск и возврат', exact: true }).click()
+  await page.getByRole('link', { name: 'Интеграции с внешними системами', exact: true }).click()
   expect(await page.evaluate(() => decodeURIComponent(window.location.hash))).toBe(
-    '#запуск-и-возврат',
+    '#интеграции-с-внешними-системами',
   )
-  await expect(page.getByRole('heading', { name: 'Запуск и возврат' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Интеграции с внешними системами' })).toBeVisible()
   await expect(page.getByText('Права выдаются отдельно')).toBeAttached()
   await expect(page.getByRole('heading', { name: 'Словарь лида' })).toBeAttached()
 

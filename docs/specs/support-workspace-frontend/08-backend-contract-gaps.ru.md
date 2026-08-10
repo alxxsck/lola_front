@@ -1,5 +1,7 @@
 # Support Workspace: зафиксированные contract gaps
 
+> Historical evidence. Enablement-разделы superseded by ADR-0047 и не являются действующим описанием Support Platform.
+
 Статус: исторический snapshot; актуальная сводка —
 [backend-блокеры 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)
 Источник проверки: OpenAPI, экспортированный из `Lola_backend` ветки `develop`

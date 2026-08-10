@@ -29,7 +29,7 @@ describe('support onboarding guides', () => {
 
     expect(forbidden.flatMap((pattern) => source.match(pattern) ?? [])).toEqual([])
     expect(source).toContain('SLA — согласованный срок')
-    expect(source).toContain('Rollout — постепенное включение функции')
+    expect(source).not.toMatch(/rollout|Запуск и возврат/i)
     expect(source).toContain('JSM или HelpDesk')
   })
 
@@ -57,7 +57,7 @@ describe('support onboarding guides', () => {
     expect(wrapper.findAll('.guide-nav nav a').length).toBeGreaterThanOrEqual(14)
     expect(wrapper.text()).toContain('Что лид видит дополнительно')
     expect(wrapper.text()).toContain('Операционный обзор')
-    expect(wrapper.text()).toContain('Запуск и возврат')
+    expect(wrapper.text()).not.toContain('Запуск и возврат')
     expect(wrapper.text()).toContain('SLA')
     expect(wrapper.text()).toContain('Права выдаются отдельно')
     expect(wrapper.text()).toContain('Словарь лида')

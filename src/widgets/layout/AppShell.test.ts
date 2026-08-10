@@ -4,15 +4,6 @@ import { createMemoryHistory, createRouter, type Router } from "vue-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
-import {
-  resetMockSupportWorkspaceRollout,
-  writeMockSupportWorkspaceRollout,
-} from "@/features/support-workspace/api/support-workspace-shell-source";
-import {
-  clearSupportWorkspaceShellAdmission,
-  ensureSupportWorkspaceShellAdmission,
-  supportWorkspaceShellAdmissionState,
-} from "@/features/support-workspace/model/support-workspace-shell-admission";
 
 function project(
   id: string,
@@ -42,6 +33,7 @@ function authenticateWithProjects(
     },
     projects,
     project: projects[0] ?? null,
+    supportEnabled: true,
   });
 }
 
@@ -85,8 +77,6 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 describe("AppShell", () => {
   beforeEach(() => {
     localStorage.clear();
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
   });
 
   it("shows Reporting navigation only to an exact aggregate reader", async () => {
@@ -114,9 +104,7 @@ describe("AppShell", () => {
     expect(wrapper.find('a[href="/reports"]').exists()).toBe(false);
   });
 
-  it("keeps permitted Support navigation stable across shell admission changes", async () => {
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
+  it("shows Support navigation only when deployment availability and IAM allow it", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
@@ -136,24 +124,12 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Поддержка");
     wrapper.unmount();
 
-    writeMockSupportWorkspaceRollout(
-      {
-        enabled: true,
-        shellEnabled: false,
-        hardOff: false,
-        version: 2,
-      },
-      "project-1",
-    );
-    clearSupportWorkspaceShellAdmission();
-    const rolledBack = mountProjectMenu(pinia, router);
+    auth.supportEnabled = false;
+    const disabled = mountProjectMenu(pinia, router);
     await flushPromises();
 
-    expect(rolledBack.text()).toContain("Поддержка");
-    expect(rolledBack.find('a[href="/support/inbox"]').exists()).toBe(true);
-    rolledBack.unmount();
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
+    expect(disabled.text()).not.toContain("Поддержка");
+    disabled.unmount();
   });
 
   it("links a Cases-only operator to the exact canonical inbox mode", async () => {
@@ -225,48 +201,6 @@ describe("AppShell", () => {
     await flushPromises();
     expect(router.currentRoute.value.path).toBe("/support/inbox");
     expect(supportLink!.classes()).toContain("active");
-  });
-
-  it("keeps the Support workspace link visible while admission revalidates", async () => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const auth = useAuthStore();
-    authenticateWithProjects(auth, [
-      project("project-1", "Project One", ["project.conversations.read"]),
-    ]);
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [{ path: "/overview", component: { template: "<div />" } }],
-    });
-    await router.push("/overview");
-    await router.isReady();
-
-    const wrapper = mountProjectMenu(pinia, router);
-    await flushPromises();
-    const admitted = supportWorkspaceShellAdmissionState.value.admission;
-    expect(admitted).not.toBeNull();
-    expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(true);
-
-    let finishRevalidation!: () => void;
-    const revalidation = ensureSupportWorkspaceShellAdmission(
-      {
-        actorId: "operator-1",
-        projectId: "project-1",
-        effectivePermissionCodes: ["project.conversations.read"],
-      },
-      {
-        readAdmission: () =>
-          new Promise((resolve) => {
-            finishRevalidation = () => resolve(admitted!);
-          }),
-      },
-    );
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(true);
-
-    finishRevalidation();
-    await revalidation;
   });
 
   it("uses the compact application rail on the Support workspace route", async () => {
@@ -366,6 +300,7 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
+      supportEnabled: true,
       user: {
         id: "operator-1",
         email: "operator@example.com",
@@ -498,6 +433,7 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
+      supportEnabled: true,
       user: {
         id: "operator-1",
         email: "operator@example.com",
@@ -515,7 +451,7 @@ describe("AppShell", () => {
         assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
-        settings: { support_workspace_shell: true },
+        settings: {},
         effectivePermissionCodes: [
           "project.settings.read",
           "project.notifications.read",
@@ -535,7 +471,6 @@ describe("AppShell", () => {
           "project.conversations.read",
           "project.support.lead_control.read",
           "project.support.sla.read",
-          "project.support.workspace.rollout.manage",
           "project.support.external_work.inbox_read",
           "project.support.external_work.manage",
         ],
@@ -578,10 +513,6 @@ describe("AppShell", () => {
       supportNotificationsLink: wrapper
         .find('a[href="/support/settings/notifications"]')
         .attributes("href"),
-      supportRolloutLink: wrapper
-        .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Запуск и возврат"))
-        ?.attributes("href"),
       externalWorkLink: wrapper
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Внешние задачи"))
@@ -597,12 +528,11 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 25,
+      navigationLinks: 24,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
       supportNotificationsLink: "/support/settings/notifications",
-      supportRolloutLink: "/support/settings/audit-rollout",
       externalWorkLink: "/support/external-work",
       externalSettingsLink: "/support/settings/integrations",
       themeSwitchVisible: true,
@@ -624,7 +554,6 @@ describe("AppShell", () => {
         "project.cases.settings.manage",
         "project.support.sla.read",
         "project.support.macros.manage",
-        "project.support.workspace.rollout.manage",
         "project.support.external_work.inbox_read",
         "project.support.external_work.manage",
       ]),
@@ -653,7 +582,6 @@ describe("AppShell", () => {
       "Уведомления",
       "Внешние задачи",
       "Интеграции",
-      "Запуск и возврат",
     ]);
     expect(
       supportLinks.every((link) =>
@@ -1071,7 +999,7 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Роли");
   });
 
-  it("does not expose authoring navigation from a legacy role without Permissions", async () => {
+  it("does not expose authoring navigation from a role-shaped value without Permissions", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();

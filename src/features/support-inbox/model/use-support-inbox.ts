@@ -17,7 +17,6 @@ export type SupportInboxSource = Pick<
 export interface SupportInboxContext {
   projectId(): string | undefined;
   mode(): SupportInboxMode;
-  endUserId?(): string | undefined;
   onForbidden?(): void | Promise<void>;
 }
 
@@ -50,14 +49,12 @@ export function createSupportInboxController(
   function isCurrent(
     projectId: string,
     mode: SupportInboxMode,
-    endUserId: string | undefined,
     requestGeneration: number,
   ): boolean {
     return (
       requestGeneration === generation &&
       context.projectId() === projectId &&
-      context.mode() === mode &&
-      context.endUserId?.() === endUserId
+      context.mode() === mode
     );
   }
 
@@ -102,7 +99,7 @@ export function createSupportInboxController(
   function readPage(
     projectId: string,
     mode: SupportInboxMode,
-    request: { cursor?: string; limit: number; endUserId?: string },
+    request: { cursor?: string; limit: number },
   ) {
     return mode === "CASES"
       ? source.readCases(projectId, request)
@@ -112,7 +109,6 @@ export function createSupportInboxController(
   async function load(): Promise<void> {
     const projectId = context.projectId();
     const mode = context.mode();
-    const endUserId = context.endUserId?.();
     const requestGeneration = ++generation;
     if (!projectId) {
       reset();
@@ -124,13 +120,12 @@ export function createSupportInboxController(
     try {
       const page = await readPage(projectId, mode, {
         limit: 30,
-        ...(mode === "ALL_CONVERSATIONS" && endUserId ? { endUserId } : {}),
       });
-      if (!isCurrent(projectId, mode, endUserId, requestGeneration)) return;
+      if (!isCurrent(projectId, mode, requestGeneration)) return;
       items.value = scopedItems(mode, page.items);
       nextCursor.value = page.nextCursor;
     } catch (cause) {
-      if (!isCurrent(projectId, mode, endUserId, requestGeneration)) return;
+      if (!isCurrent(projectId, mode, requestGeneration)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)
@@ -158,7 +153,6 @@ export function createSupportInboxController(
   async function loadMore(): Promise<void> {
     const projectId = context.projectId();
     const mode = context.mode();
-    const endUserId = context.endUserId?.();
     const cursor = nextCursor.value;
     if (!projectId || !cursor || loading.value) return;
     const requestGeneration = ++generation;
@@ -169,13 +163,12 @@ export function createSupportInboxController(
       const page = await readPage(projectId, mode, {
         cursor,
         limit: 30,
-        ...(mode === "ALL_CONVERSATIONS" && endUserId ? { endUserId } : {}),
       });
-      if (!isCurrent(projectId, mode, endUserId, requestGeneration)) return;
+      if (!isCurrent(projectId, mode, requestGeneration)) return;
       append(scopedItems(mode, page.items));
       nextCursor.value = page.nextCursor;
     } catch (cause) {
-      if (!isCurrent(projectId, mode, endUserId, requestGeneration)) return;
+      if (!isCurrent(projectId, mode, requestGeneration)) return;
       if (
         cause instanceof ApiError &&
         (cause.status === 403 || cause.status === 404)

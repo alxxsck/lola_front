@@ -31,9 +31,7 @@ function isKnowledgeCitationFailure(cause: unknown): cause is ApiError {
     cause instanceof ApiError &&
     Boolean(
       cause.code?.startsWith("SUPPORT_KNOWLEDGE_CITATION_") ||
-        cause.code === "SUPPORT_KNOWLEDGE_SOURCE_CHANGED" ||
-        cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED" ||
-        cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED",
+        cause.code === "SUPPORT_KNOWLEDGE_SOURCE_CHANGED",
     )
   );
 }

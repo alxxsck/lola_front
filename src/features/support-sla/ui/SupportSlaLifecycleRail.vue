@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import Tag from "primevue/tag";
-import type { SupportSlaConfigurationSettingsResponseDto } from "@/shared/api/generated/models";
+import type { SupportSlaConfigurationSnapshot } from "@/features/support-sla/api/support-sla-configuration-source";
 
 const props = defineProps<{
-  snapshot: SupportSlaConfigurationSettingsResponseDto;
+  snapshot: SupportSlaConfigurationSnapshot;
   dirty: boolean;
   canManage: boolean;
 }>();
@@ -45,23 +44,13 @@ const draftLabel = computed(() => {
         <strong>{{ dirty ? "Есть несохранённые изменения" : "Синхронизирована" }}</strong>
       </div>
     </article>
-    <article class="sla-lifecycle__step">
-      <span class="sla-lifecycle__marker"><i class="pi pi-gauge" /></span>
-      <div>
-        <small>Расчёт SLA</small>
-        <Tag
-          :value="snapshot.rolloutState === 'SHADOW' ? 'Проверочный режим' : 'Выключен'"
-          :severity="snapshot.rolloutState === 'SHADOW' ? 'info' : 'secondary'"
-        />
-      </div>
-    </article>
   </section>
 </template>
 
 <style scoped>
 .sla-lifecycle {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;

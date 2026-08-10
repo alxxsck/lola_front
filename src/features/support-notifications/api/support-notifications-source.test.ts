@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const generated = vi.hoisted(() => ({
-  readAdmission: vi.fn(),
+  readConfiguration: vi.fn(),
   readPreferences: vi.fn(),
   updatePreference: vi.fn(),
   listSubscriptions: vi.fn(),
@@ -11,7 +11,7 @@ const generated = vi.hoisted(() => ({
 }));
 
 vi.mock("@/shared/api/generated/retenive-backend", () => ({
-  personalSupportNotificationReadAdmission: generated.readAdmission,
+  personalSupportNotificationReadAdmission: generated.readConfiguration,
   personalSupportNotificationReadPreferences: generated.readPreferences,
   personalSupportNotificationUpdatePreference: generated.updatePreference,
   personalBrowserPushListSubscriptions: generated.listSubscriptions,

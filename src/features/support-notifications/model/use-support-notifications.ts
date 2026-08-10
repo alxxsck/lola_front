@@ -1,12 +1,12 @@
 import { computed, ref } from "vue";
 import type {
   BrowserPushSubscriptionResponseDto,
-  PersonalSupportNotificationAdmissionResponseDto,
   PersonalSupportNotificationPreferenceResponseDto,
 } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportNotificationsSource,
+  SupportNotificationConfiguration,
   SupportNotificationTopic,
 } from "@/features/support-notifications/api/support-notifications-source";
 import type {
@@ -45,7 +45,7 @@ export function createSupportNotificationsController(
   source: SupportNotificationsSource,
   browser: BrowserPushAdapter,
 ) {
-  const admission = ref<PersonalSupportNotificationAdmissionResponseDto | null>(null);
+  const configuration = ref<SupportNotificationConfiguration | null>(null);
   const preferences = ref<readonly PersonalSupportNotificationPreferenceResponseDto[]>([]);
   const devices = ref<readonly BrowserPushSubscriptionResponseDto[]>([]);
   const browserState = ref<BrowserPushState>({ ...emptyBrowser });
@@ -88,7 +88,7 @@ export function createSupportNotificationsController(
       !stored ||
       stored.endpoint !== browserState.value.endpoint ||
       stored.applicationServerKey !== browserState.value.applicationServerKey ||
-      stored.applicationServerKeyRevision !== admission.value?.applicationServerKeyRevision
+      stored.applicationServerKeyRevision !== configuration.value?.applicationServerKeyRevision
     )
       return null;
     return devices.value.some((item) => item.id === stored.deviceId && item.status === "ACTIVE")
@@ -134,7 +134,7 @@ export function createSupportNotificationsController(
     connectAttempt = null;
     revokeAttempts.clear();
     scope = null;
-    admission.value = null;
+    configuration.value = null;
     preferences.value = [];
     devices.value = [];
     browserState.value = { ...emptyBrowser };
@@ -184,7 +184,7 @@ export function createSupportNotificationsController(
     abort = requestAbort;
     error.value = "";
     success.value = "";
-    admission.value = null;
+    configuration.value = null;
     preferences.value = [];
     devices.value = [];
     if (!projectId || !actorId || !context.canRead()) {
@@ -199,9 +199,9 @@ export function createSupportNotificationsController(
         await runSupportNotificationBrowserLifecycle(() => browser.unsubscribe());
         if (!isCurrent(projectId, actorId, requestGeneration)) return;
       }
-      const nextAdmission = await source.readAdmission(projectId, requestAbort.signal);
+      const nextConfiguration = await source.readConfiguration(projectId, requestAbort.signal);
       if (!isCurrent(projectId, actorId, requestGeneration)) return;
-      admission.value = nextAdmission;
+      configuration.value = nextConfiguration;
       const [nextPreferences, nextDevices, nextBrowser] = await Promise.all([
         source.readPreferences(projectId, requestAbort.signal),
         source.listDevices(requestAbort.signal),
@@ -225,7 +225,7 @@ export function createSupportNotificationsController(
         nextBrowser.permission === "GRANTED" &&
         nextBrowser.locallySubscribed &&
         !currentDeviceId.value &&
-        nextAdmission.capabilities.deviceRegistration === "AVAILABLE"
+        nextConfiguration.capabilities.deviceRegistration === "AVAILABLE"
       )
         await connectBrowser();
     } catch (cause) {
@@ -234,7 +234,7 @@ export function createSupportNotificationsController(
         await forbidden();
         return;
       }
-      admission.value = null;
+      configuration.value = null;
       preferences.value = [];
       devices.value = [];
       error.value = "Не удалось загрузить настройки уведомлений. Повторите попытку.";
@@ -252,8 +252,8 @@ export function createSupportNotificationsController(
 
   function capability(topic: SupportNotificationTopic) {
     return topic === "SUPPORT_CASE_ATTENTION"
-      ? admission.value?.capabilities.attention
-      : admission.value?.capabilities.assignedToMe;
+      ? configuration.value?.capabilities.attention
+      : configuration.value?.capabilities.assignedToMe;
   }
 
   function canSet(topic: SupportNotificationTopic, subscribed: boolean): boolean {
@@ -316,12 +316,12 @@ export function createSupportNotificationsController(
   async function connectBrowser(): Promise<void> {
     const projectId = context.projectId();
     const actorId = context.actorId();
-    const publicKey = admission.value?.applicationServerKey;
+    const publicKey = configuration.value?.applicationServerKey;
     if (
       !projectId ||
       !actorId ||
       !publicKey ||
-      admission.value?.capabilities.deviceRegistration !== "AVAILABLE" ||
+      configuration.value?.capabilities.deviceRegistration !== "AVAILABLE" ||
       connecting.value ||
       deviceMutation !== null
     )
@@ -401,9 +401,9 @@ export function createSupportNotificationsController(
         nextBrowserState.applicationServerKey !== publicKey
       )
         throw new Error("SUPPORT_NOTIFICATION_LOCAL_SUBSCRIPTION_CHANGED");
-      const [loadedDevices, nextAdmission] = await Promise.all([
+      const [loadedDevices, nextConfiguration] = await Promise.all([
         source.listDevices(),
-        source.readAdmission(projectId),
+        source.readConfiguration(projectId),
       ]);
       if (deviceMutation !== mutation || !isCurrent(projectId, actorId, requestGeneration)) return;
       const nextDevices = loadedDevices;
@@ -411,13 +411,13 @@ export function createSupportNotificationsController(
         deviceId: registered.id,
         endpoint: attempt.material.endpoint,
         applicationServerKey: publicKey,
-        applicationServerKeyRevision: nextAdmission.applicationServerKeyRevision,
+        applicationServerKeyRevision: nextConfiguration.applicationServerKeyRevision,
       });
       releaseSupportNotificationRegistration(actorId, attempt.idempotencyKey);
       connectAttempt = null;
       browserState.value = nextBrowserState;
       devices.value = nextDevices;
-      admission.value = nextAdmission;
+      configuration.value = nextConfiguration;
       success.value = "Этот браузер подключён к уведомлениям поддержки.";
     } catch (cause) {
       if (deviceMutation !== mutation || !isCurrent(projectId, actorId, requestGeneration)) return;
@@ -494,9 +494,9 @@ export function createSupportNotificationsController(
         if (deviceMutation !== mutation || !isCurrent(projectId, actorId, requestGeneration)) return;
         browserState.value = nextBrowserState;
       }
-      const nextAdmission = await source.readAdmission(projectId);
+      const nextConfiguration = await source.readConfiguration(projectId);
       if (deviceMutation !== mutation || !isCurrent(projectId, actorId, requestGeneration)) return;
-      admission.value = nextAdmission;
+      configuration.value = nextConfiguration;
       success.value = "Устройство отключено.";
     } catch (cause) {
       if (deviceMutation !== mutation || !isCurrent(projectId, actorId, requestGeneration)) return;
@@ -526,7 +526,7 @@ export function createSupportNotificationsController(
   }
 
   return {
-    admission,
+    configuration,
     preferences,
     devices,
     activeDevices,

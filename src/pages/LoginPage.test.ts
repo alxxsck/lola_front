@@ -131,6 +131,7 @@ describe("CMS User login page", () => {
           platformPermissionCodes: ["platform.cms_users.read"],
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const { router, wrapper } = await mountPage();

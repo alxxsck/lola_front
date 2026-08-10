@@ -1,5 +1,7 @@
 # Support Workspace shell cutover — frontend release proof
 
+> Historical evidence. Решение superseded by ADR-0047 и не является действующим runbook.
+
 Дата: 9 августа 2026 года  
 Frontend Ticket: 28  
 Backend: `4d82b6bd` + `9f36796b477d34fcac2a9a46844bbd78863df6e1`  

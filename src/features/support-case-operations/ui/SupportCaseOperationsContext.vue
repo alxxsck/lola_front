@@ -149,9 +149,6 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
         <span class="operations-kicker">Операционный контекст</span>
         <h3 id="case-operations-title">SLA и маршрутизация</h3>
       </div>
-      <span v-if="sla?.rolloutState === 'SHADOW'" class="shadow-badge">
-        <i class="pi pi-eye" aria-hidden="true" /> Теневой прогноз
-      </span>
     </header>
 
     <div class="operations-block" aria-label="SLA обращения">
@@ -168,10 +165,6 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
       <div v-if="!sla" class="quiet-state">
         <i class="pi pi-lock" aria-hidden="true" />
         <span>SLA недоступен для этой роли</span>
-      </div>
-      <div v-else-if="sla.rolloutState === 'DISABLED'" class="quiet-state">
-        <i class="pi pi-minus-circle" aria-hidden="true" />
-        <span>SLA для проекта отключён</span>
       </div>
       <div v-else-if="!sla.clocks.length" class="quiet-state">
         <i class="pi pi-check-circle" aria-hidden="true" />
@@ -196,10 +189,6 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
           </div>
         </li>
       </ul>
-      <p v-if="sla?.rolloutState === 'SHADOW'" class="context-note">
-        Прогноз не является договорным сроком и не управляет действиями
-        оператора.
-      </p>
     </div>
 
     <div class="operations-block" aria-label="Маршрутизация обращения">
@@ -345,21 +334,6 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.shadow-badge {
-  min-height: 26px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning-text) 26%, var(--line));
-  border-radius: 999px;
-  background: var(--status-warning-soft);
-  color: var(--status-warning-text);
-  font-size: 0.66rem;
-  font-weight: 750;
-  white-space: nowrap;
 }
 .operations-block {
   min-width: 0;

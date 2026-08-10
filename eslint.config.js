@@ -3,7 +3,14 @@ import pluginVue from 'eslint-plugin-vue'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 
 export default defineConfigWithVueTs(
-  { ignores: ['dist/**', 'coverage/**', 'src/shared/api/generated/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      '.worktrees/**',
+      'src/shared/api/generated/**',
+    ],
+  },
   js.configs.recommended,
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,

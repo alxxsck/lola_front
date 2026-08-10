@@ -9,10 +9,6 @@ function key(actorId: string): string {
   return `support-browser-push-registration:v2:${actorId}`;
 }
 
-function legacyKey(actorId: string): string {
-  return `support-browser-push-device:v1:${actorId}`;
-}
-
 export function readStoredBrowserPushRegistration(
   actorId: string | undefined,
 ): StoredBrowserPushRegistration | null {
@@ -39,7 +35,6 @@ export function writeStoredBrowserPushRegistration(
 ): void {
   try {
     localStorage.setItem(key(actorId), JSON.stringify(value));
-    localStorage.removeItem(legacyKey(actorId));
   } catch {
     // The server registration remains authoritative when storage is unavailable.
   }
@@ -49,7 +44,6 @@ export function clearStoredBrowserPushRegistration(actorId: string | undefined):
   if (!actorId) return;
   try {
     localStorage.removeItem(key(actorId));
-    localStorage.removeItem(legacyKey(actorId));
   } catch {
     // Best-effort local cleanup.
   }

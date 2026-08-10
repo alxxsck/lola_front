@@ -62,16 +62,6 @@ const topics: ReadonlyArray<{
   },
 ];
 
-const rolloutLabel = computed(() => {
-  const state = controller.admission.value?.rolloutState;
-  if (state === "ATTENTION_ENABLED") return "Требующие внимания и назначения";
-  if (state === "ASSIGNMENT_ONLY") return "Только назначения";
-  return "Доставка выключена";
-});
-const rolloutSeverity = computed(() =>
-  controller.admission.value?.rolloutState === "DISABLED" ? "secondary" : "success",
-);
-
 function permissionLabel(): string {
   const state = controller.browserState.value;
   if (state.permission === "GRANTED") return "Разрешено браузером";
@@ -83,11 +73,9 @@ function permissionLabel(): string {
 function browserRecoveryCopy(): string {
   const state = controller.browserState.value;
   const registrationCapability =
-    controller.admission.value?.capabilities.deviceRegistration;
+    controller.configuration.value?.capabilities.deviceRegistration;
   if (registrationCapability !== "AVAILABLE") {
-    if (controller.admission.value?.rolloutState === "DISABLED")
-      return "Проект пока не принимает новые подключения браузеров. Владелец серверной конфигурации должен сначала включить доставку уведомлений; после этого кнопка запросит разрешение браузера.";
-    return "Регистрация новых браузеров сейчас недоступна для этого проекта. Обратитесь к администратору проекта; после включения регистрации кнопка запросит разрешение браузера.";
+    return "Регистрация новых браузеров временно недоступна. Проверьте конфигурацию доставки; после восстановления кнопка запросит разрешение браузера.";
   }
   if (state.permission === "DENIED")
     return state.permissionRecoveryPath ??
@@ -117,7 +105,7 @@ function preferenceSeverity(topic: SupportNotificationTopic) {
 function capabilityCopy(topic: SupportNotificationTopic): string {
   const value = controller.capability(topic);
   if (value === "DISABLE_ONLY") return "Можно только отключить: новые подписки больше не принимаются.";
-  if (value === "UNAVAILABLE") return "Этот тип недоступен для текущей роли или этапа запуска.";
+  if (value === "UNAVAILABLE") return "Этот тип недоступен для текущей роли или конфигурации доставки.";
   return "Настройка доступна для выбранного проекта.";
 }
 
@@ -155,7 +143,6 @@ onBeforeUnmount(controller.dispose);
         </p>
       </div>
       <div class="header-actions">
-        <Tag :value="rolloutLabel" :severity="rolloutSeverity" />
         <Button
           label="Обновить"
           icon="pi pi-refresh"
@@ -177,13 +164,13 @@ onBeforeUnmount(controller.dispose);
       {{ controller.success.value }}
     </Message>
 
-    <template v-if="controller.loading.value && !controller.admission.value">
+    <template v-if="controller.loading.value && !controller.configuration.value">
       <div class="readiness-grid" aria-label="Загрузка готовности уведомлений">
         <Skeleton v-for="index in 3" :key="index" height="128px" border-radius="18px" />
       </div>
     </template>
 
-    <template v-else-if="controller.admission.value">
+    <template v-else-if="controller.configuration.value">
       <section class="notification-section" aria-labelledby="readiness-title">
         <div class="section-heading">
           <div>
@@ -191,7 +178,7 @@ onBeforeUnmount(controller.dispose);
             <h2 id="readiness-title">Готовность этого браузера</h2>
           </div>
           <span class="evaluated-at">
-            Проверено {{ formatDate(controller.admission.value.evaluatedAt) }}
+            Проверено {{ formatDate(controller.configuration.value.evaluatedAt) }}
           </span>
         </div>
 
@@ -250,7 +237,7 @@ onBeforeUnmount(controller.dispose);
             :loading="controller.connecting.value"
             :disabled="
               controller.deviceBusy.value ||
-              controller.admission.value.capabilities.deviceRegistration !== 'AVAILABLE'
+              controller.configuration.value.capabilities.deviceRegistration !== 'AVAILABLE'
             "
             @click="controller.connectBrowser"
           />

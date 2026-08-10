@@ -8,9 +8,7 @@ beforeEach(() => localStorage.clear());
 
 function setup() {
   const source: SupportNotificationsSource = {
-    readAdmission: vi.fn().mockResolvedValue({
-      rolloutState: "ATTENTION_ENABLED",
-      rolloutRevision: "0123456789abcdef",
+    readConfiguration: vi.fn().mockResolvedValue({
       evaluatedAt: "2026-08-09T10:00:00.000Z",
       activeSubscriptionCount: 0,
       capabilities: {
@@ -163,8 +161,8 @@ describe("createSupportNotificationsController", () => {
 
   it("does not allow opt-in through a DISABLE_ONLY capability", async () => {
     const { controller, source } = setup();
-    vi.mocked(source.readAdmission).mockResolvedValueOnce({
-      ...(await vi.mocked(source.readAdmission)("project-1")),
+    vi.mocked(source.readConfiguration).mockResolvedValueOnce({
+      ...(await vi.mocked(source.readConfiguration)("project-1")),
       capabilities: {
         assignedToMe: "DISABLE_ONLY",
         attention: "UNAVAILABLE",
@@ -441,21 +439,27 @@ describe("createSupportNotificationsController", () => {
 
   it("does not publish an old actor response after an in-place session change", async () => {
     const { controller, source, context } = setup();
-    let resolveOld!: (value: Awaited<ReturnType<SupportNotificationsSource["readAdmission"]>>) => void;
-    const oldAdmission = new Promise<Awaited<ReturnType<SupportNotificationsSource["readAdmission"]>>>(
+    let resolveOld!: (value: Awaited<ReturnType<SupportNotificationsSource["readConfiguration"]>>) => void;
+    const oldConfiguration = new Promise<Awaited<ReturnType<SupportNotificationsSource["readConfiguration"]>>>(
       (resolve) => (resolveOld = resolve),
     );
-    const readyAdmission = await vi.mocked(source.readAdmission)("project-1");
-    vi.mocked(source.readAdmission)
-      .mockReturnValueOnce(oldAdmission)
-      .mockResolvedValueOnce({ ...readyAdmission, rolloutState: "ASSIGNMENT_ONLY" });
+    const readyConfiguration = await vi.mocked(source.readConfiguration)("project-1");
+    vi.mocked(source.readConfiguration)
+      .mockReturnValueOnce(oldConfiguration)
+      .mockResolvedValueOnce({
+        ...readyConfiguration,
+        evaluatedAt: "2026-08-09T11:00:00.000Z",
+      });
 
     const stale = controller.load();
     context.actorId.mockReturnValue("operator-2");
     await controller.load();
-    resolveOld({ ...readyAdmission, rolloutState: "DISABLED" });
+    resolveOld({
+      ...readyConfiguration,
+      evaluatedAt: "2026-08-09T09:00:00.000Z",
+    });
     await stale;
 
-    expect(controller.admission.value?.rolloutState).toBe("ASSIGNMENT_ONLY");
+    expect(controller.configuration.value?.evaluatedAt).toBe("2026-08-09T11:00:00.000Z");
   });
 });

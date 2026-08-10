@@ -49,7 +49,6 @@ const activityPage = {
   sourceHighWater: "11",
   checkpoint: "11",
   nextCursor: null,
-  slaRolloutState: "SHADOW" as const,
   capabilities: {
     scopes: [],
     actions: [],

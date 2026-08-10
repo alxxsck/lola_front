@@ -83,7 +83,9 @@ function project(
 function sessionContext(
   projects: CmsSessionProjectContextDto[],
   platformPermissionCodes: string[] = [],
-): CmsSessionContextResponseDto {
+): CmsSessionContextResponseDto & {
+  capabilities: { supportEnabled: boolean };
+} {
   return {
     user: {
       ...authenticatedResponse.user,
@@ -93,6 +95,7 @@ function sessionContext(
     },
     platformPermissionCodes,
     projects,
+    capabilities: { supportEnabled: true },
   };
 }
 
@@ -192,6 +195,7 @@ describe("target CMS User auth API", () => {
           effectivePermissionCodes: ["project.read", "scenario.write"],
         }),
       ],
+      capabilities: { supportEnabled: true },
       selectedProjectId: "project-member",
     });
     expect(cmsSessionContextMe).toHaveBeenCalledOnce();
@@ -227,6 +231,20 @@ describe("target CMS User auth API", () => {
     expect(mapped).not.toHaveProperty("assistantName");
     expect(mapped).not.toHaveProperty("defaultLocale");
     expect(mapped).not.toHaveProperty("version");
+  });
+
+  it("rejects a session context that omits deployment-wide Support availability", async () => {
+    const contextWithoutCapabilities = {
+      ...sessionContext([]),
+    } as Record<string, unknown>;
+    Reflect.deleteProperty(contextWithoutCapabilities, "capabilities");
+    vi.mocked(cmsSessionContextMe).mockResolvedValue(
+      contextWithoutCapabilities as unknown as CmsSessionContextResponseDto,
+    );
+
+    await expect(authApi.refreshContext()).rejects.toThrow(
+      "Session context does not declare Support availability",
+    );
   });
 
   it("maps canonical email verification state from the self context", async () => {
@@ -270,6 +288,7 @@ describe("target CMS User auth API", () => {
         platformPermissionCodes: ["platform.projects.manage"],
       },
       projects: [],
+      capabilities: { supportEnabled: true },
       selectedProjectId: undefined,
     });
   });

@@ -11,11 +11,10 @@ Pinned contract: `sha256:0dd3e0813d772df946354c2a64ecbffbb07e6ef2eff8b9a0b977ca4
 Backend docs/source review: `8758358e`
 
 Frontend реализует только то, что опубликовано в pinned OpenAPI. Personal browser
-notification controllers и admission опубликованы backend `8758358e`.
-`READY` означает typed transport и достаточную authority. `RELEASE_GATED`
-требует server rollout/admission. `PARTIAL` означает, что часть projection или
-ошибок не типизирована. Нельзя подменять пробел локальным DTO или legacy
-notification API.
+notification controllers опубликованы backend `8758358e`.
+`READY` означает typed transport и достаточную authority по IAM и доменному
+состоянию. `PARTIAL` означает, что часть projection или ошибок не типизирована.
+Нельзя подменять пробел локальным DTO или старым notification API.
 
 ## 1. Internal Notes и content governance
 
@@ -28,13 +27,12 @@ notification API.
 | Tombstone             | `SupportInternalNote_tombstone`                        | `internal_notes.redact`, `sin1` If-Match, idempotency                       | `PARTIAL`: server lifecycle есть, action capability/error body нет         |
 | Redacted/purged read  | `SupportInternalNoteResponseDto.lifecycle`             | `ACTIVE / TOMBSTONED / PURGED`, nullable body, unavailable references       | `READY`; UI не восстанавливает body из cache                               |
 | Content panel         | `SupportContentPanel_read`                             | macro read; независимые macro/knowledge states                              | `PARTIAL`: `items` обеих секций остаются arbitrary object                  |
-| Content rollout       | `SupportContentGovernance_rollout/updateRollout`       | version, `scr1` ETag, idempotency, hardOff                                  | `READY` как content rollout root, не project shell flag                    |
 | Retention             | read/replace/publish/preview operations                | exact `content_retention.manage`, `scp1` ETag                               | `PARTIAL`: draft/revision — arbitrary object; только bounded purge preview |
 | Legal hold            | list/create/release                                    | exact `content_legal_hold.manage`, version/action ETag                      | `READY` для hold lifecycle; purge apply остаётся maintenance-only          |
 
-Published content rollout capabilities: `MACRO_AUTHORING`, `MACRO_DRAFT`,
-`MACRO_SEND`, `INTERNAL_NOTES`, `CONTENT_PANEL`. Note body, creator details,
-references и signed URLs не попадают в inbox/realtime/telemetry fixtures.
+Macro и Internal Note actions определяются exact IAM permissions, target
+authority и состоянием объекта. Note body, creator details, references и signed
+URLs не попадают в inbox/realtime/telemetry fixtures.
 Physical purge не является пользовательской delete-командой.
 
 ## 2. Support Macros
@@ -61,14 +59,14 @@ send outcome должен проходить messaging reconciliation из Task 
 | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Search               | `SupportInternalKnowledge_search`; required Case, q 1–240, cursor ≤ 2000, limit ≤ 100 | `READY`; item содержит document/revision/title/safe snippet               |
 | Open/download        | exact `open`; create/exchange one-shot grant; required Case/revision                   | `READY`; concealed revoke and source change typed                         |
-| Manage               | page/detail, text drafts/revisions, file upload/complete/scan, publish/archive        | `RELEASE_GATED`; exact document/revision state и idempotency опубликованы |
+| Manage               | page/detail, text drafts/revisions, file upload/complete/scan, publish/archive        | `READY`; storage/scan readiness возвращается как состояние dependency    |
 | Scan/revision        | `SupportKnowledgeManagedRevisionResponseDto`                                          | `EDITING / QUARANTINED / SCANNING / PUBLISHABLE / PUBLISHED / REJECTED`   |
 | Citation/provenance  | create/read/update Citation Draft; Message `knowledgeProvenance`                      | `READY`; durable send, CMS-only body-free provenance                      |
-| Emergency revoke     | governance + `rollbackAdmission` → `REVOKED` receipt                                  | `READY`; terminal hard-off                                                |
+| Emergency revoke     | versioned document revoke → `REVOKED` receipt                                         | `READY`; обычная доменная lifecycle-команда                               |
 | Retention            | append-only policy + governance                                                       | `READY`; legal hold/purge остаются maintenance-only                       |
 
-Operator surface готов. Admin `setCapabilities`, `setRetentionPolicy` и
-`resolveProblemReport` остаются release-gated до actor-bound unknown-outcome recovery.
+Operator surface готов. Admin retention и problem-report commands используют
+actor-bound unknown-outcome recovery; отдельного включения модуля нет.
 
 ## 4. Lead Control и operational alerts
 
@@ -93,11 +91,11 @@ override используют отдельные команды из Task 02; Le
 
 | Capability | Published contract / frontend rule | Status |
 | --- | --- | --- |
-| Admission | Project rollout, per-topic capability, VAPID key revision, active device count | `READY`; читается до effective delivery state |
+| Configuration | Provider readiness, per-topic authority, VAPID key revision, active device count | `READY`; читается до effective delivery state |
 | Preferences | Project-scoped GET/PATCH, version, Idempotency-Key | `READY`; только Attention и Assigned-to-me |
 | Devices | self-scoped list/register/revoke, write-only secrets, version/OCC | `READY`; local subscription не считается server registration |
 | Rotation/logout | endpoint + VAPID revision reconciliation, old-device revoke, logout cleanup | `READY`; local authority purged immediately |
-| Deep link | opaque 43-char single-use capability, backend re-authorization | `READY`; fragment-only handoff, scrub до login redirect |
+| Deep link | opaque 43-char single-use capability, backend re-authorization | `READY`; fragment очищается до login redirect |
 | Push copy | closed payload version/topics, generic title/body | `READY`; Case/Message/Note content не принимается |
 
 ### Planned New Case policy
@@ -108,20 +106,20 @@ override используют отдельные команды из Task 02; Le
 добавляет Lead-managed scope/effective window и personal preference. До этого
 UI не показывает toggle «Все новые обращения».
 
-## 6. Flags, owners и blockers
+## 6. Availability, owners и blockers
 
-| Slice                      | Published rollout / deployment control                                                | Owner / next task                              |
+| Slice                      | Stable availability model                                                             | Owner / next task                              |
 | -------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Macros/Notes/content panel | typed Content Rollout root; backend global hard-off                                   | Support Operations Content → Tasks 22/24       |
-| Internal Knowledge         | Project admission; docs flags `SUPPORT_INTERNAL_KNOWLEDGE_*`                          | Knowledge/Content → Task 25                    |
-| Lead Control               | typed disabled/not-ready errors; отдельный project rollout contract отсутствует       | Lead projection/rollout → Task 26              |
-| Operational Alerts         | command/read errors + worker hard-off; eligible owner target отсутствует              | Alerts/IAM → Task 26                           |
-| Browser notifications      | typed personal admission/preferences/devices/deep-link; server rollout              | `READY` → Task 27 complete                    |
+| Macros/Notes/content panel | IAM + lifecycle/revision state; модуль существует всегда                              | Support Operations Content → Tasks 22/24       |
+| Internal Knowledge         | IAM + store/scan readiness; неподготовленный store показывает `UNCONFIGURED`           | Knowledge/Content → Task 25                    |
+| Lead Control               | projection `BUILDING/READY/STALE/DEGRADED`                                            | Lead projection → Task 26                      |
+| Operational Alerts         | IAM + policy/projection readiness; eligible owner target отсутствует                  | Alerts/IAM → Task 26                           |
+| Browser notifications      | preferences/devices/deep-link + provider readiness                                    | `READY` → Task 27 complete                     |
 | New Case notification      | нет Project policy/topic `SUPPORT_CASE_CREATED`                                       | Backend 35 → Frontend 38                       |
-| Whole Support shell        | typed per-Project admission + rollout root; server `HARD_OFF`                         | `READY` → Task 28 complete                     |
+| Whole Support Platform     | session `capabilities.supportEnabled`; Project-level switch отсутствует               | ADR-0047 + route/navigation proof              |
 
-Backend environment flag не равен frontend feature flag. UI читает только
-typed server rollout/admission либо остаётся выключенным.
+UI не создаёт локальных feature flags. Deployment availability берётся из
+session, а состояние модулей — из typed domain/provider readiness.
 
 ## 7. Executable fixtures и recovery boundary
 

@@ -239,7 +239,6 @@ describe("SupportInboxPane", () => {
           ...items[0]!,
           slaSignal: {
             state: "AVAILABLE",
-            rolloutState: "SHADOW",
             signalCode: "SLA_AT_RISK",
             kind: "FIRST_HUMAN_RESPONSE",
             timing: "RUNNING",

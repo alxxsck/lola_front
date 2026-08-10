@@ -29,7 +29,6 @@ import { isMockMode } from "@/shared/config/data-mode";
 export interface SupportLeadSummary {
   computedAt: string;
   freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
-  slaRolloutState: "DISABLED" | "SHADOW";
   actionableBacklog: {
     unassignedCount: number;
     oldestUnassignedAgeMs: number | null;
@@ -57,13 +56,11 @@ export interface SupportLeadSummary {
   };
 }
 
-export interface SupportLeadAdmission {
-  rolloutState: "DISABLED" | "ENABLED";
+export interface SupportLeadReadiness {
   readinessState: "NOT_PROVISIONED" | "BUILDING" | "READY" | "STALE" | "DEGRADED";
   evaluatedAt: string;
   computedAt: string | null;
   projectionGeneration: number | null;
-  rolloutVersion: number | null;
   checkpoint: string | null;
   sourceHighWater: string | null;
   capabilities: {
@@ -187,7 +184,6 @@ export interface SupportLeadCaseRisk {
 export interface SupportLeadCaseRiskPage {
   computedAt: string;
   freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
-  slaRolloutState: "DISABLED" | "SHADOW";
   riskType: SupportLeadRiskType;
   items: SupportLeadCaseRisk[];
   nextCursor: string | null;
@@ -320,7 +316,7 @@ export type SupportLeadSource =
   & SupportOperationalAlertsSource;
 
 export interface SupportLeadDrilldownSource {
-  readAdmission(projectId: string, signal?: AbortSignal): Promise<SupportLeadAdmission>;
+  readReadiness(projectId: string, signal?: AbortSignal): Promise<SupportLeadReadiness>;
   readCapacityRisks(
     projectId: string,
     request?: { cursor?: string; limit?: number },
@@ -340,14 +336,12 @@ export interface SupportLeadDrilldownSource {
   ): Promise<SupportLeadActivityPage>;
 }
 
-function mapAdmission(response: SupportLeadAdmissionResponseDto): SupportLeadAdmission {
+function mapReadiness(response: SupportLeadAdmissionResponseDto): SupportLeadReadiness {
   return {
-    rolloutState: response.rolloutState,
     readinessState: response.readinessState,
     evaluatedAt: response.evaluatedAt,
     computedAt: response.computedAt,
     projectionGeneration: response.projectionGeneration,
-    rolloutVersion: response.rolloutVersion,
     checkpoint: response.checkpoint,
     sourceHighWater: response.sourceHighWater,
     capabilities: response.capabilities,
@@ -457,7 +451,6 @@ function mapSummary(response: SupportLeadSummaryResponseDto): SupportLeadSummary
   return {
     computedAt: response.computedAt,
     freshnessState: response.freshnessState,
-    slaRolloutState: response.slaRolloutState,
     actionableBacklog: response.data.actionableBacklog,
     sla: response.data.sla,
     workforce: response.data.workforce,
@@ -472,7 +465,6 @@ function mapCaseRisks(
   return {
     computedAt: response.computedAt,
     freshnessState: response.freshnessState,
-    slaRolloutState: response.slaRolloutState,
     riskType: response.riskType,
     items: response.data.items.map((item) => ({
       caseId: item.caseId,
@@ -556,9 +548,9 @@ function mapAlertDetail(
 }
 
 const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
-  async readAdmission(projectId, signal) {
+  async readReadiness(projectId, signal) {
     try {
-      return mapAdmission(await supportLeadAdmission(projectId, { signal }));
+      return mapReadiness(await supportLeadAdmission(projectId, { signal }));
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -752,15 +744,13 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
 };
 
 const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
-  async readAdmission(_, signal) {
+  async readReadiness(_, signal) {
     if (signal?.aborted) throw signal.reason;
     return {
-      rolloutState: "ENABLED",
       readinessState: "READY",
       evaluatedAt: new Date().toISOString(),
       computedAt: new Date().toISOString(),
       projectionGeneration: 7,
-      rolloutVersion: 1,
       checkpoint: "141",
       sourceHighWater: "141",
       capabilities: {
@@ -778,7 +768,6 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     return {
       computedAt: new Date().toISOString(),
       freshnessState: "READY",
-      slaRolloutState: "SHADOW",
       actionableBacklog: { unassignedCount: 3, oldestUnassignedAgeMs: 1_080_000 },
       sla: { atRiskCount: 2, breachedCount: 1, oldestDueAgeMs: 420_000 },
       workforce: {
@@ -857,7 +846,6 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     return {
       computedAt: now,
       freshnessState: "READY",
-      slaRolloutState: "SHADOW",
       riskType,
       items: cases[riskType],
       nextCursor: null,

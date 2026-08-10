@@ -75,11 +75,10 @@ describe("apiSupportSlaConfigurationSource", () => {
       mode: "SLA_SETTINGS",
       rootVersion: 1,
       actionEtag: etag,
-      rolloutState: "DISABLED",
       reconciliationCheckpoint: null,
       draft: null,
       publishedConfiguration: null,
-    });
+    } as never);
     vi.mocked(supportSlaConfigurationDiscardDraft).mockResolvedValue({
       intent: "DISCARD_SLA_DRAFT",
       actionEtag: etag,

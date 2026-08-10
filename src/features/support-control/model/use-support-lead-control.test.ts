@@ -2,20 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportLeadActivityPage,
-  SupportLeadAdmission,
   SupportLeadCapacityRiskPage,
   SupportLeadDrilldownSource,
   SupportLeadInvestigation,
+  SupportLeadReadiness,
 } from "@/features/support-control/api/support-lead-source";
 import { createSupportLeadControlController } from "./use-support-lead-control";
 
-const admission: SupportLeadAdmission = {
-  rolloutState: "ENABLED",
+const readiness: SupportLeadReadiness = {
   readinessState: "READY",
   evaluatedAt: "2026-08-09T08:00:00.000Z",
   computedAt: "2026-08-09T08:00:00.000Z",
   projectionGeneration: 4,
-  rolloutVersion: 2,
   checkpoint: "40",
   sourceHighWater: "40",
   capabilities: {
@@ -69,7 +67,7 @@ const activity: SupportLeadActivityPage = {
 
 function setup(overrides: Partial<SupportLeadDrilldownSource> = {}) {
   const source: SupportLeadDrilldownSource = {
-    readAdmission: vi.fn().mockResolvedValue(admission),
+    readReadiness: vi.fn().mockResolvedValue(readiness),
     readCapacityRisks: vi.fn().mockResolvedValue(capacity),
     readInvestigation: vi.fn().mockImplementation((_, caseId) => investigation(caseId)),
     readActivity: vi.fn().mockResolvedValue(activity),
@@ -90,26 +88,26 @@ function setup(overrides: Partial<SupportLeadDrilldownSource> = {}) {
 }
 
 describe("createSupportLeadControlController", () => {
-  it("uses admission as the first gate and does not read disabled aggregates", async () => {
-    const disabled = { ...admission, rolloutState: "DISABLED" as const };
+  it("uses projection readiness as the first gate", async () => {
+    const building = { ...readiness, readinessState: "BUILDING" as const };
     const { controller, source } = setup({
-      readAdmission: vi.fn().mockResolvedValue(disabled),
+      readReadiness: vi.fn().mockResolvedValue(building),
     });
 
     await controller.load();
 
-    expect(controller.admission.value?.rolloutState).toBe("DISABLED");
+    expect(controller.readiness.value?.readinessState).toBe("BUILDING");
     expect(source.readCapacityRisks).not.toHaveBeenCalled();
   });
 
-  it("purges concealed admission data before notifying the authority owner", async () => {
+  it("purges concealed readiness data before notifying the authority owner", async () => {
     const { controller, context } = setup({
-      readAdmission: vi.fn().mockRejectedValue(new ApiError(404, "NOT_FOUND", "hidden")),
+      readReadiness: vi.fn().mockRejectedValue(new ApiError(404, "NOT_FOUND", "hidden")),
     });
 
     await controller.load();
 
-    expect(controller.admission.value).toBeNull();
+    expect(controller.readiness.value).toBeNull();
     expect(controller.capacity.value).toBeNull();
     expect(context.onForbidden).toHaveBeenCalledOnce();
   });
@@ -193,17 +191,16 @@ describe("createSupportLeadControlController", () => {
     expect(controller.activity.value?.nextCursor).toBeNull();
   });
 
-  it("purges an open Case when a refreshed admission disables investigation", async () => {
-    const readAdmission = vi
+  it("purges an open Case when refreshed readiness removes investigation", async () => {
+    const readReadiness = vi
       .fn()
-      .mockResolvedValueOnce(admission)
+      .mockResolvedValueOnce(readiness)
       .mockResolvedValueOnce({
-        ...admission,
-        rolloutState: "DISABLED",
+        ...readiness,
         readinessState: "NOT_PROVISIONED",
-        capabilities: { ...admission.capabilities, investigation: "UNAVAILABLE" },
+        capabilities: { ...readiness.capabilities, investigation: "UNAVAILABLE" },
       });
-    const { controller } = setup({ readAdmission });
+    const { controller } = setup({ readReadiness });
     await controller.load();
     await controller.selectCase("case-1");
     expect(controller.investigation.value?.caseId).toBe("case-1");

@@ -7,15 +7,15 @@ import { useAuthStore } from "@/features/auth/auth.store";
 import type {
   SupportLeadCaseRiskPage,
   SupportLeadSummary,
-  SupportLeadAdmission,
   SupportLeadCapacityRiskPage,
+  SupportLeadReadiness,
   SupportOperationalAlertDetail,
   SupportOperationalAlertPage,
 } from "@/features/support-control/api/support-lead-source";
 import SupportControlPage from "./SupportControlPage.vue";
 
 const api = vi.hoisted(() => ({
-  readAdmission: vi.fn(),
+  readReadiness: vi.fn(),
   readSummary: vi.fn(),
   readCaseRisks: vi.fn(),
   readCapacityRisks: vi.fn(),
@@ -49,7 +49,6 @@ vi.mock("@/features/support-availability/api/support-availability-source", () =>
 const summary: SupportLeadSummary = {
   computedAt: "2026-08-06T10:00:00.000Z",
   freshnessState: "READY",
-  slaRolloutState: "SHADOW",
   actionableBacklog: { unassignedCount: 3, oldestUnassignedAgeMs: null },
   sla: { atRiskCount: 2, breachedCount: 1, oldestDueAgeMs: null },
   workforce: {
@@ -103,7 +102,7 @@ interface RenderOptions {
   allowAvailability?: boolean;
   allowAssignment?: boolean;
   allowActivity?: boolean;
-  admission?: SupportLeadAdmission;
+  readiness?: SupportLeadReadiness;
   capacityPage?: SupportLeadCapacityRiskPage;
 }
 
@@ -114,7 +113,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     allowAvailability = false,
     allowAssignment = false,
     allowActivity = false,
-    admission: admissionOverride,
+    readiness: readinessOverride,
     capacityPage,
     riskPage,
     alertsPage,
@@ -153,8 +152,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     projects: [],
   });
   api.readSummary.mockResolvedValue(value);
-  api.readAdmission.mockResolvedValue(admissionOverride ?? {
-    rolloutState: "ENABLED",
+  api.readReadiness.mockResolvedValue(readinessOverride ?? {
     readinessState: "READY",
     evaluatedAt: "2026-08-06T10:00:00.000Z",
     computedAt: "2026-08-06T10:00:00.000Z",
@@ -196,7 +194,6 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     Promise.resolve({
       computedAt: riskPage?.computedAt ?? "2026-08-06T10:00:00.000Z",
       freshnessState: riskPage?.freshnessState ?? "READY",
-      slaRolloutState: riskPage?.slaRolloutState ?? "SHADOW",
       riskType,
       items: riskPage?.items ?? [],
       nextCursor: riskPage?.nextCursor ?? null,
@@ -254,22 +251,20 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
 describe("SupportControlPage", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("marks the authoritative SLA counts as shadow-mode data", async () => {
+  it("renders authoritative SLA counts without release qualifiers", async () => {
     const { wrapper } = await render(summary);
 
-    expect(wrapper.text()).toContain("SLA рассчитывается в фоновом режиме");
+    expect(wrapper.text()).not.toContain("SLA рассчитывается в фоновом режиме");
     expect(wrapper.text()).toContain("Под риском");
   });
 
-  it("uses admission as a hard gate instead of showing disabled aggregates as zero", async () => {
+  it("uses projection readiness instead of showing unavailable aggregates as zero", async () => {
     const { wrapper } = await render(summary, {
-      admission: {
-        rolloutState: "DISABLED",
+      readiness: {
         readinessState: "NOT_PROVISIONED",
         evaluatedAt: "2026-08-06T10:00:00.000Z",
         computedAt: null,
         projectionGeneration: null,
-        rolloutVersion: null,
         checkpoint: null,
         sourceHighWater: null,
         capabilities: {
@@ -283,7 +278,7 @@ describe("SupportControlPage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Панель руководителя ещё не включена");
+    expect(wrapper.text()).toContain("Операционный снимок ещё не подготовлен");
     expect(api.readSummary).not.toHaveBeenCalled();
     expect(api.readCaseRisks).not.toHaveBeenCalled();
     expect(wrapper.text()).not.toContain("Без назначения");
@@ -322,7 +317,6 @@ describe("SupportControlPage", () => {
       riskPage: {
         computedAt: "2026-08-06T10:00:00.000Z",
         freshnessState: "READY",
-        slaRolloutState: "SHADOW",
         nextCursor: null,
         items: [
           {
@@ -346,15 +340,13 @@ describe("SupportControlPage", () => {
     expect(wrapper.find(".risk-row__select .sr-only").exists()).toBe(false);
   });
 
-  it("does not present disabled SLA as zero risk", async () => {
+  it("does not hide SLA behind a module state", async () => {
     const { wrapper } = await render({
       ...summary,
-      slaRolloutState: "DISABLED",
     });
 
-    expect(wrapper.text()).toContain("SLA не включён");
-    expect(wrapper.text()).toContain("Риски и нарушения пока не рассчитываются");
-    expect(wrapper.text()).not.toContain("Под риском");
+    expect(wrapper.text()).toContain("Под риском");
+    expect(wrapper.text()).not.toContain("SLA не включён");
   });
 
   it("purges cached operational data and leaves the route after permission revoke", async () => {
@@ -410,7 +402,6 @@ describe("SupportControlPage", () => {
       riskPage: {
         computedAt: "2026-08-06T10:00:00.000Z",
         freshnessState: "DEGRADED",
-        slaRolloutState: "SHADOW",
         items: [],
         nextCursor: null,
       },

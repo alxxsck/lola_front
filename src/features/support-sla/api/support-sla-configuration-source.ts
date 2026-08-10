@@ -15,11 +15,21 @@ import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
 import { noAuthRetryRequestOptions } from "@/shared/api/http/axios-instance";
 import { dataMode } from "@/shared/config/data-mode";
 
+export type SupportSlaConfigurationSnapshot = Pick<
+  SupportSlaConfigurationSettingsResponseDto,
+  | "mode"
+  | "rootVersion"
+  | "actionEtag"
+  | "reconciliationCheckpoint"
+  | "draft"
+  | "publishedConfiguration"
+>;
+
 export interface SupportSlaConfigurationSource {
   read(
     projectId: string,
     signal?: AbortSignal,
-  ): Promise<SupportSlaConfigurationSettingsResponseDto>;
+  ): Promise<SupportSlaConfigurationSnapshot>;
   replaceDraft(
     projectId: string,
     configuration: ReplaceSupportSlaConfigurationDraftDto,
@@ -129,7 +139,7 @@ export const apiSupportSlaConfigurationSource: SupportSlaConfigurationSource = {
   },
 };
 
-const mockRoots = new Map<string, SupportSlaConfigurationSettingsResponseDto>();
+const mockRoots = new Map<string, SupportSlaConfigurationSnapshot>();
 const mockReceipts = new Map<string, unknown>();
 
 function mockEtag(version: number): string {
@@ -186,13 +196,12 @@ function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
   };
 }
 
-function initialMockRoot(): SupportSlaConfigurationSettingsResponseDto {
+function initialMockRoot(): SupportSlaConfigurationSnapshot {
   const configuration = mockConfiguration();
   return {
     mode: "SLA_SETTINGS",
     rootVersion: 1,
     actionEtag: mockEtag(1),
-    rolloutState: "SHADOW",
     reconciliationCheckpoint: "mock-checkpoint-1",
     draft: null,
     publishedConfiguration: {
@@ -218,7 +227,7 @@ function initialMockRoot(): SupportSlaConfigurationSettingsResponseDto {
   };
 }
 
-function mockRoot(projectId: string): SupportSlaConfigurationSettingsResponseDto {
+function mockRoot(projectId: string): SupportSlaConfigurationSnapshot {
   const existing = mockRoots.get(projectId);
   if (existing) return existing;
   const root = initialMockRoot();

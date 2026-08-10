@@ -22,10 +22,6 @@ import {
   canManagePersonalSupportNotifications,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
 } from "@/features/support-workspace/model/support-workspace-access";
-import {
-  clearSupportWorkspaceShellAdmission,
-  ensureSupportWorkspaceShellAdmission,
-} from "@/features/support-workspace/model/support-workspace-shell-admission";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
@@ -101,6 +97,7 @@ const canReadRoles = computed(() =>
 );
 const canReadSupportWorkspace = computed(
   () =>
+    auth.supportEnabled === true &&
     canReadSupportWorkspaceAccess(
       auth.project?.effectivePermissionCodes ?? [],
     ),
@@ -124,27 +121,6 @@ const canReadSupportNotificationSettings = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
   ),
 );
-watch(
-  () => [
-    auth.user?.id ?? "",
-    auth.project?.id ?? "",
-    [...(auth.project?.effectivePermissionCodes ?? [])].sort().join(","),
-  ],
-  ([actorId, projectId]) => {
-    const permissions = auth.project?.effectivePermissionCodes ?? [];
-    if (!actorId || !projectId || !canReadSupportWorkspaceAccess(permissions)) {
-      clearSupportWorkspaceShellAdmission();
-      return;
-    }
-    void ensureSupportWorkspaceShellAdmission({
-      actorId,
-      projectId,
-      effectivePermissionCodes: permissions,
-    });
-  },
-  { immediate: true },
-);
-
 const navigationItems = computed(() => [
     {
       label: "CMS Users",
@@ -336,15 +312,6 @@ const navigationItems = computed(() => [
       supportSection: true,
     },
     {
-      label: "Запуск и возврат",
-      icon: "pi pi-shield",
-      to: "/support/settings/audit-rollout",
-      project: true,
-      projectPermission: "project.support.workspace.rollout.manage",
-      nested: true,
-      supportSection: true,
-    },
-    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",
@@ -435,6 +402,7 @@ const navigation = computed(() => {
     (item) =>
       (!item.project || Boolean(auth.project)) &&
       (!item.reportingFeature || reportingMvpEnabled) &&
+      (!item.supportSection || auth.supportEnabled === true) &&
       (!item.projectSectionRoot || canReadProjectSettings.value) &&
       (!item.platformPermission ||
         auth.user?.platformPermissionCodes?.includes(
@@ -636,7 +604,6 @@ watch(
 onBeforeUnmount(() => {
   removeNavigationIntentAfterEach();
   removeNavigationIntentOnError();
-  clearSupportWorkspaceShellAdmission();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
 });

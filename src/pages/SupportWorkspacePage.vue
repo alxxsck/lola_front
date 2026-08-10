@@ -111,7 +111,7 @@ import { createSupportInspectorController } from "@/features/support-inspector/m
 import { supportExternalWorkSource } from "@/features/support-external-work/api/support-external-work-source";
 import { createSupportCaseExternalWorkController } from "@/features/support-external-work/model/use-support-case-external-work";
 import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
-import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
+import FullViewportWorkspaceShell from "@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue";
 import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
 import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 import {
@@ -232,30 +232,14 @@ const inboxMode = computed<SupportInboxMode>(() => {
   if (routeConversationId.value) return "ALL_CONVERSATIONS";
   return route.query.mode === "cases" ? "CASES" : "ALL_CONVERSATIONS";
 });
-function isLegacyEndUserEntry(value: unknown): boolean {
-  return value === "live" || value === "users";
-}
-
-const legacyEndUserId = computed(() =>
-  isLegacyEndUserEntry(route.query.entry) &&
-  typeof route.query.endUserId === "string"
-    ? route.query.endUserId
-    : undefined,
-);
-
 function readWorkspaceSearchRoute(query: LocationQuery) {
-  if (isLegacyEndUserEntry(query.entry) && typeof query.endUserId === "string")
-    return readSupportSearchRoute({});
   return readSupportSearchRoute(query);
 }
-const canUseSupportSearch = computed(
-  () => canSearchSupport.value && !legacyEndUserId.value,
-);
+const canUseSupportSearch = computed(() => canSearchSupport.value);
 const inbox = createSupportInboxController(
   {
     projectId: () => auth.project?.id,
     mode: () => inboxMode.value,
-    endUserId: () => legacyEndUserId.value,
     async onForbidden() {
       try {
         await auth.refreshContext();
@@ -759,10 +743,7 @@ async function handleSupportKnowledgeForbidden(): Promise<void> {
 }
 
 async function handleSupportKnowledgeRejected(cause: ApiError): Promise<void> {
-  if (
-    cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_NOT_ADMITTED" ||
-    cause.code === "SUPPORT_INTERNAL_KNOWLEDGE_CAPABILITY_DISABLED"
-  ) {
+  if (cause.status === 403 || cause.status === 404) {
     await handleSupportKnowledgeForbidden();
     return;
   }
@@ -2954,25 +2935,19 @@ onMounted(async () => {
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
   await inbox.load();
-  if (legacyEndUserId.value) {
-    searchOpen.value = false;
-    supportSearch.reset();
-    supportViews.reset();
-  } else {
-    const initialCustomSearch = shouldLoadCustomSupportView(
-      route.query,
-      hasSupportSearchCriteria(searchState.value),
-    );
-    if (initialCustomSearch) {
-      searchOpen.value = true;
-      await supportViews.loadCustom();
-      if (!isCustomSupportViewRoute(route.query)) {
-        await router.replace({
-          query: { ...route.query, ...writeSupportViewSelection(null) },
-        });
-      }
-    } else await supportViews.load(readSupportViewSelection(route.query));
-  }
+  const initialCustomSearch = shouldLoadCustomSupportView(
+    route.query,
+    hasSupportSearchCriteria(searchState.value),
+  );
+  if (initialCustomSearch) {
+    searchOpen.value = true;
+    await supportViews.loadCustom();
+    if (!isCustomSupportViewRoute(route.query)) {
+      await router.replace({
+        query: { ...route.query, ...writeSupportViewSelection(null) },
+      });
+    }
+  } else await supportViews.load(readSupportViewSelection(route.query));
   if (
     !supportViews.selection.value &&
     hasSupportSearchCriteria(searchState.value)
@@ -2996,8 +2971,7 @@ watch(
       clearSupportSearchTimer();
       searchOpen.value = false;
       searchState.value = readSupportSearchRoute({});
-      if (!legacyEndUserId.value)
-        void syncSupportSearchRoute(searchState.value);
+      void syncSupportSearchRoute(searchState.value);
     }
     lastInboxSelectionKey.value = "";
     contextDrawerVisible.value = false;
@@ -3040,32 +3014,26 @@ watch(
     supportViewIntentKeys.clear();
     void (async () => {
       await inbox.load();
-      if (legacyEndUserId.value) {
-        searchOpen.value = false;
-        searchState.value = readSupportSearchRoute({});
-        supportSearch.reset();
-        supportViews.reset();
+      const resumeCustomSearch =
+        !projectChanged &&
+        shouldLoadCustomSupportView(
+          route.query,
+          hasSupportSearchCriteria(searchState.value),
+        );
+      if (resumeCustomSearch) {
+        searchOpen.value = true;
+        await supportViews.loadCustom();
       } else {
-        const resumeCustomSearch =
-          !projectChanged &&
-          shouldLoadCustomSupportView(
-            route.query,
-            hasSupportSearchCriteria(searchState.value),
-          );
-        if (resumeCustomSearch) {
-          searchOpen.value = true;
-          await supportViews.loadCustom();
-        } else
-          await supportViews.load(
-            projectChanged ? null : readSupportViewSelection(route.query),
-          );
-        if (
-          !supportViews.selection.value &&
-          !projectChanged &&
-          hasSupportSearchCriteria(searchState.value)
-        )
-          await supportSearch.search();
+        await supportViews.load(
+          projectChanged ? null : readSupportViewSelection(route.query),
+        );
       }
+      if (
+        !supportViews.selection.value &&
+        !projectChanged &&
+        hasSupportSearchCriteria(searchState.value)
+      )
+        await supportSearch.search();
       if (canReadAvailability.value) {
         await availability.load();
         availability.startHeartbeat();
@@ -3319,37 +3287,10 @@ watch(
   },
 );
 
-const legacyEndUserRouteScope = computed(() =>
-  [
-    isLegacyEndUserEntry(route.query.entry) ? route.query.entry : "",
-    legacyEndUserId.value ?? "",
-  ].join("\u0000"),
-);
-
 watch(inboxMode, async (mode) => {
   inbox.reset();
   await inbox.load();
   if (inboxModeIntent.value === mode) inboxModeIntent.value = null;
-});
-
-watch(legacyEndUserRouteScope, async () => {
-  inbox.reset();
-  supportSearch.reset();
-  supportViews.reset();
-  searchOpen.value = false;
-  if (legacyEndUserId.value) {
-    searchState.value = readSupportSearchRoute({});
-    await inbox.load();
-    return;
-  }
-  searchState.value = readSupportSearchRoute(route.query);
-  searchOpen.value = hasSupportSearchCriteria(searchState.value);
-  await Promise.all([
-    inbox.load(),
-    supportViews.load(readSupportViewSelection(route.query)),
-  ]);
-  if (searchOpen.value && !supportViews.selection.value)
-    await supportSearch.search();
 });
 
 watch(
