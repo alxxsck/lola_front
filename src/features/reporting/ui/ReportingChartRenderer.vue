@@ -11,6 +11,7 @@ const props = defineProps<{
   result?: ReportingQueryResult | null;
   visualization: ReportingVisualization;
   loading?: boolean;
+  compact?: boolean;
 }>();
 
 const number = new Intl.NumberFormat("ru");
@@ -109,7 +110,7 @@ function unitLabel(unit: string): string {
 </script>
 
 <template>
-  <section class="chart-shell" :aria-busy="loading">
+  <section class="chart-shell" :class="{ compact }" :aria-busy="loading">
     <div v-if="loading" class="chart-loading" aria-label="Расчёт отчёта">
       <Skeleton width="32%" height="2.8rem" />
       <Skeleton width="100%" height="12rem" />
@@ -320,6 +321,35 @@ function unitLabel(unit: string): string {
   align-content: center;
   gap: 20px;
   padding: 32px;
+}
+
+.compact .chart-loading,
+.compact .chart-empty {
+  min-height: 270px;
+}
+
+.compact .result-header {
+  padding-top: 12px;
+}
+
+.compact .kpi-result {
+  min-height: 190px;
+  padding-top: 42px;
+  padding-bottom: 42px;
+}
+
+.compact .kpi-result strong {
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+}
+
+.compact .line-chart,
+.compact .bar-chart,
+.compact .donut-layout {
+  min-height: 240px;
+}
+
+.compact .line-chart svg {
+  height: 180px;
 }
 
 .chart-empty {
