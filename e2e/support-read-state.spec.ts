@@ -88,7 +88,7 @@ test("keeps unread history and composer controls usable on mobile", async ({
   }));
 
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
-  expect(geometry.bodyOverflow).toBe("hidden");
+  expect(geometry.bodyOverflow).toBe("visible");
   expect(geometry.controls).toHaveLength(4);
   expect(geometry.controls.every((control) => control.height >= 44)).toBe(true);
 

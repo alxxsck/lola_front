@@ -9,6 +9,10 @@ Case Intelligence decision; backend 35 — New Case Notification Policy.
 
 **Status:** blocked-by-backend-35
 
+**Delivery invariant:** после появления backend contract это постоянная
+permission-gated capability. Frontend feature flags, env toggles, staged
+rollout и legacy notification editor не допускаются.
+
 - [ ] Project control виден только с
       `project.support.notification_policy.manage`; role name не используется.
 - [ ] Editor поддерживает `OFF/IMMEDIATE/DIGEST`, CREATE/REOPEN, product

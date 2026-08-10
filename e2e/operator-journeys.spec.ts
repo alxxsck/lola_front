@@ -813,7 +813,7 @@ test("documentation catalog opens the scenario guide", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Документация Retenive", level: 1 }),
   ).toBeVisible();
-  await expect(page.locator(".guide-card")).toHaveCount(3);
+  await expect(page.locator(".guide-card")).toHaveCount(5);
   await page.getByRole("link", { name: /Как работают сценарии Retenive/ }).click();
   await expect(page).toHaveURL(/\/docs\/scenarios$/);
   await expect(
@@ -2382,7 +2382,9 @@ test("online session opens the Live conversation workspace", async ({
       .click();
   }
 
-  await expect(workspace.getByText("Только просмотр Live", { exact: true })).toBeVisible();
+  await expect(
+    workspace.locator('[data-testid^="readonly-status-"]:visible'),
+  ).toHaveText("Только просмотр");
   await expect(
     workspace.getByRole("textbox", { name: "Ответ пользователю" }),
   ).toHaveCount(0);

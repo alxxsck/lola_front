@@ -159,6 +159,73 @@
         ],
         "type": "object"
       },
+      "ActivateCaseIntelligenceReleaseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "calibratorRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "datasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "detectionPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "escalationPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "modelProfileRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "routingOverlayRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "safetyPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetStatus": {
+            "enum": [
+              "SHADOW",
+              "CANARY",
+              "LIVE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "targetStatus",
+          "detectionPolicyRevisionId",
+          "escalationPolicyRevisionId",
+          "safetyPolicyRevisionId",
+          "modelProfileRevisionId",
+          "calibratorRevisionId",
+          "datasetRevisionId",
+          "routingOverlayRevisionId",
+          "compilerRevisionId"
+        ],
+        "type": "object"
+      },
       "ActiveConnectionResponseDto": {
         "properties": {
           "connectedAt": {
@@ -5889,6 +5956,11 @@
             "type": "boolean"
           },
           "cmsRead": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CmsProfileFieldVisibilityRuleDto"
+              }
+            ],
             "oneOf": [
               {
                 "additionalProperties": false,
@@ -9028,6 +9100,1793 @@
         ],
         "type": "object"
       },
+      "CaseIntelligenceAmbiguousRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "OFFER",
+              "ASK_REASON_ONCE",
+              "ESCALATE"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "phrases": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "phrases",
+          "locales",
+          "action"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceAttributePredicateDto": {
+        "additionalProperties": false,
+        "properties": {
+          "attributeCode": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "EQ",
+              "IN",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "attributeCode",
+          "operator",
+          "value"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceAudienceDto": {
+        "additionalProperties": false,
+        "properties": {
+          "exclude": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceAttributePredicateDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "include": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceAttributePredicateDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": [
+          "include",
+          "exclude"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceBudgetPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "costMicroUsdPerMillionTokens": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyCostMicroUsdHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyCostMicroUsdSoftCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenSoftCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "maxConcurrentRuns": {
+            "maximum": 1024,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxRunCostMicroUsd": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "routeMaxEstimatedTokens": {
+            "maximum": 20000,
+            "minimum": 64,
+            "type": "number"
+          }
+        },
+        "required": [
+          "dailyTokenSoftCap",
+          "dailyTokenHardCap",
+          "dailyCostMicroUsdSoftCap",
+          "dailyCostMicroUsdHardCap",
+          "maxConcurrentRuns",
+          "maxRunCostMicroUsd",
+          "routeMaxEstimatedTokens",
+          "costMicroUsdPerMillionTokens"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceBudgetRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "costMicroUsdPerMillionTokens": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "dailyCostMicroUsdHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyCostMicroUsdSoftCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenSoftCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxConcurrentRuns": {
+            "maximum": 1024,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxRunCostMicroUsd": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "publishedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "routeMaxEstimatedTokens": {
+            "maximum": 20000,
+            "minimum": 64,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "dailyTokenSoftCap",
+          "dailyTokenHardCap",
+          "dailyCostMicroUsdSoftCap",
+          "dailyCostMicroUsdHardCap",
+          "maxConcurrentRuns",
+          "maxRunCostMicroUsd",
+          "routeMaxEstimatedTokens",
+          "costMicroUsdPerMillionTokens",
+          "id",
+          "projectId",
+          "version",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceCommandLookupResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceBudgetRevisionResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+              },
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceCorrectionResponseDto"
+              }
+            ]
+          },
+          "resultKind": {
+            "enum": [
+              "DETECTION_POLICY",
+              "ESCALATION_POLICY",
+              "BUDGET_POLICY",
+              "RELEASE",
+              "CORRECTION"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "resultKind",
+          "result",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceConfidenceTiersDto": {
+        "additionalProperties": false,
+        "properties": {
+          "autoApply": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "monitor": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "suggest": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "monitor",
+          "suggest",
+          "autoApply"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceCorrectedOutputsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "caseDecision": {
+            "enum": [
+              "NO_CASE",
+              "CREATE",
+              "ATTACH",
+              "REOPEN",
+              "DEFER"
+            ],
+            "type": "string"
+          },
+          "conversationClass": {
+            "enum": [
+              "CASUAL",
+              "PRODUCT_INQUIRY",
+              "PRODUCT_PROBLEM"
+            ],
+            "type": "string"
+          },
+          "handoffAction": {
+            "enum": [
+              "NONE",
+              "OFFER",
+              "ASK_REASON_ONCE",
+              "ESCALATE"
+            ],
+            "type": "string"
+          },
+          "reviewDisposition": {
+            "enum": [
+              "NONE",
+              "MONITOR",
+              "QA_REVIEW"
+            ],
+            "type": "string"
+          },
+          "safetyDecision": {
+            "enum": [
+              "CLEAR",
+              "SUSPECTED",
+              "URGENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationClass",
+          "caseDecision",
+          "reviewDisposition",
+          "handoffAction",
+          "safetyDecision"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceCorrectionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "correctedOutputs": {
+            "additionalProperties": false,
+            "properties": {
+              "caseDecision": {
+                "enum": [
+                  "NO_CASE",
+                  "CREATE",
+                  "ATTACH",
+                  "REOPEN",
+                  "DEFER"
+                ],
+                "type": "string"
+              },
+              "conversationClass": {
+                "enum": [
+                  "CASUAL",
+                  "PRODUCT_INQUIRY",
+                  "PRODUCT_PROBLEM"
+                ],
+                "type": "string"
+              },
+              "handoffAction": {
+                "enum": [
+                  "NONE",
+                  "OFFER",
+                  "ASK_REASON_ONCE",
+                  "ESCALATE"
+                ],
+                "type": "string"
+              },
+              "reviewDisposition": {
+                "enum": [
+                  "NONE",
+                  "MONITOR",
+                  "QA_REVIEW"
+                ],
+                "type": "string"
+              },
+              "safetyDecision": {
+                "enum": [
+                  "CLEAR",
+                  "SUSPECTED",
+                  "URGENT"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "conversationClass",
+              "caseDecision",
+              "reviewDisposition",
+              "handoffAction",
+              "safetyDecision"
+            ],
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "decisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 2000,
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCode": {
+            "maxLength": 64,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "decisionId",
+          "reasonCode",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceCurrentResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "allowedActions": {
+            "items": {
+              "enum": [
+                "SAVE_DETECTION_DRAFT",
+                "SAVE_ESCALATION_DRAFT",
+                "PREVIEW",
+                "PUBLISH",
+                "ACTIVATE",
+                "PAUSE",
+                "ROLLBACK",
+                "CORRECT_DECISION",
+                "SAVE_BUDGET_DRAFT",
+                "PUBLISH_BUDGET"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "budget": {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceBudgetRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              },
+              "published": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceBudgetRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              }
+            },
+            "required": [
+              "published",
+              "draft"
+            ],
+            "type": "object"
+          },
+          "detection": {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              },
+              "published": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              }
+            },
+            "required": [
+              "published",
+              "draft"
+            ],
+            "type": "object"
+          },
+          "escalation": {
+            "additionalProperties": false,
+            "properties": {
+              "draft": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              },
+              "published": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+                  }
+                ],
+                "nullable": true
+              }
+            },
+            "required": [
+              "published",
+              "draft"
+            ],
+            "type": "object"
+          },
+          "minimumSafetyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "release": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "runtime": {
+            "additionalProperties": false,
+            "properties": {
+              "currentReleaseRevisionId": {
+                "format": "uuid",
+                "nullable": true,
+                "type": "string"
+              },
+              "reconciledSafetyRevisionId": {
+                "format": "uuid",
+                "nullable": true,
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "SHADOW",
+                  "CANARY",
+                  "LIVE",
+                  "PAUSED",
+                  "ROLLED_BACK",
+                  "DEGRADED",
+                  "SAFETY_RECONCILING"
+                ],
+                "type": "string"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "version": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "version",
+              "status",
+              "currentReleaseRevisionId"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "allowedActions"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDecisionLogItemDto": {
+        "additionalProperties": false,
+        "properties": {
+          "analysisRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "assistantReleaseGate": {
+            "enum": [
+              "BLOCKED",
+              "SAFE_FALLBACK",
+              "ALLOWED"
+            ],
+            "type": "string"
+          },
+          "calibratorRevisionId": {
+            "maxLength": 128,
+            "nullable": true,
+            "type": "string"
+          },
+          "caseDecision": {
+            "enum": [
+              "NO_CASE",
+              "CREATE",
+              "ATTACH",
+              "REOPEN",
+              "DEFER"
+            ],
+            "type": "string"
+          },
+          "caseId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "nullable": true,
+            "type": "string"
+          },
+          "confidence": {
+            "nullable": true,
+            "pattern": "^(0|1|0\\.\\d{1,4})$",
+            "type": "string"
+          },
+          "conversationClass": {
+            "enum": [
+              "CASUAL",
+              "PRODUCT_INQUIRY",
+              "PRODUCT_PROBLEM"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "conversationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "corrections": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceCorrectionResponseDto"
+            },
+            "type": "array"
+          },
+          "datasetRevisionId": {
+            "maxLength": 128,
+            "nullable": true,
+            "type": "string"
+          },
+          "decidedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "detectionPolicyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "detectionState": {
+            "enum": [
+              "PENDING",
+              "READY",
+              "FAILED",
+              "DEFERRED",
+              "BUDGET_REJECTED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "endUserId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "escalationPolicyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "escalationState": {
+            "enum": [
+              "PENDING",
+              "READY",
+              "FAILED",
+              "DEFERRED",
+              "BUDGET_REJECTED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceEvidenceRefDto"
+            },
+            "type": "array"
+          },
+          "handoffAction": {
+            "enum": [
+              "NONE",
+              "OFFER",
+              "ASK_REASON_ONCE",
+              "ESCALATE"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "legacyUnpinned": {
+            "type": "boolean"
+          },
+          "matchedRuleCodes": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "modelProfileRevisionId": {
+            "maxLength": 128,
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reasonCodes": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "releaseRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewDisposition": {
+            "enum": [
+              "NONE",
+              "MONITOR",
+              "QA_REVIEW"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "routingOverlayRevisionId": {
+            "maxLength": 128,
+            "nullable": true,
+            "type": "string"
+          },
+          "safetyDecision": {
+            "enum": [
+              "CLEAR",
+              "SUSPECTED",
+              "URGENT"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "safetyPolicyRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "safetyState": {
+            "enum": [
+              "PENDING",
+              "READY",
+              "FAILED",
+              "DEFERRED",
+              "BUDGET_REJECTED",
+              "PAUSED"
+            ],
+            "type": "string"
+          },
+          "signalId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "usageAnalysisRunId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "signalId",
+          "endUserId",
+          "caseDecision",
+          "detectionState",
+          "escalationState",
+          "safetyState",
+          "assistantReleaseGate",
+          "reasonCodes",
+          "matchedRuleCodes",
+          "evidenceRefs",
+          "legacyUnpinned",
+          "corrections",
+          "decidedAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDecisionLogPageDto": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceDecisionLogItemDto"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "maxLength": 2048,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDetectionCompileResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compiledPolicy": {
+            "$ref": "#/components/schemas/CompiledCaseIntelligenceDetectionPolicyDto"
+          },
+          "compiledPolicyHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "enum": [
+              "case-intelligence-compiler-v1"
+            ],
+            "type": "string"
+          },
+          "routerInput": {
+            "additionalProperties": false,
+            "properties": {
+              "context": {
+                "additionalProperties": false,
+                "properties": {
+                  "maxCandidateCases": {
+                    "maximum": 20,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "maxContextMessages": {
+                    "maximum": 50,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "maxSignals": {
+                    "maximum": 20,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "maxSignals",
+                  "maxContextMessages",
+                  "maxCandidateCases"
+                ],
+                "type": "object"
+              },
+              "scope": {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              "topics": {
+                "items": {
+                  "$ref": "#/components/schemas/CaseIntelligenceTopicDto"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "scope",
+              "topics",
+              "context"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerRevisionId"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDetectionPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ambiguityAction": {
+            "enum": [
+              "DEFER",
+              "REVIEW"
+            ],
+            "type": "string"
+          },
+          "attachWindowMs": {
+            "minimum": 60000,
+            "type": "number"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/CaseIntelligenceAudienceDto"
+          },
+          "candidateLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "TELEGRAM"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "confidenceTiers": {
+            "$ref": "#/components/schemas/CaseIntelligenceConfidenceTiersDto"
+          },
+          "debounceMs": {
+            "maximum": 60000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "fallbackLocale": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "modelProfileRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "reopenWindowMs": {
+            "minimum": 60000,
+            "type": "number"
+          },
+          "routerContext": {
+            "$ref": "#/components/schemas/CaseIntelligenceRouterContextDto"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceDetectionRuleDto"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "runtimeLimits": {
+            "$ref": "#/components/schemas/CaseIntelligenceRuntimeLimitsDto"
+          },
+          "scope": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceTopicDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "scope",
+          "locales",
+          "channels",
+          "fallbackLocale",
+          "audience",
+          "topics",
+          "rules",
+          "attachWindowMs",
+          "reopenWindowMs",
+          "candidateLimit",
+          "confidenceTiers",
+          "ambiguityAction",
+          "routerContext",
+          "runtimeLimits",
+          "debounceMs",
+          "modelProfileRevisionId"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDetectionRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compiledPolicy": {
+            "$ref": "#/components/schemas/CompiledCaseIntelligenceDetectionPolicyDto"
+          },
+          "compiledPolicyHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceDetectionPolicyDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "publishedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "status",
+          "definition",
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerRevisionId",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDetectionRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "NO_CASE",
+              "CREATE",
+              "ATTACH",
+              "REOPEN",
+              "DEFER"
+            ],
+            "type": "string"
+          },
+          "attributeCode": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "EXACT",
+              "PHRASE",
+              "ATTRIBUTE",
+              "SEMANTIC_STATEMENT"
+            ],
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "operator": {
+            "enum": [
+              "EQ",
+              "IN",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE"
+            ],
+            "type": "string"
+          },
+          "phrase": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "statement": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "kind",
+          "action",
+          "priority"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDryRunDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceDetectionPolicyDto"
+          },
+          "input": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition",
+          "input",
+          "locale"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceDryRunResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "caseDecision": {
+            "enum": [
+              "NO_CASE",
+              "CREATE",
+              "ATTACH",
+              "REOPEN",
+              "DEFER"
+            ],
+            "type": "string"
+          },
+          "matchedRuleCodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reasonCode": {
+            "maxLength": 64,
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseDecision",
+          "reasonCode",
+          "matchedRuleCodes"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceEscalationCompileResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compiledPolicy": {
+            "$ref": "#/components/schemas/CompiledCaseIntelligenceEscalationPolicyDto"
+          },
+          "compiledPolicyHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "enum": [
+              "case-intelligence-compiler-v1"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerRevisionId"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceEscalationPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ambiguousHumanTermRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceAmbiguousRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "clarificationLimit": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          },
+          "doNotEscalateRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligencePhraseRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "explicitHumanRequestRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligencePhraseRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "failedResolutionLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "noMatchLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "repeatLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "routingPolicyRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceScenarioDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "trustedOutcomeLimits": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceTrustedOutcomeLimitDto"
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "explicitHumanRequestRules",
+          "ambiguousHumanTermRules",
+          "trustedOutcomeLimits",
+          "scenarios",
+          "clarificationLimit",
+          "failedResolutionLimit",
+          "noMatchLimit",
+          "repeatLimit",
+          "routingPolicyRevisionId"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceEscalationRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compiledPolicy": {
+            "$ref": "#/components/schemas/CompiledCaseIntelligenceEscalationPolicyDto"
+          },
+          "compiledPolicyHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceEscalationPolicyDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "object"
+          },
+          "publishedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "status",
+          "definition",
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerRevisionId",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceEvidenceRefDto": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "SIGNAL",
+              "MESSAGE",
+              "CASE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceLifecycleCommandDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligencePhraseRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "phrases": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "phrases",
+          "locales"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceReleaseRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "activatedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "activatedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "admissionReceiptId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "calibratorRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "datasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "detectionPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "escalationPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "modelProfileRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "previousReleaseRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "routingOverlayRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "safetyPolicyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "SHADOW",
+              "CANARY",
+              "LIVE",
+              "PAUSED",
+              "ROLLED_BACK",
+              "DEGRADED",
+              "SAFETY_RECONCILING"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "version",
+          "status",
+          "detectionPolicyRevisionId",
+          "escalationPolicyRevisionId",
+          "safetyPolicyRevisionId",
+          "modelProfileRevisionId",
+          "calibratorRevisionId",
+          "datasetRevisionId",
+          "routingOverlayRevisionId",
+          "compilerRevisionId",
+          "admissionReceiptId",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceRouterContextDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maxCandidateCases": {
+            "maximum": 20,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxContextMessages": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          },
+          "maxSignals": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "maxSignals",
+          "maxContextMessages",
+          "maxCandidateCases"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceRuntimeLimitsDto": {
+        "additionalProperties": false,
+        "properties": {
+          "maxEvaluationMs": {
+            "maximum": 5000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxRulesEvaluated": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxSemanticStatements": {
+            "maximum": 50,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "maxRulesEvaluated",
+          "maxSemanticStatements",
+          "maxEvaluationMs"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceScenarioDto": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "OFFER",
+              "ASK_REASON_ONCE",
+              "ESCALATE"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "dataToCollect": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "reasonCode": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "IMMEDIATE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "urgency",
+          "reasonCode",
+          "dataToCollect"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceTopicDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "negativeExamples": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "positiveExamples": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "required": [
+          "code",
+          "description",
+          "positiveExamples",
+          "negativeExamples"
+        ],
+        "type": "object"
+      },
+      "CaseIntelligenceTrustedOutcomeLimitDto": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "outcome": {
+            "enum": [
+              "NO_ANSWER",
+              "KNOWLEDGE_INSUFFICIENT",
+              "TOOL_FAILED",
+              "UNRESOLVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "limit"
+        ],
+        "type": "object"
+      },
       "CaseVerificationEstimateResponseDto": {
         "properties": {
           "complete": {
@@ -11943,6 +13802,28 @@
         ],
         "type": "object"
       },
+      "CmsProfileFieldVisibilityRuleDto": {
+        "properties": {
+          "access": {
+            "enum": [
+              "BASE",
+              "RESTRICTED"
+            ],
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "HIDDEN",
+              "VISIBLE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "type": "object"
+      },
       "CmsProfileListResponseDto": {
         "properties": {
           "items": {
@@ -13088,6 +14969,382 @@
         },
         "required": [
           "voice"
+        ],
+        "type": "object"
+      },
+      "CompiledCaseIntelligenceDetectionPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ambiguityAction": {
+            "enum": [
+              "DEFER",
+              "REVIEW"
+            ],
+            "type": "string"
+          },
+          "attachWindowMs": {
+            "minimum": 60000,
+            "type": "number"
+          },
+          "audience": {
+            "$ref": "#/components/schemas/CaseIntelligenceAudienceDto"
+          },
+          "candidateLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "TELEGRAM"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "compilerRevisionId": {
+            "enum": [
+              "case-intelligence-compiler-v1"
+            ],
+            "type": "string"
+          },
+          "confidenceTiers": {
+            "$ref": "#/components/schemas/CaseIntelligenceConfidenceTiersDto"
+          },
+          "debounceMs": {
+            "maximum": 60000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "fallbackLocale": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "modelProfileRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "reopenWindowMs": {
+            "minimum": 60000,
+            "type": "number"
+          },
+          "routerContext": {
+            "$ref": "#/components/schemas/CaseIntelligenceRouterContextDto"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/CompiledCaseIntelligenceDetectionRuleDto"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "runtimeLimits": {
+            "$ref": "#/components/schemas/CaseIntelligenceRuntimeLimitsDto"
+          },
+          "schemaVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "scope": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceTopicDto"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "scope",
+          "locales",
+          "channels",
+          "fallbackLocale",
+          "audience",
+          "topics",
+          "attachWindowMs",
+          "reopenWindowMs",
+          "candidateLimit",
+          "confidenceTiers",
+          "ambiguityAction",
+          "routerContext",
+          "runtimeLimits",
+          "debounceMs",
+          "modelProfileRevisionId",
+          "schemaVersion",
+          "compilerRevisionId",
+          "rules"
+        ],
+        "type": "object"
+      },
+      "CompiledCaseIntelligenceDetectionRuleDto": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "NO_CASE",
+              "CREATE",
+              "ATTACH",
+              "REOPEN",
+              "DEFER"
+            ],
+            "type": "string"
+          },
+          "attributeCode": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "EXACT",
+              "PHRASE",
+              "ATTRIBUTE",
+              "SEMANTIC_STATEMENT"
+            ],
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "normalizedPhrases": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Locale-keyed, NFKC-normalized phrase forms emitted only for text rules.",
+            "type": "object"
+          },
+          "operator": {
+            "enum": [
+              "EQ",
+              "IN",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE"
+            ],
+            "type": "string"
+          },
+          "phrase": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "priority": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "number"
+          },
+          "statement": {
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "kind",
+          "action",
+          "priority"
+        ],
+        "type": "object"
+      },
+      "CompiledCaseIntelligenceEscalationPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "ambiguousHumanTermRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceAmbiguousRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "clarificationLimit": {
+            "maximum": 10,
+            "minimum": 0,
+            "type": "number"
+          },
+          "doNotEscalateRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligencePhraseRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "explicitHumanRequestRules": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligencePhraseRuleDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "failedResolutionLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "noMatchLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "repeatLimit": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "number"
+          },
+          "routingPolicyRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceScenarioDto"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "schemaVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "trustedOutcomeLimits": {
+            "items": {
+              "$ref": "#/components/schemas/CaseIntelligenceTrustedOutcomeLimitDto"
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "explicitHumanRequestRules",
+          "ambiguousHumanTermRules",
+          "trustedOutcomeLimits",
+          "scenarios",
+          "clarificationLimit",
+          "failedResolutionLimit",
+          "noMatchLimit",
+          "repeatLimit",
+          "routingPolicyRevisionId",
+          "schemaVersion"
+        ],
+        "type": "object"
+      },
+      "CompiledPlatformCaseIntelligenceSafetyPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "calibratorRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "TELEGRAM"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": "array"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyClassDto"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "classifierRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "gates": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyGateDto"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "labelledDatasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          },
+          "sentinelDatasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "revisionId",
+          "classifierRevisionId",
+          "calibratorRevisionId",
+          "labelledDatasetRevisionId",
+          "sentinelDatasetRevisionId",
+          "locales",
+          "channels",
+          "classes",
+          "gates",
+          "schemaVersion"
         ],
         "type": "object"
       },
@@ -14402,6 +16659,32 @@
           "deltaAvailableUsd",
           "expectedAccountVersion",
           "reason"
+        ],
+        "type": "object"
+      },
+      "CorrectCaseIntelligenceDecisionDto": {
+        "additionalProperties": false,
+        "properties": {
+          "correctedOutputs": {
+            "$ref": "#/components/schemas/CaseIntelligenceCorrectedOutputsDto"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "reasonCode": {
+            "maxLength": 64,
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "reasonCode",
+          "correctedOutputs"
         ],
         "type": "object"
       },
@@ -17481,8 +19764,23 @@
         "type": "object"
       },
       "EndUserCaseCostBudgetResponseDto": {
+        "additionalProperties": false,
         "properties": {
           "backlogCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "budgetRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "circuitRevisionId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "deadCount": {
             "minimum": 0,
             "type": "number"
           },
@@ -17500,32 +19798,79 @@
             "nullable": true,
             "type": "string"
           },
+          "projectDailyCostMicroUsdHardCap": {
+            "nullable": true,
+            "type": "string"
+          },
+          "projectDailyCostMicroUsdSoftCap": {
+            "nullable": true,
+            "type": "string"
+          },
           "projectDailyTokenHardCap": {
+            "nullable": true,
+            "type": "string"
+          },
+          "projectDailyTokenSoftCap": {
+            "nullable": true,
+            "type": "string"
+          },
+          "retryCount": {
             "type": "string"
           }
         },
         "required": [
           "emergencyPaused",
+          "budgetRevisionId",
+          "circuitRevisionId",
+          "projectDailyTokenSoftCap",
           "projectDailyTokenHardCap",
+          "projectDailyCostMicroUsdSoftCap",
+          "projectDailyCostMicroUsdHardCap",
           "backlogCount",
           "oldestPendingAt",
-          "degradedReasons"
+          "degradedReasons",
+          "retryCount",
+          "deadCount"
         ],
         "type": "object"
       },
       "EndUserCaseCostOperationResponseDto": {
+        "additionalProperties": false,
         "properties": {
+          "billedCostComplete": {
+            "type": "boolean"
+          },
           "billedCostUsd": {
+            "nullable": true,
+            "type": "string"
+          },
+          "cachedInputTokens": {
+            "type": "string"
+          },
+          "cacheWriteInputTokens": {
             "type": "string"
           },
           "caseCount": {
             "minimum": 0,
             "type": "number"
           },
+          "durationSeconds": {
+            "type": "string"
+          },
           "estimatedCostUsd": {
             "type": "string"
           },
+          "inputTokens": {
+            "type": "string"
+          },
+          "missingBilledCostCount": {
+            "minimum": 0,
+            "type": "number"
+          },
           "operation": {
+            "type": "string"
+          },
+          "outputTokens": {
             "type": "string"
           },
           "requestCount": {
@@ -17541,14 +19886,30 @@
           "requestCount",
           "caseCount",
           "totalTokens",
+          "inputTokens",
+          "outputTokens",
+          "cachedInputTokens",
+          "cacheWriteInputTokens",
+          "durationSeconds",
           "billedCostUsd",
+          "billedCostComplete",
+          "missingBilledCostCount",
           "estimatedCostUsd"
         ],
         "type": "object"
       },
       "EndUserCaseCostSummaryResponseDto": {
+        "additionalProperties": false,
         "properties": {
+          "acceptedDecisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "billedCostComplete": {
+            "type": "boolean"
+          },
           "billedCostUsd": {
+            "nullable": true,
             "type": "string"
           },
           "budget": {
@@ -17558,8 +19919,28 @@
             "format": "date-time",
             "type": "string"
           },
+          "correctAcceptedDecisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "correctedDecisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "costPerAcceptedDecisionUsd": {
+            "nullable": true,
+            "type": "string"
+          },
+          "costPerCorrectAcceptedDecisionUsd": {
+            "nullable": true,
+            "type": "string"
+          },
           "estimatedCostUsd": {
             "type": "string"
+          },
+          "missingBilledCostCount": {
+            "minimum": 0,
+            "type": "number"
           },
           "operations": {
             "items": {
@@ -17571,15 +19952,32 @@
             "minimum": 0,
             "type": "number"
           },
+          "reviewedAcceptedDecisionCount": {
+            "minimum": 0,
+            "type": "number"
+          },
           "totalTokens": {
             "type": "string"
+          },
+          "unreviewedAcceptedDecisionCount": {
+            "minimum": 0,
+            "type": "number"
           }
         },
         "required": [
           "requestCount",
           "totalTokens",
           "billedCostUsd",
+          "billedCostComplete",
+          "missingBilledCostCount",
           "estimatedCostUsd",
+          "acceptedDecisionCount",
+          "reviewedAcceptedDecisionCount",
+          "unreviewedAcceptedDecisionCount",
+          "correctAcceptedDecisionCount",
+          "correctedDecisionCount",
+          "costPerAcceptedDecisionUsd",
+          "costPerCorrectAcceptedDecisionUsd",
           "operations",
           "budget",
           "calculatedAt"
@@ -27964,6 +30362,399 @@
         ],
         "type": "object"
       },
+      "PlatformCaseIntelligenceCircuitPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "dailyCostMicroUsdHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "failureMinimumSamples": {
+            "maximum": 1000000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "failureRatePermille": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "failureWindowMinutes": {
+            "maximum": 1440,
+            "minimum": 1,
+            "type": "number"
+          },
+          "maxConcurrentRuns": {
+            "maximum": 8192,
+            "minimum": 1,
+            "type": "number"
+          },
+          "ordinaryPaused": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ordinaryPaused",
+          "dailyTokenHardCap",
+          "dailyCostMicroUsdHardCap",
+          "maxConcurrentRuns",
+          "failureWindowMinutes",
+          "failureMinimumSamples",
+          "failureRatePermille"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceCircuitRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "dailyCostMicroUsdHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "dailyTokenHardCap": {
+            "pattern": "^[1-9]\\d{0,14}$",
+            "type": "string"
+          },
+          "failureMinimumSamples": {
+            "maximum": 1000000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "failureRatePermille": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "failureWindowMinutes": {
+            "maximum": 1440,
+            "minimum": 1,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxConcurrentRuns": {
+            "maximum": 8192,
+            "minimum": 1,
+            "type": "number"
+          },
+          "ordinaryPaused": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "ordinaryPaused",
+          "dailyTokenHardCap",
+          "dailyCostMicroUsdHardCap",
+          "maxConcurrentRuns",
+          "failureWindowMinutes",
+          "failureMinimumSamples",
+          "failureRatePermille",
+          "id",
+          "version",
+          "status",
+          "publishedAt",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceSafetyClassDto": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "SELF_HARM_OR_SUICIDE",
+              "CREDIBLE_THREAT_OR_VIOLENCE",
+              "HARM_INVOLVING_MINORS",
+              "RESPONSIBLE_GAMING_CRISIS"
+            ],
+            "type": "string"
+          },
+          "consequences": {
+            "items": {
+              "enum": [
+                "SAFE_RESPONSE",
+                "SAFETY_OCCURRENCE",
+                "CASE_ESCALATION",
+                "OPERATIONAL_ALERT"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "severity": {
+            "enum": [
+              "HIGH",
+              "URGENT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "consequences"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceSafetyGateDto": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "enum": [
+              "TEXT",
+              "VOICE",
+              "TELEGRAM"
+            ],
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "type": "string"
+          },
+          "maximumFalseNegativeRate": {
+            "maximum": 0.1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "minimumCriticalRecall": {
+            "maximum": 1,
+            "minimum": 0.9,
+            "type": "number"
+          },
+          "minimumSamples": {
+            "maximum": 1000000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "riskClass": {
+            "enum": [
+              "SELF_HARM_OR_SUICIDE",
+              "CREDIBLE_THREAT_OR_VIOLENCE",
+              "HARM_INVOLVING_MINORS",
+              "RESPONSIBLE_GAMING_CRISIS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "riskClass",
+          "locale",
+          "channel",
+          "minimumCriticalRecall",
+          "maximumFalseNegativeRate",
+          "minimumSamples"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceSafetyPolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "calibratorRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "channels": {
+            "items": {
+              "enum": [
+                "TEXT",
+                "VOICE",
+                "TELEGRAM"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": "array"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyClassDto"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "classifierRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "gates": {
+            "items": {
+              "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyGateDto"
+            },
+            "maxItems": 500,
+            "type": "array"
+          },
+          "labelledDatasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "locales": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sentinelDatasetRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "revisionId",
+          "classifierRevisionId",
+          "calibratorRevisionId",
+          "labelledDatasetRevisionId",
+          "sentinelDatasetRevisionId",
+          "locales",
+          "channels",
+          "classes",
+          "gates"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceSafetyRevisionResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "compiledPolicy": {
+            "$ref": "#/components/schemas/CompiledPlatformCaseIntelligenceSafetyPolicyDto"
+          },
+          "compiledPolicyHash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "compilerRevisionId": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "definition": {
+            "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyPolicyDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "publishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "publishedByCmsUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PUBLISHED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "status",
+          "definition",
+          "compiledPolicy",
+          "compiledPolicyHash",
+          "compilerRevisionId",
+          "publishedAt",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PlatformCaseIntelligenceSafetyStateResponseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "minimumSafetyRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reconciliationState": {
+            "enum": [
+              "PENDING",
+              "RUNNING",
+              "IDLE"
+            ],
+            "type": "string"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyRevisionResponseDto"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "minimumSafetyRevisionId",
+          "updatedAt",
+          "revision",
+          "reconciliationState"
+        ],
+        "type": "object"
+      },
       "PlatformPermissionCatalogResponseDto": {
         "properties": {
           "groups": {
@@ -31768,6 +34559,35 @@
         ],
         "type": "object"
       },
+      "PublishCaseIntelligencePolicyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "revisionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "revisionId",
+          "reason"
+        ],
+        "type": "object"
+      },
       "PublishConflictMetadataResponseDto": {
         "additionalProperties": false,
         "properties": {
@@ -32036,6 +34856,62 @@
         "required": [
           "expectedVersion",
           "reason"
+        ],
+        "type": "object"
+      },
+      "PublishPlatformCaseIntelligenceCircuitDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/PlatformCaseIntelligenceCircuitPolicyDto"
+          },
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason",
+          "definition"
+        ],
+        "type": "object"
+      },
+      "PublishPlatformCaseIntelligenceSafetyDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyPolicyDto"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason",
+          "definition"
         ],
         "type": "object"
       },
@@ -33751,6 +36627,44 @@
         ],
         "type": "object"
       },
+      "RollbackCaseIntelligenceReleaseDto": {
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "releaseRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "targetStatus": {
+            "enum": [
+              "SHADOW",
+              "CANARY",
+              "LIVE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "reason",
+          "releaseRevisionId",
+          "targetStatus"
+        ],
+        "type": "object"
+      },
       "RollbackScenarioDto": {
         "additionalProperties": false,
         "properties": {
@@ -34005,6 +36919,72 @@
         "required": [
           "expectedDraftVersion",
           "document"
+        ],
+        "type": "object"
+      },
+      "SaveCaseIntelligenceBudgetDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceBudgetPolicyDto"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "definition"
+        ],
+        "type": "object"
+      },
+      "SaveCaseIntelligenceDetectionDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceDetectionPolicyDto"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "definition"
+        ],
+        "type": "object"
+      },
+      "SaveCaseIntelligenceEscalationDraftDto": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/CaseIntelligenceEscalationPolicyDto"
+          },
+          "expectedVersion": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "idempotencyKey": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "idempotencyKey",
+          "definition"
         ],
         "type": "object"
       },
@@ -59445,6 +62425,187 @@
         }
       }
     },
+    "/api/v1/admin/platform/case-intelligence/circuit": {
+      "get": {
+        "operationId": "CaseIntelligenceCircuit_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCaseIntelligenceCircuitRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence platform circuit"
+        ],
+        "x-iam-permission": {
+          "code": "platform.case_intelligence.safety.manage",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/case-intelligence/circuit/revisions": {
+      "post": {
+        "operationId": "CaseIntelligenceCircuit_publish",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPlatformCaseIntelligenceCircuitDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCaseIntelligenceCircuitRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence platform circuit"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "platform.case_intelligence.safety.manage",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/case-intelligence/safety": {
+      "get": {
+        "operationId": "CaseIntelligenceSafety_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence platform Safety"
+        ],
+        "x-iam-permission": {
+          "code": "platform.case_intelligence.safety.manage",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/case-intelligence/safety/commands/{idempotencyKey}": {
+      "get": {
+        "operationId": "CaseIntelligenceSafety_lookup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "idempotencyKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence platform Safety"
+        ],
+        "x-iam-permission": {
+          "code": "platform.case_intelligence.safety.manage",
+          "scope": "PLATFORM"
+        }
+      }
+    },
+    "/api/v1/admin/platform/case-intelligence/safety/revisions": {
+      "post": {
+        "operationId": "CaseIntelligenceSafety_publish",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPlatformCaseIntelligenceSafetyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformCaseIntelligenceSafetyStateResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence platform Safety"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "platform.case_intelligence.safety.manage",
+          "scope": "PLATFORM"
+        }
+      }
+    },
     "/api/v1/admin/platform/cms-users": {
       "get": {
         "operationId": "CmsUserLifecycle_list",
@@ -65852,6 +69013,1062 @@
         ],
         "x-iam-permission": {
           "code": "project.audit.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence": {
+      "get": {
+        "operationId": "CaseIntelligence_current",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceCurrentResponseDto"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "ETag": {
+                "description": "Quoted runtime version for expectedVersion commands",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/budget/draft": {
+      "put": {
+        "operationId": "CaseIntelligence_saveBudgetDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCaseIntelligenceBudgetDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceBudgetRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/budget/publish": {
+      "post": {
+        "operationId": "CaseIntelligence_publishBudget",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishCaseIntelligencePolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceBudgetRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/cases/{caseId}/explain": {
+      "get": {
+        "operationId": "CaseIntelligence_explainCase",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDecisionLogPageDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.decisions.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/commands/{idempotencyKey}": {
+      "get": {
+        "operationId": "CaseIntelligence_lookupCommand",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "idempotencyKey",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceCommandLookupResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-any-permission": [
+          {
+            "code": "project.case_intelligence.detection.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.case_intelligence.escalation.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.case_intelligence.release.manage",
+            "scope": "PROJECT"
+          },
+          {
+            "code": "project.case_intelligence.labels.review",
+            "scope": "PROJECT"
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/decisions": {
+      "get": {
+        "operationId": "CaseIntelligence_listDecisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "maxLength": 2048,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "caseId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDecisionLogPageDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.decisions.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/decisions/{decisionId}/corrections": {
+      "post": {
+        "operationId": "CaseIntelligence_correctDecision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "decisionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectCaseIntelligenceDecisionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceCorrectionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.labels.review",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/detection/compile": {
+      "post": {
+        "operationId": "CaseIntelligence_compileDetection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceDetectionPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDetectionCompileResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/detection/draft": {
+      "delete": {
+        "operationId": "CaseIntelligence_discardDetectionDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceLifecycleCommandDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.detection.manage",
+          "scope": "PROJECT"
+        }
+      },
+      "put": {
+        "operationId": "CaseIntelligence_saveDetectionDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCaseIntelligenceDetectionDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.detection.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/detection/dry-run": {
+      "post": {
+        "operationId": "CaseIntelligence_dryRun",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceDryRunDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDryRunResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/detection/publish": {
+      "post": {
+        "operationId": "CaseIntelligence_publishDetection",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishCaseIntelligencePolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceDetectionRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/escalation/compile": {
+      "post": {
+        "operationId": "CaseIntelligence_compileEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceEscalationPolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceEscalationCompileResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.preview",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/escalation/draft": {
+      "delete": {
+        "operationId": "CaseIntelligence_discardEscalationDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceLifecycleCommandDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.escalation.manage",
+          "scope": "PROJECT"
+        }
+      },
+      "put": {
+        "operationId": "CaseIntelligence_saveEscalationDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCaseIntelligenceEscalationDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.escalation.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/escalation/publish": {
+      "post": {
+        "operationId": "CaseIntelligence_publishEscalation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishCaseIntelligencePolicyDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceEscalationRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/releases/{releaseId}": {
+      "get": {
+        "operationId": "CaseIntelligence_getRelease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "releaseId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-permission": {
+          "code": "project.case_intelligence.read",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/releases/activate": {
+      "post": {
+        "operationId": "CaseIntelligence_activateRelease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivateCaseIntelligenceReleaseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/releases/pause": {
+      "post": {
+        "operationId": "CaseIntelligence_pauseRelease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseIntelligenceLifecycleCommandDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
+          "scope": "PROJECT"
+        }
+      }
+    },
+    "/api/v1/admin/projects/{projectId}/case-intelligence/releases/rollback": {
+      "post": {
+        "operationId": "CaseIntelligence_rollbackRelease",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RollbackCaseIntelligenceReleaseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntelligenceReleaseRevisionResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Case Intelligence"
+        ],
+        "x-iam-fresh-strong-authentication": true,
+        "x-iam-permission": {
+          "code": "project.case_intelligence.release.manage",
           "scope": "PROJECT"
         }
       }
@@ -72289,7 +76506,7 @@
           "End User Cases"
         ],
         "x-iam-permission": {
-          "code": "project.ai_usage.read",
+          "code": "project.case_intelligence.cost.read",
           "scope": "PROJECT"
         }
       }

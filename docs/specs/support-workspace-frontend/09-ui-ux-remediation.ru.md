@@ -396,7 +396,7 @@ Inspector сохраняет выбранный tab per operator, но permissio
 - `Модели и бюджет`: approved profiles, прогноз, limits, fallback и cost;
 - `Оценка`: candidate/published comparison, confusion/error buckets,
   precision/recall/critical recall/cost;
-- `Версии и audit`: diff, publish/canary/pause/rollback;
+- `Версии и audit`: diff, publish/rollback одной active revision;
 - `Журнал решений`: reason codes, rules, confidence, policy/model pins и
   безопасные evidence references.
 
@@ -407,6 +407,10 @@ stack с сохранением draft. Publish недоступен без schem
 становится attention: optional New Case notification настраивается отдельно в
 Notifications, а Human Attention появляется только после committed
 Escalation/Assignment/Operational Alert.
+
+Case Intelligence является постоянной permission-gated capability. Frontend
+feature flags, `VITE_*`/env toggles, shadow/canary UI и отдельный legacy JSON
+editor не входят в IA.
 
 ## 9. Public End User chat — отдельный UI-трек
 

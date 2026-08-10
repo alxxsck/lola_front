@@ -551,7 +551,7 @@ describe("AppShell", () => {
       project("project-1", "Project One", [
         "project.conversations.read",
         "project.support.lead_control.read",
-        "project.cases.settings.manage",
+        "project.case_intelligence.read",
         "project.support.sla.read",
         "project.support.macros.manage",
         "project.support.external_work.inbox_read",
@@ -576,7 +576,7 @@ describe("AppShell", () => {
     expect(supportLinks.map((link) => link.text().trim())).toEqual([
       "Рабочее место",
       "Операционный обзор",
-      "Настройки обращений",
+      "Категории и правила",
       "Календарь и SLA",
       "Шаблоны ответов",
       "Уведомления",

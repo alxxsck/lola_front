@@ -1,0 +1,176 @@
+import { describe, expect, it } from "vitest";
+import {
+  caseIntelligenceReasonLabel,
+  createDefaultBudgetPolicy,
+  createDefaultDetectionPolicy,
+  createRule,
+  createTopic,
+  presentCaseIntelligenceRuntime,
+  validateBudgetPolicy,
+  validateDetectionPolicy,
+} from "./support-case-intelligence-policy";
+
+describe("Case Intelligence policy form", () => {
+  it("creates a safe, structurally valid empty policy", () => {
+    const policy = createDefaultDetectionPolicy();
+    expect(validateDetectionPolicy(policy)).toEqual([]);
+    expect(policy.channels).toEqual(["TEXT"]);
+    expect(policy.ambiguityAction).toBe("DEFER");
+  });
+
+  it("finds duplicate and incomplete categories and rules", () => {
+    const policy = createDefaultDetectionPolicy();
+    policy.topics = [createTopic(1), createTopic(1)];
+    policy.rules = [createRule(1)];
+
+    const issues = validateDetectionPolicy(policy);
+
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "topics.1.code", severity: "ERROR" }),
+        expect.objectContaining({
+          path: "topics.0.description",
+          severity: "ERROR",
+        }),
+        expect.objectContaining({ path: "rules.0.phrase", severity: "ERROR" }),
+      ]),
+    );
+  });
+
+  it("requires confidence thresholds to grow monotonically", () => {
+    const policy = createDefaultDetectionPolicy();
+    policy.confidenceTiers = { monitor: 0.8, suggest: 0.6, autoApply: 0.9 };
+    expect(validateDetectionPolicy(policy)).toContainEqual(
+      expect.objectContaining({ path: "confidenceTiers", severity: "ERROR" }),
+    );
+  });
+
+  it("validates budget order without losing large integer precision", () => {
+    const budget = createDefaultBudgetPolicy();
+    budget.dailyTokenSoftCap = "9007199254740993";
+    budget.dailyTokenHardCap = "9007199254740992";
+    expect(validateBudgetPolicy(budget)).toContainEqual(
+      expect.objectContaining({ path: "dailyTokenSoftCap" }),
+    );
+  });
+
+  it("maps every published dry-run reason to safe Russian copy", () => {
+    const reasons = [
+      "CASE_INTELLIGENCE_DETERMINISTIC_RULE_MATCH",
+      "CASE_INTELLIGENCE_NO_DETERMINISTIC_MATCH",
+      "CASE_INTELLIGENCE_QUOTED_OR_NEGATED_MATCH",
+      "CASE_INTELLIGENCE_RULE_CONFLICT",
+    ];
+    expect(reasons.map(caseIntelligenceReasonLabel)).toEqual([
+      "совпало опубликованное детерминированное правило",
+      "детерминированное правило не найдено",
+      "фраза найдена в цитате или отрицании — решение передано на проверку",
+      "совпали равноприоритетные правила — решение передано на проверку",
+    ]);
+    expect(caseIntelligenceReasonLabel("NEW_SERVER_REASON")).toContain(
+      "неизвестную причину",
+    );
+  });
+
+  it("enforces server collection and runtime bounds before save", () => {
+    const policy = createDefaultDetectionPolicy();
+    policy.topics = Array.from({ length: 51 }, (_, index) => ({
+      ...createTopic(index + 1),
+      description: "Категория",
+    }));
+    policy.runtimeLimits.maxEvaluationMs = 5001;
+    policy.audience.include = [
+      { attributeCode: "segment", operator: "EQ", value: "" },
+    ];
+    policy.rules = [
+      {
+        ...createRule(1),
+        kind: "ATTRIBUTE",
+        attributeCode: "profile_field",
+        operator: "IN",
+        value: Array.from({ length: 51 }, (_, index) => `VALUE_${index}`),
+      },
+    ];
+    policy.topics[0]!.positiveExamples = ["x".repeat(501)];
+    expect(validateDetectionPolicy(policy)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "topics", severity: "ERROR" }),
+        expect.objectContaining({
+          path: "runtimeLimits.maxEvaluationMs",
+          severity: "ERROR",
+        }),
+        expect.objectContaining({
+          path: "audience.include.0.attributeCode",
+          severity: "ERROR",
+        }),
+        expect.objectContaining({
+          path: "rules.0.value",
+          severity: "ERROR",
+        }),
+        expect.objectContaining({
+          path: "topics.0.positiveExamples",
+          severity: "ERROR",
+        }),
+      ]),
+    );
+  });
+
+  it("validates numeric budget bounds from the pinned contract", () => {
+    const budget = createDefaultBudgetPolicy();
+    budget.maxConcurrentRuns = 0;
+    budget.routeMaxEstimatedTokens = 20_001;
+    expect(validateBudgetPolicy(budget)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "maxConcurrentRuns" }),
+        expect.objectContaining({ path: "routeMaxEstimatedTokens" }),
+      ]),
+    );
+  });
+
+  it("describes only the detection revision pinned by the active bundle as working", () => {
+    type Snapshot = NonNullable<
+      Parameters<typeof presentCaseIntelligenceRuntime>[0]
+    >;
+    const withoutBundle = {
+      allowedActions: [],
+      detection: {
+        draft: null,
+        published: { id: "latest-detection" },
+      },
+      release: null,
+      runtime: {
+        currentReleaseRevisionId: null,
+        status: "LIVE",
+        version: 1,
+      },
+    } as unknown as Snapshot;
+    expect(presentCaseIntelligenceRuntime(withoutBundle).label).toContain(
+      "ещё не собрана",
+    );
+
+    const withBundle = {
+      ...withoutBundle,
+      release: {
+        detectionPolicyRevisionId: "active-detection",
+      },
+    } as unknown as Snapshot;
+    expect(presentCaseIntelligenceRuntime(withBundle).label).toBe(
+      "Правила применяются",
+    );
+    expect(
+      presentCaseIntelligenceRuntime({
+        ...withBundle,
+        runtime: { ...withBundle.runtime!, status: "PAUSED" },
+      }).label,
+    ).toContain("приостановлена");
+    expect(
+      presentCaseIntelligenceRuntime({
+        ...withBundle,
+        runtime: {
+          ...withBundle.runtime!,
+          status: "SAFETY_RECONCILING",
+        },
+      }).label,
+    ).toContain("безопасности");
+  });
+});

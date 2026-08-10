@@ -9,6 +9,10 @@ Case detection, routing или неизменяемыми platform safety rules.
 
 **Status:** blocked-by-backend
 
+**Delivery invariant:** canonical settings работают постоянно по server-owned
+permissions. Frontend feature flags, env toggles, staged rollout, shadow/canary
+и legacy editor не допускаются.
+
 - [ ] Explicit-human-request terms по locale и semantic guidance представлены
       раздельно: confirmed request всегда `ESCALATE`, ambiguous term/scenario
       может выбрать `OFFER/ASK_REASON_ONCE/ESCALATE`.

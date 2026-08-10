@@ -1,0 +1,168 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+async function login(page: Page) {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await expect(page).toHaveURL(/\/overview$/);
+}
+
+test.beforeEach(async ({ page }) => {
+  await login(page);
+  await page.goto("/support/settings/case-intelligence/detection");
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Категории и правила обращений",
+    }),
+  ).toBeVisible();
+});
+
+test("edits, checks, saves and publishes classification rules", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Добавить категорию" }).click();
+  await page.getByLabel("Постоянный код").first().fill("DELIVERY");
+  await page
+    .getByLabel("Что относится к категории")
+    .fill("Доставка и сроки получения заказа");
+  await page
+    .getByRole("textbox", { name: "Подходящие примеры", exact: true })
+    .fill("Где мой заказ?\nКогда будет доставка?");
+  await page
+    .getByRole("textbox", {
+      name: "Похожие, но неподходящие примеры",
+      exact: true,
+    })
+    .fill("Как оформить заказ?");
+
+  const mobileWorkflow = page.getByRole("navigation", {
+    name: "Шаги настройки правил",
+  });
+  if (await mobileWorkflow.isVisible())
+    await mobileWorkflow.getByRole("button", { name: "Карта" }).click();
+  await page.getByRole("button", { name: "Добавить правило" }).click();
+  await page.getByLabel("Постоянный код").last().fill("DELIVERY_PHRASE");
+  await page
+    .getByRole("textbox", { name: "Фраза в сообщении" })
+    .fill("где мой заказ");
+  if (await mobileWorkflow.isVisible()) {
+    await mobileWorkflow.getByRole("button", { name: "Проверка" }).click();
+    await expect(page).toHaveURL(/panel=preview/);
+  }
+  await page.getByLabel("Сообщение пользователя").fill("Где мой заказ?");
+  await page.getByRole("button", { name: "Проверить" }).click();
+  await expect(
+    page.getByText("Создать обращение", { exact: true }).last(),
+  ).toBeVisible();
+  await expect(
+    page.locator(".test-result").getByText("DELIVERY_PHRASE"),
+  ).toBeVisible();
+
+  if (await mobileWorkflow.isVisible()) {
+    await mobileWorkflow.getByRole("button", { name: "Редактор" }).click();
+    await expect(page).toHaveURL(/panel=editor/);
+  }
+
+  await page.getByRole("button", { name: "Сохранить черновик" }).click();
+  await expect(page.getByText("Черновик правил сохранён.")).toBeVisible();
+  await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Опубликовать изменения?" });
+  await dialog
+    .getByLabel("Причина изменения")
+    .fill("Добавлена категория доставки");
+  await dialog.getByRole("button", { name: "Опубликовать" }).click();
+  await expect(
+    page.getByText(
+      "Правила категорий опубликованы и готовы для следующей общей рабочей версии.",
+    ),
+  ).toBeVisible();
+});
+
+test("keeps the permanent settings navigation responsive and accessible", async ({
+  page,
+}) => {
+  const sectionNavigation = page.getByRole("navigation", {
+    name: "Разделы правил обращений",
+  });
+  await sectionNavigation.getByRole("link", { name: "Обзор" }).click();
+  await expect(
+    page.getByText("Общая рабочая версия ещё не собрана", { exact: true }),
+  ).toBeVisible();
+  await sectionNavigation
+    .getByRole("link", { name: "Модель и лимиты" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Ограничения расходов" }),
+  ).toBeVisible();
+  await sectionNavigation
+    .getByRole("link", { name: "Категории и правила" })
+    .click();
+
+  const mobileWorkflow = page.getByRole("navigation", {
+    name: "Шаги настройки правил",
+  });
+  if (await mobileWorkflow.isVisible()) {
+    await mobileWorkflow.getByRole("button", { name: "Редактор" }).click();
+    await page.getByLabel("Коротко о задаче").fill("Черновик на телефоне");
+    await page.goBack();
+    await expect(page).not.toHaveURL(/panel=editor/);
+    await page.goForward();
+    await expect(page).toHaveURL(/panel=editor/);
+    await expect(page.getByLabel("Коротко о задаче")).toHaveValue(
+      "Черновик на телефоне",
+    );
+  }
+
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBe(geometry.clientWidth);
+
+  const accessibility = await new AxeBuilder({ page })
+    .include(".intelligence-page")
+    .analyze();
+  expect(
+    accessibility.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? ""),
+    ),
+  ).toEqual([]);
+
+  await page.evaluate(() => localStorage.setItem("retenive-theme", "dark"));
+  await page.reload();
+  const darkAccessibility = await new AxeBuilder({ page })
+    .include(".intelligence-page")
+    .analyze();
+  expect(
+    darkAccessibility.violations.filter((violation) =>
+      ["critical", "serious"].includes(violation.impact ?? ""),
+    ),
+  ).toEqual([]);
+});
+
+test("links exact budget errors to their fields and blocks an invalid draft", async ({
+  page,
+}) => {
+  await page
+    .getByRole("navigation", { name: "Разделы правил обращений" })
+    .getByRole("link", { name: "Модель и лимиты" })
+    .click();
+
+  const softLimit = page.getByLabel("Предупреждение по токенам в день");
+  const hardLimit = page.getByLabel("Максимум токенов в день");
+  await hardLimit.fill("100");
+  await softLimit.fill("200");
+
+  await expect(softLimit).toHaveAttribute("aria-invalid", "true");
+  await expect(softLimit).toHaveAttribute(
+    "aria-describedby",
+    "token-soft-error",
+  );
+  await expect(page.locator("#token-soft-error")).toHaveText(
+    "Предупреждение должно срабатывать раньше жёсткого лимита.",
+  );
+  await expect(
+    page.getByRole("button", { name: "Сохранить черновик" }),
+  ).toBeDisabled();
+});

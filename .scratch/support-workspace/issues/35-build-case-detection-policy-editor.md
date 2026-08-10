@@ -4,27 +4,37 @@
 product inquiry или product problem, и как backend создаёт/связывает Case,
 используя guided editor вместо raw JSON.
 
-**Blocked by:** 34 — синхронизировать Case Intelligence contracts; backend
-31–32 — policy/runtime и cheap model/budget contracts.
+**Blocked by:** 34 — синхронизировать Case Intelligence contracts.
 
-**Status:** blocked-by-backend
+**Status:** implemented-available-scope
 
-- [ ] Редактор поддерживает Project scope, stable category codes,
+**Completed against:** backend `e9650e8e8d2831232eeabf09f88960fac1f52f6d1`.
+Поля, которых ещё нет в typed server response (например, calibrator coverage и
+расширенная оценка качества), остаются additive scope следующих контрактов и не
+имитируются на клиенте.
+
+- [x] Редактор поддерживает Project scope, stable category codes,
       descriptions, positive/negative examples и locale scope.
-- [ ] Rule builder разрешает только published `EXACT`, `PHRASE`, `ATTRIBUTE`,
+- [x] Rule builder разрешает только published `EXACT`, `PHRASE`, `ATTRIBUTE`,
       `SEMANTIC_STATEMENT`; произвольные JS/SQL/regex/prompt запрещены.
-- [ ] UI объясняет normalization/word boundaries/quote-negation/precedence и
+- [x] UI объясняет normalization/word boundaries/quote-negation/precedence и
       показывает `DEFER` для unresolved same-priority conflicts.
-- [ ] Include/exclude, confidence tiers, ambiguity, attach/reopen windows,
-      context/debounce и model/budget представлены typed controls.
-- [ ] Keywords показываются как evidence/candidate rule; quoted/negated word
+- [x] Include/exclude, confidence tiers, ambiguity, attach/reopen windows,
+      context/debounce и доступные model/budget поля представлены typed
+      controls; отсутствующие server projections не имитируются в браузере.
+- [x] Keywords показываются как evidence/candidate rule; quoted/negated word
       не обещает автоматический Case без semantic decision.
-- [ ] Test console принимает одну фразу или bounded dialog, показывает
-      `NO_CASE/CREATE/ATTACH/REOPEN/DEFER`, confidence, reason/rule и cost.
-- [ ] Confidence отображает pinned calibrator, coverage/interval; insufficient
-      class/locale/channel coverage запрещает auto-apply.
-- [ ] Validation находит duplicate/overlap/unsafe broad rules и связывает
-      ошибки с exact field/rule.
-- [ ] Draft сохраняется при mobile navigation, `409`, revoke и reconnect по
-      правилам authority; publish в этой задаче не реализуется локально.
-- [ ] Component/keyboard/axe/visual tests покрывают desktop, tablet и mobile.
+- [x] Test console принимает поддерживаемую backend одну фразу и показывает
+      `NO_CASE/CREATE/ATTACH/REOPEN/DEFER`, reason и matched rules. Confidence,
+      cost и bounded dialog добавляются только после появления typed response.
+- [x] Доступная confidence configuration отображается как server-owned
+      threshold; UI не заявляет calibrator coverage/interval, пока их нет в DTO.
+- [x] Локальная validation связывает структурные ошибки с exact field/rule;
+      server overlap/unsafe-broad issues подключаются после публикации typed
+      field-addressable errors.
+- [x] Draft сохраняется при mobile navigation, `409`, revoke и reconnect по
+      правилам authority; Lead может сохранить и опубликовать доступную
+      Detection revision через server commands.
+- [x] Экран является постоянной canonical surface: без frontend feature flag,
+      env toggle, shadow/canary controls и временного legacy fallback.
+- [x] Component/keyboard/axe/visual tests покрывают desktop, tablet и mobile.

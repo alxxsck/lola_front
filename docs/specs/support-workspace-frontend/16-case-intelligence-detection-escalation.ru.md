@@ -4,6 +4,19 @@
 Дата: 8 августа 2026 года
 Область: Support Settings, decision explainability, evaluation и analytics
 
+### Delivery invariant
+
+Case Intelligence — постоянная Project capability. Canonical routes и data
+sources доступны по server-owned permissions и не закрываются frontend feature
+flags, `VITE_*`/env toggles или staged rollout. Для одного домена существует
+одна guided settings surface; legacy JSON editor и параллельный режим обратной
+совместимости не допускаются.
+
+Policy и bundle остаются versioned: Lead сохраняет draft, проверяет impact и
+публикует одну active revision. Возврат к прежней конфигурации создаёт новую
+active revision из прежнего immutable tuple. Это lifecycle данных и audit, а
+не rollout функциональности.
+
 ## 1. Решение
 
 Lola не должна сводить все сообщения к бинарному `Case / не Case` и не должна
@@ -55,13 +68,13 @@ Safety decision не является четвёртым продуктовым 
 нормативном пороге немедленную escalation/alert. Project может выбрать
 разрешённую команду, канал и SLA, но не выключить detection.
 
-## 3. Три policy и один атомарный release bundle
+## 3. Три policy и один атомарный published bundle
 
-Policy независимо редактируются и версионируются, но runtime не активирует
+Policy независимо редактируются и версионируются, но runtime не применяет
 случайную комбинацию. `CaseIntelligenceReleaseRevision` закрепляет совместно
 проверенные Detection, Escalation, Safety, model profile, calibrator, dataset и
-Routing overlay. Shadow, canary, activation и rollback переключают bundle
-целиком.
+Routing overlay. Publish атомарно заменяет active bundle; rollback публикует
+новую revision из прежнего tuple.
 
 Mandatory platform Safety hotfix не ждёт Project approval. Старый bundle
 становится неeligible; backend либо публикует совместимый replacement bundle,
@@ -170,7 +183,7 @@ Cost controls:
 - idempotent deduplication и batch быстрых USER turns;
 - stronger fallback только для `DEFER`/high-impact ambiguity;
 - Project token/money soft/hard caps и platform circuit breakers;
-- offline shadow/backfill через дешёвый asynchronous batch, но не live handoff;
+- offline evaluation/backfill через дешёвый asynchronous batch, но не live handoff;
 - при budget outage signals остаются в backlog, explicit request и safety не
   превращаются в `NO_CASE`.
 
@@ -245,8 +258,9 @@ insufficient coverage запрещает auto-apply.
 
 ### Overview
 
-- runtime state: `PAUSED`, `SHADOW`, `CANARY`, `LIVE`, `DEGRADED` или
-  `SAFETY_RECONCILING`;
+- product state: active revision, unavailable/degraded processing или
+  `SAFETY_RECONCILING`; технические staged rollout states не становятся
+  пользовательскими режимами;
 - active release bundle, component revisions и effective time;
 - signals/backlog/oldest pending;
 - Cases и Escalations за выбранное сопоставимое окно;
@@ -290,20 +304,20 @@ insufficient coverage запрещает auto-apply.
 
 - labelled dataset revision и distribution по class/topic/language/risk;
 - safety coverage/gates по `riskClass × locale × channel`, sentinel failures и
-  canary stop conditions;
+  publish blockers;
 - comparison `published vs candidate`;
 - precision/recall/F1, critical recall, confusion, attach/reopen accuracy;
 - escalation precision/recall, false handoff, missed critical, correction rate;
 - cost per 1k signals, accepted Case, escalation и resolved Case;
 - error buckets с permission-safe examples;
-- shadow sample, queue-load impact и publish admission result.
+- evaluation sample, queue-load impact и publish admission result.
 
 ### Versions & Audit
 
 - immutable revision history и diff;
 - author, reason, validation/evaluation receipts;
 - component revisions и atomic release bundle diff;
-- publish/canary/pause/rollback переключают jointly evaluated bundle;
+- publish/rollback переключают jointly evaluated active bundle;
 - rollback создаёт новую release revision из прежнего tuple, не переписывая
   историю;
 - conflict и unknown outcome используют expected version, idempotency и lookup.
@@ -415,7 +429,7 @@ PII или неразрешённые Message bodies.
 - errors привязаны к exact field/rule и имеют summary;
 - charts имеют таблицу/текстовый summary;
 - status и confidence не кодируются только цветом;
-- shadow refresh не перемещает focus и не сбрасывает выбранный error bucket;
+- evaluation refresh не перемещает focus и не сбрасывает выбранный error bucket;
 - reduced motion отключает diff/highlight transitions.
 
 ## 11. Backend handoff gates
@@ -424,10 +438,10 @@ Frontend задачи нельзя считать готовыми только 
 policy API. Нужны pinned OpenAPI contracts для:
 
 - closed DTO Detection/Escalation/Safety/model policies;
-- component revisions, atomic release bundle, diff, preview, activation,
-  pause, canary и rollback;
+- component revisions, atomic published bundle, diff, preview, publish и
+  rollback;
 - test one input и bounded multi-turn dry run;
-- dataset, shadow comparison, quality admission и error samples;
+- dataset, candidate comparison, quality admission и error samples;
 - metrics catalog/funnel/cost и permissioned drill-down;
 - decision log и Case-scoped explain;
 - exact permissions, target authority, allowedActions, ETag/expected version,
@@ -438,8 +452,9 @@ policy API. Нужны pinned OpenAPI contracts для:
 - Project New Case Notification Policy, personal topic/preference и independent
   delivery fixtures из backend Ticket 35.
 
-Legacy `/cases/settings` остаётся compatibility route только до cutover. Raw
-JSON не получает новые скрытые поля и не становится вторым source of truth.
+Legacy `/cases/settings` не остаётся самостоятельной settings surface. Route
+ведёт на canonical `/support/settings/case-intelligence`, а raw JSON editor
+удаляется вместе со вторым source of truth.
 
 ## 12. Acceptance criteria
 

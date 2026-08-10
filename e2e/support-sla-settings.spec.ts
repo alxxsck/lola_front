@@ -44,7 +44,7 @@ test("saves, publishes, and reconciles an SLA configuration", async ({
     name: "Состояние SLA-конфигурации",
   });
   await expect(lifecycle.getByText("Нет сохранённого черновика")).toBeVisible();
-  await expect(lifecycle.getByText("Проверочный режим")).toBeVisible();
+  await expect(lifecycle.getByText("Синхронизирована")).toBeVisible();
   await expect(firstResponse).toHaveValue("35 мин");
 });
 

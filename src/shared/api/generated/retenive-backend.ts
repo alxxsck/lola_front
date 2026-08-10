@@ -12,6 +12,7 @@ import type {
   AIReviewSettingsResponseDto,
   AcknowledgeSupportOperationalAlertDto,
   ActionTypeResponseDto,
+  ActivateCaseIntelligenceReleaseDto,
   ActiveUserResponseDto,
   ActivitySettingsResponseDto,
   AdminChatAttachmentCompleteUploadParams,
@@ -100,6 +101,23 @@ import type {
   CancelIntegrationDispatchDto,
   CanonicalIdentityPolicyPreviewResponseDto,
   CanonicalIdentityPolicyResponseDto,
+  CaseIntelligenceBudgetRevisionResponseDto,
+  CaseIntelligenceCommandLookupResponseDto,
+  CaseIntelligenceCorrectionResponseDto,
+  CaseIntelligenceCurrentResponseDto,
+  CaseIntelligenceDecisionLogPageDto,
+  CaseIntelligenceDetectionCompileResponseDto,
+  CaseIntelligenceDetectionPolicyDto,
+  CaseIntelligenceDetectionRevisionResponseDto,
+  CaseIntelligenceDryRunDto,
+  CaseIntelligenceDryRunResponseDto,
+  CaseIntelligenceEscalationCompileResponseDto,
+  CaseIntelligenceEscalationPolicyDto,
+  CaseIntelligenceEscalationRevisionResponseDto,
+  CaseIntelligenceExplainCaseParams,
+  CaseIntelligenceLifecycleCommandDto,
+  CaseIntelligenceListDecisionsParams,
+  CaseIntelligenceReleaseRevisionResponseDto,
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
   ChangeIntegrationDirectionPauseDto,
@@ -179,6 +197,7 @@ import type {
   ConversationTranslationPutParams,
   ConversationTranslationResponseDto,
   CorrectAiAllowanceDto,
+  CorrectCaseIntelligenceDecisionDto,
   CorrectConversationMessageContentDto,
   CorrectSupportInternalNoteDto,
   CorrectSupportSlaClockDto,
@@ -404,6 +423,8 @@ import type {
   PersonalSupportNotificationAdmissionResponseDto,
   PersonalSupportNotificationDeepLinkTargetDto,
   PersonalSupportNotificationSettingsResponseDto,
+  PlatformCaseIntelligenceCircuitRevisionResponseDto,
+  PlatformCaseIntelligenceSafetyStateResponseDto,
   PlatformCreateProject201,
   PlatformOperationsUsersPageParams,
   PlatformPermissionCatalogResponseDto,
@@ -449,11 +470,14 @@ import type {
   PublishAttributeContractDto,
   PublishAttributeContractResponseDto,
   PublishCanonicalIdentityPolicyDto,
+  PublishCaseIntelligencePolicyDto,
   PublishEndUserCasePolicyDto,
   PublishEventQueryPolicyDto,
   PublishEventQueryPolicyItemDto,
   PublishEventSchemaDraftDto,
   PublishIntegrationEventRouteDto,
+  PublishPlatformCaseIntelligenceCircuitDto,
+  PublishPlatformCaseIntelligenceSafetyDto,
   PublishScenarioDto,
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
@@ -500,6 +524,7 @@ import type {
   RevokeBrowserPushSubscriptionDto,
   RevokeCmsUserSessionDto,
   RevokeSupportRoutingAdmissionReceiptDto,
+  RollbackCaseIntelligenceReleaseDto,
   RollbackScenarioDto,
   RollbackSupportExternalMappingDto,
   RollbackSupportKnowledgeAdmissionDto,
@@ -511,6 +536,9 @@ import type {
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
   SaveAttributeContractDraftDto,
+  SaveCaseIntelligenceBudgetDraftDto,
+  SaveCaseIntelligenceDetectionDraftDto,
+  SaveCaseIntelligenceEscalationDraftDto,
   SaveEndUserCasePolicyDraftDto,
   SaveEventQueryPolicyDraftDto,
   SaveEventSchemaDraftDto,
@@ -878,6 +906,77 @@ export const firstPlatformOperatorProvision = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: firstPlatformOperatorDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceCircuitGet = (
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceCircuitRevisionResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceCircuitRevisionResponseDto>(
+    { url: `/api/v1/admin/platform/case-intelligence/circuit`, method: "GET" },
+    options,
+  );
+};
+
+export const caseIntelligenceCircuitPublish = (
+  publishPlatformCaseIntelligenceCircuitDto: BodyType<PublishPlatformCaseIntelligenceCircuitDto>,
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceCircuitRevisionResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceCircuitRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/platform/case-intelligence/circuit/revisions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishPlatformCaseIntelligenceCircuitDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSafetyGet = (
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceSafetyStateResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceSafetyStateResponseDto>(
+    { url: `/api/v1/admin/platform/case-intelligence/safety`, method: "GET" },
+    options,
+  );
+};
+
+export const caseIntelligenceSafetyLookup = (
+  idempotencyKey: string,
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceSafetyStateResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceSafetyStateResponseDto>(
+    {
+      url: `/api/v1/admin/platform/case-intelligence/safety/commands/${idempotencyKey}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSafetyPublish = (
+  publishPlatformCaseIntelligenceSafetyDto: BodyType<PublishPlatformCaseIntelligenceSafetyDto>,
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceSafetyStateResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceSafetyStateResponseDto>(
+    {
+      url: `/api/v1/admin/platform/case-intelligence/safety/revisions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishPlatformCaseIntelligenceSafetyDto,
     },
     options,
   );
@@ -2115,6 +2214,351 @@ export const projectAuditEventsList = (
       url: `/api/v1/admin/projects/${projectId}/audit-events`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceCurrent = (
+  projectId: string,
+  options?: SecondParameter<typeof request<CaseIntelligenceCurrentResponseDto>>,
+) => {
+  return request<CaseIntelligenceCurrentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSaveBudgetDraft = (
+  projectId: string,
+  saveCaseIntelligenceBudgetDraftDto: BodyType<SaveCaseIntelligenceBudgetDraftDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceBudgetRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceBudgetRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/budget/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveCaseIntelligenceBudgetDraftDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligencePublishBudget = (
+  projectId: string,
+  publishCaseIntelligencePolicyDto: BodyType<PublishCaseIntelligencePolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceBudgetRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceBudgetRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/budget/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishCaseIntelligencePolicyDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceExplainCase = (
+  projectId: string,
+  caseId: string,
+  params?: CaseIntelligenceExplainCaseParams,
+  options?: SecondParameter<typeof request<CaseIntelligenceDecisionLogPageDto>>,
+) => {
+  return request<CaseIntelligenceDecisionLogPageDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/cases/${caseId}/explain`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceLookupCommand = (
+  projectId: string,
+  idempotencyKey: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceCommandLookupResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceCommandLookupResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/commands/${idempotencyKey}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceListDecisions = (
+  projectId: string,
+  params?: CaseIntelligenceListDecisionsParams,
+  options?: SecondParameter<typeof request<CaseIntelligenceDecisionLogPageDto>>,
+) => {
+  return request<CaseIntelligenceDecisionLogPageDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/decisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceCorrectDecision = (
+  projectId: string,
+  decisionId: string,
+  correctCaseIntelligenceDecisionDto: BodyType<CorrectCaseIntelligenceDecisionDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceCorrectionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceCorrectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/decisions/${decisionId}/corrections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctCaseIntelligenceDecisionDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceCompileDetection = (
+  projectId: unknown,
+  caseIntelligenceDetectionPolicyDto: BodyType<CaseIntelligenceDetectionPolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionCompileResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionCompileResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/compile`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceDetectionPolicyDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceDiscardDetectionDraft = (
+  projectId: string,
+  caseIntelligenceLifecycleCommandDto: BodyType<CaseIntelligenceLifecycleCommandDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/draft`,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceLifecycleCommandDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSaveDetectionDraft = (
+  projectId: string,
+  saveCaseIntelligenceDetectionDraftDto: BodyType<SaveCaseIntelligenceDetectionDraftDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveCaseIntelligenceDetectionDraftDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceDryRun = (
+  projectId: unknown,
+  caseIntelligenceDryRunDto: BodyType<CaseIntelligenceDryRunDto>,
+  options?: SecondParameter<typeof request<CaseIntelligenceDryRunResponseDto>>,
+) => {
+  return request<CaseIntelligenceDryRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/dry-run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceDryRunDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligencePublishDetection = (
+  projectId: string,
+  publishCaseIntelligencePolicyDto: BodyType<PublishCaseIntelligencePolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishCaseIntelligencePolicyDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceCompileEscalation = (
+  projectId: unknown,
+  caseIntelligenceEscalationPolicyDto: BodyType<CaseIntelligenceEscalationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEscalationCompileResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEscalationCompileResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/escalation/compile`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceEscalationPolicyDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceDiscardEscalationDraft = (
+  projectId: string,
+  caseIntelligenceLifecycleCommandDto: BodyType<CaseIntelligenceLifecycleCommandDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEscalationRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEscalationRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/escalation/draft`,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceLifecycleCommandDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSaveEscalationDraft = (
+  projectId: string,
+  saveCaseIntelligenceEscalationDraftDto: BodyType<SaveCaseIntelligenceEscalationDraftDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEscalationRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEscalationRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/escalation/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveCaseIntelligenceEscalationDraftDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligencePublishEscalation = (
+  projectId: string,
+  publishCaseIntelligencePolicyDto: BodyType<PublishCaseIntelligencePolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEscalationRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEscalationRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/escalation/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishCaseIntelligencePolicyDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceGetRelease = (
+  projectId: string,
+  releaseId: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceReleaseRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/${releaseId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceActivateRelease = (
+  projectId: string,
+  activateCaseIntelligenceReleaseDto: BodyType<ActivateCaseIntelligenceReleaseDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceReleaseRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/activate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: activateCaseIntelligenceReleaseDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligencePauseRelease = (
+  projectId: string,
+  caseIntelligenceLifecycleCommandDto: BodyType<CaseIntelligenceLifecycleCommandDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceReleaseRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/pause`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceLifecycleCommandDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceRollbackRelease = (
+  projectId: string,
+  rollbackCaseIntelligenceReleaseDto: BodyType<RollbackCaseIntelligenceReleaseDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceReleaseRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackCaseIntelligenceReleaseDto,
     },
     options,
   );
@@ -12162,6 +12606,21 @@ export type AiPricingRevisionPublishResult = NonNullable<
 export type FirstPlatformOperatorProvisionResult = NonNullable<
   Awaited<ReturnType<typeof firstPlatformOperatorProvision>>
 >;
+export type CaseIntelligenceCircuitGetResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCircuitGet>>
+>;
+export type CaseIntelligenceCircuitPublishResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCircuitPublish>>
+>;
+export type CaseIntelligenceSafetyGetResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSafetyGet>>
+>;
+export type CaseIntelligenceSafetyLookupResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSafetyLookup>>
+>;
+export type CaseIntelligenceSafetyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSafetyPublish>>
+>;
 export type CmsUserLifecycleListResult = NonNullable<
   Awaited<ReturnType<typeof cmsUserLifecycleList>>
 >;
@@ -12401,6 +12860,66 @@ export type AttributeDefinitionImpactResult = NonNullable<
 >;
 export type ProjectAuditEventsListResult = NonNullable<
   Awaited<ReturnType<typeof projectAuditEventsList>>
+>;
+export type CaseIntelligenceCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCurrent>>
+>;
+export type CaseIntelligenceSaveBudgetDraftResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSaveBudgetDraft>>
+>;
+export type CaseIntelligencePublishBudgetResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligencePublishBudget>>
+>;
+export type CaseIntelligenceExplainCaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceExplainCase>>
+>;
+export type CaseIntelligenceLookupCommandResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceLookupCommand>>
+>;
+export type CaseIntelligenceListDecisionsResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceListDecisions>>
+>;
+export type CaseIntelligenceCorrectDecisionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCorrectDecision>>
+>;
+export type CaseIntelligenceCompileDetectionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCompileDetection>>
+>;
+export type CaseIntelligenceDiscardDetectionDraftResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceDiscardDetectionDraft>>
+>;
+export type CaseIntelligenceSaveDetectionDraftResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSaveDetectionDraft>>
+>;
+export type CaseIntelligenceDryRunResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceDryRun>>
+>;
+export type CaseIntelligencePublishDetectionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligencePublishDetection>>
+>;
+export type CaseIntelligenceCompileEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCompileEscalation>>
+>;
+export type CaseIntelligenceDiscardEscalationDraftResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceDiscardEscalationDraft>>
+>;
+export type CaseIntelligenceSaveEscalationDraftResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSaveEscalationDraft>>
+>;
+export type CaseIntelligencePublishEscalationResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligencePublishEscalation>>
+>;
+export type CaseIntelligenceGetReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceGetRelease>>
+>;
+export type CaseIntelligenceActivateReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceActivateRelease>>
+>;
+export type CaseIntelligencePauseReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligencePauseRelease>>
+>;
+export type CaseIntelligenceRollbackReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceRollbackRelease>>
 >;
 export type SupportInternalNoteListResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteList>>

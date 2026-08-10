@@ -304,11 +304,7 @@ export const router = createRouter({
         {
           path: "cases/settings",
           name: "end-user-case-settings",
-          component: () => import("@/pages/EndUserCaseSettingsPage.vue"),
-          meta: {
-            supportPlatformAccess: true,
-            projectPermission: "project.cases.settings.manage",
-          },
+          redirect: { name: "support-case-intelligence-detection" },
         },
         {
           path: "cases/:caseId",
@@ -359,6 +355,36 @@ export const router = createRouter({
           meta: {
             supportPlatformAccess: true,
             supportLeadControlAccess: true,
+          },
+        },
+        {
+          path: "support/settings/case-intelligence",
+          name: "support-case-intelligence",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.case_intelligence.read",
+          },
+        },
+        {
+          path: "support/settings/case-intelligence/detection",
+          name: "support-case-intelligence-detection",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.case_intelligence.read",
+          },
+        },
+        {
+          path: "support/settings/case-intelligence/models-budget",
+          name: "support-case-intelligence-budget",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.case_intelligence.read",
           },
         },
         {

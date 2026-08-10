@@ -314,10 +314,11 @@ ordering, delivery/read и attachments; rollback проверен на стар�
   из status или client clock как источник истины.
 
 **Настройки.** Разделить `/support/settings` на Case Intelligence (include /
-exclude, categories/examples, model/budget/threshold, shadow evaluation),
-Teams/skills/capacity, Queues/routing, SLA/calendar. Старый JSON editor
-оставить временным compatibility route, затем заменить guided versioned
-editor-ами с preview/publish/rollback и audit.
+exclude, categories/examples, model/budget/threshold, evaluation),
+Teams/skills/capacity, Queues/routing, SLA/calendar. Case Intelligence сразу
+использует canonical guided versioned editor с preview/publish/rollback и
+audit; старый JSON editor и временный compatibility mode удаляются. Route не
+закрывается frontend feature flag или env toggle.
 
 #### F3.1 — создание и редактирование SLA/calendar
 

@@ -513,14 +513,18 @@ describe("authentication routes", () => {
     },
   );
 
-  it("keeps Cases as canonical Support redirects and policy settings admin-only", () => {
+  it("keeps Cases as canonical Support redirects and retires the legacy settings surface", () => {
     expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTypeOf("function");
     expect(router.resolve("/cases/case-1").matched.at(-1)?.redirect).toBeTypeOf(
       "function",
     );
-    expect(router.resolve("/cases/settings").meta.projectPermission).toBe(
-      "project.cases.settings.manage",
-    );
+    expect(router.resolve("/cases/settings").matched.at(-1)?.redirect).toEqual({
+      name: "support-case-intelligence-detection",
+    });
+    expect(
+      router.resolve("/support/settings/case-intelligence/detection").meta
+        .projectPermission,
+    ).toBe("project.case_intelligence.read");
     expect(router.resolve("/cases/case-1").redirectedFrom).toBeUndefined();
     expect(router.resolve("/support/inbox/cases/case-1").name).toBe(
       "support-inbox-case",
@@ -596,7 +600,7 @@ describe("authentication routes", () => {
 
     expect(router.currentRoute.value.name).toBe("overview");
 
-    project.effectivePermissionCodes.push("project.cases.settings.manage");
+    project.effectivePermissionCodes.push("project.case_intelligence.read");
     await router.push("/cases/settings?projectId=project-1");
     expect(router.currentRoute.value.name).toBe("overview");
   });
@@ -1049,6 +1053,15 @@ describe("authentication routes", () => {
     auth.project!.effectivePermissionCodes = ["project.support.macros.manage"];
     await router.push("/support/settings/macros");
     expect(router.currentRoute.value.name).toBe("support-macro-settings");
+
+    await router.push("/support/settings/case-intelligence/detection");
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    auth.project!.effectivePermissionCodes = ["project.case_intelligence.read"];
+    await router.push("/support/settings/case-intelligence/detection");
+    expect(router.currentRoute.value.name).toBe(
+      "support-case-intelligence-detection",
+    );
 
     await router.push("/support/settings/sla-calendars");
     expect(router.currentRoute.value.name).toBe("overview");

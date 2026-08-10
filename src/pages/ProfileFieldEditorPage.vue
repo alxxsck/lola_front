@@ -52,9 +52,9 @@ const form = ref<AttributeContractDraftFieldDto>(createContractField());
 const cmsReadAccess = computed<"HIDDEN" | "BASE" | "RESTRICTED">({
   get: () => {
     const policy = form.value.policies.cmsRead;
-    return policy.mode === "HIDDEN" ? "HIDDEN" : policy.access;
+    return policy.mode === "HIDDEN" ? "HIDDEN" : (policy.access ?? "BASE");
   },
-  set: (access) => {
+  set: (access: "HIDDEN" | "BASE" | "RESTRICTED") => {
     form.value.policies.cmsRead =
       access === "HIDDEN" ? { mode: "HIDDEN" } : { mode: "VISIBLE", access };
   },

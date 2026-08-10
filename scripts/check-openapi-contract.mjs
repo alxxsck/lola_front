@@ -4,6 +4,7 @@ import { validateSupportInboxCaseWorkforceContract } from "./support-inbox-case-
 import { validateSupportWorkspaceMessagingContract } from "./support-workspace-contract.mjs";
 import { validateSupportAttachmentsContract } from "./support-attachments-contract.mjs";
 import { validateSupportExternalWorkContract } from "./support-external-work-contract.mjs";
+import { validateSupportCaseIntelligenceContract } from "./support-case-intelligence-contract.mjs";
 
 const snapshotUrl = new URL(
   "../openapi/retenive-backend.json",
@@ -15,6 +16,7 @@ validateSupportInboxCaseWorkforceContract(document);
 validateSupportWorkspaceMessagingContract(document);
 validateSupportAttachmentsContract(document);
 validateSupportExternalWorkContract(document);
+validateSupportCaseIntelligenceContract(document);
 
 const unversionedPaths = Object.keys(document.paths ?? {}).filter(
   (path) => path !== "/health" && !path.startsWith("/api/v1/"),

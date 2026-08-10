@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   await login(page);
 });
 
-test("case settings remain responsive and complete the preview-save-publish flow", async ({
+test("legacy Case settings opens the canonical responsive rules editor", async ({
   page,
 }) => {
   for (const viewport of [
@@ -20,10 +20,13 @@ test("case settings remain responsive and complete the preview-save-publish flow
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/cases/settings");
+    await expect(page).toHaveURL(
+      /\/support\/settings\/case-intelligence\/detection$/,
+    );
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Категории и приоритеты",
+        name: "Категории и правила обращений",
       }),
     ).toBeVisible();
     const geometry = await page.evaluate(() => ({
@@ -39,15 +42,4 @@ test("case settings remain responsive and complete the preview-save-publish flow
     expect(geometry.scrollWidth).toBe(geometry.clientWidth);
     expect(geometry.clipped).toBe(0);
   }
-
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/cases/settings");
-  await page.getByRole("button", { name: "Проверить" }).click();
-  await expect(page.getByText("Правила корректны.")).toBeVisible();
-  await page.getByRole("button", { name: "Сохранить черновик" }).click();
-  await expect(page.getByText("Черновик сохранён.")).toBeVisible();
-  await page.getByRole("button", { name: "Опубликовать" }).click();
-  await expect(
-    page.getByText("Правила опубликованы и применяются к новым анализам."),
-  ).toBeVisible();
 });

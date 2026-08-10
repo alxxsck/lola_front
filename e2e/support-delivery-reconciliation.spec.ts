@@ -53,7 +53,7 @@ test("retries one proven failed delivery and restores the authoritative receipt 
     bodyOverflow: getComputedStyle(document.body).overflow,
   }));
   expect(geometry.scrollWidth).toBe(geometry.clientWidth);
-  expect(geometry.bodyOverflow).toBe("hidden");
+  expect(geometry.bodyOverflow).toBe("visible");
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])

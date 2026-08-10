@@ -42,11 +42,11 @@ test("groups Support pages and keeps the desktop rail preference", async ({
   const supportLinks = supportGroup.locator(
     'a[href^="/support/"], a[href="/cases/settings"]',
   );
-  await expect(supportLinks).toHaveCount(9);
+  await expect(supportLinks).toHaveCount(8);
   await expect(supportLinks).toHaveText([
     "Рабочее место",
     "Операционный обзор",
-    "Настройки обращений",
+    "Категории и правила",
     "Календарь и SLA",
     "Шаблоны ответов",
     "Уведомления",
