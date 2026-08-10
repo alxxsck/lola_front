@@ -729,19 +729,32 @@ router.beforeEach(async (to) => {
             "project.conversations.read",
           );
     if (!hasTargetPermission) return auth.authenticatedLandingPath;
-    const admission = await ensureSupportWorkspaceShellAdmission({
+    // The route commits immediately; rollout revalidation can redirect it after entry.
+    const admissionRevalidation = ensureSupportWorkspaceShellAdmission({
       actorId,
       projectId: auth.project.id,
       effectivePermissionCodes: projectPermissions,
     });
-    if (!isCanonicalSupportWorkspaceAdmission(admission, target)) {
-      return legacySupportLocation({
-        target,
-        caseId: routeValue(to.params.caseId),
-        conversationId: routeValue(to.params.conversationId),
-        query: to.query,
+    const expectedFullPath = to.fullPath;
+    const removeAdmissionRevalidationHook = router.afterEach((resolvedTo) => {
+      removeAdmissionRevalidationHook();
+      if (resolvedTo.fullPath !== expectedFullPath) return;
+      void admissionRevalidation.then((result) => {
+        if (
+          router.currentRoute.value.fullPath !== expectedFullPath ||
+          isCanonicalSupportWorkspaceAdmission(result, target)
+        )
+          return;
+        void router.replace(
+          legacySupportLocation({
+            target,
+            caseId: routeValue(to.params.caseId),
+            conversationId: routeValue(to.params.conversationId),
+            query: to.query,
+          }),
+        );
       });
-    }
+    });
   }
   if (
     to.meta.supportLeadControlAccess &&

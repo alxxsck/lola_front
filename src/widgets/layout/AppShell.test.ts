@@ -8,7 +8,11 @@ import {
   resetMockSupportWorkspaceRollout,
   writeMockSupportWorkspaceRollout,
 } from "@/features/support-workspace/api/support-workspace-shell-source";
-import { clearSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
+import {
+  clearSupportWorkspaceShellAdmission,
+  ensureSupportWorkspaceShellAdmission,
+  supportWorkspaceShellAdmissionState,
+} from "@/features/support-workspace/model/support-workspace-shell-admission";
 
 function project(
   id: string,
@@ -110,7 +114,7 @@ describe("AppShell", () => {
     expect(wrapper.find('a[href="/reports"]').exists()).toBe(false);
   });
 
-  it("shows Support navigation only after exact Project shell admission", async () => {
+  it("keeps permitted Support navigation stable across shell admission changes", async () => {
     resetMockSupportWorkspaceRollout();
     clearSupportWorkspaceShellAdmission();
     const pinia = createPinia();
@@ -145,7 +149,8 @@ describe("AppShell", () => {
     const rolledBack = mountProjectMenu(pinia, router);
     await flushPromises();
 
-    expect(rolledBack.text()).not.toContain("Поддержка");
+    expect(rolledBack.text()).toContain("Поддержка");
+    expect(rolledBack.find('a[href="/support/inbox"]').exists()).toBe(true);
     rolledBack.unmount();
     resetMockSupportWorkspaceRollout();
     clearSupportWorkspaceShellAdmission();
@@ -220,6 +225,48 @@ describe("AppShell", () => {
     await flushPromises();
     expect(router.currentRoute.value.path).toBe("/support/inbox");
     expect(supportLink!.classes()).toContain("active");
+  });
+
+  it("keeps the Support workspace link visible while admission revalidates", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", ["project.conversations.read"]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+    const admitted = supportWorkspaceShellAdmissionState.value.admission;
+    expect(admitted).not.toBeNull();
+    expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(true);
+
+    let finishRevalidation!: () => void;
+    const revalidation = ensureSupportWorkspaceShellAdmission(
+      {
+        actorId: "operator-1",
+        projectId: "project-1",
+        effectivePermissionCodes: ["project.conversations.read"],
+      },
+      {
+        readAdmission: () =>
+          new Promise((resolve) => {
+            finishRevalidation = () => resolve(admitted!);
+          }),
+      },
+    );
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(true);
+
+    finishRevalidation();
+    await revalidation;
   });
 
   it("uses the compact application rail on the Support workspace route", async () => {
@@ -615,12 +662,21 @@ describe("AppShell", () => {
     ).toBe(true);
 
     const toggle = supportGroup.get(
-      'button[aria-label="Свернуть раздел «Поддержка»"]',
+      'button[aria-label="Развернуть раздел «Поддержка»"]',
     );
-    expect(toggle.attributes("aria-expanded")).toBe("true");
-    await toggle.trigger("click");
+    const disclosure = supportGroup.get(".nav-group-disclosure");
     expect(toggle.attributes("aria-expanded")).toBe("false");
-    expect(supportGroup.get(".nav-group-items").attributes("hidden")).toBe("");
+    expect(disclosure.classes()).toContain("nav-group-disclosure--collapsed");
+    expect(disclosure.attributes("aria-hidden")).toBe("true");
+    expect(disclosure.attributes()).toHaveProperty("inert");
+
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(disclosure.classes()).not.toContain(
+      "nav-group-disclosure--collapsed",
+    );
+    expect(disclosure.attributes("aria-hidden")).toBe("false");
+    expect(disclosure.attributes()).not.toHaveProperty("inert");
   });
 
   it("shows a non-clickable Support heading when only a nested setting is allowed", async () => {

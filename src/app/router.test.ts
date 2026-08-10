@@ -9,7 +9,9 @@ import { authApi } from "@/features/auth/auth.api";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { takeSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
 import {
+  mockSupportWorkspaceShellSource,
   resetMockSupportWorkspaceRollout,
+  supportWorkspaceShellSource,
   writeMockSupportWorkspaceRollout,
 } from "@/features/support-workspace/api/support-workspace-shell-source";
 import { clearSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
@@ -605,7 +607,9 @@ describe("authentication routes", () => {
       "/support/inbox/conversations/conversation-1?projectId=project-1",
     );
 
-    expect(router.currentRoute.value.name).toBe("users");
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.name).toBe("users"),
+    );
     expect(router.currentRoute.value.query).toMatchObject({
       projectId: "project-1",
       conversationId: "conversation-1",
@@ -637,6 +641,53 @@ describe("authentication routes", () => {
     await router.push("/overview");
     await router.push("/support/inbox?mode=cases&projectId=project-1");
     expect(router.currentRoute.value.name).toBe("overview");
+  });
+
+  it("commits a Support workspace navigation without waiting for admission revalidation", async () => {
+    const auth = useAuthStore();
+    const project = {
+      id: "project-1",
+      name: "Project One",
+      slug: "project-one",
+      status: "ACTIVE" as const,
+      effectivePermissionCodes: ["project.conversations.read"],
+    };
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
+      project,
+      projects: [project],
+    });
+    await router.push("/overview");
+    const canonicalAdmission =
+      await mockSupportWorkspaceShellSource.readAdmission(project.id);
+    let finishAdmission!: () => void;
+    const admissionSpy = vi
+      .spyOn(supportWorkspaceShellSource, "readAdmission")
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishAdmission = () => resolve(canonicalAdmission);
+          }),
+      );
+
+    try {
+      let navigationSettled = false;
+      const navigation = router.push("/support/inbox").then(() => {
+        navigationSettled = true;
+      });
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+      expect(navigationSettled).toBe(true);
+      expect(router.currentRoute.value.name).toBe("support-inbox");
+
+      finishAdmission();
+      await navigation;
+      await vi.waitFor(() => expect(admissionSpy).toHaveBeenCalledTimes(1));
+    } finally {
+      admissionSpy.mockRestore();
+    }
   });
 
   it("observes a Project hard-off on the next SPA navigation without clearing admission", async () => {
@@ -674,7 +725,9 @@ describe("authentication routes", () => {
     await router.push("/overview");
     await router.push("/support/inbox?projectId=project-1");
 
-    expect(router.currentRoute.value.name).toBe("users");
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.name).toBe("users"),
+    );
   });
 
   it("keeps an authenticated multi-Project user on login until a Project is selected", async () => {

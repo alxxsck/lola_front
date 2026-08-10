@@ -25,9 +25,7 @@ import {
 import {
   clearSupportWorkspaceShellAdmission,
   ensureSupportWorkspaceShellAdmission,
-  supportWorkspaceShellAdmissionState,
 } from "@/features/support-workspace/model/support-workspace-shell-admission";
-import { isCanonicalSupportWorkspaceAdmission } from "@/features/support-workspace/model/support-workspace-entry-point";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
@@ -45,8 +43,8 @@ const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
 const navigationIntentPath = ref("");
 const expandedNavigationGroups = ref<Record<string, boolean>>({
-  project: true,
-  support: true,
+  project: false,
+  support: false,
 });
 const sidebarCollapsedStorageKey = "retenive-cms-sidebar-collapsed-v1";
 
@@ -105,19 +103,7 @@ const canReadSupportWorkspace = computed(
   () =>
     canReadSupportWorkspaceAccess(
       auth.project?.effectivePermissionCodes ?? [],
-    ) &&
-    supportWorkspaceShellAdmissionState.value.scope?.actorId ===
-      auth.user?.id &&
-    supportWorkspaceShellAdmissionState.value.scope?.projectId ===
-      auth.project?.id &&
-    (isCanonicalSupportWorkspaceAdmission(
-      supportWorkspaceShellAdmissionState.value.admission,
-      "CASES",
-    ) ||
-      isCanonicalSupportWorkspaceAdmission(
-        supportWorkspaceShellAdmissionState.value.admission,
-        "CONVERSATIONS",
-      )),
+    ),
 );
 const supportWorkspacePath = computed(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
@@ -513,6 +499,27 @@ const navigationGroups = computed(() => {
   return groups;
 });
 
+watch(
+  () => route.path,
+  (path) => {
+    for (const group of navigationGroups.value) {
+      if (
+        group.label &&
+        group.items.some((item) => {
+          const targetPath = navigationPath(item.to);
+          return (
+            path === targetPath ||
+            (targetPath !== "/project" && path.startsWith(`${targetPath}/`))
+          );
+        })
+      ) {
+        expandedNavigationGroups.value[group.key] = true;
+      }
+    }
+  },
+  { immediate: true },
+);
+
 function navigationPath(to: string): string {
   return to.split("?", 1)[0] ?? to;
 }
@@ -734,39 +741,52 @@ onBeforeUnmount(() => {
             </div>
             <div
               :id="group.label ? `navigation-group-${group.key}` : undefined"
-              class="nav-group-items"
-              :hidden="
-                group.label && expandedNavigationGroups[group.key] === false
+              class="nav-group-disclosure"
+              :class="{
+                'nav-group-disclosure--collapsed':
+                  group.label && expandedNavigationGroups[group.key] !== true,
+              }"
+              :aria-hidden="
+                group.label
+                  ? expandedNavigationGroups[group.key] !== true
+                  : undefined
+              "
+              :inert="
+                group.label && expandedNavigationGroups[group.key] !== true
+                  ? true
+                  : undefined
               "
             >
-              <RouterLink
-                v-for="item in group.items"
-                :key="item.to"
-                :to="item.to"
-                class="nav-item"
-                :title="sidebarCollapsed ? item.label : undefined"
-                :aria-label="sidebarCollapsed ? item.label : undefined"
-                :aria-current="
-                  isNavigationItemActive(item.to) ? 'page' : undefined
-                "
-                :class="{
-                  active: isNavigationItemActive(item.to),
-                  'nav-item--nested': item.nested,
-                }"
-                @click="handleNavigationIntent($event, item.to)"
-              >
-                <i
-                  :class="item.icon"
-                  aria-hidden="true"
-                  :style="
-                    item.live
-                      ? 'font-size:.55rem;color:var(--status-success)'
-                      : ''
+              <div class="nav-group-items">
+                <RouterLink
+                  v-for="item in group.items"
+                  :key="item.to"
+                  :to="item.to"
+                  class="nav-item"
+                  :title="sidebarCollapsed ? item.label : undefined"
+                  :aria-label="sidebarCollapsed ? item.label : undefined"
+                  :aria-current="
+                    isNavigationItemActive(item.to) ? 'page' : undefined
                   "
-                />
-                <span>{{ item.label }}</span>
-                <span v-if="item.live" class="live-pulse" />
-              </RouterLink>
+                  :class="{
+                    active: isNavigationItemActive(item.to),
+                    'nav-item--nested': item.nested,
+                  }"
+                  @click="handleNavigationIntent($event, item.to)"
+                >
+                  <i
+                    :class="item.icon"
+                    aria-hidden="true"
+                    :style="
+                      item.live
+                        ? 'font-size:.55rem;color:var(--status-success)'
+                        : ''
+                    "
+                  />
+                  <span>{{ item.label }}</span>
+                  <span v-if="item.live" class="live-pulse" />
+                </RouterLink>
+              </div>
             </div>
           </div>
         </nav>
@@ -1147,13 +1167,25 @@ nav {
   flex-direction: column;
   gap: 4px;
 }
+.nav-group-disclosure {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nav-group-disclosure--collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
 .nav-group-items {
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-.nav-group-items[hidden] {
-  display: none;
 }
 .nav-item {
   position: relative;
@@ -1506,6 +1538,8 @@ nav {
   .sidebar-collapse-toggle,
   .sidebar-collapse-toggle > i,
   .nav-item,
+  .nav-group-disclosure,
+  .nav-section-toggle__chevron,
   .brand-copy,
   .project-copy,
   .project-pill > i,

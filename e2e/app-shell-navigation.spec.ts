@@ -18,20 +18,36 @@ test("groups Support pages and keeps the desktop rail preference", async ({
 
   const navigation = page.getByRole("navigation");
   const supportGroup = navigation.getByRole("group", { name: "Поддержка" });
-  const supportRoot = supportGroup.getByRole("link", {
-    name: "Поддержка",
-    exact: true,
+  const supportToggle = supportGroup.getByRole("button", {
+    name: "Развернуть раздел «Поддержка»",
   });
-  await expect(supportRoot).toBeVisible();
+  await expect(
+    supportGroup.getByRole("link", { name: "Поддержка", exact: true }),
+  ).toHaveCount(0);
+  await expect(supportToggle).toHaveAttribute("aria-expanded", "false");
+  const supportDisclosure = supportGroup.locator(".nav-group-disclosure");
+  await expect(supportDisclosure).toHaveCSS("opacity", "0");
+  expect(
+    await supportDisclosure.evaluate(
+      (element) => getComputedStyle(element).transitionProperty,
+    ),
+  ).toContain("grid-template-rows");
+
+  await supportToggle.click();
+  await expect(supportGroup.locator(".nav-section-toggle")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
 
   const supportLinks = supportGroup.locator(
     'a[href^="/support/"], a[href="/cases/settings"]',
   );
-  await expect(supportLinks).toHaveCount(8);
+  await expect(supportLinks).toHaveCount(9);
   await expect(supportLinks).toHaveText([
-    "Поддержка",
+    "Рабочее место",
     "Операционный обзор",
     "Настройки обращений",
+    "Календарь и SLA",
     "Шаблоны ответов",
     "Уведомления",
     "Внешние задачи",
@@ -87,9 +103,10 @@ test("keeps the mobile drawer full-width and unchanged", async ({ page }) => {
     name: "Основная навигация CMS",
   });
   await expect(sidebar).toHaveCSS("width", "250px");
-  await expect(
-    sidebar.getByRole("link", { name: "Поддержка", exact: true }),
-  ).toBeVisible();
+  await sidebar
+    .getByRole("button", { name: "Развернуть раздел «Поддержка»" })
+    .click();
+  await expect(sidebar.getByRole("link", { name: "Рабочее место" })).toBeVisible();
   await expect(
     sidebar.getByRole("button", { name: /боковое меню/ }),
   ).toBeHidden();
