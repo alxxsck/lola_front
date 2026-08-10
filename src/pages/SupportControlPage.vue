@@ -31,6 +31,10 @@ import { createSupportLeadAssignmentBatchController } from "@/features/support-l
 import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import SupportLeadAssignmentBatchDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentBatchDesk.vue";
 import { relativeTime } from "@/shared/lib/format";
+import {
+  supportWorkspaceSource,
+  type SupportWorkspaceCaseRow,
+} from "@/features/support-workspace/api/support-workspace-source";
 import { useRouter } from "vue-router";
 
 const auth = useAuthStore();
@@ -98,6 +102,8 @@ const canOpenCase = computed(() =>
 );
 const assignmentAccessDenied = ref(false);
 const activityAccessDenied = ref(false);
+const riskCaseCatalog = ref<Record<string, SupportWorkspaceCaseRow>>({});
+let riskCaseCatalogGeneration = 0;
 const canReadActivity = computed(
   () =>
     canRead.value &&
@@ -213,9 +219,11 @@ const selectedRiskCaseLabels = computed(() =>
   Object.fromEntries(
     (risks.page.value?.items ?? [])
       .filter((item) => selectedRiskCaseIds.value.includes(item.caseId))
-      .map((item, index) => [
+      .map((item) => [
         item.caseId,
-        `${labelRiskType(item.riskType)} · обращение ${index + 1}`,
+        riskCaseCatalog.value[item.caseId]
+          ? `#${riskCaseCatalog.value[item.caseId]!.projectSequence} · ${riskCaseCatalog.value[item.caseId]!.title}`
+          : `${labelRiskType(item.riskType)} · ${item.caseId}`,
       ]),
   ),
 );
@@ -337,6 +345,83 @@ function duration(value: number | null): string {
   return `${hours} ч ${minutes % 60} мин`;
 }
 
+function resetRiskCaseCatalog(): void {
+  riskCaseCatalogGeneration += 1;
+  riskCaseCatalog.value = {};
+}
+
+async function loadRiskCaseCatalog(): Promise<void> {
+  const projectId = auth.project?.id;
+  const generation = ++riskCaseCatalogGeneration;
+  if (!projectId || !canOpenCase.value) {
+    riskCaseCatalog.value = {};
+    return;
+  }
+  try {
+    const rows: SupportWorkspaceCaseRow[] = [];
+    let cursor: string | undefined;
+    for (let pageIndex = 0; pageIndex < 3; pageIndex += 1) {
+      const page = await supportWorkspaceSource.readCases(projectId, {
+        cursor,
+        limit: 50,
+      });
+      rows.push(...page.items);
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    if (
+      generation !== riskCaseCatalogGeneration ||
+      auth.project?.id !== projectId
+    )
+      return;
+    riskCaseCatalog.value = Object.fromEntries(
+      rows.map((item) => [item.id, item]),
+    );
+  } catch {
+    if (generation === riskCaseCatalogGeneration)
+      riskCaseCatalog.value = {};
+  }
+}
+
+function riskCaseTitle(caseId: string): string {
+  return (
+    riskCaseCatalog.value[caseId]?.title ?? `Обращение ${caseId.slice(-8)}`
+  );
+}
+
+function riskCaseReference(caseId: string, version: number): string {
+  const item = riskCaseCatalog.value[caseId];
+  return item
+    ? `Обращение #${item.projectSequence} · ${item.groupCode}`
+    : `ID ${caseId.slice(-8)} · версия ${version}`;
+}
+
+function riskCaseContext(caseId: string): string {
+  const item = riskCaseCatalog.value[caseId];
+  if (!item)
+    return "Название недоступно в снимке — откройте обращение для деталей.";
+  const priority =
+    {
+      LOW: "Низкий",
+      NORMAL: "Обычный",
+      HIGH: "Высокий",
+      URGENT: "Срочный",
+      CRITICAL: "Критический",
+    }[item.priority] ?? "Неизвестный";
+  const status =
+    {
+      OPEN: "Открыто",
+      IN_PROGRESS: "В работе",
+      WAITING_END_USER: "Ждём пользователя",
+      WAITING_SYSTEM: "Ждём систему",
+      WAITING_ADMIN: "Нужен оператор",
+      RESOLVED: "Решено",
+      UNRESOLVED: "Не решено",
+      CANCELLED: "Отменено",
+    }[item.status] ?? "Статус не распознан";
+  return `${priority} приоритет · ${status}`;
+}
+
 async function reload(): Promise<void> {
   await leadControl.load();
   const readiness = leadControl.readiness.value;
@@ -354,6 +439,7 @@ async function reload(): Promise<void> {
   )
     await risks.load();
   else risks.reset();
+  await loadRiskCaseCatalog();
   if (canReadAlerts.value) void alerts.load();
 }
 
@@ -678,6 +764,7 @@ watch(
     leadControl.reset();
     alerts.reset();
     availability.reset();
+    resetRiskCaseCatalog();
     leadAssignment.reset();
     leadAssignmentBatch.reset();
     selectedRiskCaseIds.value = [];
@@ -693,7 +780,16 @@ watch(canRead, (allowed) => {
   leadControl.reset();
   alerts.reset();
   availability.reset();
+  resetRiskCaseCatalog();
   void router.replace({ name: "overview" });
+});
+
+watch(canOpenCase, (allowed) => {
+  if (allowed) {
+    void loadRiskCaseCatalog();
+    return;
+  }
+  resetRiskCaseCatalog();
 });
 
 watch(canReadActivity, (allowed) => {
@@ -739,6 +835,7 @@ onBeforeUnmount(() => {
   leadControl.reset();
   alerts.reset();
   availability.reset();
+  resetRiskCaseCatalog();
   leadAssignment.reset();
   leadAssignmentBatch.reset();
 });
@@ -748,11 +845,13 @@ onBeforeUnmount(() => {
   <section class="page support-control-page">
     <header class="page-header support-control-header">
       <div>
-        <div class="eyebrow"><i class="pi pi-chart-line" /> Поддержка</div>
+        <div class="eyebrow">
+          <i class="pi pi-chart-line" /> Пульт руководителя смены
+        </div>
         <h1>Операционный обзор</h1>
         <p class="subtitle">
-          Подтверждённый сервером снимок очереди, SLA и нагрузки. Показатели не
-          вычисляются в браузере из загруженных диалогов.
+          Состояние очереди и команды прямо сейчас. Сначала — то, что требует
+          решения.
         </p>
       </div>
       <div class="header-actions">
@@ -769,14 +868,6 @@ onBeforeUnmount(() => {
         />
       </div>
     </header>
-
-    <div class="control-notice" role="note">
-      <i class="pi pi-shield" aria-hidden="true" />
-      <span>
-        Показатели предназначены для распределения работы и устранения рисков, а
-        не для оценки сотрудника по времени нахождения в сети.
-      </span>
-    </div>
 
     <Message v-if="leadControl.error.value" severity="error" :closable="false">
       {{ leadControl.error.value }}
@@ -843,135 +934,187 @@ onBeforeUnmount(() => {
       />
     </div>
     <template v-if="overview.summary.value">
-      <p class="computed-at">
-        Серверный снимок: {{ relativeTime(overview.summary.value.computedAt) }}
-        <template v-if="leadControl.readiness.value?.projectionGeneration">
-          · поколение {{ leadControl.readiness.value.projectionGeneration }}
-        </template>
-      </p>
-      <details class="metric-definitions">
+      <details class="control-context">
         <summary>
-          <i class="pi pi-info-circle" aria-hidden="true" /> Как считаются
-          показатели
+          <span>
+            <i class="pi pi-info-circle" aria-hidden="true" />
+            О данных и методике
+          </span>
+          <small>
+            Обновлено {{ relativeTime(overview.summary.value.computedAt) }}
+            <template v-if="leadControl.readiness.value?.projectionGeneration">
+              · поколение {{ leadControl.readiness.value.projectionGeneration }}
+            </template>
+          </small>
         </summary>
-        <div>
-          <p>
-            <strong>Без назначения</strong> — открытые обращения без
-            действующего владельца.
+        <div class="control-context__body">
+          <p class="control-context__notice">
+            <i class="pi pi-shield" aria-hidden="true" />
+            Показатели помогают распределять работу и устранять риски. Они не
+            предназначены для оценки сотрудников по времени нахождения в сети.
           </p>
-          <p>
-            <strong>SLA под риском</strong> — фоновый прогноз сервера, а не
-            договорный срок.
-          </p>
-          <p>
-            <strong>Ёмкость</strong> — доступная рабочая нагрузка операторов, не
-            оценка эффективности.
-          </p>
-          <p>
-            <strong>Доставка</strong> — сообщения, которые ожидают результата
-            или требуют проверки.
-          </p>
+          <dl>
+            <div>
+              <dt>Без назначения</dt>
+              <dd>Открытые обращения без действующего владельца.</dd>
+            </div>
+            <div>
+              <dt>SLA под риском</dt>
+              <dd>Фоновый прогноз сервера, а не договорный срок.</dd>
+            </div>
+            <div>
+              <dt>Ёмкость</dt>
+              <dd>Рабочая нагрузка команды, а не оценка эффективности.</dd>
+            </div>
+            <div>
+              <dt>Доставка</dt>
+              <dd>Сообщения без подтверждённого результата доставки.</dd>
+            </div>
+          </dl>
         </div>
       </details>
-      <div class="metric-grid">
-        <article class="metric-card">
-          <span class="eyebrow">Очередь</span>
-          <strong>{{
-            overview.summary.value.actionableBacklog.unassignedCount
-          }}</strong>
-          <h2>Без назначения</h2>
-          <p>
-            Старейший:
+      <div class="control-dashboard">
+        <section
+          class="attention-board"
+          aria-labelledby="attention-heading"
+        >
+          <header>
+            <div>
+              <span class="eyebrow">Текущая смена</span>
+              <h2 id="attention-heading">Что требует внимания</h2>
+            </div>
+            <span class="attention-board__state">
+              <i class="pi pi-circle-fill" aria-hidden="true" />
+              Живая очередь
+            </span>
+          </header>
+          <div class="attention-board__content">
+            <div class="attention-board__primary">
+              <span class="attention-board__icon" aria-hidden="true">
+                <i class="pi pi-inbox" />
+              </span>
+              <div>
+                <span>Без назначения</span>
+                <strong>{{
+                  overview.summary.value.actionableBacklog.unassignedCount
+                }}</strong>
+                <p>
+                  Старейшее ждёт
+                  {{
+                    duration(
+                      overview.summary.value.actionableBacklog
+                        .oldestUnassignedAgeMs,
+                    )
+                  }}
+                </p>
+              </div>
+            </div>
+            <dl class="attention-board__signals">
+              <div
+                :class="{
+                  critical: overview.summary.value.sla.breachedCount > 0,
+                }"
+              >
+                <dt>SLA · Под риском</dt>
+                <dd>{{ overview.summary.value.sla.atRiskCount }}</dd>
+                <span>
+                  {{ overview.summary.value.sla.breachedCount }} нарушено
+                </span>
+              </div>
+              <div>
+                <dt>Доставка</dt>
+                <dd>{{ overview.summary.value.delivery.pendingCount }}</dd>
+                <span>
+                  {{ overview.summary.value.delivery.outcomeUnknownCount }} без
+                  результата
+                </span>
+              </div>
+              <div>
+                <dt>Обработка</dt>
+                <dd>{{
+                  overview.summary.value.projectionHealth.retryCount
+                }}</dd>
+                <span>
+                  {{ overview.summary.value.projectionHealth.deadLetterCount }}
+                  не завершено
+                </span>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section
+          class="workforce-board"
+          aria-labelledby="workforce-heading"
+        >
+          <header>
+            <div>
+              <span class="eyebrow">Команда поддержки</span>
+              <h2 id="workforce-heading">Команда и нагрузка</h2>
+            </div>
+            <i class="pi pi-users" aria-hidden="true" />
+          </header>
+          <div class="workforce-board__capacity">
+            <strong>
+              {{ overview.summary.value.workforce.currentWorkloadUnits }} из
+              {{ overview.summary.value.workforce.maximumCapacityUnits }}
+            </strong>
+            <span>единиц ёмкости занято</span>
+          </div>
+          <progress
+            :value="overview.summary.value.workforce.currentWorkloadUnits"
+            :max="overview.summary.value.workforce.maximumCapacityUnits || 1"
+          >
+            {{ overview.summary.value.workforce.currentWorkloadUnits }} из
+            {{ overview.summary.value.workforce.maximumCapacityUnits }}
+          </progress>
+          <p
+            class="workforce-board__gap"
+            :class="{
+              risk: overview.summary.value.workforce.capacityGapUnits > 0,
+            }"
+          >
+            <i
+              :class="
+                overview.summary.value.workforce.capacityGapUnits > 0
+                  ? 'pi pi-exclamation-circle'
+                  : 'pi pi-check-circle'
+              "
+              aria-hidden="true"
+            />
             {{
-              duration(
-                overview.summary.value.actionableBacklog.oldestUnassignedAgeMs,
-              )
+              overview.summary.value.workforce.capacityGapUnits > 0
+                ? `Не хватает ${overview.summary.value.workforce.capacityGapUnits} ед. ёмкости`
+                : "Свободной ёмкости достаточно"
             }}
           </p>
-        </article>
-        <article
-          class="metric-card"
-          :class="{
-            risk: overview.summary.value.sla.breachedCount > 0,
-          }"
-        >
-          <span class="eyebrow">SLA</span>
-          <strong>{{ overview.summary.value.sla.atRiskCount }}</strong>
-          <h2>Под риском</h2>
-          <p>
-            Нарушено: {{ overview.summary.value.sla.breachedCount }} ·
-            старейший срок:
-            {{ duration(overview.summary.value.sla.oldestDueAgeMs) }}
-          </p>
-        </article>
-        <article class="metric-card">
-          <span class="eyebrow">Нагрузка</span>
-          <strong>
-            {{ overview.summary.value.workforce.currentWorkloadUnits }} /
-            {{ overview.summary.value.workforce.maximumCapacityUnits }}
-          </strong>
-          <h2>Рабочая нагрузка</h2>
-          <p>
-            Дефицит: {{ overview.summary.value.workforce.capacityGapUnits }}
-          </p>
-        </article>
-        <article class="metric-card">
-          <span class="eyebrow">Доставка</span>
-          <strong>{{ overview.summary.value.delivery.pendingCount }}</strong>
-          <h2>Ожидают доставки</h2>
-          <p>
-            Результат нужно проверить:
-            {{ overview.summary.value.delivery.outcomeUnknownCount }}
-          </p>
-        </article>
-        <article class="metric-card">
-          <span class="eyebrow">Проекция</span>
-          <strong>{{
-            overview.summary.value.projectionHealth.retryCount
-          }}</strong>
-          <h2>Повторных обработок</h2>
-          <p>
-            Не обработано окончательно:
-            {{ overview.summary.value.projectionHealth.deadLetterCount }}
-          </p>
-        </article>
+          <dl class="workforce-board__statuses">
+            <div>
+              <dt><i class="is-available" />Доступны</dt>
+              <dd>
+                {{ overview.summary.value.workforce.availability.AVAILABLE }}
+              </dd>
+            </div>
+            <div>
+              <dt><i class="is-busy" />Заняты</dt>
+              <dd>{{ overview.summary.value.workforce.availability.BUSY }}</dd>
+            </div>
+            <div>
+              <dt><i class="is-away" />Отошли</dt>
+              <dd>{{ overview.summary.value.workforce.availability.AWAY }}</dd>
+            </div>
+            <div>
+              <dt><i class="is-offline" />Не принимают</dt>
+              <dd>
+                {{
+                  overview.summary.value.workforce.availability.DRAINING +
+                  overview.summary.value.workforce.availability.OFFLINE
+                }}
+              </dd>
+            </div>
+          </dl>
+        </section>
       </div>
-
-      <section
-        class="availability-card card"
-        aria-labelledby="availability-heading"
-      >
-        <div>
-          <span class="eyebrow">Команда поддержки</span>
-          <h2 id="availability-heading">Доступность операторов</h2>
-        </div>
-        <dl>
-          <div>
-            <dt>Доступны</dt>
-            <dd>
-              {{ overview.summary.value.workforce.availability.AVAILABLE }}
-            </dd>
-          </div>
-          <div>
-            <dt>Заняты</dt>
-            <dd>{{ overview.summary.value.workforce.availability.BUSY }}</dd>
-          </div>
-          <div>
-            <dt>Отошли</dt>
-            <dd>{{ overview.summary.value.workforce.availability.AWAY }}</dd>
-          </div>
-          <div>
-            <dt>Завершают</dt>
-            <dd>
-              {{ overview.summary.value.workforce.availability.DRAINING }}
-            </dd>
-          </div>
-          <div>
-            <dt>Офлайн</dt>
-            <dd>{{ overview.summary.value.workforce.availability.OFFLINE }}</dd>
-          </div>
-        </dl>
-      </section>
 
       <section
         v-if="
@@ -983,11 +1126,10 @@ onBeforeUnmount(() => {
       >
         <header class="control-section__header">
           <div>
-            <span class="eyebrow">Нагрузка очередей</span>
-            <h2 id="capacity-heading">Где не хватает свободной ёмкости</h2>
+            <span class="eyebrow">Маршрутизация</span>
+            <h2 id="capacity-heading">Ёмкость по очередям</h2>
             <p class="section-description">
-              Очереди, где доступных операторов недостаточно для входящей
-              работы.
+              Где команда не успевает принять входящую работу.
             </p>
           </div>
         </header>
@@ -1029,9 +1171,9 @@ onBeforeUnmount(() => {
             !leadControl.capacity.value.items.length &&
             leadControl.capacity.value.freshnessState === 'READY'
           "
-          class="empty-section"
-        >
-          На момент снимка дефицита свободной ёмкости нет.
+        class="empty-section"
+      >
+          Все очереди обеспечены свободной ёмкостью.
         </p>
         <Message
           v-else-if="
@@ -1104,15 +1246,19 @@ onBeforeUnmount(() => {
       </section>
     </template>
 
-    <section
-      v-if="canReadAlerts"
-      class="control-section alerts-section"
-      aria-labelledby="alerts-heading"
-    >
+    <div class="operations-layout">
+      <section
+        v-if="canReadAlerts"
+        class="control-section alerts-section"
+        aria-labelledby="alerts-heading"
+      >
       <header class="control-section__header">
         <div>
-          <span class="eyebrow">Операционные сигналы</span>
-          <h2 id="alerts-heading">Активные сигналы</h2>
+          <span class="eyebrow">Автоматический контроль</span>
+          <h2 id="alerts-heading">Операционные сигналы</h2>
+          <p class="section-description">
+            События, которые требуют проверки руководителем смены.
+          </p>
         </div>
         <Button
           label="Обновить сигналы"
@@ -1200,30 +1346,30 @@ onBeforeUnmount(() => {
         :loading="alerts.loading.value"
         @click="alerts.loadMore"
       />
-      <Message
-        severity="secondary"
-        :closable="false"
-        class="alerts-contract-note"
-      >
-        Действия доступны только пользователям с отдельным разрешением на
-        управление сигналами.
-      </Message>
-    </section>
+      <p v-if="!canManageAlerts" class="section-permission">
+        <i class="pi pi-lock" aria-hidden="true" />
+        Управление сигналами доступно по отдельному разрешению.
+      </p>
+      </section>
 
-    <section
-      v-if="
-        ['READY', 'STALE'].includes(
-          leadControl.readiness.value?.readinessState ?? '',
-        ) &&
-        leadControl.readiness.value?.capabilities.caseRisks === 'AVAILABLE'
-      "
-      class="control-section risk-section"
-      aria-labelledby="risk-heading"
-    >
+      <section
+        v-if="
+          ['READY', 'STALE'].includes(
+            leadControl.readiness.value?.readinessState ?? '',
+          ) &&
+          leadControl.readiness.value?.capabilities.caseRisks === 'AVAILABLE'
+        "
+        class="control-section risk-section"
+        aria-labelledby="risk-heading"
+      >
       <header class="control-section__header">
         <div>
-          <span class="eyebrow">Риски обращений</span>
-          <h2 id="risk-heading">Очередь рисков</h2>
+          <span class="eyebrow">Рабочая очередь</span>
+          <h2 id="risk-heading">Обращения в риске</h2>
+          <p class="section-description">
+            Отсортировано по срочности. Откройте обращение или назначьте
+            ответственного прямо из списка.
+          </p>
         </div>
         <div class="risk-tabs" role="group" aria-label="Тип риска">
           <Button
@@ -1231,8 +1377,11 @@ onBeforeUnmount(() => {
             :key="type"
             :label="labelRiskType(type)"
             size="small"
-            :severity="risks.riskType.value === type ? 'primary' : 'secondary'"
-            :outlined="risks.riskType.value !== type"
+            severity="secondary"
+            outlined
+            :class="{
+              'risk-tab--active': risks.riskType.value === type,
+            }"
             :aria-pressed="risks.riskType.value === type"
             :loading="risks.loading.value && risks.riskType.value === type"
             @click="risks.load(type)"
@@ -1290,10 +1439,23 @@ onBeforeUnmount(() => {
         отсутствие обращений не подтверждено.
       </Message>
       <div v-else-if="risks.page.value" class="risk-list">
+        <div
+          class="risk-list__header"
+          :class="{
+            'risk-list__header--selectable': canOverrideAssignments,
+          }"
+          aria-hidden="true"
+        >
+          <span v-if="canOverrideAssignments" />
+          <span>Обращение</span>
+          <span>Риск и срок</span>
+          <span>Действия</span>
+        </div>
         <article
           v-for="risk in risks.page.value.items"
           :key="risk.caseId"
           class="risk-row"
+          :class="{ 'risk-row--selectable': canOverrideAssignments }"
         >
           <label v-if="canOverrideAssignments" class="risk-row__select">
             <input
@@ -1308,9 +1470,17 @@ onBeforeUnmount(() => {
               "
             />
           </label>
-          <div>
-            <span class="eyebrow">{{ labelRiskType(risk.riskType) }}</span>
-            <h3>Обращение требует внимания</h3>
+          <div class="risk-row__identity">
+            <span class="case-reference">
+              {{ riskCaseReference(risk.caseId, risk.caseVersion) }}
+            </span>
+            <h3 :title="riskCaseTitle(risk.caseId)">
+              {{ riskCaseTitle(risk.caseId) }}
+            </h3>
+            <p>{{ riskCaseContext(risk.caseId) }}</p>
+          </div>
+          <div class="risk-row__risk">
+            <span class="risk-type">{{ labelRiskType(risk.riskType) }}</span>
             <p>
               Выявлено {{ relativeTime(risk.detectedAt) }}
               <template v-if="risk.dueAt">
@@ -1356,7 +1526,8 @@ onBeforeUnmount(() => {
         :loading="risks.loading.value"
         @click="risks.loadMore"
       />
-    </section>
+      </section>
+    </div>
 
     <Dialog
       :visible="Boolean(leadControl.selectedCaseId.value)"
@@ -1827,44 +1998,42 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.support-control-header,
-.header-actions,
-.availability-card,
-.availability-card dl {
-  display: flex;
-  align-items: center;
+.support-control-page {
+  max-width: 1560px;
+  margin: 0 auto;
 }
 .support-control-header,
-.availability-card {
+.header-actions {
+  display: flex;
+}
+.support-control-header {
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.support-control-header > div:first-child {
+  max-width: 760px;
+}
+.support-control-header h1 {
+  margin-bottom: 8px;
+  font-size: clamp(1.9rem, 3vw, 2.65rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.support-control-header .subtitle {
+  max-width: 700px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 .header-actions {
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-.control-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  height: auto;
-  overflow: visible;
-  margin-bottom: 16px;
-  padding: 11px 13px;
-  border: 1px solid color-mix(in srgb, var(--status-info) 24%, var(--line));
-  border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-info-soft) 58%,
-    var(--surface-card)
-  );
-  color: var(--status-info-text);
-  font-size: 0.76rem;
-  line-height: 1.45;
-}
-.control-notice i {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  font-size: 0.78rem;
+  justify-content: flex-end;
 }
 .readiness-state :deep(.p-message-text) {
   display: grid;
@@ -1912,88 +2081,323 @@ onBeforeUnmount(() => {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
-.computed-at {
-  margin-bottom: 16px;
-}
-.computed-at {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-.metric-definitions {
-  margin: -6px 0 14px;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.metric-definitions summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  cursor: pointer;
-  color: var(--text-link);
-  font-weight: 700;
-}
-.metric-definitions summary::-webkit-details-marker {
-  display: none;
-}
-.metric-definitions > div {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 18px;
-  max-width: 920px;
-  padding: 10px 12px;
+.control-context {
+  margin: 0 0 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--surface-soft);
+  background: color-mix(in srgb, var(--surface-soft) 56%, var(--surface-card));
+  color: var(--text-muted);
+  font-size: 0.75rem;
 }
-.metric-definitions p {
+.control-context summary {
+  min-height: 44px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+.control-context summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-weight: 650;
+}
+.control-context summary small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+.control-context summary::-webkit-details-marker {
+  display: none;
+}
+.control-context__body {
+  padding: 0 12px 12px;
+}
+.control-context__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--status-info-soft);
+  color: var(--status-info-text);
+  line-height: 1.45;
+}
+.control-context__notice i {
+  margin-top: 2px;
+}
+.control-context dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin: 0;
+}
+.control-context dl > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px;
+}
+.control-context dt,
+.control-context dd {
   margin: 0;
   line-height: 1.45;
 }
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
+.control-context dt {
+  color: var(--text-primary);
+  font-weight: 650;
 }
-.metric-card {
+.control-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.75fr);
+  gap: 12px;
+}
+.attention-board,
+.workforce-board {
   min-width: 0;
-  min-height: 164px;
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--surface-card);
 }
-.metric-card.risk {
-  border-color: var(--red-300);
-  background: color-mix(in srgb, var(--red-50) 55%, var(--surface-card));
+.attention-board > header,
+.workforce-board > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
-.metric-card strong {
-  display: block;
-  margin-top: 12px;
-  font-size: 1.6rem;
-  line-height: 1.1;
+.attention-board h2,
+.workforce-board h2 {
+  margin: 3px 0 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
 }
-.metric-card h2 {
-  margin: 5px 0 8px;
-  font-size: 0.95rem;
+.attention-board__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--status-success-text);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
-.metric-card p {
-  margin: 0;
+.attention-board__state i {
+  font-size: 0.45rem;
+}
+.attention-board__content {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.9fr) minmax(0, 1.4fr);
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 16px;
+}
+.attention-board__primary {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand-soft) 68%, var(--surface-card));
+}
+.attention-board__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--surface-card);
+  color: var(--brand-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 20%, var(--line));
+}
+.attention-board__primary span,
+.attention-board__primary p {
   color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.attention-board__primary strong {
+  display: block;
+  margin: 2px 0;
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.attention-board__primary p {
+  margin: 0;
+}
+.attention-board__signals {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.attention-board__signals > div {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  border-left: 1px solid var(--line);
+}
+.attention-board__signals > div:first-child {
+  border-left: 0;
+}
+.attention-board__signals dt {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+.attention-board__signals dd {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.attention-board__signals span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attention-board__signals .critical dd,
+.attention-board__signals .critical span {
+  color: var(--status-danger-text);
+}
+.workforce-board > header > i {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+.workforce-board__capacity {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+}
+.workforce-board__capacity strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.workforce-board__capacity span {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+.workforce-board progress {
+  width: 100%;
+  height: 7px;
+  margin: 9px 0 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--brand-primary);
+}
+.workforce-board progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.workforce-board progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--brand-primary);
+}
+.workforce-board progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: var(--brand-primary);
+}
+.workforce-board__gap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 9px 0 14px;
+  color: var(--status-success-text);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+.workforce-board__gap.risk {
+  color: var(--status-warning-text);
+}
+.workforce-board__statuses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 14px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.workforce-board__statuses > div,
+.workforce-board__statuses dt {
+  display: flex;
+  align-items: center;
+}
+.workforce-board__statuses > div {
+  justify-content: space-between;
+  gap: 8px;
+}
+.workforce-board__statuses dt {
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+.workforce-board__statuses dt i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.workforce-board__statuses dt .is-available {
+  background: var(--status-success-text);
+}
+.workforce-board__statuses dt .is-busy {
+  background: var(--brand-primary);
+}
+.workforce-board__statuses dt .is-away {
+  background: var(--status-warning-text);
+}
+.workforce-board__statuses dd {
+  margin: 0;
   font-size: 0.78rem;
-  line-height: 1.45;
-}
-.availability-card {
-  gap: 20px;
-  margin-top: 14px;
-  padding: 18px;
-}
-.availability-card h2 {
-  margin: 4px 0 0;
-  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
 }
 .control-section {
-  margin-top: 24px;
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-card);
+}
+.operations-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-areas: "risks alerts";
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+}
+.operations-layout .control-section {
+  margin-top: 0;
+}
+.risk-section {
+  grid-area: risks;
+}
+.alerts-section {
+  grid-area: alerts;
 }
 .control-section__header,
 .risk-tabs,
@@ -2015,33 +2419,78 @@ onBeforeUnmount(() => {
   margin: 4px 0 0;
   font-size: 1rem;
 }
+.control-section__header {
+  align-items: flex-start;
+}
+.control-section__header > div:first-child {
+  min-width: 0;
+}
+.control-section__header .section-description {
+  max-width: 660px;
+  margin: 5px 0 0;
+}
 .risk-tabs {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
+.risk-tabs :deep(.risk-tab--active) {
+  border-color: color-mix(in srgb, var(--brand-primary) 38%, var(--line));
+  background: var(--brand-soft);
+  color: var(--text-primary);
+  box-shadow: none;
+}
 .section-freshness,
 .empty-section,
 .dialog-freshness {
-  margin: 10px 0 14px;
+  margin: 8px 0 12px;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+}
+.empty-section {
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: color-mix(
+    in srgb,
+    var(--status-success-soft) 72%,
+    var(--surface-card)
+  );
+  color: var(--status-success-text);
+  font-weight: 650;
+}
+.section-permission {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
 }
 .risk-list,
 .alert-list,
 .capacity-grid {
   display: grid;
-  gap: 10px;
+}
+.risk-list,
+.alert-list {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
 }
 .capacity-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 .capacity-row {
   min-width: 0;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-card);
+  border-radius: 12px;
+  background: var(--surface-ground);
 }
 .capacity-row__heading {
   display: grid;
@@ -2194,20 +2643,84 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   font-weight: 700;
 }
-.risk-row,
-.alert-row {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-card);
+.risk-list__header {
+  min-height: 34px;
+  padding: 0 12px 0 14px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 0.62fr) auto;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-ground);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
-.risk-row > div:not(.risk-row__actions) {
-  flex: 1 1 auto;
+.risk-list__header--selectable {
+  grid-template-columns: 28px minmax(220px, 1fr) minmax(150px, 0.62fr) auto;
+}
+.risk-list__header span:last-child {
+  text-align: right;
+}
+.risk-row {
   min-width: 0;
+  min-height: 88px;
+  padding: 11px 12px 11px 14px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 0.62fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface-card);
+  transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.risk-row:last-child {
+  border-bottom: 0;
+}
+.risk-row:hover {
+  background: var(--surface-hover);
+}
+.risk-row--selectable {
+  grid-template-columns: 28px minmax(220px, 1fr) minmax(150px, 0.62fr) auto;
+}
+.risk-row__identity,
+.risk-row__risk {
+  min-width: 0;
+}
+.case-reference {
+  display: block;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.risk-row__identity h3 {
+  overflow: hidden;
+  margin-top: 3px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.risk-type {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 7px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 .risk-row__select {
   display: grid;
-  flex: 0 0 28px;
   place-items: center;
   align-self: stretch;
 }
@@ -2223,9 +2736,9 @@ onBeforeUnmount(() => {
 }
 .risk-row p,
 .alert-row p {
-  margin: 7px 0 0;
+  margin: 4px 0 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   line-height: 1.45;
 }
 .row-link,
@@ -2236,9 +2749,48 @@ onBeforeUnmount(() => {
 }
 .risk-row__actions {
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.risk-row__actions :deep(.p-button) {
+  min-height: 36px;
+  padding-block: 6px;
+  font-size: 0.75rem;
+}
+.risk-row__actions .row-link {
+  min-height: 36px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+}
+.alert-row {
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface-card);
+}
+.alert-row:last-child {
+  border-bottom: 0;
+}
+.alerts-section .control-section__header {
+  display: grid;
+  gap: 8px;
+}
+.alerts-section .control-section__header :deep(.p-button) {
+  justify-self: start;
+  padding-inline: 0;
+}
+.alerts-section .alert-row {
+  align-items: flex-start;
+  flex-direction: column;
   gap: 10px;
+}
+.alerts-section .alert-row :deep(.p-button) {
+  min-height: 34px;
+  padding: 5px 9px;
 }
 .row-link {
   color: var(--text-link);
@@ -2352,33 +2904,34 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
-.availability-card dl {
-  gap: 20px;
-  margin: 0;
-}
-.availability-card dl > div {
-  display: grid;
-  gap: 3px;
-}
-.availability-card dt {
-  color: var(--text-muted);
-  font-size: 0.76rem;
-}
-.availability-card dd {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
+@media (min-width: 1181px) and (max-width: 1500px) {
+  .risk-list__header {
+    display: none;
+  }
+  .risk-row {
+    grid-template-columns: minmax(220px, 1fr) minmax(150px, 0.62fr);
+  }
+  .risk-row--selectable {
+    grid-template-columns: 28px minmax(220px, 1fr) minmax(150px, 0.62fr);
+  }
+  .risk-row__actions {
+    grid-column: 1 / -1;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .risk-row--selectable .risk-row__actions {
+    grid-column: 2 / -1;
+  }
 }
 @media (max-width: 1180px) {
-  .metric-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .control-dashboard {
+    grid-template-columns: 1fr;
   }
-  .availability-card {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .availability-card dl {
-    flex-wrap: wrap;
+  .operations-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "risks"
+      "alerts";
   }
 }
 @media (max-width: 720px) {
@@ -2387,9 +2940,6 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 12px;
   }
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
   .capacity-grid {
     grid-template-columns: 1fr;
   }
@@ -2397,16 +2947,54 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
-  .metric-definitions > div {
+  .control-context summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .control-context dl {
     grid-template-columns: 1fr;
   }
-  .metric-card {
-    min-height: 0;
+  .control-context dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
-  .availability-card dl {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+  .attention-board,
+  .workforce-board,
+  .control-section {
+    padding: 14px;
+  }
+  .attention-board__content {
+    grid-template-columns: 1fr;
+  }
+  .attention-board__signals {
+    grid-template-columns: 1fr;
+  }
+  .attention-board__signals > div,
+  .attention-board__signals > div:first-child {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+  .attention-board__signals > div:first-child {
+    border-top: 0;
+  }
+  .attention-board__signals dd {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .risk-list__header {
+    display: none;
+  }
+  .risk-row,
+  .risk-row--selectable {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+  }
+  .risk-row__identity h3 {
+    white-space: normal;
   }
   .control-section__header,
   .risk-row,
@@ -2427,6 +3015,9 @@ onBeforeUnmount(() => {
   .risk-row__actions {
     align-items: stretch;
     flex-direction: column;
+  }
+  .risk-row__actions .row-link {
+    justify-content: center;
   }
   .risk-row__select {
     align-self: flex-start;

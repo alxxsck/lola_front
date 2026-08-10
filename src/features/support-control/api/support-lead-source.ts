@@ -792,7 +792,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     const cases: Record<SupportLeadRiskType, SupportLeadCaseRisk[]> = {
       UNASSIGNED_AGED: [
         {
-          caseId: "case-risk-101",
+          caseId: "case-demo-deposit",
           caseVersion: 4,
           assignmentVersion: null,
           deliveryVersion: null,
@@ -805,7 +805,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       SLA_AT_RISK: [
         {
-          caseId: "case-risk-102",
+          caseId: "case-demo-game",
           caseVersion: 7,
           assignmentVersion: 3,
           deliveryVersion: null,
@@ -818,7 +818,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       SLA_BREACHED: [
         {
-          caseId: "case-risk-103",
+          caseId: "case-demo-game",
           caseVersion: 2,
           assignmentVersion: null,
           deliveryVersion: null,
@@ -831,7 +831,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       DELIVERY_OUTCOME_UNKNOWN: [
         {
-          caseId: "case-risk-104",
+          caseId: "case-demo-deposit",
           caseVersion: 9,
           assignmentVersion: 4,
           deliveryVersion: 5,

@@ -18,28 +18,32 @@ test("shows an authoritative support lead snapshot without deriving chat metrics
   await page.screenshot({
     path: testInfo.outputPath("lead-control-overview-desktop.png"),
   });
-  await expect(page.locator(".computed-at")).toContainText("Серверный снимок:");
+  await expect(page.locator(".control-context summary")).toContainText(
+    "Обновлено",
+  );
   await expect(
-    page.getByRole("heading", { level: 2, name: "Без назначения" }),
+    page.getByRole("heading", { level: 2, name: "Что требует внимания" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Доступность операторов" }),
+    page.getByRole("heading", { level: 2, name: "Команда и нагрузка" }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "Где не хватает свободной ёмкости",
+      name: "Ёмкость по очередям",
     }),
   ).toBeVisible();
-  await expect(page.locator(".computed-at")).toContainText(
-    "SLA рассчитывается в фоновом режиме",
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Обращения в риске" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Операционные сигналы" }),
+  ).toBeVisible();
+  const firstRisk = page.locator(".risk-row").first();
+  await expect(firstRisk.getByRole("heading", { level: 3 })).toHaveText(
+    "Не поступил депозит",
   );
-  await expect(
-    page.getByRole("heading", { level: 2, name: "Очередь рисков" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "Активные сигналы" }),
-  ).toBeVisible();
+  await expect(firstRisk).toContainText("Обращение #48 · PAYMENTS");
   const sectionOrder = await page.evaluate(() => {
     const alerts = document.querySelector(".alerts-section");
     const risks = document.querySelector(".risk-section");
@@ -50,7 +54,7 @@ test("shows an authoritative support lead snapshot without deriving chat metrics
   });
   expect(sectionOrder.alertsTop).toBeDefined();
   expect(sectionOrder.risksTop).toBeDefined();
-  expect(sectionOrder.alertsTop!).toBeLessThan(sectionOrder.risksTop!);
+  expect(sectionOrder.risksTop!).toBeLessThanOrEqual(sectionOrder.alertsTop!);
 
   await page.getByRole("button", { name: "История" }).click();
   const dialog = page.getByRole("dialog", {

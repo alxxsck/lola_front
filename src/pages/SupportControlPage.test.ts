@@ -21,6 +21,7 @@ const api = vi.hoisted(() => ({
   readCapacityRisks: vi.fn(),
   readInvestigation: vi.fn(),
   readActivity: vi.fn(),
+  readCases: vi.fn(),
   readAlerts: vi.fn(),
   readAlertDetail: vi.fn(),
   readAvailability: vi.fn(),
@@ -43,6 +44,12 @@ vi.mock("@/features/support-availability/api/support-availability-source", () =>
     read: api.readAvailability,
     setOwn: api.setOwnAvailability,
     renewOwn: api.renewAvailability,
+  },
+}));
+
+vi.mock("@/features/support-workspace/api/support-workspace-source", () => ({
+  supportWorkspaceSource: {
+    readCases: api.readCases,
   },
 }));
 
@@ -199,6 +206,25 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
       nextCursor: riskPage?.nextCursor ?? null,
     }),
   );
+  api.readCases.mockResolvedValue({
+    items: [
+      {
+        id: "case-1",
+        endUserId: "user-1",
+        projectSequence: "104",
+        title: "Не поступил депозит",
+        status: "WAITING_ADMIN",
+        priority: "HIGH",
+        groupCode: "PAYMENTS",
+        attentionRequired: true,
+        slaSignal: null,
+        lastActivityAt: "2026-08-06T09:55:00.000Z",
+        updatedAt: "2026-08-06T09:55:00.000Z",
+        version: 3,
+      },
+    ],
+    nextCursor: null,
+  });
   api.readAlerts.mockResolvedValue(alertsPage ?? alertPage);
   api.readAlertDetail.mockResolvedValue(alertDetail);
   const availability = {
@@ -251,11 +277,28 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
 describe("SupportControlPage", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it("leads with decisions, team capacity, and the risk work queue", async () => {
+    const { wrapper } = await render(summary, { allowAlerts: true });
+
+    const attention = wrapper.get('[aria-labelledby="attention-heading"]');
+    expect(attention.text()).toContain("Без назначения");
+    expect(attention.text()).toContain("3");
+
+    const workforce = wrapper.get('[aria-labelledby="workforce-heading"]');
+    expect(workforce.text()).toContain("1 из 2");
+    expect(workforce.text()).toContain("Доступны");
+
+    expect(wrapper.get("#risk-heading").text()).toBe("Обращения в риске");
+    expect(wrapper.get("#alerts-heading").text()).toBe(
+      "Операционные сигналы",
+    );
+  });
+
   it("renders authoritative SLA counts without release qualifiers", async () => {
     const { wrapper } = await render(summary);
 
     expect(wrapper.text()).not.toContain("SLA рассчитывается в фоновом режиме");
-    expect(wrapper.text()).toContain("Под риском");
+    expect(wrapper.text()).toContain("SLA · Под риском");
   });
 
   it("uses projection readiness instead of showing unavailable aggregates as zero", async () => {
@@ -304,7 +347,7 @@ describe("SupportControlPage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Где не хватает свободной ёмкости");
+    expect(wrapper.text()).toContain("Ёмкость по очередям");
     expect(wrapper.text()).toContain("Исчерпана ёмкость · 2");
     const href = wrapper.get(".capacity-row .row-link").attributes("href");
     expect(href).toContain("/support/inbox");
@@ -340,12 +383,43 @@ describe("SupportControlPage", () => {
     expect(wrapper.find(".risk-row__select .sr-only").exists()).toBe(false);
   });
 
+  it("shows a human-readable identity for every risk case", async () => {
+    const { wrapper } = await render(summary, {
+      allowAssignment: true,
+      riskPage: {
+        computedAt: "2026-08-06T10:00:00.000Z",
+        freshnessState: "READY",
+        nextCursor: null,
+        items: [
+          {
+            caseId: "case-1",
+            caseVersion: 3,
+            assignmentVersion: null,
+            deliveryVersion: null,
+            detectedAt: "2026-08-06T09:55:00.000Z",
+            dueAt: null,
+            riskSortAt: "2026-08-06T09:55:00.000Z",
+            riskType: "UNASSIGNED_AGED",
+            slaClockVersion: null,
+          },
+        ],
+      },
+    });
+
+    const row = wrapper.get(".risk-row");
+    expect(row.get("h3").text()).toBe("Не поступил депозит");
+    expect(row.get(".case-reference").text()).toContain(
+      "Обращение #104 · PAYMENTS",
+    );
+    expect(row.text()).toContain("Высокий приоритет");
+  });
+
   it("does not hide SLA behind a module state", async () => {
     const { wrapper } = await render({
       ...summary,
     });
 
-    expect(wrapper.text()).toContain("Под риском");
+    expect(wrapper.text()).toContain("SLA · Под риском");
     expect(wrapper.text()).not.toContain("SLA не включён");
   });
 
@@ -362,10 +436,10 @@ describe("SupportControlPage", () => {
   it("mounts active alerts only for the exact alert-read permission", async () => {
     const { wrapper } = await render(summary, { allowAlerts: true });
 
-    expect(wrapper.text()).toContain("Активные сигналы");
+    expect(wrapper.text()).toContain("Операционные сигналы");
     expect(wrapper.text()).toContain("Давно без назначения");
     expect(wrapper.text()).toContain(
-      "отдельным разрешением на управление сигналами",
+      "Управление сигналами доступно по отдельному разрешению",
     );
   });
 
@@ -376,7 +450,7 @@ describe("SupportControlPage", () => {
     });
 
     expect(api.readAlerts).not.toHaveBeenCalled();
-    expect(wrapper.text()).not.toContain("Активные сигналы");
+    expect(wrapper.text()).not.toContain("Операционные сигналы");
   });
 
   it("keeps an available operator lease alive while viewing support control", async () => {
