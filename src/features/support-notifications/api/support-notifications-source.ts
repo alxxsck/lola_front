@@ -25,11 +25,20 @@ export interface BrowserSubscriptionMaterial {
   auth: string;
 }
 
+export type SupportNotificationConfiguration = Pick<
+  PersonalSupportNotificationAdmissionResponseDto,
+  | "evaluatedAt"
+  | "activeSubscriptionCount"
+  | "capabilities"
+  | "applicationServerKey"
+  | "applicationServerKeyRevision"
+>;
+
 export interface SupportNotificationsSource {
-  readAdmission(
+  readConfiguration(
     projectId: string,
     signal?: AbortSignal,
-  ): Promise<PersonalSupportNotificationAdmissionResponseDto>;
+  ): Promise<SupportNotificationConfiguration>;
   readPreferences(
     projectId: string,
     signal?: AbortSignal,
@@ -64,7 +73,7 @@ export interface SupportNotificationsSource {
 }
 
 export const apiSupportNotificationsSource: SupportNotificationsSource = {
-  async readAdmission(projectId, signal) {
+  async readConfiguration(projectId, signal) {
     return personalSupportNotificationReadAdmission(projectId, { signal });
   },
   async readPreferences(projectId, signal) {
@@ -167,11 +176,9 @@ function preferences(projectId: string): PersonalSupportNotificationPreferenceRe
 }
 
 const mockSupportNotificationsSource: SupportNotificationsSource = {
-  async readAdmission() {
+  async readConfiguration() {
     hydrateMockSourceState();
     return {
-      rolloutState: "ATTENTION_ENABLED",
-      rolloutRevision: "0123456789abcdef",
       evaluatedAt: new Date().toISOString(),
       activeSubscriptionCount: mockDevices.filter((item) => item.status === "ACTIVE").length,
       capabilities: {

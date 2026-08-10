@@ -1,4 +1,4 @@
-# Support Workspace: тестирование, этапы и rollout
+# Support Workspace: тестирование и стабильная поставка
 
 ## 1. Стратегия поставки
 
@@ -19,7 +19,7 @@ repository, state machine, UI, permission cases, accessibility и e2e. Боль�
 
 Frontend:
 
-- добавить route shell `/support/inbox` за flag;
+- добавить прямой route shell `/support/inbox`;
 - создать module boundaries и repository interfaces;
 - перенести `ordinal` и `authorSnapshot` в domain/mappers;
 - scoped project/selection/generation state;
@@ -48,7 +48,8 @@ selection/draft/translation/message anchor.
 - selected workspace/messages;
 - desktop/tablet/mobile navigation;
 - existing translation и AI Suspension composition;
-- переходы из `/live`, `/users`, `/cases`.
+- canonical redirect из `/cases` и собственные Support deep links; `/users` и
+  `/live` остаются независимыми маршрутами.
 
 Exit: оператор находит Conversation на уровне project и читает её в новом route.
 
@@ -103,7 +104,7 @@ Exit: image, document, multi-file и attachment-only Message проходят fu
 - Internal Notes;
 - macros;
 - Knowledge search/open/link/quote;
-- content revisions/rollout;
+- content revisions и публикация;
 - permission-sensitive history/redaction.
 
 Exit: note невозможно отправить публично, macro/knowledge сохраняют provenance.
@@ -129,14 +130,13 @@ Exit: lead от риска переходит к точному Case и выпо
 
 Exit: браузер не считает project metrics и review score из raw chat pages.
 
-### F9. Hardening и cutover
+### F9. Hardening и стабильная поставка
 
 - нагрузочные/reconnect/revoke/security тесты;
 - accessibility audit;
-- pilot projects и операторское наблюдение;
+- операторское наблюдение;
 - performance budgets;
-- legacy dialog launcher → deep link;
-- удаление старого CHAT orchestration после adoption gate.
+- удаление дублирующего CHAT orchestration.
 
 ## 3. Test pyramid
 
@@ -295,21 +295,16 @@ keyboard. Набор размеров и motion/focus assertions зафикси�
 - telemetry не содержит content/PII;
 - direct deep link повторно проверяет project membership.
 
-## 9. Rollout
+## 9. Стабильная поставка
 
-1. Internal dogfood на read-only route.
-2. Пилот P0 для одного project/небольшой команды.
-3. Сравнение старого и нового projections через server IDs/revisions, без
-   двойной отправки.
-4. Включение write actions по одной vertical flag.
-5. Наблюдение duplicate prevention, conflict, draft recovery, unread accuracy,
+1. Все Support routes доступны при deployment capability и нужном Permission.
+2. Read и write paths проверяются на новом Project без дополнительных записей включения.
+3. Наблюдаются duplicate prevention, conflict, draft recovery, unread accuracy,
    frontend errors и operator task completion.
-6. Расширение на projects после acceptance gate.
-7. Перевод legacy entry points на deep link.
-8. Удаление старого CHAT mode после периода rollback safety.
-
-Rollback отключает route/write flags. Он не откатывает уже принятые backend
-Messages, assignments или read positions.
+4. `/cases` перенаправляет в canonical Support inbox.
+5. `/users`, direct user URL и `/live` проходят отдельную регрессию без Support API.
+6. Recovery после неудачного release выполняется инфраструктурным восстановлением,
+   а не переключателем в CMS.
 
 ## 10. Release gates
 
@@ -326,16 +321,16 @@ Messages, assignments или read positions.
 - full-tab behavioral suite проходит geometry, scroll ownership, nested
   overlays, focus return и reduced motion;
 - telemetry/privacy review выполнен;
-- support runbook и feature flag готовы.
+- Support runbook и deployment availability checks готовы.
 
-### Для общего cutover
+### Для общего release
 
-- основные операторы выполняют daily flow без legacy dialog;
+- основные операторы выполняют daily flow в canonical Support Workspace;
 - нет известных duplicate/lost draft/permission leakage defects;
 - unread и delivery сверены с backend truth;
 - P95 selection/render и command feedback укладываются в утверждённый budget;
 - lead/QA/analytics не блокируют P0 операторский flow;
-- rollback проверен на пилотном project.
+- recovery procedure проверена на release snapshot.
 
 ## 11. Команды проверки frontend PR
 

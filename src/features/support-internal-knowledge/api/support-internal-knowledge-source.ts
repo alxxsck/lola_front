@@ -9,6 +9,7 @@ import {
 import type {
   SupportKnowledgeCitationDraftResponseDto,
   SupportKnowledgeFileDownloadResponseDto,
+  SupportKnowledgeFreshnessResponseDto,
   SupportKnowledgeSearchItemResponseDto,
   SupportKnowledgeSearchPageResponseDto,
   SupportKnowledgeTextDocumentResponseDto,
@@ -24,9 +25,22 @@ export interface SupportKnowledgeScope {
   topicCode?: string;
 }
 
+export type SupportKnowledgeFreshness = Pick<
+  SupportKnowledgeFreshnessResponseDto,
+  "state" | "catalogGeneration" | "evaluatedAt"
+>;
+export type SupportKnowledgeSearchPage = Omit<
+  SupportKnowledgeSearchPageResponseDto,
+  "freshness"
+> & { freshness: SupportKnowledgeFreshness };
+export type SupportKnowledgeTextDocument = Omit<
+  SupportKnowledgeTextDocumentResponseDto,
+  "freshness"
+> & { freshness: SupportKnowledgeFreshness };
+
 export interface SupportInternalKnowledgeSource {
-  search(scope: SupportKnowledgeScope, query: string, cursor?: string, signal?: AbortSignal): Promise<SupportKnowledgeSearchPageResponseDto>;
-  open(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto, signal?: AbortSignal): Promise<SupportKnowledgeTextDocumentResponseDto>;
+  search(scope: SupportKnowledgeScope, query: string, cursor?: string, signal?: AbortSignal): Promise<SupportKnowledgeSearchPage>;
+  open(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto, signal?: AbortSignal): Promise<SupportKnowledgeTextDocument>;
   createCitation(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto, mode: "QUOTE" | "LINK", selectedText?: string): Promise<SupportKnowledgeCitationDraftResponseDto>;
   updateCitation(scope: SupportKnowledgeScope, draft: SupportKnowledgeCitationDraftResponseDto, text: string): Promise<SupportKnowledgeCitationDraftResponseDto>;
   download(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto): Promise<SupportKnowledgeFileDownloadResponseDto>;
@@ -36,16 +50,23 @@ function options(signal?: AbortSignal) {
   return signal ? { signal } : undefined;
 }
 
+function freshness(value: SupportKnowledgeFreshnessResponseDto): SupportKnowledgeFreshness {
+  return {
+    state: value.state,
+    catalogGeneration: value.catalogGeneration,
+    evaluatedAt: value.evaluatedAt,
+  };
+}
+
 const apiSource: SupportInternalKnowledgeSource = {
   async search(scope, query, cursor, signal) {
     try {
-      return await supportInternalKnowledgeSearch(
+      const page = await supportInternalKnowledgeSearch(
         scope.projectId,
         {
           caseId: scope.caseId,
           q: query,
           audience: "ALL",
-          rollout: "CURRENT",
           limit: 20,
           ...(scope.locale ? { locale: scope.locale } : {}),
           ...(scope.topicCode ? { topicCode: scope.topicCode } : {}),
@@ -53,18 +74,20 @@ const apiSource: SupportInternalKnowledgeSource = {
         },
         options(signal),
       );
+      return { ...page, freshness: freshness(page.freshness) };
     } catch (cause) {
       throw normalizeApiError(cause);
     }
   },
   async open(scope, item, signal) {
     try {
-      return await supportInternalKnowledgeOpen(
+      const document = await supportInternalKnowledgeOpen(
         scope.projectId,
         item.documentId,
         { caseId: scope.caseId, revisionId: item.revisionId },
         options(signal),
       );
+      return { ...document, freshness: freshness(document.freshness) };
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -144,7 +167,7 @@ const mockSource: SupportInternalKnowledgeSource = {
     return {
       items: matches ? [mockItem] : [],
       nextCursor: null,
-      freshness: { state: "CURRENT", admissionVersion: 2, catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
+      freshness: { state: "CURRENT", catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
     };
   },
   async open(_scope, item) {
@@ -156,7 +179,7 @@ const mockSource: SupportInternalKnowledgeSource = {
           action === "INSERT_QUOTE" || action === "INSERT_LINK" || action === "REPORT_PROBLEM",
       ),
       contentText: MOCK_TEXT,
-      freshness: { state: "CURRENT", admissionVersion: 2, catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
+      freshness: { state: "CURRENT", catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
     };
   },
   async createCitation(_scope, item, mode, selectedText) {

@@ -1,7 +1,12 @@
 import { computed, ref, shallowRef } from "vue";
-import type { SupportKnowledgeCitationDraftResponseDto, SupportKnowledgeFreshnessResponseDto, SupportKnowledgeSearchItemResponseDto, SupportKnowledgeTextDocumentResponseDto } from "@/shared/api/generated/models";
+import type { SupportKnowledgeCitationDraftResponseDto, SupportKnowledgeSearchItemResponseDto } from "@/shared/api/generated/models";
 import { ApiError } from "@/shared/api/http/api-error";
-import type { SupportInternalKnowledgeSource, SupportKnowledgeScope } from "../api/support-internal-knowledge-source";
+import type {
+  SupportInternalKnowledgeSource,
+  SupportKnowledgeFreshness,
+  SupportKnowledgeScope,
+  SupportKnowledgeTextDocument,
+} from "../api/support-internal-knowledge-source";
 
 export interface SupportInternalKnowledgeContext {
   scope(): SupportKnowledgeScope | null;
@@ -25,8 +30,8 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
   const query = ref("");
   const items = shallowRef<SupportKnowledgeSearchItemResponseDto[]>([]);
   const nextCursor = ref<string | null>(null);
-  const freshness = shallowRef<SupportKnowledgeFreshnessResponseDto | null>(null);
-  const selected = shallowRef<SupportKnowledgeTextDocumentResponseDto | null>(null);
+  const freshness = shallowRef<SupportKnowledgeFreshness | null>(null);
+  const selected = shallowRef<SupportKnowledgeTextDocument | null>(null);
   const activeCitation = shallowRef<SupportKnowledgeCitationDraftResponseDto | null>(null);
   const loading = ref(false);
   const openingId = ref<string | null>(null);

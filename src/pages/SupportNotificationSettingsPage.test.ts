@@ -19,9 +19,7 @@ const browserState = vi.hoisted(() => ({
 
 vi.mock("@/features/support-notifications/api/support-notifications-source", () => ({
   supportNotificationsSource: {
-    readAdmission: vi.fn().mockResolvedValue({
-      rolloutState: "ATTENTION_ENABLED",
-      rolloutRevision: "0123456789abcdef",
+    readConfiguration: vi.fn().mockResolvedValue({
       evaluatedAt: "2026-08-09T10:00:00.000Z",
       activeSubscriptionCount: 0,
       capabilities: {
@@ -119,14 +117,14 @@ describe("SupportNotificationSettingsPage", () => {
         },
       },
     });
-    await vi.waitFor(() => expect(supportNotificationsSource.readAdmission).toHaveBeenCalled());
-    const calls = vi.mocked(supportNotificationsSource.readAdmission).mock.calls.length;
+    await vi.waitFor(() => expect(supportNotificationsSource.readConfiguration).toHaveBeenCalled());
+    const calls = vi.mocked(supportNotificationsSource.readConfiguration).mock.calls.length;
 
     const auth = useAuthStore();
     auth.project!.effectivePermissionCodes = ["project.support.lead_control.read"];
 
     await vi.waitFor(() =>
-      expect(supportNotificationsSource.readAdmission).toHaveBeenCalledTimes(calls + 1),
+      expect(supportNotificationsSource.readConfiguration).toHaveBeenCalledTimes(calls + 1),
     );
     expect(wrapper.text()).toContain("Уведомления поддержки");
   });
@@ -181,9 +179,7 @@ describe("SupportNotificationSettingsPage", () => {
   });
 
   it("explains why browser permission cannot be requested while device registration is disabled", async () => {
-    vi.mocked(supportNotificationsSource.readAdmission).mockResolvedValueOnce({
-      rolloutState: "DISABLED",
-      rolloutRevision: "0123456789abcdef",
+    vi.mocked(supportNotificationsSource.readConfiguration).mockResolvedValueOnce({
       evaluatedAt: "2026-08-09T10:00:00.000Z",
       activeSubscriptionCount: 0,
       capabilities: {
@@ -213,7 +209,7 @@ describe("SupportNotificationSettingsPage", () => {
 
     await vi.waitFor(() =>
       expect(wrapper.text()).toContain(
-        "Проект пока не принимает новые подключения браузеров",
+        "Регистрация новых браузеров временно недоступна",
       ),
     );
     expect(wrapper.get("button[disabled]").text()).toContain(

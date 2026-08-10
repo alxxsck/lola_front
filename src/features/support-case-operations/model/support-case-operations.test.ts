@@ -11,11 +11,10 @@ describe("support Case SLA and routing presentation", () => {
     expect(formatBusinessDuration(-90_000)).toBe("просрочено на 1 мин");
   });
 
-  it("always calls shadow SLA a forecast", () => {
+  it("presents the authoritative SLA signal without release qualifiers", () => {
     expect(
       slaSignalLabel({
         state: "AVAILABLE",
-        rolloutState: "SHADOW",
         signalCode: "SLA_AT_RISK",
         kind: "FIRST_HUMAN_RESPONSE",
         timing: "RUNNING",
@@ -25,7 +24,7 @@ describe("support Case SLA and routing presentation", () => {
         remainingBusinessMs: 900_000,
         computedAt: "2026-08-08T10:00:00.000Z",
       }),
-    ).toBe("Риск первого ответа · 15 мин · теневой прогноз");
+    ).toBe("Риск первого ответа · 15 мин");
   });
 
   it("does not disguise degraded or stale routing as an assignment", () => {

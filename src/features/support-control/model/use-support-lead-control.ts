@@ -2,10 +2,10 @@ import { ref } from "vue";
 import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportLeadActivityPage,
-  SupportLeadAdmission,
   SupportLeadCapacityRiskPage,
   SupportLeadDrilldownSource,
   SupportLeadInvestigation,
+  SupportLeadReadiness,
 } from "@/features/support-control/api/support-lead-source";
 
 export interface SupportLeadControlContext {
@@ -17,7 +17,7 @@ export interface SupportLeadControlContext {
 }
 
 /**
- * Owns Lead admission and bounded drill-downs. All protected projections are
+ * Owns Lead projection readiness and bounded drill-downs. All protected projections are
  * scoped to the current Project and selected Case and are purged before an
  * authority callback is invoked.
  */
@@ -25,12 +25,12 @@ export function createSupportLeadControlController(
   context: SupportLeadControlContext,
   source: SupportLeadDrilldownSource,
 ) {
-  const admission = ref<SupportLeadAdmission | null>(null);
+  const readiness = ref<SupportLeadReadiness | null>(null);
   const capacity = ref<SupportLeadCapacityRiskPage | null>(null);
   const investigation = ref<SupportLeadInvestigation | null>(null);
   const activity = ref<SupportLeadActivityPage | null>(null);
   const selectedCaseId = ref<string | null>(null);
-  const loadingAdmission = ref(false);
+  const loadingReadiness = ref(false);
   const loadingCapacity = ref(false);
   const loadingInvestigation = ref(false);
   const loadingActivity = ref(false);
@@ -81,9 +81,9 @@ export function createSupportLeadControlController(
     projectGeneration += 1;
     projectAbort?.abort();
     projectAbort = null;
-    admission.value = null;
+    readiness.value = null;
     capacity.value = null;
-    loadingAdmission.value = false;
+    loadingReadiness.value = false;
     loadingCapacity.value = false;
     error.value = "";
     resetSelection();
@@ -107,22 +107,20 @@ export function createSupportLeadControlController(
     projectAbort = abort;
     error.value = "";
     if (!projectId || !context.canRead()) return;
-    loadingAdmission.value = true;
+    loadingReadiness.value = true;
     try {
-      const nextAdmission = await source.readAdmission(projectId, abort.signal);
+      const nextReadiness = await source.readReadiness(projectId, abort.signal);
       if (!currentProject(projectId, generation)) return;
-      admission.value = nextAdmission;
+      readiness.value = nextReadiness;
       capacity.value = null;
-      loadingAdmission.value = false;
+      loadingReadiness.value = false;
       if (
-        nextAdmission.rolloutState !== "ENABLED" ||
-        !["READY", "STALE"].includes(nextAdmission.readinessState) ||
-        nextAdmission.capabilities.capacityRisks !== "AVAILABLE"
+        !["READY", "STALE"].includes(nextReadiness.readinessState) ||
+        nextReadiness.capabilities.capacityRisks !== "AVAILABLE"
       ) {
         if (
           caseToRestore &&
-          nextAdmission.rolloutState === "ENABLED" &&
-          nextAdmission.capabilities.investigation !== "UNAVAILABLE"
+          nextReadiness.capabilities.investigation !== "UNAVAILABLE"
         )
           await selectCase(caseToRestore);
         return;
@@ -131,7 +129,7 @@ export function createSupportLeadControlController(
       const nextCapacity = await source.readCapacityRisks(projectId, undefined, abort.signal);
       if (!currentProject(projectId, generation)) return;
       capacity.value = nextCapacity;
-      if (caseToRestore && nextAdmission.capabilities.investigation !== "UNAVAILABLE")
+      if (caseToRestore && nextReadiness.capabilities.investigation !== "UNAVAILABLE")
         await selectCase(caseToRestore);
     } catch (cause) {
       if (!currentProject(projectId, generation)) return;
@@ -140,13 +138,13 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      admission.value = null;
+      readiness.value = null;
       capacity.value = null;
       resetSelection();
       error.value = "Панель руководителя временно недоступна. Повторите загрузку.";
     } finally {
       if (generation === projectGeneration) {
-        loadingAdmission.value = false;
+        loadingReadiness.value = false;
         loadingCapacity.value = false;
         projectAbort = null;
       }
@@ -171,7 +169,7 @@ export function createSupportLeadControlController(
     activity.value = null;
     investigationError.value = "";
     activityError.value = "";
-    const investigationCapability = admission.value?.capabilities.investigation;
+    const investigationCapability = readiness.value?.capabilities.investigation;
     if (
       !projectId ||
       !context.canRead() ||
@@ -193,7 +191,7 @@ export function createSupportLeadControlController(
         abort.signal,
       );
     const activityRequest =
-      context.canReadActivity() && admission.value?.capabilities.activity === "AVAILABLE"
+      context.canReadActivity() && readiness.value?.capabilities.activity === "AVAILABLE"
         ? source.readActivity(projectId, caseId, undefined, abort.signal)
         : Promise.resolve(null);
     const [investigationResult, activityResult] = await Promise.allSettled([
@@ -387,12 +385,12 @@ export function createSupportLeadControlController(
   }
 
   return {
-    admission,
+    readiness,
     capacity,
     investigation,
     activity,
     selectedCaseId,
-    loadingAdmission,
+    loadingReadiness,
     loadingCapacity,
     loadingInvestigation,
     loadingActivity,

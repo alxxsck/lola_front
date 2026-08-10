@@ -5,13 +5,15 @@ import {
 } from "@/shared/api/generated/retenive-backend";
 import type {
   ProfileProjectionResponseDto,
-  SupportActivityResponseDto,
   SupportInspectorEventPageResponseDto,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import { repository } from "@/shared/api/repository";
 import { isMockMode } from "@/shared/config/data-mode";
-import type { SupportInspectorSource } from "@/features/support-inspector/model/use-support-inspector";
+import type {
+  SupportActivitySnapshot,
+  SupportInspectorSource,
+} from "@/features/support-inspector/model/use-support-inspector";
 
 function mockField(
   key: string,
@@ -59,7 +61,23 @@ const apiSource: SupportInspectorSource = {
   },
   async readActivity(projectId, params, signal) {
     try {
-      return await supportLeadActivity(projectId, params, { signal });
+      const activity = await supportLeadActivity(
+        projectId,
+        params,
+        { signal },
+      );
+      return {
+        capabilities: activity.capabilities,
+        checkpoint: activity.checkpoint,
+        computedAt: activity.computedAt,
+        data: activity.data,
+        effectiveWindow: activity.effectiveWindow,
+        freshnessState: activity.freshnessState,
+        kind: activity.kind,
+        nextCursor: activity.nextCursor,
+        projectionGeneration: activity.projectionGeneration,
+        sourceHighWater: activity.sourceHighWater,
+      };
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -135,7 +153,7 @@ const mockSource: SupportInspectorSource = {
   async readActivity(_projectId, params, signal) {
     if (signal?.aborted) throw signal.reason;
     const caseId = params.caseId ?? null;
-    const result: SupportActivityResponseDto = {
+    const result: SupportActivitySnapshot = {
       kind: "SUPPORT_ACTIVITY",
       projectionGeneration: 1,
       computedAt: "2026-07-26T09:20:00.000Z",
@@ -144,7 +162,6 @@ const mockSource: SupportInspectorSource = {
       sourceHighWater: "2",
       checkpoint: "2",
       nextCursor: null,
-      slaRolloutState: "SHADOW",
       capabilities: {
         noEligibleOperator: "UNAVAILABLE",
         routingCapacityRisks: "AVAILABLE",

@@ -113,7 +113,7 @@ describe("axios auth lifecycle", () => {
     expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
   });
 
-  it("never refreshes or replays an audited Support Workspace rollout PUT", async () => {
+  it("never refreshes or replays an audited Support mutation", async () => {
     storeAccessToken({ accessToken: "confirmed-authority", expiresIn: 60 });
     const refresh = vi.fn();
     registerRefreshHandler(refresh);
@@ -125,8 +125,8 @@ describe("axios auth lifecycle", () => {
 
     await expect(
       axiosInstance.put(
-        "/api/v1/admin/projects/project-1/support/workspace/rollout",
-        { enabled: true, shellEnabled: true, hardOff: false, reason: "Pilot" },
+        "/api/v1/admin/projects/project-1/support/external-work/connections/connection-1",
+        { expectedVersion: 4, displayName: "Help desk" },
         noAuthRetryRequestOptions(),
       ),
     ).rejects.toMatchObject({ status: 401 });

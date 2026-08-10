@@ -60,6 +60,7 @@ describe("allowance reauthentication navigation", () => {
             status: "ACTIVE",
           },
         ],
+        capabilities: { supportEnabled: true },
       },
     });
   });

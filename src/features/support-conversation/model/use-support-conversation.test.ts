@@ -882,7 +882,6 @@ describe("support conversation controller", () => {
   it("purges revoked operations context and rejects an older in-flight projection", async () => {
     const initial = selection("conversation-1", [message("first", 1)]);
     initial.sla = {
-      rolloutState: "SHADOW",
       occurrenceState: "ACTIVE",
       clocks: [],
     };

@@ -18,8 +18,6 @@ const forbiddenCopy = [
   "Support Workspace временно выключен",
   "Lead Control",
   "External Work",
-  "Pilot и rollback",
-  "launcher-only",
   "browser notifications",
   "bounded filters",
   "Remote status",
@@ -57,7 +55,6 @@ const forbiddenCopy = [
   "authoritative receipt",
   "authoritative state",
   "authoritative root",
-  "authoritative rollout",
   "retryable intent",
   "exact replay/reconcile",
   "Mutation receipt",
@@ -104,8 +101,8 @@ const forbiddenCopy = [
 ];
 
 const forbiddenPatterns = [
-  /["'`][^"'`\r\n]*[А-Яа-яЁё][^"'`\r\n]*(?:\bpending\b|\bunknown\b|\bevidence\b|\brollout\b|external work)[^"'`\r\n]*["'`]/giu,
-  /["'`][^"'`\r\n]*(?:\bpending\b|\bunknown\b|\bevidence\b|\brollout\b|external work)[^"'`\r\n]*[А-Яа-яЁё][^"'`\r\n]*["'`]/giu,
+  /["'`][^"'`\r\n]*[А-Яа-яЁё][^"'`\r\n]*(?:\bpending\b|\bunknown\b|\bevidence\b|external work)[^"'`\r\n]*["'`]/giu,
+  /["'`][^"'`\r\n]*(?:\bpending\b|\bunknown\b|\bevidence\b|external work)[^"'`\r\n]*[А-Яа-яЁё][^"'`\r\n]*["'`]/giu,
 ];
 
 function filesIn(directory: string): string[] {

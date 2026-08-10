@@ -3,9 +3,12 @@ import { ApiError } from "@/shared/api/http/api-error";
 import type {
   SupportKnowledgeCitationDraftResponseDto,
   SupportKnowledgeSearchItemResponseDto,
-  SupportKnowledgeTextDocumentResponseDto,
 } from "@/shared/api/generated/models";
-import type { SupportInternalKnowledgeSource, SupportKnowledgeScope } from "../api/support-internal-knowledge-source";
+import type {
+  SupportInternalKnowledgeSource,
+  SupportKnowledgeScope,
+  SupportKnowledgeTextDocument,
+} from "../api/support-internal-knowledge-source";
 import { createSupportInternalKnowledgeController } from "./use-support-internal-knowledge";
 
 const item: SupportKnowledgeSearchItemResponseDto = {
@@ -36,7 +39,6 @@ function setup() {
       nextCursor: null,
       freshness: {
         state: "CURRENT",
-        admissionVersion: 2,
         catalogGeneration: 4,
         evaluatedAt: "2026-08-09T10:00:00.000Z",
       },
@@ -48,7 +50,6 @@ function setup() {
       contentText: "Проверьте статус операции.",
       freshness: {
         state: "CURRENT",
-        admissionVersion: 2,
         catalogGeneration: 4,
         evaluatedAt: "2026-08-09T10:00:00.000Z",
       },
@@ -211,7 +212,7 @@ describe("Support Internal Knowledge controller", () => {
     controller.query.value = "депозит";
     const pending = controller.search();
     setScope({ projectId: "project-1", caseId: "case-2", conversationId: "conversation-2" });
-    resolve({ items: [item], nextCursor: null, freshness: { state: "CURRENT", admissionVersion: 2, catalogGeneration: 4, evaluatedAt: "2026-08-09T10:00:00.000Z" } });
+    resolve({ items: [item], nextCursor: null, freshness: { state: "CURRENT", catalogGeneration: 4, evaluatedAt: "2026-08-09T10:00:00.000Z" } });
     await pending;
     expect(controller.items.value).toEqual([]);
   });
@@ -224,8 +225,8 @@ describe("Support Internal Knowledge controller", () => {
       revisionId: "revision-1",
       title: "Второй материал",
     };
-    let resolveFirst!: (value: SupportKnowledgeTextDocumentResponseDto) => void;
-    let resolveSecond!: (value: SupportKnowledgeTextDocumentResponseDto) => void;
+    let resolveFirst!: (value: SupportKnowledgeTextDocument) => void;
+    let resolveSecond!: (value: SupportKnowledgeTextDocument) => void;
     vi.mocked(source.open)
       .mockReturnValueOnce(new Promise((done) => { resolveFirst = done; }))
       .mockReturnValueOnce(new Promise((done) => { resolveSecond = done; }));
@@ -239,7 +240,6 @@ describe("Support Internal Knowledge controller", () => {
       contentText: "Новый ответ",
       freshness: {
         state: "CURRENT",
-        admissionVersion: 2,
         catalogGeneration: 4,
         evaluatedAt: "2026-08-09T10:00:00.000Z",
       },
@@ -252,7 +252,6 @@ describe("Support Internal Knowledge controller", () => {
       contentText: "Старый ответ",
       freshness: {
         state: "CURRENT",
-        admissionVersion: 2,
         catalogGeneration: 4,
         evaluatedAt: "2026-08-09T10:00:00.000Z",
       },

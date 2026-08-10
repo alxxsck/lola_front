@@ -342,5 +342,5 @@ F2.
 - [Полный remediation plan](./08-remediation-plan.ru.md)
 - [UI/UX и visual acceptance](./09-ui-ux-remediation.ru.md)
 - [Full-tab workspace discovery](./10-full-tab-workspace-discovery.ru.md)
-- [Testing и rollout](./07-testing-rollout-roadmap.ru.md)
+- [Testing и стабильная поставка](./07-testing-delivery-roadmap.ru.md)
 - [Backend/frontend contract readiness](./06-frontend-architecture-contracts.ru.md)

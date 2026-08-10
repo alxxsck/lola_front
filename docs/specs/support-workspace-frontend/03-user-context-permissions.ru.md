@@ -180,7 +180,6 @@ project.support.teams.read
 project.support.teams.manage
 project.support.content_legal_hold.manage
 project.support.content_retention.manage
-project.support.content_rollout.manage
 ```
 
 Conversation/profile/cases/translation permissions, уже используемые фронтом,

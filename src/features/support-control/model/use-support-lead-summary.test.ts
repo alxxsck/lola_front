@@ -6,7 +6,6 @@ import { createSupportLeadSummaryController } from "./use-support-lead-summary";
 const summary: SupportLeadSummary = {
   computedAt: "2026-08-06T10:00:00.000Z",
   freshnessState: "READY",
-  slaRolloutState: "SHADOW",
   actionableBacklog: { unassignedCount: 1, oldestUnassignedAgeMs: null },
   sla: { atRiskCount: 1, breachedCount: 0, oldestDueAgeMs: null },
   workforce: {

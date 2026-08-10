@@ -43,6 +43,7 @@ export const useAuthStore = defineStore("auth", () => {
   const user = ref<CmsUser | null>(null);
   const project = ref<AuthProject | null>(null);
   const projects = ref<AuthProject[]>([]);
+  const supportEnabled = ref<boolean | null>(null);
   const phase = ref<AuthPhase>("ANONYMOUS");
   const setupToken = ref<string | null>(null);
   const mfaChallenge = ref<MfaChallenge | null>(null);
@@ -86,6 +87,7 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = null;
     project.value = null;
     projects.value = [];
+    supportEnabled.value = null;
   }
 
   function setPostAuthenticationRedirect(value: unknown) {
@@ -128,6 +130,7 @@ export const useAuthStore = defineStore("auth", () => {
   function applyContext(context: AuthContext) {
     user.value = context.user;
     projects.value = context.projects;
+    supportEnabled.value = context.capabilities.supportEnabled;
     const selectedId =
       context.projects.length === 1
         ? context.projects[0]?.id
@@ -408,6 +411,7 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     project,
     projects,
+    supportEnabled,
     phase,
     setupToken,
     mfaChallenge,

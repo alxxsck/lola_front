@@ -22,12 +22,6 @@ import {
   canManagePersonalSupportNotifications,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
 } from "@/features/support-workspace/model/support-workspace-access";
-import {
-  clearSupportWorkspaceShellAdmission,
-  ensureSupportWorkspaceShellAdmission,
-  supportWorkspaceShellAdmissionState,
-} from "@/features/support-workspace/model/support-workspace-shell-admission";
-import { isCanonicalSupportWorkspaceAdmission } from "@/features/support-workspace/model/support-workspace-entry-point";
 import { productBrand } from "@/shared/config/product-brand";
 import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
 import ThemeSwitch from "./ThemeSwitch.vue";
@@ -102,21 +96,10 @@ const canReadProjectIntegrations = computed(() =>
 );
 const canReadSupportWorkspace = computed(
   () =>
+    auth.supportEnabled === true &&
     canReadSupportWorkspaceAccess(
       auth.project?.effectivePermissionCodes ?? [],
-    ) &&
-    supportWorkspaceShellAdmissionState.value.scope?.actorId ===
-      auth.user?.id &&
-    supportWorkspaceShellAdmissionState.value.scope?.projectId ===
-      auth.project?.id &&
-    (isCanonicalSupportWorkspaceAdmission(
-      supportWorkspaceShellAdmissionState.value.admission,
-      "CASES",
-    ) ||
-      isCanonicalSupportWorkspaceAdmission(
-        supportWorkspaceShellAdmissionState.value.admission,
-        "CONVERSATIONS",
-      )),
+    ),
 );
 const supportWorkspacePath = computed(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
@@ -137,27 +120,6 @@ const canReadSupportNotificationSettings = computed(() =>
     auth.project?.effectivePermissionCodes ?? [],
   ),
 );
-watch(
-  () => [
-    auth.user?.id ?? "",
-    auth.project?.id ?? "",
-    [...(auth.project?.effectivePermissionCodes ?? [])].sort().join(","),
-  ],
-  ([actorId, projectId]) => {
-    const permissions = auth.project?.effectivePermissionCodes ?? [];
-    if (!actorId || !projectId || !canReadSupportWorkspaceAccess(permissions)) {
-      clearSupportWorkspaceShellAdmission();
-      return;
-    }
-    void ensureSupportWorkspaceShellAdmission({
-      actorId,
-      projectId,
-      effectivePermissionCodes: permissions,
-    });
-  },
-  { immediate: true },
-);
-
 const navigationItems = computed(() => [
     {
       label: "CMS Users",
@@ -336,15 +298,6 @@ const navigationItems = computed(() => [
       supportSection: true,
     },
     {
-      label: "Запуск и возврат",
-      icon: "pi pi-shield",
-      to: "/support/settings/audit-rollout",
-      project: true,
-      projectPermission: "project.support.workspace.rollout.manage",
-      nested: true,
-      supportSection: true,
-    },
-    {
       label: "AI-анализы",
       icon: "pi pi-sparkles",
       to: "/ai-analyses",
@@ -434,6 +387,7 @@ const navigation = computed(() => {
   const visibleItems = navigationItems.value.filter(
     (item) =>
       (!item.project || Boolean(auth.project)) &&
+      (!item.supportSection || auth.supportEnabled === true) &&
       (!item.projectSectionRoot ||
         canReadProjectSettings.value ||
         canReadMemberships.value ||
@@ -609,7 +563,6 @@ watch(
 onBeforeUnmount(() => {
   removeNavigationIntentAfterEach();
   removeNavigationIntentOnError();
-  clearSupportWorkspaceShellAdmission();
   suspensions.deactivate();
   cmsRealtimeClient.deactivateProject();
 });

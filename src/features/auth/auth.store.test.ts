@@ -101,6 +101,7 @@ describe("CMS User authentication state", () => {
           platformPermissionCodes: ["platform.cms_users.read"],
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -129,6 +130,7 @@ describe("CMS User authentication state", () => {
           platformPermissionCodes: ["platform.notifications.operations.read"],
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -151,6 +153,7 @@ describe("CMS User authentication state", () => {
           platformPermissionCodes: ["platform.ai_pricing.read"],
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -200,6 +203,7 @@ describe("CMS User authentication state", () => {
           name: "Operator",
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -270,6 +274,7 @@ describe("CMS User authentication state", () => {
     vi.mocked(authApi.restore).mockResolvedValue({
       user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
       projects: [],
+      capabilities: { supportEnabled: true },
     });
     const auth = useAuthStore();
 
@@ -319,6 +324,7 @@ describe("CMS User authentication state", () => {
     vi.mocked(authApi.refreshContext).mockResolvedValue({
       user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
       projects: [],
+      capabilities: { supportEnabled: true },
     });
 
     await auth.refreshContext();
@@ -353,6 +359,7 @@ describe("CMS User authentication state", () => {
     let resolveContext!: (value: {
       user: { id: string; email: string; name: string };
       projects: [];
+      capabilities: { supportEnabled: boolean };
     }) => void;
     vi.mocked(authApi.refreshContext).mockReturnValue(
       new Promise((resolve) => {
@@ -371,6 +378,7 @@ describe("CMS User authentication state", () => {
     resolveContext({
       user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
       projects: [],
+      capabilities: { supportEnabled: true },
     });
     await pendingRefresh;
 
@@ -528,6 +536,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     vi.mocked(authApi.logout).mockResolvedValue();
@@ -607,6 +616,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     vi.mocked(authApi.logout).mockRejectedValue(
@@ -631,6 +641,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     };
     vi.mocked(authApi.login).mockResolvedValue(authenticated);
@@ -658,6 +669,7 @@ describe("CMS User authentication state", () => {
     let resolveRestore!: (value: {
       user: { id: string; email: string; name: string };
       projects: [];
+      capabilities: { supportEnabled: boolean };
     }) => void;
     vi.mocked(authApi.restore).mockReturnValue(
       new Promise((resolve) => {
@@ -671,6 +683,7 @@ describe("CMS User authentication state", () => {
     resolveRestore({
       user: { id: "operator-1", email: "operator@example.com", name: "Olga" },
       projects: [],
+      capabilities: { supportEnabled: true },
     });
     await pendingRestore;
 
@@ -685,6 +698,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: string; email: string; name: string };
         projects: [];
+        capabilities: { supportEnabled: boolean };
       };
     }) => void;
     vi.mocked(authApi.login).mockReturnValue(
@@ -704,6 +718,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
 
@@ -727,6 +742,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: string; email: string; name: string };
         projects: [];
+        capabilities: { supportEnabled: boolean };
       };
     }) => void;
     vi.mocked(authApi.completeMfaPasskey).mockReturnValue(
@@ -744,6 +760,7 @@ describe("CMS User authentication state", () => {
       context: {
         user: { id: "stale-user", email: "stale@example.com", name: "Stale" },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
 
@@ -770,6 +787,7 @@ describe("CMS User authentication state", () => {
           name: "Current",
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();

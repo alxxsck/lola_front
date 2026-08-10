@@ -37,7 +37,6 @@ function publishedSnapshot(actionEtag = etag("a")) {
     mode: "SLA_SETTINGS" as const,
     rootVersion: 1,
     actionEtag,
-    rolloutState: "SHADOW" as const,
     reconciliationCheckpoint: "checkpoint-1",
     draft: null,
     publishedConfiguration: {
@@ -111,7 +110,7 @@ function setup(sourceOverrides: Partial<SupportSlaConfigurationSource> = {}) {
 describe("Support SLA configuration controller", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("saves a complete draft, reconciles normalized state, and preserves rollout", async () => {
+  it("saves a complete draft and reconciles normalized state", async () => {
     const { controller, source } = setup();
     vi.mocked(source.read)
       .mockResolvedValueOnce(publishedSnapshot())
@@ -138,7 +137,6 @@ describe("Support SLA configuration controller", () => {
       "sla-command-key-1",
       expect.any(AbortSignal),
     );
-    expect(controller.snapshot.value?.rolloutState).toBe("SHADOW");
     expect(controller.snapshot.value?.draft?.version).toBe(1);
     expect(controller.dirty.value).toBe(false);
     expect(controller.success.value).toContain("Черновик сохранён");
@@ -222,7 +220,7 @@ describe("Support SLA configuration controller", () => {
     expect(controller.success.value).toBe("Черновик удалён.");
   });
 
-  it("publishes the saved draft without changing SHADOW rollout", async () => {
+  it("publishes the saved draft", async () => {
     const published = publishedSnapshot(etag("c"));
     published.rootVersion = 3;
     published.publishedConfiguration!.calendarRevision.revisionNumber = 2;
@@ -250,7 +248,6 @@ describe("Support SLA configuration controller", () => {
       expect.any(AbortSignal),
     );
     expect(controller.snapshot.value?.draft).toBeNull();
-    expect(controller.snapshot.value?.rolloutState).toBe("SHADOW");
     expect(
       controller.snapshot.value?.publishedConfiguration?.policyRevision
         .revisionNumber,

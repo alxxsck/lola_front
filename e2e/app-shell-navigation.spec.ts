@@ -32,11 +32,11 @@ test("groups Support pages and keeps the desktop rail preference", async ({
     "Поддержка",
     "Операционный обзор",
     "Настройки обращений",
+    "Календарь и SLA",
     "Шаблоны ответов",
     "Уведомления",
     "Внешние задачи",
     "Интеграции",
-    "Запуск и возврат",
   ]);
 
   await page
@@ -93,4 +93,44 @@ test("keeps the mobile drawer full-width and unchanged", async ({ page }) => {
   await expect(
     sidebar.getByRole("button", { name: /боковое меню/ }),
   ).toBeHidden();
+});
+
+test("keeps Users and Live available when Support is disabled for the deployment", async ({
+  page,
+}) => {
+  const supportApiRequests: string[] = [];
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith("/api/v1/") && pathname.includes("/support/")) {
+      supportApiRequests.push(pathname);
+    }
+  });
+  await page.evaluate(() => {
+    const key = "retenive-cms-demo-auth-v1";
+    const raw = sessionStorage.getItem(key);
+    if (!raw) throw new Error("Demo auth context is missing");
+    const context = JSON.parse(raw) as {
+      capabilities: { supportEnabled: boolean };
+    };
+    context.capabilities.supportEnabled = false;
+    sessionStorage.setItem(key, JSON.stringify(context));
+  });
+
+  await page.goto("/users");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Профили пользователей" }),
+  ).toBeVisible();
+
+  await page.goto("/users/usr_1");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Профили пользователей" }),
+  ).toBeVisible();
+  await expect(page.getByRole("group", { name: "Поддержка" })).toHaveCount(0);
+
+  await page.goto("/live");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Сейчас онлайн" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/live$/);
+  expect(supportApiRequests).toEqual([]);
 });

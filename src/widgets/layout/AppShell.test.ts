@@ -4,11 +4,6 @@ import { createMemoryHistory, createRouter, type Router } from "vue-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppShell from "./AppShell.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
-import {
-  resetMockSupportWorkspaceRollout,
-  writeMockSupportWorkspaceRollout,
-} from "@/features/support-workspace/api/support-workspace-shell-source";
-import { clearSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
 
 function project(
   id: string,
@@ -38,6 +33,7 @@ function authenticateWithProjects(
     },
     projects,
     project: projects[0] ?? null,
+    supportEnabled: true,
   });
 }
 
@@ -81,13 +77,9 @@ function mountProjectMenu(pinia: Pinia, router: Router) {
 describe("AppShell", () => {
   beforeEach(() => {
     localStorage.clear();
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
   });
 
-  it("shows Support navigation only after exact Project shell admission", async () => {
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
+  it("shows Support navigation only when deployment availability and IAM allow it", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
@@ -107,23 +99,12 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Поддержка");
     wrapper.unmount();
 
-    writeMockSupportWorkspaceRollout(
-      {
-        enabled: true,
-        shellEnabled: false,
-        hardOff: false,
-        version: 2,
-      },
-      "project-1",
-    );
-    clearSupportWorkspaceShellAdmission();
-    const rolledBack = mountProjectMenu(pinia, router);
+    auth.supportEnabled = false;
+    const disabled = mountProjectMenu(pinia, router);
     await flushPromises();
 
-    expect(rolledBack.text()).not.toContain("Поддержка");
-    rolledBack.unmount();
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
+    expect(disabled.text()).not.toContain("Поддержка");
+    disabled.unmount();
   });
 
   it("links a Cases-only operator to the exact canonical inbox mode", async () => {
@@ -294,6 +275,7 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
+      supportEnabled: true,
       user: {
         id: "operator-1",
         email: "operator@example.com",
@@ -426,6 +408,7 @@ describe("AppShell", () => {
     const auth = useAuthStore();
     auth.$patch({
       phase: "AUTHENTICATED",
+      supportEnabled: true,
       user: {
         id: "operator-1",
         email: "operator@example.com",
@@ -443,7 +426,7 @@ describe("AppShell", () => {
         assistantName: "Retenive",
         systemPrompt: "",
         voiceInstructions: "",
-        settings: { support_workspace_shell: true },
+        settings: {},
         effectivePermissionCodes: [
           "project.settings.read",
           "project.notifications.read",
@@ -463,7 +446,6 @@ describe("AppShell", () => {
           "project.conversations.read",
           "project.support.lead_control.read",
           "project.support.sla.read",
-          "project.support.workspace.rollout.manage",
           "project.support.external_work.inbox_read",
           "project.support.external_work.manage",
         ],
@@ -506,10 +488,6 @@ describe("AppShell", () => {
       supportNotificationsLink: wrapper
         .find('a[href="/support/settings/notifications"]')
         .attributes("href"),
-      supportRolloutLink: wrapper
-        .findAll(".sidebar-scroll nav a")
-        .find((link) => link.text().includes("Запуск и возврат"))
-        ?.attributes("href"),
       externalWorkLink: wrapper
         .findAll(".sidebar-scroll nav a")
         .find((link) => link.text().includes("Внешние задачи"))
@@ -525,12 +503,11 @@ describe("AppShell", () => {
       analysesVisible: wrapper.text().includes("AI-анализы"),
       operationsVisible: wrapper.text().includes("Журнал AI"),
     }).toEqual({
-      navigationLinks: 25,
+      navigationLinks: 24,
       profileFieldsLink: "/profile-fields",
       supportWorkspaceLink: "/support/inbox",
       supportControlLink: "/support/control",
       supportNotificationsLink: "/support/settings/notifications",
-      supportRolloutLink: "/support/settings/audit-rollout",
       externalWorkLink: "/support/external-work",
       externalSettingsLink: "/support/settings/integrations",
       themeSwitchVisible: true,
@@ -552,7 +529,6 @@ describe("AppShell", () => {
         "project.cases.settings.manage",
         "project.support.sla.read",
         "project.support.macros.manage",
-        "project.support.workspace.rollout.manage",
         "project.support.external_work.inbox_read",
         "project.support.external_work.manage",
       ]),
@@ -571,7 +547,7 @@ describe("AppShell", () => {
     const supportRootIndex = links.findIndex(
       (link) => link.text().trim() === "Поддержка",
     );
-    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 9);
+    const supportLinks = links.slice(supportRootIndex, supportRootIndex + 8);
 
     expect(supportRootIndex).toBeGreaterThanOrEqual(0);
     expect(supportLinks.map((link) => link.text().trim())).toEqual([
@@ -583,7 +559,6 @@ describe("AppShell", () => {
       "Уведомления",
       "Внешние задачи",
       "Интеграции",
-      "Запуск и возврат",
     ]);
     expect(supportLinks[0]?.classes()).not.toContain("nav-item--nested");
     expect(
@@ -974,7 +949,7 @@ describe("AppShell", () => {
     expect(wrapper.text()).toContain("Роли");
   });
 
-  it("does not expose authoring navigation from a legacy role without Permissions", async () => {
+  it("does not expose authoring navigation from a role-shaped value without Permissions", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();

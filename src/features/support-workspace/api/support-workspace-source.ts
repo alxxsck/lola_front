@@ -25,10 +25,6 @@ export const SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT = 30;
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
 export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
 
-export interface SupportInboxPageRequest extends CursorPageRequest {
-  endUserId?: string;
-}
-
 export interface SupportWorkspaceCaseRow {
   id: string;
   endUserId: string;
@@ -46,18 +42,15 @@ export interface SupportWorkspaceCaseRow {
 
 export type SupportWorkspaceSlaSignal =
   | {
-      state: "DISABLED";
-      rolloutState: "DISABLED" | "SHADOW";
+      state: "UNCONFIGURED";
       computedAt: string | null;
     }
   | {
       state: "NO_ACTIVE_CLOCK";
-      rolloutState: "DISABLED" | "SHADOW";
       computedAt: string | null;
     }
   | {
       state: "AVAILABLE";
-      rolloutState: "SHADOW";
       signalCode: "SLA_BREACHED" | "SLA_AT_RISK" | "SLA_PAUSED" | "SLA_DUE";
       kind: SupportSlaClockKind;
       timing: "RUNNING" | "PAUSED";
@@ -89,7 +82,6 @@ export interface SupportSlaClock {
 }
 
 export interface SupportSlaContext {
-  rolloutState: "DISABLED" | "SHADOW";
   occurrenceState: "ACTIVE" | "TERMINAL" | null;
   clocks: SupportSlaClock[];
 }
@@ -269,7 +261,7 @@ export interface SupportWorkspaceSource {
   ): Promise<CursorPage<SupportWorkspaceCaseRow>>;
   readConversations(
     projectId: string,
-    request?: SupportInboxPageRequest,
+    request?: CursorPageRequest,
   ): Promise<CursorPage<SupportWorkspaceConversation>>;
   readSelection(
     projectId: string,
@@ -377,14 +369,15 @@ function mapWorkspaceSlaSignal(
   if (!value) return null;
   if (value.state !== "AVAILABLE") {
     return {
-      state: value.state,
-      rolloutState: value.rolloutState,
+      state:
+        value.state === "NO_ACTIVE_CLOCK"
+          ? "NO_ACTIVE_CLOCK"
+          : "UNCONFIGURED",
       computedAt: value.computedAt ?? null,
     };
   }
   return {
     state: "AVAILABLE",
-    rolloutState: value.rolloutState,
     signalCode: value.signalCode,
     kind: value.kind,
     timing: value.timing,
@@ -401,7 +394,6 @@ function mapSlaContext(
 ): SupportSlaContext | null {
   if (!value) return null;
   return {
-    rolloutState: value.rolloutState,
     occurrenceState: value.occurrence?.state ?? null,
     clocks: value.clocks.map((clock) => ({
       kind: clock.kind,
@@ -637,7 +629,6 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
       mode: "ALL_CONVERSATIONS",
       limit: request?.limit ?? 30,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
-      ...(request?.endUserId ? { endUserId: request.endUserId } : {}),
     });
     if (response.mode !== "ALL_CONVERSATIONS") {
       throw new Error(
@@ -786,7 +777,6 @@ const mockSupportCases: readonly MockSupportCase[] = [
     attentionRequired: false,
     slaSignal: {
       state: "AVAILABLE",
-      rolloutState: "SHADOW",
       signalCode: "SLA_PAUSED",
       kind: "RESOLUTION",
       timing: "PAUSED",
@@ -813,7 +803,6 @@ const mockSupportCases: readonly MockSupportCase[] = [
     attentionRequired: true,
     slaSignal: {
       state: "AVAILABLE",
-      rolloutState: "SHADOW",
       signalCode: "SLA_AT_RISK",
       kind: "FIRST_HUMAN_RESPONSE",
       timing: "RUNNING",
@@ -840,7 +829,6 @@ const mockSupportCases: readonly MockSupportCase[] = [
     attentionRequired: false,
     slaSignal: {
       state: "NO_ACTIVE_CLOCK",
-      rolloutState: "SHADOW",
       computedAt: "2026-07-26T08:30:00.000Z",
     },
     lastActivityAt: "2026-07-26T08:30:00.000Z",
@@ -909,13 +897,8 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
 
   async readConversations(projectId, request) {
     const page = await repository.getProjectConversations(projectId, request);
-    const conversations = request?.endUserId
-      ? page.items.filter(
-          (conversation) => conversation.endUser.id === request.endUserId,
-        )
-      : page.items;
     return {
-      items: conversations.map((conversation) => ({
+      items: page.items.map((conversation) => ({
         id: conversation.id,
         endUserId: conversation.endUser.id,
         title: conversation.title,
@@ -999,7 +982,6 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       case: selectedCase ? mockCaseSelection(selectedCase) : null,
       sla: selectedCase
         ? {
-            rolloutState: "SHADOW",
             occurrenceState:
               selectedCase.status === "RESOLVED" ? "TERMINAL" : "ACTIVE",
             clocks:

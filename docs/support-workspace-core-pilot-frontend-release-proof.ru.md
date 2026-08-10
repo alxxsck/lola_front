@@ -1,5 +1,7 @@
 # Support Workspace core pilot: frontend release proof
 
+> Historical evidence. Решение superseded by ADR-0047 и не является действующим runbook.
+
 Статус: frontend implementation/rehearsal complete; production pilot не запускался
 
 Дата: 9 августа 2026 года

@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { supportSlaConfigurationSource } from "@/features/support-sla/api/support-sla-configuration-source";
-import type { SupportSlaConfigurationSettingsResponseDto } from "@/shared/api/generated/models";
+import type { SupportSlaConfigurationSnapshot } from "@/features/support-sla/api/support-sla-configuration-source";
 import SupportSlaSettingsPage from "./SupportSlaSettingsPage.vue";
 
 vi.mock(
@@ -47,12 +47,11 @@ const configuration = {
   },
 };
 
-function snapshot(): SupportSlaConfigurationSettingsResponseDto {
+function snapshot(): SupportSlaConfigurationSnapshot {
   return {
     mode: "SLA_SETTINGS" as const,
     rootVersion: 4,
     actionEtag: etag("a"),
-    rolloutState: "SHADOW" as const,
     reconciliationCheckpoint: "checkpoint-4",
     draft: {
       generation: 4,
@@ -154,7 +153,7 @@ describe("SupportSlaSettingsPage", () => {
     expect(wrapper.text()).toContain("Календарь и правила SLA");
     expect(wrapper.text()).toContain("Публикация №3");
     expect(wrapper.text()).toContain("Черновик 1");
-    expect(wrapper.text()).toContain("Проверочный режим");
+    expect(wrapper.text()).not.toContain("Проверочный режим");
     expect(wrapper.text()).not.toContain(etag("a"));
     expect(wrapper.text()).not.toContain("Idempotency-Key");
     expect(wrapper.text()).not.toContain("Включить SLA");

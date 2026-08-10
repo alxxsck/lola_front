@@ -122,7 +122,6 @@ Support
 /support/settings/notifications
 /support/settings/integrations
 /support/settings/retention-legal-hold
-/support/settings/audit-rollout
 ```
 
 Каждый publishable раздел имеет одинаковую модель: `Published` / `Draft`,
@@ -428,9 +427,8 @@ CMS workspace не завершает продукт без публичного
 - Composer поддерживает public attachments и сохраняет draft/retry.
 - Обязательна визуальная матрица SDK на `390×844`, narrow embedded container,
   keyboard viewport и offline/reconnect.
-- Durable delivery/read/attachments включаются только после version gate
-  совместимого SDK, иначе backend rollout создаст ложные состояния в старых
-  клиентах.
+- Durable delivery/read/attachments требуют совместимой версии SDK; иначе новые
+  backend capabilities создадут ложные состояния в старых клиентах.
 
 ## 10. Responsive и accessibility
 
@@ -456,14 +454,13 @@ CMS workspace не завершает продукт без публичного
    name, count/freshness и компактные controls.
 2. Удалить пустую гигантскую detail-card и page-level `border-radius: 20px` из
    операторского пути; заменить панелями с dividers.
-3. Прекратить добавлять функции в `UserWorkspaceDialog` как primary UI.
-   При этом не выбрасывать его chat implementation: выделенный общий
-   Conversation Surface должен использоваться и route shell, и dialog; dialog
-   остаётся лишь временным launcher/adapter.
+3. Прекратить добавлять Support-функции в `UserWorkspaceDialog`. Это стабильная
+   поверхность Users/Live, которая переиспользует общий Conversation Surface,
+   но не зависит от Support availability и не вызывает Support API.
 4. Старый `/cases` превратить в redirect/deep-link после parity, не держать две
    реализации Case actions.
-5. Raw JSON settings оставить только под отдельным advanced/compatibility
-   permission до миграции на guided editors.
+5. Raw JSON settings не использовать как переходную поверхность; для каждого
+   домена нужен собственный guided editor и versioned contract.
 6. Hardcoded reply templates удалить после Macro catalog migration.
 7. Не объединять `/knowledge` и Internal Knowledge визуально или по storage.
 8. Удалить самостоятельную отрисовку `.message-row` из
@@ -473,7 +470,7 @@ CMS workspace не завершает продукт без публичного
 
 ## 12. Visual acceptance и screenshot matrix
 
-Перед rollout каждой vertical нужны снимки и интерактивная проверка:
+Перед поставкой каждой vertical нужны снимки и интерактивная проверка:
 
 | Сценарий                                | Desktop                  | Tablet     | Mobile           |
 | --------------------------------------- | ------------------------ | ---------- | ---------------- |

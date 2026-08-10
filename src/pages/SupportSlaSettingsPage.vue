@@ -205,14 +205,6 @@ onBeforeUnmount(() => {
           :can-manage="canManage"
         />
 
-        <Message
-          v-if="controller.snapshot.value.rolloutState === 'SHADOW'"
-          severity="info"
-          :closable="false"
-        >
-          Расчёт работает в проверочном режиме. Публикация обновит правила и
-          календарь, но состояние запуска останется прежним.
-        </Message>
 
         <section v-if="!showEditor" class="sla-empty-state">
           <span class="sla-empty-state__icon"
@@ -402,14 +394,6 @@ onBeforeUnmount(() => {
           Сервер создаст новые неизменяемые редакции календаря и правил, затем
           удалит сохранённый черновик.
         </p>
-        <Message severity="info" :closable="false">
-          Состояние расчёта
-          {{
-            controller.snapshot.value?.rolloutState === "SHADOW"
-              ? "останется проверочным"
-              : "останется выключенным"
-          }}.
-        </Message>
       </div>
       <template #footer>
         <Button

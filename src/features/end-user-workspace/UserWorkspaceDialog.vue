@@ -68,8 +68,8 @@ import { repository } from "@/shared/api/repository";
 import {
   acquireRootScrollLock,
   releaseRootScrollLock,
-} from "@/features/support-workspace/presentation/root-scroll-lock";
-import FullViewportWorkspaceShell from "@/features/support-workspace/presentation/FullViewportWorkspaceShell.vue";
+} from "@/shared/ui/workspace-presentation/root-scroll-lock";
+import FullViewportWorkspaceShell from "@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue";
 import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
 import UserConversationPane from "./UserConversationPane.vue";
 

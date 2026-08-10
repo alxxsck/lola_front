@@ -174,7 +174,6 @@ function createInspector(
       sourceHighWater: "1",
       checkpoint: "1",
       nextCursor: null,
-      slaRolloutState: "SHADOW",
       capabilities: {
         noEligibleOperator: "UNAVAILABLE",
         routingCapacityRisks: "UNAVAILABLE",

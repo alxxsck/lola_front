@@ -12,7 +12,6 @@ const page = (
 ): SupportLeadCaseRiskPage => ({
   computedAt: "2026-08-06T10:00:00.000Z",
   freshnessState: "READY",
-  slaRolloutState: "SHADOW",
   riskType,
   items: caseIds.map((caseId) => ({
     caseId,

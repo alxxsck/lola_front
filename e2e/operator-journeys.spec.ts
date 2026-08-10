@@ -2343,13 +2343,9 @@ test("scenario authoring supports keyboard focus, narrow reflow and reduced moti
   ).toBe(true);
 });
 
-test("online session opens the shared live conversation workspace", async ({
+test("online session opens the Live conversation workspace", async ({
   page,
 }, testInfo) => {
-  test.skip(
-    true,
-    "Ticket 28 retired the duplicate /live writable surface; canonical Live cutover is covered by support-workspace-cutover.spec.ts",
-  );
   await page.goto("/live");
   await expect(
     page.getByRole("heading", { name: "Сейчас онлайн", level: 1 }),
@@ -2366,7 +2362,7 @@ test("online session opens the shared live conversation workspace", async ({
   const openChat = workspace.getByRole("button", { name: "Открыть чат" });
   if (await openChat.isVisible()) await openChat.click();
   await expect(
-    workspace.getByRole("heading", { name: "Первый депозит" }),
+    workspace.getByRole("heading", { level: 2, name: "Первый депозит" }),
   ).toBeVisible();
   await expect(
     workspace.getByText("Как лучше пополнить баланс?"),
@@ -2384,10 +2380,12 @@ test("online session opens the shared live conversation workspace", async ({
       .locator(".mobile-workspace-nav button")
       .filter({ hasText: "Чат" })
       .click();
-    await expect(
-      workspace.getByRole("textbox", { name: "Ответ пользователю" }),
-    ).toBeVisible();
   }
+
+  await expect(workspace.getByText("Только просмотр Live", { exact: true })).toBeVisible();
+  await expect(
+    workspace.getByRole("textbox", { name: "Ответ пользователю" }),
+  ).toHaveCount(0);
 
   await expectNoSeriousAccessibilityViolations(page);
   expect(
@@ -2456,11 +2454,8 @@ test("online session opens the shared live conversation workspace", async ({
         .filter({ hasText: "Чат" });
       if (await chatTab.isVisible()) await chatTab.click();
       await expect(
-        workspace.getByRole("textbox", { name: "Ответ пользователю" }),
-      ).toBeVisible();
-      await expect(
         workspace.getByRole("button", { name: "Отправить", exact: true }),
-      ).toBeVisible();
+      ).toHaveCount(0);
       expect(
         await workspace.evaluate(
           (element) => element.scrollWidth <= element.clientWidth,

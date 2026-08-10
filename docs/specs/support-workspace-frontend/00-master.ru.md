@@ -1,8 +1,13 @@
 # Support Workspace: master-спецификация фронтенда
 
-Статус: proposal
+Статус: accepted target
 Дата: 6 августа 2026 года
 Область: только `Lola_front`
+
+Support Platform — стабильная deployment-wide возможность. CMS показывает раздел при
+`capabilities.supportEnabled=true`; внутри раздела доступ определяют только Project Permissions,
+доменное состояние и readiness зависимостей. Project-owned включения, переходного интерфейса и
+возврата к другой Support-реализации нет.
 
 ## 1. Решение
 
@@ -27,11 +32,10 @@
 ```
 
 Долгоживущая работа оператора должна происходить на route-level странице, а не
-в модальном окне. `UserWorkspaceDialog` на переходном этапе остаётся быстрым
-входом из `/users` и `/live` и монтирует тот же общий Conversation Surface, что
-и Support Workspace, либо открывает его deep link. Отдельной реализации чата в
-dialog и Support быть не может. `/live` остаётся диагностикой присутствия, а не
-превращается в inbox.
+в модальном окне. `UserWorkspaceDialog` остаётся самостоятельной поверхностью
+Users/Live и может переиспользовать общий Conversation Surface, но не читает
+Support availability, не вызывает Support API и не перенаправляет в Support.
+`/live` остаётся диагностикой присутствия, а не превращается в inbox.
 
 ## 2. Что входит в frontend-проект
 
@@ -68,16 +72,17 @@ dialog и Support быть не может. `/live` остаётся диагн�
 | [04-translation-ai-content.ru.md](./04-translation-ai-content.ru.md)                                           | перевод, AI takeover, notes, macros и knowledge                           |
 | [05-lead-quality-analytics.ru.md](./05-lead-quality-analytics.ru.md)                                           | контроль работы, QA и статистику                                          |
 | [06-frontend-architecture-contracts.ru.md](./06-frontend-architecture-contracts.ru.md)                         | модули, state, API/realtime контракты и migration map                     |
-| [07-testing-rollout-roadmap.ru.md](./07-testing-rollout-roadmap.ru.md)                                         | этапы, acceptance criteria, тесты и rollout                               |
+| [07-testing-delivery-roadmap.ru.md](./07-testing-delivery-roadmap.ru.md)                                       | этапы, acceptance criteria и проверки стабильной поставки                 |
 | [08-remediation-plan.ru.md](./08-remediation-plan.ru.md)                                                       | проверенный gap analysis и порядок устранения разрывов                    |
 | [09-ui-ux-remediation.ru.md](./09-ui-ux-remediation.ru.md)                                                     | целевой UI/UX, responsive и visual acceptance                             |
 | [10-full-tab-workspace-discovery.ru.md](./10-full-tab-workspace-discovery.ru.md)                               | full-tab shell, кнопка, motion, scroll/focus contract                     |
-| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F8, cutover и отдельный integration track             |
+| [11-remaining-implementation-backlog.ru.md](./11-remaining-implementation-backlog.ru.md)                       | короткий backlog W0–F8 и отдельный integration track                       |
 | [12-agent-ready-tickets.ru.md](./12-agent-ready-tickets.ru.md)                                                 | видимый индекс 38 локальных задач и их blocking edges                     |
 | [13-workspace-messaging-capability-matrix.ru.md](./13-workspace-messaging-capability-matrix.ru.md)             | W0 contract matrix workspace, history, send, delivery и blockers          |
 | [14-inbox-case-workforce-capability-matrix.ru.md](./14-inbox-case-workforce-capability-matrix.ru.md)           | W0 matrix inbox, Case, assignment, workforce, routing, SLA и blockers     |
 | [15-content-lead-notification-capability-matrix.ru.md](./15-content-lead-notification-capability-matrix.ru.md) | W0 matrix notes, macros, Internal Knowledge, Lead Control и notifications |
 | [16-case-intelligence-detection-escalation.ru.md](./16-case-intelligence-detection-escalation.ru.md)           | Case Detection, Human Escalation, safety, cost, evaluation и settings IA  |
+| [16-external-work-capability-matrix.ru.md](./16-external-work-capability-matrix.ru.md)                         | External Work settings, inbox, recovery и provider readiness              |
 | [Backend-блокеры задач 01–33](../../research/support-workspace-backend-blockers-01-33-2026-08-07.ru.md)        | актуальные direct/partial/transitive gates по backend `origin/main`       |
 
 Исследование интерфейсов LiveChat, Intercom, Zendesk и требований W3C:
@@ -195,7 +200,7 @@ End User не получает CMS routes и CMS permissions. Он видит т
 - 1440×1000, 1024×768 и 390×844 проходят visual и keyboard QA;
 - axe не находит критических нарушений в основных сценариях;
 - QA и analytics не строятся из сырых сообщений в браузере;
-- legacy modal либо удалена, либо оставлена как совместимый adapter общего
-  Conversation Surface/launcher без собственной chat implementation;
-- rollout можно отключить project feature flag без миграции пользовательских
-  данных назад.
+- Users/Profile и Support используют общий Conversation Surface без второй
+  реализации чата или переходного launcher;
+- `/users`, `/users/:endUserId` и `/live` остаются прямыми маршрутами и не
+  зависят от Support availability.

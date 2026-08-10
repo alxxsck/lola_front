@@ -25,15 +25,15 @@ export function slaKindLabel(kind: SupportSlaClockKind): string {
 }
 
 export function slaSignalLabel(signal: SupportWorkspaceSlaSignal): string {
-  if (signal.state === "DISABLED") return "SLA отключён";
+  if (signal.state === "UNCONFIGURED") return "SLA не настроен";
   if (signal.state === "NO_ACTIVE_CLOCK") return "Нет активного SLA";
-  return `${slaSignalCoreLabel(signal)} · теневой прогноз`;
+  return slaSignalCoreLabel(signal);
 }
 
 export function slaSignalCompactLabel(
   signal: Extract<SupportWorkspaceSlaSignal, { state: "AVAILABLE" }>,
 ): string {
-  return `${slaSignalCoreLabel(signal)} · прогноз`;
+  return slaSignalCoreLabel(signal);
 }
 
 function slaSignalCoreLabel(

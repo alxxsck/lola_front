@@ -403,7 +403,6 @@ describe("support workspace selection contract mapper", () => {
 
     expect(mapped.actionRevisions).toEqual(response.actionRevisions);
     expect(mapped.sla).toMatchObject({
-      rolloutState: "SHADOW",
       clocks: [
         expect.objectContaining({
           kind: "FIRST_HUMAN_RESPONSE",

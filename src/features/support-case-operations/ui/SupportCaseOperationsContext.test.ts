@@ -7,7 +7,6 @@ import type {
 import SupportCaseOperationsContext from "./SupportCaseOperationsContext.vue";
 
 const sla: SupportSlaContext = {
-  rolloutState: "SHADOW",
   occurrenceState: "ACTIVE",
   clocks: [
     {
@@ -49,7 +48,7 @@ const routing: SupportRoutingContext = {
 afterEach(() => vi.useRealTimers());
 
 describe("SupportCaseOperationsContext", () => {
-  it("shows honest shadow SLA and routing eligibility without opaque identifiers", () => {
+  it("shows authoritative SLA and routing eligibility without opaque identifiers", () => {
     const wrapper = mount(SupportCaseOperationsContext, {
       props: {
         caseId: "case-1",
@@ -61,7 +60,7 @@ describe("SupportCaseOperationsContext", () => {
     });
 
     expect(wrapper.text()).toContain("SLA и маршрутизация");
-    expect(wrapper.text()).toContain("Теневой прогноз");
+    expect(wrapper.text()).not.toContain("Теневой прогноз");
     expect(wrapper.text()).toContain("Первый ответ");
     expect(wrapper.text()).toContain("Под риском");
     expect(wrapper.text()).toContain("1 ч 30 мин");

@@ -203,6 +203,7 @@ describe("MFA enrollment retry boundary", () => {
       },
       platformPermissionCodes: [],
       projects: [],
+      capabilities: { supportEnabled: true },
     } as never);
     const completion = authApi.completeMfaPasskey(challenge);
     await vi.waitFor(() =>

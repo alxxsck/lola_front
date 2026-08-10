@@ -8,11 +8,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "@/features/auth/auth.api";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { takeSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
-import {
-  resetMockSupportWorkspaceRollout,
-  writeMockSupportWorkspaceRollout,
-} from "@/features/support-workspace/api/support-workspace-shell-source";
-import { clearSupportWorkspaceShellAdmission } from "@/features/support-workspace/model/support-workspace-shell-admission";
 import { axiosInstance } from "@/shared/api/http/axios-instance";
 import { appScrollBehavior, router } from "./router";
 
@@ -70,8 +65,6 @@ describe("authentication routes", () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
-    resetMockSupportWorkspaceRollout();
-    clearSupportWorkspaceShellAdmission();
     await router.replace("/login");
   });
 
@@ -171,6 +164,7 @@ describe("authentication routes", () => {
       },
       project,
       projects: [project],
+      supportEnabled: true,
     });
     await router.push("/project");
     let attempts = 0;
@@ -490,6 +484,7 @@ describe("authentication routes", () => {
         },
         project: current,
         projects: [current, target],
+        supportEnabled: true,
       });
 
       await router.push(path);
@@ -499,11 +494,11 @@ describe("authentication routes", () => {
     },
   );
 
-  it("keeps legacy Case pages as rollback launchers and policy settings admin-only", () => {
-    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeFalsy();
-    expect(
-      router.resolve("/cases/case-1").matched.at(-1)?.redirect,
-    ).toBeFalsy();
+  it("keeps Cases as canonical Support redirects and policy settings admin-only", () => {
+    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTypeOf("function");
+    expect(router.resolve("/cases/case-1").matched.at(-1)?.redirect).toBeTypeOf(
+      "function",
+    );
     expect(router.resolve("/cases/settings").meta.projectPermission).toBe(
       "project.cases.settings.manage",
     );
@@ -513,7 +508,7 @@ describe("authentication routes", () => {
     );
   });
 
-  it("cuts Cases over while keeping Users and Live as separate read-only routes", async () => {
+  it("keeps Users and Live independent from Support availability", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -533,11 +528,14 @@ describe("authentication routes", () => {
       user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
       project,
       projects: [project],
+      supportEnabled: true,
     });
 
     await router.push("/cases/case-1?projectId=project-1");
     expect(router.currentRoute.value.name).toBe("support-inbox-case");
     expect(router.currentRoute.value.params.caseId).toBe("case-1");
+
+    auth.supportEnabled = false;
 
     await router.push(
       "/users/user-1?conversationId=conversation-1&projectId=project-1",
@@ -551,17 +549,7 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.query.endUserId).toBe("user-2");
   });
 
-  it("returns a direct Support URL to the legacy launcher when the Project shell is rolled back", async () => {
-    writeMockSupportWorkspaceRollout(
-      {
-        enabled: true,
-        shellEnabled: false,
-        hardOff: false,
-        version: 4,
-      },
-      "project-1",
-    );
-    clearSupportWorkspaceShellAdmission();
+  it("returns a disabled Support deep link to the authenticated landing without using Users or Live", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -580,20 +568,21 @@ describe("authentication routes", () => {
       user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
       project,
       projects: [project],
+      supportEnabled: false,
     });
 
     await router.push(
       "/support/inbox/conversations/conversation-1?projectId=project-1",
     );
 
-    expect(router.currentRoute.value.name).toBe("users");
-    expect(router.currentRoute.value.query).toMatchObject({
-      projectId: "project-1",
-      conversationId: "conversation-1",
-    });
+    expect(router.currentRoute.value.name).toBe("overview");
+
+    project.effectivePermissionCodes.push("project.cases.settings.manage");
+    await router.push("/cases/settings?projectId=project-1");
+    expect(router.currentRoute.value.name).toBe("overview");
   });
 
-  it("uses the Cases admission target for the list mode and requires the exact read permission", async () => {
+  it("uses the Cases access target for the list mode and requires the exact read permission", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -608,6 +597,7 @@ describe("authentication routes", () => {
       user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
       project,
       projects: [project],
+      supportEnabled: true,
     });
 
     await router.push("/cases?projectId=project-1");
@@ -620,7 +610,7 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("overview");
   });
 
-  it("observes a Project hard-off on the next SPA navigation without clearing admission", async () => {
+  it("observes deployment Support availability on the next SPA navigation", async () => {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -638,24 +628,17 @@ describe("authentication routes", () => {
       user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
       project,
       projects: [project],
+      supportEnabled: true,
     });
 
     await router.push("/support/inbox?projectId=project-1");
     expect(router.currentRoute.value.name).toBe("support-inbox");
-    writeMockSupportWorkspaceRollout(
-      {
-        enabled: true,
-        shellEnabled: false,
-        hardOff: true,
-        version: 5,
-      },
-      "project-1",
-    );
+    auth.supportEnabled = false;
 
     await router.push("/overview");
     await router.push("/support/inbox?projectId=project-1");
 
-    expect(router.currentRoute.value.name).toBe("users");
+    expect(router.currentRoute.value.name).toBe("overview");
   });
 
   it("keeps an authenticated multi-Project user on login until a Project is selected", async () => {
@@ -743,6 +726,7 @@ describe("authentication routes", () => {
       },
       project,
       projects: [project],
+      supportEnabled: true,
     });
 
     await router.push("/project/memberships");
@@ -1011,6 +995,7 @@ describe("authentication routes", () => {
     auth.$patch({
       restored: true,
       phase: "AUTHENTICATED",
+      supportEnabled: true,
       user: {
         id: "operator-1",
         email: "operator@example.com",
@@ -1056,18 +1041,6 @@ describe("authentication routes", () => {
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("overview");
 
-    await router.push("/support/settings/audit-rollout");
-    expect(router.currentRoute.value.name).toBe("overview");
-
-    auth.project!.effectivePermissionCodes = [
-      "project.support.workspace.rollout.manage",
-    ];
-    expect(
-      typeof router.getRoutes().find((route) => route.name === "support-workspace-rollout")
-        ?.components?.default,
-    ).toBe("function");
-    await router.push("/support/settings/audit-rollout");
-    expect(router.currentRoute.value.name).toBe("support-workspace-rollout");
 
     auth.project!.effectivePermissionCodes = ["project.integrations.manage"];
     await router.push("/support/settings/integrations");

@@ -91,6 +91,7 @@ describe("MFA page", () => {
           platformPermissionCodes: ["platform.cms_users.read"],
         },
         projects: [],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -135,6 +136,7 @@ describe("MFA page", () => {
             status: "ACTIVE",
           },
         ],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();
@@ -177,6 +179,7 @@ describe("MFA page", () => {
             status: "ACTIVE",
           },
         ],
+        capabilities: { supportEnabled: true },
       },
     });
     const auth = useAuthStore();

@@ -14,7 +14,7 @@
 | Surface                       | Route                            | Exact Project permission                         | Authority                                            |
 | ----------------------------- | -------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
 | Connection и mapping settings | `/support/settings/integrations` | `project.support.external_work.manage`           | backend connection/catalog/mapping roots             |
-| Compatibility inbox           | `/support/external-work`         | `project.support.external_work.inbox_read`       | backend compatibility read model                     |
+| External inbox                | `/support/external-work`         | `project.support.external_work.inbox_read`       | backend external recovery read model                 |
 | Linked recovery               | `/support/external-work`         | `project.support.external_work.read_linked`      | remote read model + Case-scoped command receipts     |
 | Safe retry                    | linked recovery detail           | `project.support.external_work.retry`            | exact Case command receipt + quoted numeric OCC      |
 | Unknown evidence refresh      | linked recovery detail           | `project.support.external_work.resolve_unknown`  | exact Case command receipt + quoted numeric OCC      |
@@ -22,13 +22,13 @@
 | Case external create          | Support Workspace Case inspector | `project.support.external_work.create` + `project.support.external_work.read_linked` | server create options + pinned mapping/form revision + authoritative receipt recovery |
 | Internal external comment     | Support Workspace Case inspector | `project.support.external_work.comment_internal` | server allowed action + quoted link version          |
 | Public external comment       | Support Workspace Case inspector | `project.support.external_work.comment_public`   | separate permission + explicit operator confirmation |
-| Link compatibility inbox item | Support Workspace Case inspector | `project.support.external_work.inbox_read`       | exact item version + published mapping revision      |
+| Link external inbox item      | Support Workspace Case inspector | `project.support.external_work.inbox_read`       | exact item version + published mapping revision      |
 
 `project.integrations.manage` не даёт доступ к Support External Work. Actor,
 Project и permission scope участвуют в fencing каждого read/mutation.
 Сам backend mutation проверяет exact `external_work.create`, но pinned read
 contract разрешает reconciliation принятого `202` только с `read_linked`.
-Поэтому frontend admission для Create требует оба permission и не открывает
+Поэтому frontend authorization для Create требует оба permission и не открывает
 необратимую команду create-only роли без способа проверить outcome.
 
 ## Mutation contract
@@ -66,5 +66,5 @@ contract разрешает reconciliation принятого `202` только
   Case inspector. Browser не вызывает provider напрямую и не меняет canonical
   Lola Case state по remote status.
 - Import preview/execution — отдельная управляемая поверхность.
-- Production rollout, реальные OAuth credentials и provider mutations остаются
-  release-owner действиями; mock/manual frontend gate их не выполняет.
+- Production provider configuration, реальные OAuth credentials и provider
+  mutations остаются release-owner действиями; frontend не создаёт отдельный gate.
