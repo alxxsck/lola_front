@@ -907,13 +907,11 @@ function submit(): void {
   position: static;
   z-index: 15;
   width: 100%;
-  max-height: min(520px, 70vh);
   margin-top: 8px;
   padding: 12px;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  overflow: auto;
+  gap: 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-card);
@@ -951,6 +949,7 @@ function submit(): void {
 .filter-grid select,
 .filter-grid input {
   width: 100%;
+  min-height: 36px;
   padding: 0 7px;
 }
 .filter-chips {
@@ -986,7 +985,13 @@ function submit(): void {
     width: auto;
     margin-top: 0;
     grid-template-columns: 1fr;
+    max-height: calc(100dvh - 16px);
+    overflow: auto;
     border-radius: 12px;
+  }
+  .filter-grid select,
+  .filter-grid input {
+    min-height: 44px;
   }
 }
 </style>

@@ -11,6 +11,30 @@ async function expectPath(page: Page, pathname: string): Promise<void> {
   await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);
 }
 
+function colorContrast(foreground: string, background: string): number {
+  const channels = (value: string) => {
+    const match = value.match(/\d+(?:\.\d+)?/g);
+    if (!match || match.length < 3)
+      throw new Error(`Unsupported color ${value}`);
+    return match.slice(0, 3).map(Number);
+  };
+  const luminance = (value: string) => {
+    const [red = 0, green = 0, blue = 0] = channels(value).map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  };
+  const foregroundLuminance = luminance(foreground);
+  const backgroundLuminance = luminance(background);
+  return (
+    (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+    (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+  );
+}
+
 async function showBaseInbox(page: Page): Promise<void> {
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   const trigger = queue.locator(".inbox-tools__trigger");
@@ -112,6 +136,103 @@ test("keeps the support search toolbar readable in the inbox rail", async ({
     .include(".search-rail")
     .analyze();
   expect(accessibility.violations).toEqual([]);
+});
+
+test("keeps support status controls legible and immediately understandable", async ({
+  page,
+}) => {
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+
+  for (const dark of [false, true]) {
+    await page.evaluate((enabled) => {
+      document.documentElement.classList.toggle("retenive-dark", enabled);
+    }, dark);
+    const badgeColors = await queue
+      .locator(".unread-count")
+      .first()
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { color: style.color, background: style.backgroundColor };
+      });
+    expect(
+      colorContrast(badgeColors.color, badgeColors.background),
+    ).toBeGreaterThanOrEqual(4.5);
+
+    const headerIconColors = await page
+      .locator(".support-workspace-title__icon")
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        const icon = element.querySelector("i");
+        return {
+          color: icon ? getComputedStyle(icon).color : style.color,
+          background: style.backgroundColor,
+        };
+      });
+    expect(
+      colorContrast(headerIconColors.color, headerIconColors.background),
+    ).toBeGreaterThanOrEqual(3);
+  }
+
+  const modeButtons = queue.locator('button[aria-pressed="true"]');
+  await expect(modeButtons).toHaveCount(1);
+  await expect(modeButtons).toHaveCSS("box-shadow", /^(?!none$).+/);
+  await expect(
+    page.getByRole("button", { name: /^Моя доступность: / }),
+  ).toBeVisible();
+});
+
+test("selects a conversation immediately and swaps it through message skeletons", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await showBaseInbox(page);
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const rows = queue.locator(".inbox-row");
+
+  await rows.nth(0).click();
+  await expect(page.locator(".conversation-loading-overlay")).toBeHidden();
+
+  const nextRow = rows.nth(1);
+  await nextRow.click({ noWaitAfter: true });
+
+  await expect(nextRow).toHaveAttribute("aria-current", "true");
+  const loading = page.locator(".conversation-loading-overlay");
+  await expect(loading).toBeVisible();
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(2);
+  await expect(loading).toBeHidden();
+});
+
+test("keeps availability and message loading visible on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await showBaseInbox(page);
+  await expect(page.locator(".header-actions .p-tag")).toBeVisible();
+  await expect(
+    page.locator(".availability-button .p-button-label"),
+  ).toContainText(/^Я |^Завершаю |^Загрузка |^Статус /);
+
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  await queue.locator(".inbox-row").first().click({ noWaitAfter: true });
+  const loading = page.locator(".conversation-loading-overlay");
+  await expect(loading).toBeVisible();
+  await expect(loading.locator(".conversation-loading-message")).toHaveCount(2);
+  const geometry = await loading.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return {
+      left: bounds.left,
+      right: bounds.right,
+      viewportWidth: window.innerWidth,
+      overflow:
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    };
+  });
+  expect(geometry.left).toBeGreaterThanOrEqual(-0.5);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth + 0.5);
+  expect(geometry.overflow).toBe(0);
+  await expect(loading).toBeHidden();
 });
 
 test("opens a project conversation as a deep link without horizontal overflow", async ({

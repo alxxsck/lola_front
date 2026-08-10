@@ -11,7 +11,6 @@ import { useRoute, useRouter, type LocationQuery } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
@@ -120,6 +119,7 @@ import {
 } from "@/features/support-workspace/model/support-workspace-telemetry";
 import { repository } from "@/shared/api/repository";
 import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
+import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import type {
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
@@ -1227,21 +1227,37 @@ const workspaceLive = createSupportWorkspaceLiveController(
   },
   cmsRealtimeClient,
 );
-const workspaceLiveLabel = computed(() =>
-  workspaceLive.state.value === "CONNECTED"
-    ? "Обновления подключены"
-    : workspaceLive.state.value === "CONNECTING"
-      ? "Подключаем обновления"
-      : workspaceLive.state.value === "DEGRADED"
-        ? "Обновления восстанавливаются"
-        : "Снимок сервера",
-);
-const workspaceLiveSeverity = computed(() =>
-  workspaceLive.state.value === "CONNECTED"
-    ? "success"
-    : workspaceLive.state.value === "DEGRADED"
-      ? "warn"
-      : "info",
+const workspaceLivePresentationByState: Record<
+  CmsRealtimeState,
+  {
+    label: string;
+    compactLabel: string;
+    severity: "success" | "warn" | "info";
+  }
+> = {
+  DISCONNECTED: {
+    label: "Снимок сервера",
+    compactLabel: "Снимок",
+    severity: "info",
+  },
+  CONNECTING: {
+    label: "Подключаем обновления",
+    compactLabel: "Подключение…",
+    severity: "info",
+  },
+  CONNECTED: {
+    label: "Обновления подключены",
+    compactLabel: "Подключено",
+    severity: "success",
+  },
+  DEGRADED: {
+    label: "Обновления восстанавливаются",
+    compactLabel: "Восстановление…",
+    severity: "warn",
+  },
+};
+const workspaceLivePresentation = computed(
+  () => workspaceLivePresentationByState[workspaceLive.state.value],
 );
 const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
@@ -1276,8 +1292,35 @@ const reservationReconcileInFlight = computed(
   () => operationsReconcileInFlightKey.value === selectedReservationKey.value,
 );
 const lastInboxSelectionKey = ref("");
+const selectionIntentKey = ref("");
+const inboxModeIntent = ref<SupportInboxMode | null>(null);
 const selectedInboxKey = computed(
-  () => requestedSelectionKey.value || lastInboxSelectionKey.value || undefined,
+  () =>
+    selectionIntentKey.value ||
+    requestedSelectionKey.value ||
+    lastInboxSelectionKey.value ||
+    undefined,
+);
+const presentedInboxMode = computed(
+  () => inboxModeIntent.value ?? inboxMode.value,
+);
+const presentedInboxItems = computed(() =>
+  inboxModeIntent.value ? [] : inbox.items.value,
+);
+const inboxPresentationLoading = computed(
+  () => Boolean(inboxModeIntent.value) || inbox.loading.value,
+);
+const committedSelectionKey = computed(() => {
+  const selection = conversation.selection.value;
+  if (selection?.case?.id) return `CASE:${selection.case.id}`;
+  return selection?.conversation?.id
+    ? `CONVERSATION:${selection.conversation.id}`
+    : "";
+});
+const selectionTransitioning = computed(
+  () =>
+    Boolean(selectionIntentKey.value) ||
+    (Boolean(requestedSelectionKey.value) && conversation.loading.value),
 );
 const selectedAssignmentAuthorityKey = computed(() => {
   const supportCase = conversation.selection.value?.case;
@@ -1665,6 +1708,23 @@ const assignmentAvailabilityLabel = computed(() => {
     ? state
     : `${state} · новую работу не принимает`;
 });
+const availabilityButtonLabel = computed(
+  () => `Моя доступность: ${assignmentAvailabilityLabel.value}`,
+);
+const availabilityCompactLabel = computed(() => {
+  const state = availability.availability.value?.effectiveState;
+  const labels: Record<string, string> = {
+    AVAILABLE: "Я доступен",
+    BUSY: "Я занят",
+    AWAY: "Я отошёл",
+    DRAINING: "Завершаю работу",
+    OFFLINE: "Я офлайн",
+  };
+  return (
+    labels[state ?? ""] ??
+    (availability.loading.value ? "Загрузка статуса" : "Статус не загружен")
+  );
+});
 const assignmentSurfaceController = computed(() =>
   canManageOwnAssignments.value || canOverrideAssignments.value
     ? assignment
@@ -1808,30 +1868,54 @@ const inspector = createSupportInspectorController(
 async function openInboxItem(item: SupportInboxItem): Promise<void> {
   const selectionKey = `${item.kind}:${item.id}`;
   lastInboxSelectionKey.value = selectionKey;
-  if (selectionKey === requestedSelectionKey.value) return;
+  if (selectionKey === requestedSelectionKey.value) {
+    selectionIntentKey.value = "";
+    return;
+  }
+  selectionIntentKey.value = selectionKey;
   const query = { ...route.query };
   delete query.panel;
-  await router.push(
-    item.kind === "CASE"
-      ? {
-          name: "support-inbox-case",
-          params: { caseId: item.id },
-          query,
-        }
-      : {
-          name: "support-inbox-conversation",
-          params: { conversationId: item.id },
-          query,
-        },
-  );
+  try {
+    await router.push(
+      item.kind === "CASE"
+        ? {
+            name: "support-inbox-case",
+            params: { caseId: item.id },
+            query,
+          }
+        : {
+            name: "support-inbox-conversation",
+            params: { conversationId: item.id },
+            query,
+          },
+    );
+    if (
+      requestedSelectionKey.value !== selectionKey &&
+      selectionIntentKey.value === selectionKey
+    )
+      selectionIntentKey.value = "";
+  } catch (error) {
+    if (selectionIntentKey.value === selectionKey)
+      selectionIntentKey.value = "";
+    throw error;
+  }
 }
 
 async function changeInboxMode(mode: SupportInboxMode): Promise<void> {
+  if (mode === presentedInboxMode.value) return;
+  inboxModeIntent.value = mode;
   const query = { ...route.query };
   delete query.panel;
   if (mode === "ALL_CONVERSATIONS") delete query.mode;
   else query.mode = "cases";
-  await router.push({ name: "support-inbox", query });
+  try {
+    await router.push({ name: "support-inbox", query });
+    if (inboxMode.value !== mode && inboxModeIntent.value === mode)
+      inboxModeIntent.value = null;
+  } catch (error) {
+    if (inboxModeIntent.value === mode) inboxModeIntent.value = null;
+    throw error;
+  }
 }
 
 function clearSupportSearchTimer(): void {
@@ -3222,9 +3306,10 @@ const legacyEndUserRouteScope = computed(() =>
   ].join("\u0000"),
 );
 
-watch(inboxMode, async () => {
+watch(inboxMode, async (mode) => {
   inbox.reset();
   await inbox.load();
+  if (inboxModeIntent.value === mode) inboxModeIntent.value = null;
 });
 
 watch(legacyEndUserRouteScope, async () => {
@@ -3333,6 +3418,20 @@ watch(
     void conversation.load();
   },
   { immediate: true },
+);
+
+watch(
+  [
+    requestedSelectionKey,
+    committedSelectionKey,
+    () => conversation.loading.value,
+    () => conversation.error.value,
+  ],
+  ([requested, committed, loading, error]) => {
+    const intent = selectionIntentKey.value;
+    if (!intent || requested !== intent || loading) return;
+    if (committed === intent || error) selectionIntentKey.value = "";
+  },
 );
 
 watch(mobileInspectorRequested, (requested, previousRequested) => {
@@ -3484,11 +3583,25 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="header-actions">
-          <Tag :value="workspaceLiveLabel" :severity="workspaceLiveSeverity" />
+          <Tag
+            :value="
+              isMobileWorkspace
+                ? workspaceLivePresentation.compactLabel
+                : workspaceLivePresentation.label
+            "
+            :aria-label="workspaceLivePresentation.label"
+            :severity="workspaceLivePresentation.severity"
+          />
           <Button
             v-if="canReadAvailability"
-            label="Моя доступность"
+            class="availability-button"
+            :label="availabilityCompactLabel"
+            :aria-label="availabilityButtonLabel"
+            :title="availabilityButtonLabel"
             icon="pi pi-user"
+            :data-availability-state="
+              availability.availability.value?.effectiveState ?? 'UNKNOWN'
+            "
             severity="secondary"
             outlined
             @click="availabilityDialogVisible = true"
@@ -3533,16 +3646,18 @@ onBeforeUnmount(() => {
       <div
         class="support-workspace card"
         :class="{
-          'has-route-selection': Boolean(requestedSelectionKey),
+          'has-route-selection': Boolean(
+            requestedSelectionKey || selectionIntentKey,
+          ),
           'has-mobile-inspector': mobileInspectorVisible,
         }"
       >
         <SupportInboxPane
           ref="supportInboxPane"
-          :mode="inboxMode"
-          :items="inbox.items.value"
+          :mode="presentedInboxMode"
+          :items="presentedInboxItems"
           :selected-key="selectedInboxKey"
-          :loading="inbox.loading.value"
+          :loading="inboxPresentationLoading"
           :error="inbox.error.value"
           :failure="inbox.failure.value"
           :has-more="Boolean(inbox.nextCursor.value)"
@@ -3604,6 +3719,37 @@ onBeforeUnmount(() => {
         />
 
         <main class="conversation-pane" aria-label="Выбранный диалог">
+          <Transition name="conversation-loading">
+            <section
+              v-if="selectionTransitioning"
+              class="conversation-loading-overlay"
+              aria-busy="true"
+              aria-live="polite"
+            >
+              <span class="sr-only">Загружаем выбранный диалог</span>
+              <header class="conversation-loading-header" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </header>
+              <div class="conversation-loading-messages" aria-hidden="true">
+                <article class="conversation-loading-message is-inbound">
+                  <span class="conversation-loading-avatar" />
+                  <span class="conversation-loading-bubble">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                </article>
+                <article class="conversation-loading-message is-outbound">
+                  <span class="conversation-loading-bubble">
+                    <i />
+                    <i />
+                  </span>
+                </article>
+              </div>
+            </section>
+          </Transition>
           <template v-if="selectedConversation">
             <header class="conversation-header">
               <div>
@@ -3664,20 +3810,8 @@ onBeforeUnmount(() => {
               @history="aiSuspensionHistoryVisible = true"
             />
 
-            <div
-              v-if="conversation.loading.value"
-              class="message-skeletons"
-              aria-busy="true"
-            >
-              <Skeleton
-                v-for="index in 5"
-                :key="index"
-                height="64px"
-                border-radius="14px"
-              />
-            </div>
             <Message
-              v-else-if="conversation.error.value"
+              v-if="conversation.error.value"
               severity="error"
               :closable="false"
             >
@@ -3879,12 +4013,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div
-            v-else-if="inbox.loading.value || conversation.loading.value"
+            v-else-if="inboxPresentationLoading"
             class="empty-selection"
             aria-busy="true"
           >
-            <Skeleton width="180px" height="24px" />
-            <Skeleton width="240px" height="16px" />
+            <i class="pi pi-inbox" aria-hidden="true" />
+            <h2>Загружаем входящие</h2>
+            <p>Список появится здесь без перестройки рабочего места.</p>
           </div>
           <div v-else class="empty-selection">
             <i class="pi pi-comments" aria-hidden="true" />
@@ -4059,6 +4194,13 @@ onBeforeUnmount(() => {
 .header-actions :deep(.p-button-secondary.p-button-outlined) {
   color: var(--text-primary);
 }
+.availability-button[data-availability-state="AVAILABLE"]
+  :deep(.p-button-icon) {
+  color: var(--status-success-text);
+}
+.availability-button[data-availability-state="OFFLINE"] :deep(.p-button-icon) {
+  color: var(--text-muted);
+}
 .conversation-header__actions {
   gap: 8px;
   flex-wrap: wrap;
@@ -4081,8 +4223,8 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--surface-subtle);
+  color: var(--text-primary);
 }
 .support-workspace-header h1 {
   margin: 0;
@@ -4173,8 +4315,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 .conversation-list,
-.inbox-skeletons,
-.message-skeletons {
+.inbox-skeletons {
   display: grid;
   gap: 8px;
 }
@@ -4278,11 +4419,132 @@ onBeforeUnmount(() => {
   color: var(--status-success-text);
 }
 .conversation-pane {
+  position: relative;
+  isolation: isolate;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--surface-base);
+}
+.conversation-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-base);
+}
+.conversation-loading-header {
+  min-height: 81px;
+  padding: 16px 20px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.conversation-loading-header span,
+.conversation-loading-bubble i,
+.conversation-loading-avatar {
+  display: block;
+  background: linear-gradient(
+    100deg,
+    var(--surface-muted) 24%,
+    color-mix(in srgb, var(--brand-soft) 70%, var(--surface-card)) 42%,
+    var(--surface-muted) 60%
+  );
+  background-size: 220% 100%;
+  animation: conversation-loading-shimmer 1.4s ease-in-out infinite;
+}
+.conversation-loading-header span {
+  height: 8px;
+  border-radius: 4px;
+}
+.conversation-loading-header span:first-child {
+  width: 84px;
+  height: 8px;
+}
+.conversation-loading-header span:nth-child(2) {
+  width: min(260px, 58%);
+  height: 16px;
+}
+.conversation-loading-header span:last-child {
+  width: min(340px, 72%);
+}
+.conversation-loading-messages {
+  min-height: 0;
+  padding: 28px 24px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+}
+.conversation-loading-message {
+  width: min(64%, 520px);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.conversation-loading-message.is-outbound {
+  width: min(54%, 440px);
+  align-self: flex-end;
+}
+.conversation-loading-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+}
+.conversation-loading-bubble {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 16px 5px;
+  background: var(--surface-card);
+}
+.is-outbound .conversation-loading-bubble {
+  border-radius: 16px 16px 5px 16px;
+  background: color-mix(
+    in srgb,
+    var(--status-accent-soft) 38%,
+    var(--surface-card)
+  );
+}
+.conversation-loading-bubble i {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+}
+.conversation-loading-bubble i:nth-child(2) {
+  width: 88%;
+}
+.conversation-loading-bubble i:last-child {
+  width: 58%;
+}
+.conversation-loading-enter-active,
+.conversation-loading-leave-active {
+  transition:
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.conversation-loading-enter-from,
+.conversation-loading-leave-to {
+  opacity: 0;
+  transform: translateY(3px);
+}
+@keyframes conversation-loading-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
 }
 .case-without-conversation {
   min-height: 0;
@@ -4345,9 +4607,6 @@ onBeforeUnmount(() => {
 .mobile-context {
   display: none;
 }
-.message-skeletons {
-  padding: 22px;
-}
 .support-conversation-pane {
   min-height: 0;
   height: auto;
@@ -4407,6 +4666,17 @@ onBeforeUnmount(() => {
 .empty-selection p {
   margin: 0;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 @media (max-width: 1279px) {
   .support-workspace {
     grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
@@ -4449,7 +4719,17 @@ onBeforeUnmount(() => {
     gap: 6px;
   }
   .support-workspace-page--full-tab .header-actions :deep(.p-tag) {
+    min-width: 0;
+    max-width: 112px;
     margin-right: auto;
+    overflow: hidden;
+  }
+  .support-workspace-page--full-tab
+    .header-actions
+    :deep(.p-tag-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .support-workspace-page--full-tab .header-actions :deep(.p-button) {
     width: 40px;
@@ -4467,6 +4747,26 @@ onBeforeUnmount(() => {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+  .support-workspace-page--full-tab
+    .header-actions
+    .availability-button {
+    width: auto;
+    max-width: 128px;
+    padding: 0 8px;
+  }
+  .support-workspace-page--full-tab
+    .header-actions
+    .availability-button
+    :deep(.p-button-label) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    clip: auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .support-workspace {
     display: block;
@@ -4542,8 +4842,29 @@ onBeforeUnmount(() => {
   .mobile-context {
     display: inline-flex;
   }
-  .message-skeletons {
-    padding: 16px;
+  .conversation-loading-header {
+    min-height: 49px;
+    padding: 8px 12px;
+  }
+  .conversation-loading-messages {
+    padding: 20px 12px;
+  }
+  .conversation-loading-message {
+    width: 82%;
+  }
+  .conversation-loading-message.is-outbound {
+    width: 72%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conversation-loading-enter-active,
+  .conversation-loading-leave-active {
+    transition: none;
+  }
+  .conversation-loading-header span,
+  .conversation-loading-bubble i,
+  .conversation-loading-avatar {
+    animation: none;
   }
 }
 </style>

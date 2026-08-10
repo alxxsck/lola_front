@@ -81,6 +81,7 @@ const draft = ref(props.composer.initialDraft);
 const newMessageCount = ref(0);
 let anchor: { height: number; top: number } | null = null;
 let stickToLatest = true;
+let keepLatestOnResize = false;
 let surfaceResizeObserver: ResizeObserver | null = null;
 let messageVisibilityObserver: IntersectionObserver | null = null;
 let visibleHighWaterTimer: number | null = null;
@@ -271,6 +272,11 @@ function atConversationLatest(element = logElement.value): boolean {
   return !props.history.hasNewer && nearLatest(element);
 }
 
+function composerIsNearLatest(element = logElement.value): boolean {
+  if (!element || props.history.hasNewer) return false;
+  return element.scrollHeight - element.scrollTop - element.clientHeight < 120;
+}
+
 function scrollToLatest(smooth = true): void {
   const element = logElement.value;
   if (!element) return;
@@ -281,6 +287,7 @@ function scrollToLatest(smooth = true): void {
   if (!element.scrollTo) element.scrollTop = element.scrollHeight;
   newMessageCount.value = 0;
   stickToLatest = true;
+  keepLatestOnResize = true;
 }
 
 function scrollToOrdinal(ordinal: number): boolean {
@@ -442,6 +449,7 @@ function requestNewer(): void {
 
 function handleLogScroll(): void {
   stickToLatest = atConversationLatest();
+  keepLatestOnResize = composerIsNearLatest();
   if (stickToLatest) newMessageCount.value = 0;
   if ((logElement.value?.scrollTop ?? 100) <= 72) requestOlder();
   if (nearLatest() && props.history.hasNewer) requestNewer();
@@ -587,7 +595,9 @@ onMounted(() => {
   void restoreScrollAnchor();
   if (typeof ResizeObserver === "undefined") return;
   surfaceResizeObserver = new ResizeObserver(() => {
-    if (stickToLatest)
+    const shouldKeepLatest = stickToLatest || keepLatestOnResize;
+    keepLatestOnResize = composerIsNearLatest();
+    if (shouldKeepLatest)
       void nextTick(() => {
         scrollToLatest(false);
         queueVisibleHighWater();
@@ -1394,6 +1404,17 @@ onBeforeUnmount(() => {
   background: var(--surface-card);
   box-shadow: 0 7px 20px color-mix(in srgb, var(--text-primary) 5%, transparent);
   overflow-wrap: anywhere;
+  animation: conversation-message-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes conversation-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .conversation-surface__message.is-outbound {
   margin-left: auto;
@@ -1692,6 +1713,9 @@ onBeforeUnmount(() => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .conversation-surface__message {
+    animation: none;
+  }
   .internal-note-rail-enter-active,
   .internal-note-rail-leave-active {
     transition: none;

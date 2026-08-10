@@ -792,11 +792,20 @@ function unreadLabel(
   font-weight: 650;
   line-height: 1;
   cursor: pointer;
+  transition:
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inbox-modes button.active {
-  background: var(--surface-card);
+  background: var(--brand-soft);
   color: var(--text-primary);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--text-brand) 28%, var(--line));
+}
+.inbox-modes button:active {
+  transform: scale(0.985);
 }
 .inbox-modes i {
   width: 16px;
@@ -1183,7 +1192,7 @@ function unreadLabel(
   display: inline-grid;
   place-items: center;
   border-radius: 999px;
-  color: var(--surface-card);
+  color: var(--on-brand);
   background: var(--brand);
   font-size: 0.68rem;
   font-weight: 800;
@@ -1304,6 +1313,7 @@ function unreadLabel(
   align-content: start;
   overflow: auto;
   overscroll-behavior: contain;
+  animation: inbox-content-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 .inbox-skeleton-row {
   height: 72px;
@@ -1344,6 +1354,21 @@ function unreadLabel(
 .inbox-state p {
   margin: 0;
   font-size: 0.82rem;
+}
+.inbox-list,
+.search-results,
+.inbox-state {
+  animation: inbox-content-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes inbox-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .inbox-state button,
 .pagination-error button,
@@ -1410,12 +1435,19 @@ function unreadLabel(
   border: 0;
 }
 @media (prefers-reduced-motion: reduce) {
+  .inbox-modes button,
   .inbox-row,
   .inbox-tools__trigger,
   .inbox-tools__chevron,
   .inbox-tools-panel-enter-active,
   .inbox-tools-panel-leave-active {
     transition-duration: 0.01ms;
+  }
+  .inbox-skeletons,
+  .inbox-list,
+  .search-results,
+  .inbox-state {
+    animation: none;
   }
 }
 </style>

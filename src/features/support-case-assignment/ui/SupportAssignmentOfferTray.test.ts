@@ -59,6 +59,17 @@ describe("SupportAssignmentOfferTray", () => {
     expect(wrapper.html()).toBe("<!--v-if-->");
   });
 
+  it("does not move the workspace while an empty offer check is pending", async () => {
+    const assignment = controller([]);
+    assignment.offerLoading.value = true;
+    const wrapper = mount(SupportAssignmentOfferTray, {
+      props: { controller: assignment as never },
+      global: { plugins: [PrimeVue] },
+    });
+
+    expect(wrapper.html()).toBe("<!--v-if-->");
+  });
+
   it("removes an expired offer from the action surface without a click", () => {
     const wrapper = mount(SupportAssignmentOfferTray, {
       props: {

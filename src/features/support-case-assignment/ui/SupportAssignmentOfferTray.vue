@@ -47,7 +47,6 @@ onBeforeUnmount(() => {
   <section
     v-if="
       activeOffers.length ||
-      controller.offerLoading.value ||
       controller.offerError.value ||
       controller.offerUnknownOutcome.value
     "
@@ -62,13 +61,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <p
-      v-if="controller.offerLoading.value && !activeOffers.length"
-      class="assignment-offer-tray__status"
-    >
-      Проверяем приватные предложения…
-    </p>
-    <ul v-else class="assignment-offer-tray__list">
+    <ul class="assignment-offer-tray__list">
       <li
         v-for="offer in activeOffers"
         :key="offer.assignmentId"
