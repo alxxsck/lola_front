@@ -16,7 +16,7 @@ describe("ReportingChartRenderer", () => {
     expect(wrapper.get("[role=img]").attributes("aria-label")).toContain(
       "12 840 активных пользователей",
     );
-    expect(wrapper.text()).toContain("12 июл — 10 авг 2026");
+    expect(wrapper.text()).toContain("8–9 авг 2026 · 2 полных дня");
     expect(wrapper.text()).toContain("Точные данные");
     expect(wrapper.text()).toContain("Таблица данных");
   });

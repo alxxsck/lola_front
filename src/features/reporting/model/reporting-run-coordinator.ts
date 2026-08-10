@@ -26,7 +26,7 @@ export class ReportingRunCoordinator {
     Promise<ReportingRunOutcome<unknown>>
   >();
 
-  constructor(private readonly maxConcurrency = 4) {
+  constructor(private readonly maxConcurrency = 6) {
     if (!Number.isInteger(maxConcurrency) || maxConcurrency < 1) {
       throw new Error("Reporting concurrency must be a positive integer");
     }

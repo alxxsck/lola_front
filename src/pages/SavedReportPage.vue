@@ -62,7 +62,7 @@ const form = reactive({
   space: "PERSONAL" as ReportingArtifactSpace,
   datasetId: "events-product",
   metric: "unique_users",
-  dateRange: "LAST_30_DAYS" as ReportingDateRange,
+  dateRange: "LAST_2_DAYS" as ReportingDateRange,
   grain: "DAY" as ReportingTimeGrain,
   breakdown: "" as string,
   visualization: "LINE" as ReportingVisualization,
@@ -135,7 +135,7 @@ function applyReport(next: SavedReport): void {
   form.collection = next.collection;
   form.datasetId = next.query.datasetId;
   form.metric = next.query.metric;
-  form.dateRange = next.query.dateRange ?? "LAST_30_DAYS";
+  form.dateRange = next.query.dateRange ?? "LAST_2_DAYS";
   form.grain = next.query.grain ?? "DAY";
   form.breakdown = next.query.breakdown ?? "";
   form.visualization = next.visualization;

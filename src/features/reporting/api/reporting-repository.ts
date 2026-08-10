@@ -20,6 +20,7 @@ import {
   ReportingCompatibilityError,
   ReportingVersionConflictError,
 } from "../model/reporting-types";
+import { reportingPeriodDays } from "../model/reporting-options";
 
 type MockState = {
   reports: SavedReport[];
@@ -226,11 +227,13 @@ class MockReportingRepository implements ReportingRepository {
     if (existing && draft.expectedVersion !== existing.version)
       throw new ReportingVersionConflictError();
     const branchFromPublished = existing?.lifecycle === "PUBLISHED";
+    const dashboardId =
+      existing && !branchFromPublished
+        ? existing.id
+        : `dashboard-draft-${state.nextId++}`;
+    const nextVersion = branchFromPublished ? 1 : (existing?.version ?? 0) + 1;
     const dashboard: Dashboard = {
-      id:
-        existing && !branchFromPublished
-          ? existing.id
-          : `dashboard-draft-${state.nextId++}`,
+      id: dashboardId,
       kind: "DASHBOARD",
       title: draft.title,
       description: draft.description ?? "",
@@ -241,8 +244,9 @@ class MockReportingRepository implements ReportingRepository {
       updatedAt: now(),
       freshness: existing?.freshness ?? "UNKNOWN",
       allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
+      dashboardRevisionId: `${dashboardId}-v${nextVersion}`,
       pages: clone(draft.pages),
-      version: branchFromPublished ? 1 : (existing?.version ?? 0) + 1,
+      version: nextVersion,
       publishedRevision: existing?.publishedRevision ?? null,
       ...(branchFromPublished ? { sourceArtifactId: existing.id } : {}),
     };
@@ -271,6 +275,7 @@ class MockReportingRepository implements ReportingRepository {
       version: current.version + 1,
       publishedRevision: (current.publishedRevision ?? 0) + 1,
       allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE"],
+      dashboardRevisionId: `${current.id}-r${(current.publishedRevision ?? 0) + 1}`,
     };
     state.dashboards = state.dashboards.map((item) =>
       item.id === dashboardId ? published : item,
@@ -338,7 +343,36 @@ class MockReportingRepository implements ReportingRepository {
           query.grain !== null));
     if (invalidTemporalMode)
       throw new ReportingCompatibilityError("NO_TEMPORAL_HISTORY");
-    return clone(resultFixtureFor(query.metric, query.breakdown));
+    return clone(
+      resultFixtureFor(
+        query.metric,
+        query.breakdown,
+        query.dateRange ? reportingPeriodDays(query.dateRange) : undefined,
+      ),
+    );
+  }
+
+  async runDashboardWidget(
+    projectId: string,
+    input: Parameters<ReportingRepository["runDashboardWidget"]>[1],
+    signal: AbortSignal,
+  ): ReturnType<ReportingRepository["runDashboardWidget"]> {
+    await waitForFixture(signal);
+    const dashboard = requireDashboard(projectId, input.dashboardId);
+    if (dashboard.dashboardRevisionId !== input.dashboardRevisionId)
+      throw new ReportingVersionConflictError();
+    const widget = dashboard.pages
+      .find(({ id }) => id === input.pageId)
+      ?.widgets.find(({ id }) => id === input.widgetId);
+    if (!widget) throw new Error("Виджет не найден");
+    const report = requireReport(projectId, widget.savedReportId);
+    return clone(
+      resultFixtureFor(
+        report.query.metric,
+        report.query.breakdown,
+        input.periodDays,
+      ),
+    );
   }
 }
 
@@ -364,6 +398,7 @@ const unavailableRepository: ReportingRepository = {
   publishDashboard: unavailable,
   archiveArtifact: unavailable,
   runQuery: unavailable,
+  runDashboardWidget: unavailable,
 };
 
 const mockRepository = new MockReportingRepository();

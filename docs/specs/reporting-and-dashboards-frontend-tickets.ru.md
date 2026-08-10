@@ -28,6 +28,12 @@ native `blocked_by` edges; внешние backend gates оставлены в bo
 
 ## Frontier
 
-Текущий blockers-first frontier — #25, но его real-API acceptance закрыт до появления merged
-backend contracts в pinned frontend OpenAPI. После #25 параллельно открываются #26 и #27; #28 ждёт
-оба. #30 можно вести независимо от Dashboard authoring после #27 и backend population contract.
+Backend execution slice завершён в `alxxsck/lola_back` ветке
+`codex/reporting-dashboards-backend` коммитом `9afc91e5`, но #25 real-API acceptance остаётся
+закрыт: ветка публикует Nest gateways, а не HTTP controllers/DTO/OpenAPI operations, и расходится с
+backend revision, на которой закреплён текущий frontend OpenAPI. Точный handoff зафиксирован в
+[контексте backend-коммита](../handoffs/reporting-backend-9afc91e5-frontend-context.ru.md).
+
+До появления merged OpenAPI frontend работает только через isolated mock repository. Из backend
+контракта уже приняты безопасные runtime-инварианты: data-free Dashboard shell, 2 полных дня по
+умолчанию, явный 7-day run и activation batches максимум по 6 видимых Widgets.

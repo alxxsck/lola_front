@@ -108,7 +108,7 @@ describe("SavedReportPage", () => {
     expect(wrapper.text()).toContain("Активные пользователи");
     expect(wrapper.text()).toContain("Обновить");
     expect(wrapper.text()).toContain("Добавить в дашборд");
-    expect(wrapper.text()).toContain("12 июл — 10 авг 2026");
+    expect(wrapper.text()).toContain("8–9 авг 2026 · 2 полных дня");
   });
 
   it("hides Add to Dashboard without its exact create Permission", async () => {

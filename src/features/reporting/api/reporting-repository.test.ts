@@ -107,6 +107,35 @@ describe("Reporting repository", () => {
     expect(result.data?.kind).toBe("TIME_SERIES");
   });
 
+  it("opens a data-free Dashboard shell and activates only the requested Widget", async () => {
+    const repository = createMockReportingRepository();
+    const dashboard = await repository.getDashboard(
+      "project-1",
+      "dashboard-product-pulse",
+    );
+
+    expect(dashboard.pages[0]?.widgets[0]).toMatchObject({
+      title: "Активные пользователи",
+      visualization: "LINE",
+      savedReportId: "report-active-users",
+    });
+
+    const result = await repository.runDashboardWidget(
+      "project-1",
+      {
+        dashboardId: dashboard.id,
+        dashboardRevisionId: dashboard.dashboardRevisionId,
+        pageId: "overview",
+        widgetId: "widget-active",
+        periodDays: 7,
+      },
+      new AbortController().signal,
+    );
+
+    expect(result.status).toBe("complete");
+    expect(result.receipt?.periodLabel).toBe("3–9 авг 2026 · 7 полных дней");
+  });
+
   it("keeps Profile and Segment populations explicitly current-state", async () => {
     const repository = createMockReportingRepository();
     const datasets = await repository.listDatasets("project-1");

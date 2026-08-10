@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { ReportingRunCoordinator } from "./reporting-run-coordinator";
 
 describe("ReportingRunCoordinator", () => {
-  it("limits analytical work to four active runs", async () => {
-    const coordinator = new ReportingRunCoordinator(4);
+  it("limits analytical work to six active runs", async () => {
+    const coordinator = new ReportingRunCoordinator(6);
     coordinator.beginScope("project-1:dashboard-1:last-30-days");
     const releases: Array<() => void> = [];
     const task = vi.fn(
@@ -13,12 +13,12 @@ describe("ReportingRunCoordinator", () => {
         }),
     );
 
-    const runs = Array.from({ length: 5 }, () => coordinator.schedule(task));
+    const runs = Array.from({ length: 7 }, () => coordinator.schedule(task));
     await Promise.resolve();
 
-    expect(task).toHaveBeenCalledTimes(4);
+    expect(task).toHaveBeenCalledTimes(6);
     releases.shift()?.();
-    await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(5));
+    await vi.waitFor(() => expect(task).toHaveBeenCalledTimes(7));
 
     releases.forEach((release) => release());
     await Promise.all(runs);
@@ -59,7 +59,7 @@ describe("ReportingRunCoordinator", () => {
   });
 
   it("keeps a fifty-Widget dashboard inside the browser concurrency budget", async () => {
-    const coordinator = new ReportingRunCoordinator(4);
+    const coordinator = new ReportingRunCoordinator(6);
     coordinator.beginScope("project-1:dashboard-50:last-30-days");
     let active = 0;
     let maximumActive = 0;
@@ -76,14 +76,14 @@ describe("ReportingRunCoordinator", () => {
       ),
     );
 
-    expect(maximumActive).toBe(4);
+    expect(maximumActive).toBe(6);
     expect(outcomes.every((outcome) => outcome.status === "committed")).toBe(
       true,
     );
   });
 
   it("coalesces duplicate Widget query descriptors into one cold run", async () => {
-    const coordinator = new ReportingRunCoordinator(4);
+    const coordinator = new ReportingRunCoordinator(6);
     coordinator.beginScope("project-1:dashboard-duplicates");
     const task = vi.fn(async () => "shared result");
 

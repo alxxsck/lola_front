@@ -35,6 +35,8 @@ Frontend не считает агрегаты из Event Logs, Profile lists и�
 - добавление опубликованного Saved Report как Widget;
 - reorder и width presets `1/3`, `1/2`, `2/3`, `full`; без свободных pixel coordinates;
 - global date range и только server-declared compatible filters с явной кнопкой `Применить`;
+- выбранный Saved Report и Dashboard Widgets стартуют за последние 2 полных Project days;
+  7 дней и более длинный период запускаются только после явного `Применить`;
 - shell-first, viewport-aware Widget loading и bounded concurrency;
 - read-only mobile viewing, light/dark, keyboard и screen-reader summaries;
 - Draft OCC, immutable published revision, project switch/revoke cleanup.
@@ -122,7 +124,7 @@ Mobile поддерживает чтение опубликованного Save
 - focal point — первый широкий Widget, отвечающий на главный вопрос Dashboard;
 - дальше используется асимметричный, но grid-aligned rhythm, а не парковка одинаковых cards;
 - above-the-fold Widgets имеют приоритет; below-viewport и hidden tabs не исполняются;
-- общий browser budget — ориентир четыре активных аналитических запроса;
+- один activation batch содержит не более шести видимых Widgets; hidden tabs не активируются;
 - duplicate descriptors coalesce на backend; obsolete runs отменяются при Project/filter change;
 - filter bar показывает `применено к N из M` и причины несовместимости;
 - каждый Widget имеет menu: `Открыть отчёт`, `Объяснить`, `Обновить`, а в edit mode — `Заменить` и

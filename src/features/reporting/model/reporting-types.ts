@@ -2,7 +2,7 @@ export type ReportingArtifactKind = "SAVED_REPORT" | "DASHBOARD";
 export type ReportingLifecycle = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type ReportingVisualization = "KPI" | "LINE" | "BAR" | "DONUT" | "TABLE";
 export type ReportingDateRange =
-  "LAST_7_DAYS" | "LAST_30_DAYS" | "LAST_90_DAYS";
+  "LAST_2_DAYS" | "LAST_7_DAYS" | "LAST_30_DAYS" | "LAST_90_DAYS";
 export type ReportingTimeGrain = "HOUR" | "DAY" | "WEEK" | "MONTH";
 export type ReportingDatasetOwner = "EVENT" | "PROFILE" | "SEGMENT";
 export type ReportingArtifactSpace = "PERSONAL" | "TEAM" | "PROJECT";
@@ -106,6 +106,10 @@ export type DashboardWidget = {
   savedReportRevision: number;
   queryRevisionId: string;
   chartRevision: number;
+  /** Immutable presentation snapshot returned by the data-free Dashboard shell. */
+  title: string;
+  accessibleSummary: string;
+  visualization: ReportingVisualization;
   titleOverride?: string;
   width: DashboardWidgetWidth;
 };
@@ -128,6 +132,7 @@ export type DashboardDraftInput = {
 
 export type Dashboard = ReportingArtifactSummary & {
   kind: "DASHBOARD";
+  dashboardRevisionId: string;
   pages: DashboardPageDefinition[];
   version: number;
   publishedRevision: number | null;
@@ -238,6 +243,17 @@ export type ReportingRepository = {
   runQuery(
     projectId: string,
     query: ReportingQueryDefinition,
+    signal: AbortSignal,
+  ): Promise<ReportingQueryResult>;
+  runDashboardWidget(
+    projectId: string,
+    input: {
+      dashboardId: string;
+      dashboardRevisionId: string;
+      pageId: string;
+      widgetId: string;
+      periodDays: number;
+    },
     signal: AbortSignal,
   ): Promise<ReportingQueryResult>;
 };

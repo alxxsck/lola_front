@@ -24,6 +24,7 @@ import {
 import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
 import {
   reportingDateRangeOptions,
+  reportingPeriodDays,
   reportingSpaceOptions,
 } from "@/features/reporting/model/reporting-options";
 import type {
@@ -40,7 +41,7 @@ import ReportingDashboardWidget from "@/features/reporting/ui/ReportingDashboard
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const coordinator = new ReportingRunCoordinator(4);
+const coordinator = new ReportingRunCoordinator(6);
 const dashboard = ref<Dashboard | null>(null);
 const reports = ref<SavedReport[]>([]);
 const loading = ref(true);
@@ -48,8 +49,8 @@ const saving = ref(false);
 const publishing = ref(false);
 const error = ref("");
 const versionConflict = ref(false);
-const pendingDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
-const appliedDateRange = ref<ReportingDateRange>("LAST_30_DAYS");
+const pendingDateRange = ref<ReportingDateRange>("LAST_2_DAYS");
+const appliedDateRange = ref<ReportingDateRange>("LAST_2_DAYS");
 const refreshKey = ref(0);
 const reportSearch = ref("");
 const activePageId = ref("overview");
@@ -142,7 +143,9 @@ async function loadPage(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    reports.value = await reportingRepository.listSavedReports(projectId.value);
+    reports.value = isEditing.value
+      ? await reportingRepository.listSavedReports(projectId.value)
+      : [];
     const dashboardId =
       typeof route.params.dashboardId === "string"
         ? route.params.dashboardId
@@ -208,6 +211,9 @@ function addReport(reportId: string): void {
     savedReportRevision: report.publishedRevision,
     queryRevisionId: report.query.definitionRevisionId,
     chartRevision: report.chartRevision,
+    title: report.title,
+    accessibleSummary: `${report.title}. ${report.description}`,
+    visualization: report.visualization,
     width: editor.widgets.length === 0 ? "TWO_THIRDS" : "ONE_THIRD",
   });
 }
@@ -464,9 +470,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="editor-widget-copy">
               <span>{{ reportById(widget.savedReportId)?.collection }}</span>
-              <strong>{{
-                widget.titleOverride || reportById(widget.savedReportId)?.title
-              }}</strong>
+              <strong>{{ widget.titleOverride || widget.title }}</strong>
               <small>{{ reportById(widget.savedReportId)?.description }}</small>
             </div>
             <label class="width-control">
@@ -484,7 +488,7 @@ onBeforeUnmount(() => {
                 rounded
                 icon="pi pi-arrow-up"
                 :disabled="index === 0"
-                :aria-label="`Поднять ${reportById(widget.savedReportId)?.title}`"
+                :aria-label="`Поднять ${widget.title}`"
                 @click="moveWidget(index, -1)"
               />
               <Button
@@ -492,7 +496,7 @@ onBeforeUnmount(() => {
                 rounded
                 icon="pi pi-arrow-down"
                 :disabled="index === editor.widgets.length - 1"
-                :aria-label="`Опустить ${reportById(widget.savedReportId)?.title}`"
+                :aria-label="`Опустить ${widget.title}`"
                 @click="moveWidget(index, 1)"
               />
               <Button
@@ -500,7 +504,7 @@ onBeforeUnmount(() => {
                 rounded
                 severity="danger"
                 icon="pi pi-trash"
-                :aria-label="`Удалить ${reportById(widget.savedReportId)?.title}`"
+                :aria-label="`Удалить ${widget.title}`"
                 @click="removeWidget(widget.id)"
               />
             </div>
@@ -602,9 +606,11 @@ onBeforeUnmount(() => {
           :key="`${widget.id}:${refreshKey}`"
           :class="`width-${widget.width.toLowerCase().replace('_', '-')}`"
           :project-id="projectId"
-          :report="reportById(widget.savedReportId)!"
-          :title="widget.titleOverride"
-          :date-range="appliedDateRange"
+          :dashboard-id="dashboard!.id"
+          :dashboard-revision-id="dashboard!.dashboardRevisionId"
+          :page-id="activePage!.id"
+          :widget="widget"
+          :period-days="reportingPeriodDays(appliedDateRange)"
           :coordinator="coordinator"
           :refresh-key="refreshKey"
           :deferred="index > 3"

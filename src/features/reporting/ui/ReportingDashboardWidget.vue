@@ -3,18 +3,19 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import type { ReportingRunCoordinator } from "../model/reporting-run-coordinator";
 import type {
-  ReportingDateRange,
+  DashboardWidget,
   ReportingQueryResult,
-  SavedReport,
 } from "../model/reporting-types";
 import { reportingRepository } from "../api/reporting-repository";
 import ReportingChartRenderer from "./ReportingChartRenderer.vue";
 
 const props = defineProps<{
   projectId: string;
-  report: SavedReport;
-  title?: string;
-  dateRange: ReportingDateRange;
+  dashboardId: string;
+  dashboardRevisionId: string;
+  pageId: string;
+  widget: DashboardWidget;
+  periodDays: number;
   coordinator: ReportingRunCoordinator;
   refreshKey: number;
   deferred?: boolean;
@@ -27,12 +28,12 @@ const error = ref("");
 const visible = ref(!props.deferred);
 let observer: IntersectionObserver | null = null;
 
-const query = computed(() => ({
-  ...props.report.query,
-  dateRange:
-    props.report.query.population.mode === "EVENT_TIME"
-      ? props.dateRange
-      : null,
+const activation = computed(() => ({
+  dashboardId: props.dashboardId,
+  dashboardRevisionId: props.dashboardRevisionId,
+  pageId: props.pageId,
+  widgetId: props.widget.id,
+  periodDays: props.periodDays,
 }));
 
 async function load(): Promise<void> {
@@ -42,8 +43,12 @@ async function load(): Promise<void> {
   try {
     const outcome = await props.coordinator.schedule(
       (signal) =>
-        reportingRepository.runQuery(props.projectId, query.value, signal),
-      JSON.stringify(query.value),
+        reportingRepository.runDashboardWidget(
+          props.projectId,
+          activation.value,
+          signal,
+        ),
+      `${props.dashboardRevisionId}:${props.widget.queryRevisionId}:${props.periodDays}`,
     );
     if (outcome.status === "committed") result.value = outcome.value;
   } catch (cause) {
@@ -87,23 +92,23 @@ onBeforeUnmount(() => observer?.disconnect());
   <article ref="root" class="dashboard-widget" data-dashboard-widget>
     <header>
       <div>
-        <span>{{ report.collection }}</span>
-        <h2>{{ title || report.title }}</h2>
+        <span>Сохранённый отчёт</span>
+        <h2>{{ widget.titleOverride || widget.title }}</h2>
       </div>
       <div class="widget-actions">
         <Button
           text
           rounded
           icon="pi pi-external-link"
-          :aria-label="`Открыть отчёт ${report.title}`"
+          :aria-label="`Открыть отчёт ${widget.title}`"
           as="a"
-          :href="`/reports/${report.id}`"
+          :href="`/reports/${widget.savedReportId}`"
         />
         <Button
           text
           rounded
           icon="pi pi-refresh"
-          :aria-label="`Обновить ${report.title}`"
+          :aria-label="`Обновить ${widget.title}`"
           :loading="loading"
           @click="load"
         />
@@ -116,7 +121,7 @@ onBeforeUnmount(() => observer?.disconnect());
     <ReportingChartRenderer
       v-else
       :result="result"
-      :visualization="report.visualization"
+      :visualization="widget.visualization"
       :loading="loading || !visible"
       compact
     />

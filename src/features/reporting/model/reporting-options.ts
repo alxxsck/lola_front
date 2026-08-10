@@ -7,10 +7,24 @@ export const reportingDateRangeOptions: Array<{
   value: ReportingDateRange;
   label: string;
 }> = [
-  { value: "LAST_7_DAYS", label: "Последние 7 дней" },
-  { value: "LAST_30_DAYS", label: "Последние 30 дней" },
-  { value: "LAST_90_DAYS", label: "Последние 90 дней" },
+  { value: "LAST_2_DAYS", label: "Последние 2 полных дня" },
+  { value: "LAST_7_DAYS", label: "Последние 7 полных дней" },
+  { value: "LAST_30_DAYS", label: "Последние 30 полных дней" },
+  { value: "LAST_90_DAYS", label: "Последние 90 полных дней" },
 ];
+
+export function reportingPeriodDays(range: ReportingDateRange): number {
+  switch (range) {
+    case "LAST_2_DAYS":
+      return 2;
+    case "LAST_7_DAYS":
+      return 7;
+    case "LAST_30_DAYS":
+      return 30;
+    case "LAST_90_DAYS":
+      return 90;
+  }
+}
 
 export const reportingSpaceOptions: Array<{
   value: ReportingArtifactSpace;

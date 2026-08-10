@@ -104,7 +104,7 @@ export const savedReportFixtures: SavedReport[] = [
     id: "report-active-users",
     kind: "SAVED_REPORT",
     title: "Активные пользователи",
-    description: "Динамика уникальных пользователей за 30 дней",
+    description: "Динамика уникальных пользователей за 2 полных дня",
     space: "TEAM",
     collection: "Продукт",
     ownerName: "Команда продукта",
@@ -118,7 +118,7 @@ export const savedReportFixtures: SavedReport[] = [
       datasetId: "events-product",
       metric: "unique_users",
       population: { mode: "EVENT_TIME" },
-      dateRange: "LAST_30_DAYS",
+      dateRange: "LAST_2_DAYS",
       grain: "DAY",
       filters: [],
     },
@@ -144,7 +144,7 @@ export const savedReportFixtures: SavedReport[] = [
       datasetId: "events-product",
       metric: "total_events",
       population: { mode: "EVENT_TIME" },
-      dateRange: "LAST_30_DAYS",
+      dateRange: "LAST_2_DAYS",
       grain: "DAY",
       filters: [],
     },
@@ -170,7 +170,7 @@ export const savedReportFixtures: SavedReport[] = [
       datasetId: "events-product",
       metric: "unique_users",
       population: { mode: "EVENT_TIME" },
-      dateRange: "LAST_30_DAYS",
+      dateRange: "LAST_2_DAYS",
       grain: "DAY",
       breakdown: "channel",
       filters: [],
@@ -207,6 +207,27 @@ export const savedReportFixtures: SavedReport[] = [
   },
 ];
 
+function dashboardWidgetFixture(input: {
+  id: string;
+  savedReportId: string;
+  savedReportRevision: number;
+  queryRevisionId: string;
+  chartRevision: number;
+  width: "ONE_THIRD" | "HALF" | "TWO_THIRDS" | "FULL";
+}) {
+  const report = savedReportFixtures.find(
+    ({ id }) => id === input.savedReportId,
+  );
+  if (!report)
+    throw new Error(`Missing Saved Report fixture: ${input.savedReportId}`);
+  return {
+    ...input,
+    title: report.title,
+    accessibleSummary: `${report.title}. ${report.description}`,
+    visualization: report.visualization,
+  };
+}
+
 export const dashboardFixtures: Dashboard[] = [
   {
     id: "dashboard-product-pulse",
@@ -220,48 +241,51 @@ export const dashboardFixtures: Dashboard[] = [
     updatedAt: "2026-08-10T09:05:00.000Z",
     freshness: "FRESH",
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE"],
+    dashboardRevisionId: "dashboard-product-pulse-r4",
     pages: [
       {
         id: "overview",
         title: "Обзор",
         widgets: [
-          {
+          dashboardWidgetFixture({
             id: "widget-active",
             savedReportId: "report-active-users",
             savedReportRevision: 2,
             queryRevisionId: "query-active-users-r2",
             chartRevision: 2,
             width: "TWO_THIRDS",
-          },
-          {
+          }),
+          dashboardWidgetFixture({
             id: "widget-total",
             savedReportId: "report-total-events",
             savedReportRevision: 1,
             queryRevisionId: "query-total-events-r1",
             chartRevision: 1,
             width: "ONE_THIRD",
-          },
-          {
+          }),
+          dashboardWidgetFixture({
             id: "widget-channel",
             savedReportId: "report-channel-share",
             savedReportRevision: 3,
             queryRevisionId: "query-channel-share-r3",
             chartRevision: 3,
             width: "HALF",
-          },
+          }),
         ],
       },
       {
         id: "diagnostics",
         title: "Диагностика",
-        widgets: Array.from({ length: 50 }, (_, index) => ({
-          id: `widget-hidden-${index + 1}`,
-          savedReportId: "report-active-users",
-          savedReportRevision: 2,
-          queryRevisionId: "query-active-users-r2",
-          chartRevision: 2,
-          width: "HALF" as const,
-        })),
+        widgets: Array.from({ length: 50 }, (_, index) =>
+          dashboardWidgetFixture({
+            id: `widget-hidden-${index + 1}`,
+            savedReportId: "report-active-users",
+            savedReportRevision: 2,
+            queryRevisionId: "query-active-users-r2",
+            chartRevision: 2,
+            width: "HALF",
+          }),
+        ),
       },
     ],
     version: 6,
@@ -279,19 +303,20 @@ export const dashboardFixtures: Dashboard[] = [
     updatedAt: "2026-08-09T17:20:00.000Z",
     freshness: "UNKNOWN",
     allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
+    dashboardRevisionId: "dashboard-growth-draft-v2",
     pages: [
       {
         id: "overview",
         title: "Обзор",
         widgets: [
-          {
+          dashboardWidgetFixture({
             id: "widget-growth-channel",
             savedReportId: "report-channel-share",
             savedReportRevision: 3,
             queryRevisionId: "query-channel-share-r3",
             chartRevision: 3,
             width: "FULL",
-          },
+          }),
         ],
       },
     ],
@@ -300,8 +325,7 @@ export const dashboardFixtures: Dashboard[] = [
   },
 ];
 
-const receipt = {
-  periodLabel: "12 июл — 10 авг 2026",
+const receiptBase = {
   timezone: "Europe/Madrid",
   dataAsOf: "2026-08-10T09:12:00.000Z",
   completeness: "COMPLETE" as const,
@@ -314,10 +338,19 @@ const receipt = {
   execution: { route: "SYNC" as const, costUnits: 1 },
 };
 
+function periodLabel(days: number): string {
+  if (days === 2) return "8–9 авг 2026 · 2 полных дня";
+  if (days === 7) return "3–9 авг 2026 · 7 полных дней";
+  if (days === 30) return "11 июл — 9 авг 2026 · 30 полных дней";
+  return `Последние ${days} полных дней`;
+}
+
 export function resultFixtureFor(
   metric: string,
   breakdown?: string,
+  periodDays = 2,
 ): ReportingQueryResult {
+  const receipt = { ...receiptBase, periodLabel: periodLabel(periodDays) };
   if (metric === "profile_count") {
     return {
       runId: "run-profile-count-current",
@@ -415,13 +448,22 @@ export function resultFixtureFor(
       kind: "TIME_SERIES",
       unit: "users",
       points: [
-        { label: "12 июл", value: 8_420 },
-        { label: "17 июл", value: 9_180 },
-        { label: "22 июл", value: 9_640 },
-        { label: "27 июл", value: 10_880 },
-        { label: "1 авг", value: 11_320 },
-        { label: "6 авг", value: 12_140 },
-        { label: "10 авг", value: 12_840 },
+        ...(periodDays > 7
+          ? [
+              { label: "11 июл", value: 8_420 },
+              { label: "17 июл", value: 9_180 },
+              { label: "22 июл", value: 9_640 },
+              { label: "27 июл", value: 10_880 },
+            ]
+          : []),
+        ...(periodDays > 2
+          ? [
+              { label: "3 авг", value: 11_320 },
+              { label: "6 авг", value: 12_140 },
+            ]
+          : []),
+        { label: "8 авг", value: 12_410 },
+        { label: "9 авг", value: 12_840 },
       ],
     },
     receipt,
