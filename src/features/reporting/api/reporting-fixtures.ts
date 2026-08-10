@@ -146,9 +146,21 @@ export const dashboardFixtures: Dashboard[] = [
     freshness: "FRESH",
     allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE"],
     widgets: [
-      { id: "widget-active", savedReportId: "report-active-users", width: "TWO_THIRDS" },
-      { id: "widget-total", savedReportId: "report-total-events", width: "ONE_THIRD" },
-      { id: "widget-channel", savedReportId: "report-channel-share", width: "HALF" },
+      {
+        id: "widget-active",
+        savedReportId: "report-active-users",
+        width: "TWO_THIRDS",
+      },
+      {
+        id: "widget-total",
+        savedReportId: "report-total-events",
+        width: "ONE_THIRD",
+      },
+      {
+        id: "widget-channel",
+        savedReportId: "report-channel-share",
+        width: "HALF",
+      },
     ],
     version: 6,
     publishedRevision: 4,
@@ -165,7 +177,11 @@ export const dashboardFixtures: Dashboard[] = [
     freshness: "UNKNOWN",
     allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
     widgets: [
-      { id: "widget-growth-channel", savedReportId: "report-channel-share", width: "FULL" },
+      {
+        id: "widget-growth-channel",
+        savedReportId: "report-channel-share",
+        width: "FULL",
+      },
     ],
     version: 2,
     publishedRevision: null,
@@ -181,7 +197,44 @@ const receipt = {
   exclusions: [],
 };
 
-export function resultFixtureFor(metric: string, breakdown?: string): ReportingQueryResult {
+export function resultFixtureFor(
+  metric: string,
+  breakdown?: string,
+): ReportingQueryResult {
+  if (metric === "profile_count") {
+    return {
+      runId: "run-profile-count-current",
+      status: "complete",
+      data: { kind: "SCALAR", value: 18_420, unit: "users" },
+      receipt: {
+        ...receipt,
+        periodLabel: "Текущее состояние",
+        dataAsOf: "2026-08-10T09:12:00.000Z",
+      },
+      summary: "18 420 профилей на текущий момент запроса.",
+    };
+  }
+  if (metric === "segment_size") {
+    return {
+      runId: "run-segment-size-current",
+      status: "complete",
+      data: {
+        kind: "CATEGORY",
+        unit: "users",
+        values: [
+          { label: "Активные", value: 8_640 },
+          { label: "Новые", value: 3_180 },
+          { label: "Риск оттока", value: 1_240 },
+        ],
+      },
+      receipt: {
+        ...receipt,
+        periodLabel: "Текущий состав",
+        dataAsOf: "2026-08-10T09:12:00.000Z",
+      },
+      summary: "Текущий состав опубликованных ревизий сегментов.",
+    };
+  }
   if (metric === "total_events") {
     return {
       runId: "run-total-events",
@@ -247,6 +300,7 @@ export function resultFixtureFor(metric: string, breakdown?: string): ReportingQ
       ],
     },
     receipt,
-    summary: "12 840 активных пользователей; устойчивый рост в течение периода.",
+    summary:
+      "12 840 активных пользователей; устойчивый рост в течение периода.",
   };
 }
