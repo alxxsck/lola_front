@@ -95,14 +95,6 @@ const userLabel = computed(() =>
   props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
 );
 const userInitial = computed(() => userLabel.value.slice(0, 1).toUpperCase());
-const hasAvailableActions = computed(
-  () =>
-    props.canManageCase ||
-    props.canReadInternalNotes ||
-    Boolean(props.leadAssignmentController) ||
-    Boolean(props.assignmentController),
-);
-
 const claimantLabel = computed(() => {
   if (!props.caseDesk?.detail.value)
     return props.caseDesk?.loading.value ? "Загружается…" : "Не загружен";
@@ -456,9 +448,8 @@ defineExpose({ requestClassification });
                 <h3>Действия с обращением</h3>
               </div>
             </div>
-            <div v-if="hasAvailableActions" class="action-stack">
+            <div v-if="selection.case" class="action-stack">
               <SupportAssignmentDesk
-                v-if="assignmentController && selection.case"
                 :controller="assignmentController"
                 :assignment="selection.case.assignment"
                 :claimant-label="claimantLabel"

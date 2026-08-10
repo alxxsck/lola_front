@@ -261,6 +261,15 @@ function render(
 }
 
 describe("support conversation inspector", () => {
+  it("shows assignment context even when the role has no assignment actions", () => {
+    const wrapper = render();
+
+    expect(wrapper.get("[data-assignment-state]").text()).toContain(
+      "Оператор Алина · Billing",
+    );
+    expect(wrapper.find("[data-assignment-actions]").exists()).toBe(false);
+  });
+
   it("renders the five permission-aware tabs with Case as the default", () => {
     const wrapper = render();
 

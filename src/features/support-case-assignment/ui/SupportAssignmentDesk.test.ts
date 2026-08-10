@@ -55,6 +55,24 @@ const selectedAssignment = {
 };
 
 describe("SupportAssignmentDesk", () => {
+  it("shows the current owner without exposing assignment actions to a read-only role", () => {
+    const wrapper = mount(SupportAssignmentDesk, {
+      props: {
+        assignment: selectedAssignment,
+        claimantLabel: "Не загружен",
+        viewersLabel: "Не загружены",
+        availabilityLabel: "Нет права на просмотр",
+      },
+      global: { plugins: [PrimeVue] },
+    });
+
+    expect(wrapper.get("[data-assignment-state]").text()).toContain(
+      "Анна · Платежи",
+    );
+    expect(wrapper.find("[data-assignment-actions]").exists()).toBe(false);
+    expect(wrapper.find("button").exists()).toBe(false);
+  });
+
   it("keeps assignment, claimant, viewers and availability as distinct states", () => {
     const wrapper = mount(SupportAssignmentDesk, {
       props: {

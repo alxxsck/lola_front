@@ -191,4 +191,107 @@ describe("Support SLA configuration controller", () => {
     expect(controller.dirty.value).toBe(false);
     expect(controller.success.value).toContain("подтверждено сверкой");
   });
+
+  it("discards only the saved draft and keeps the published configuration", async () => {
+    const afterDiscard = publishedSnapshot(etag("c"));
+    afterDiscard.rootVersion = 3;
+    const { controller, source } = setup({
+      discardDraft: vi.fn().mockResolvedValue({
+        intent: "DISCARD_SLA_DRAFT",
+        rootVersion: 3,
+        actionEtag: etag("c"),
+      }),
+    });
+    vi.mocked(source.read)
+      .mockResolvedValueOnce(draftSnapshot())
+      .mockResolvedValueOnce(afterDiscard);
+
+    await controller.load();
+    await controller.discardDraft();
+
+    expect(source.discardDraft).toHaveBeenCalledWith(
+      "project-1",
+      etag("b"),
+      "sla-command-key-1",
+      expect.any(AbortSignal),
+    );
+    expect(controller.snapshot.value?.draft).toBeNull();
+    expect(
+      controller.snapshot.value?.publishedConfiguration?.policyRevision.id,
+    ).toBe("policy-1");
+    expect(controller.success.value).toBe("Черновик удалён.");
+  });
+
+  it("publishes the saved draft without changing SHADOW rollout", async () => {
+    const published = publishedSnapshot(etag("c"));
+    published.rootVersion = 3;
+    published.publishedConfiguration!.calendarRevision.revisionNumber = 2;
+    published.publishedConfiguration!.policyRevision.revisionNumber = 2;
+    const { controller, source } = setup({
+      publish: vi.fn().mockResolvedValue({
+        intent: "PUBLISH_SLA_CONFIGURATION",
+        rootVersion: 3,
+        actionEtag: etag("c"),
+        calendarRevisionId: "calendar-2",
+        policyRevisionId: "policy-2",
+      }),
+    });
+    vi.mocked(source.read)
+      .mockResolvedValueOnce(draftSnapshot())
+      .mockResolvedValueOnce(published);
+
+    await controller.load();
+    await controller.publish();
+
+    expect(source.publish).toHaveBeenCalledWith(
+      "project-1",
+      etag("b"),
+      "sla-command-key-1",
+      expect.any(AbortSignal),
+    );
+    expect(controller.snapshot.value?.draft).toBeNull();
+    expect(controller.snapshot.value?.rolloutState).toBe("SHADOW");
+    expect(
+      controller.snapshot.value?.publishedConfiguration?.policyRevision
+        .revisionNumber,
+    ).toBe(2);
+    expect(controller.success.value).toContain("Состояние расчёта не изменено");
+  });
+
+  it("retries an unknown save with the exact original body, ETag, and idempotency key", async () => {
+    const replaceDraft = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ApiError(0, "timeout", undefined, undefined, "NETWORK_ERROR"),
+      )
+      .mockResolvedValueOnce({
+        intent: "REPLACE_SLA_DRAFT",
+        rootVersion: 2,
+        actionEtag: etag("b"),
+        draft: {
+          generation: 2,
+          version: 1,
+          contentHash: "c".repeat(64),
+        },
+      });
+    const { controller, source } = setup({ replaceDraft });
+    vi.mocked(source.read)
+      .mockResolvedValueOnce(publishedSnapshot())
+      .mockResolvedValueOnce(publishedSnapshot())
+      .mockResolvedValueOnce(draftSnapshot());
+
+    await controller.load();
+    controller.form.value.rules[0]!.targetsMinutes.resolution = 600;
+    await controller.saveDraft();
+    expect(controller.recovery.value).toBe("UNKNOWN_OUTCOME");
+
+    await controller.retryPending();
+
+    expect(replaceDraft).toHaveBeenCalledTimes(2);
+    expect(replaceDraft.mock.calls[1]!.slice(0, 4)).toEqual(
+      replaceDraft.mock.calls[0]!.slice(0, 4),
+    );
+    expect(controller.recovery.value).toBeNull();
+    expect(controller.snapshot.value?.draft?.version).toBe(1);
+  });
 });

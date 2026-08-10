@@ -98,13 +98,14 @@ function dropRule(target: number): void {
         class="sla-rule"
         :class="{ 'sla-rule--fallback': isFallback(index) }"
         :open="index === 0 || isFallback(index)"
-        :draggable="!readonly && !isFallback(index)"
-        @dragstart="draggedRule = index"
-        @dragend="draggedRule = null"
         @dragover.prevent
         @drop.prevent="dropRule(index)"
       >
-        <summary>
+        <summary
+          :draggable="!readonly && !isFallback(index)"
+          @dragstart="draggedRule = index"
+          @dragend="draggedRule = null"
+        >
           <span class="sla-rule__order">{{ index + 1 }}</span>
           <span class="sla-rule__summary">
             <strong>{{ rule.code || "Новое правило" }}</strong>
@@ -112,7 +113,15 @@ function dropRule(target: number): void {
             <small v-else>Условий: {{ rule.priorities.length + rule.caseTypes.length + (rule.groupCodesText.trim() ? 1 : 0) }}</small>
           </span>
           <span v-if="isFallback(index)" class="sla-rule__badge">Последнее</span>
-          <span v-else-if="!readonly" class="sla-rule__controls" @click.stop>
+          <i class="pi pi-chevron-down" aria-hidden="true" />
+        </summary>
+
+        <div class="sla-rule__body">
+          <div
+            v-if="!readonly && !isFallback(index)"
+            class="sla-rule__controls"
+            :aria-label="`Управление правилом ${index + 1}`"
+          >
             <Button
               type="button"
               icon="pi pi-arrow-up"
@@ -139,11 +148,7 @@ function dropRule(target: number): void {
               aria-label="Удалить правило"
               @click="form.rules.splice(index, 1)"
             />
-          </span>
-          <i class="pi pi-chevron-down" aria-hidden="true" />
-        </summary>
-
-        <div class="sla-rule__body">
+          </div>
           <div class="rule-grid rule-grid--identity">
             <label class="sla-field">
               <span>Код правила</span>
@@ -362,7 +367,7 @@ function dropRule(target: number): void {
 }
 .sla-rule > summary {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto auto 16px;
+  grid-template-columns: 32px minmax(0, 1fr) auto 16px;
   align-items: center;
   gap: 10px;
   min-height: 60px;
@@ -395,7 +400,12 @@ function dropRule(target: number): void {
   font-size: .68rem;
   font-weight: 800;
 }
-.sla-rule__controls { display: flex; gap: 2px; }
+.sla-rule__controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-top: 4px;
+}
 .sla-rule > summary > i { color: var(--text-tertiary); font-size: .7rem; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
 .sla-rule[open] > summary > i { transform: rotate(180deg); }
 .sla-rule__body {
@@ -422,7 +432,7 @@ function dropRule(target: number): void {
   .rule-grid--conditions,
   .target-grid { grid-template-columns: 1fr; }
   .sla-rule > summary { grid-template-columns: 32px minmax(0, 1fr) auto 16px; }
-  .sla-rule__controls { grid-column: 2 / -1; justify-self: start; }
+  .sla-rule__controls { justify-content: flex-start; }
 }
 @media (max-width: 480px) {
   .sla-editor-panel__header { flex-direction: column; }

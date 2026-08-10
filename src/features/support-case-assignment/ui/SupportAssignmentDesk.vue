@@ -12,7 +12,7 @@ import type {
 import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
 
 const props = defineProps<{
-  controller: ReturnType<typeof createSupportAssignmentController>;
+  controller?: ReturnType<typeof createSupportAssignmentController>;
   assignment: {
     id: string;
     operatorName: string;
@@ -25,12 +25,23 @@ const props = defineProps<{
   availabilityLabel: string;
 }>();
 
-const snapshot = computed(() => props.controller.caseSnapshot.value);
-const canClaim = computed(() => props.controller.canClaim.value);
-const canRelease = computed(() => props.controller.canRelease.value);
-const canTransfer = computed(() => props.controller.canTransfer.value);
+const snapshot = computed(() => props.controller?.caseSnapshot.value ?? null);
+const canClaim = computed(() => props.controller?.canClaim.value ?? false);
+const canRelease = computed(() => props.controller?.canRelease.value ?? false);
+const canTransfer = computed(() => props.controller?.canTransfer.value ?? false);
+const caseLoading = computed(() => props.controller?.caseLoading.value ?? false);
+const mutating = computed(() => props.controller?.mutating.value ?? false);
+const error = computed(() => props.controller?.error.value ?? "");
+const unknownOutcome = computed(
+  () => props.controller?.unknownOutcome.value ?? false,
+);
+const canRetry = computed(() => props.controller?.canRetry.value ?? false);
 
 const assignmentStateLabel = computed(() => {
+  if (!snapshot.value)
+    return props.assignment
+      ? `${props.assignment.operatorName} · ${props.assignment.teamName}`
+      : "Не назначено";
   if (snapshot.value?.assignmentState === "RESERVED")
     return "Зарезервировано системой маршрутизации";
   if (snapshot.value?.assignmentState === "UNASSIGNED") return "Не назначено";
@@ -71,15 +82,17 @@ function requestRelease(): void {
 }
 
 async function confirmRelease(): Promise<void> {
-  props.controller.setDraft({
+  const controller = props.controller;
+  if (!controller) return;
+  controller.setDraft({
     kind: "RELEASE",
     reasonCode: releaseReason.value,
     ...(releaseNote.value.trim()
       ? { reasonNote: releaseNote.value.trim() }
       : {}),
   });
-  await props.controller.submit();
-  if (!props.controller.draft.value) releaseVisible.value = false;
+  await controller.submit();
+  if (!controller.draft.value) releaseVisible.value = false;
 }
 
 const claimVisible = ref(false);
@@ -94,10 +107,11 @@ function requestClaim(): void {
 }
 
 async function confirmClaim(): Promise<void> {
-  if (!claimTeamId.value) return;
-  props.controller.setDraft({ kind: "CLAIM", teamId: claimTeamId.value });
-  await props.controller.submit();
-  if (!props.controller.draft.value) claimVisible.value = false;
+  const controller = props.controller;
+  if (!controller || !claimTeamId.value) return;
+  controller.setDraft({ kind: "CLAIM", teamId: claimTeamId.value });
+  await controller.submit();
+  if (!controller.draft.value) claimVisible.value = false;
 }
 
 const transferVisible = ref(false);
@@ -146,7 +160,7 @@ watch(
     canClaim,
     canRelease,
     canTransfer,
-    () => props.controller.draft.value?.kind ?? null,
+    () => props.controller?.draft.value?.kind ?? null,
   ],
   ([caseId, claimAllowed, releaseAllowed, transferAllowed, draftKind], previous) => {
     if (previous?.[0] && caseId && caseId !== previous[0]) {
@@ -170,8 +184,9 @@ function requestTransfer(): void {
 }
 
 async function confirmTransfer(): Promise<void> {
-  if (!transferTeamId.value || !transferOperatorId.value) return;
-  props.controller.setDraft({
+  const controller = props.controller;
+  if (!controller || !transferTeamId.value || !transferOperatorId.value) return;
+  controller.setDraft({
     kind: "TRANSFER",
     teamId: transferTeamId.value,
     operatorId: transferOperatorId.value,
@@ -180,8 +195,16 @@ async function confirmTransfer(): Promise<void> {
       ? { reasonNote: transferNote.value.trim() }
       : {}),
   });
-  await props.controller.submit();
-  if (!props.controller.draft.value) transferVisible.value = false;
+  await controller.submit();
+  if (!controller.draft.value) transferVisible.value = false;
+}
+
+function refreshAssignment(): void {
+  void props.controller?.loadCase();
+}
+
+function retryUnknownOutcome(): void {
+  void props.controller?.retryUnknownOutcome();
 }
 </script>
 
@@ -193,13 +216,14 @@ async function confirmTransfer(): Promise<void> {
         <h3 id="assignment-desk-heading">Кто ведёт обращение</h3>
       </div>
       <Button
+        v-if="controller"
         label="Обновить"
         icon="pi pi-refresh"
         severity="secondary"
         text
         size="small"
-        :loading="controller.caseLoading.value"
-        @click="controller.loadCase"
+        :loading="caseLoading"
+        @click="refreshAssignment"
       />
     </header>
 
@@ -222,13 +246,17 @@ async function confirmTransfer(): Promise<void> {
       </div>
     </dl>
 
-    <div v-if="canClaim || canRelease || canTransfer" class="assignment-actions">
+    <div
+      v-if="canClaim || canRelease || canTransfer"
+      data-assignment-actions
+      class="assignment-actions"
+    >
       <Button
         v-if="canClaim"
         label="Взять в работу"
         icon="pi pi-user-plus"
         aria-label="Взять в работу"
-        :disabled="controller.mutating.value || controller.unknownOutcome.value"
+        :disabled="mutating || unknownOutcome"
         @click="requestClaim"
       />
       <Button
@@ -238,7 +266,7 @@ async function confirmTransfer(): Promise<void> {
         severity="secondary"
         outlined
         aria-label="Передать назначение"
-        :disabled="controller.mutating.value || controller.unknownOutcome.value"
+        :disabled="mutating || unknownOutcome"
         @click="requestTransfer"
       />
       <Button
@@ -248,14 +276,14 @@ async function confirmTransfer(): Promise<void> {
         severity="danger"
         outlined
         aria-label="Снять назначение"
-        :disabled="controller.mutating.value || controller.unknownOutcome.value"
+        :disabled="mutating || unknownOutcome"
         @click="requestRelease"
       />
     </div>
 
     <Message
       v-if="
-        controller.error.value &&
+        error &&
         !claimVisible &&
         !releaseVisible &&
         !transferVisible
@@ -263,17 +291,17 @@ async function confirmTransfer(): Promise<void> {
       severity="error"
       :closable="false"
     >
-      {{ controller.error.value }}
+      {{ error }}
     </Message>
     <Button
-      v-if="controller.unknownOutcome.value"
+      v-if="unknownOutcome"
       label="Повторить тот же запрос"
       aria-label="Повторить тот же запрос"
       icon="pi pi-replay"
       severity="secondary"
       outlined
-      :disabled="!controller.canRetry.value"
-      @click="controller.retryUnknownOutcome"
+      :disabled="!canRetry"
+      @click="retryUnknownOutcome"
     />
 
     <Dialog
@@ -296,8 +324,8 @@ async function confirmTransfer(): Promise<void> {
           fluid
         />
       </label>
-      <Message v-if="controller.error.value" severity="error" :closable="false">
-        {{ controller.error.value }}
+      <Message v-if="error" severity="error" :closable="false">
+        {{ error }}
       </Message>
       <template #footer>
         <Button
@@ -309,8 +337,8 @@ async function confirmTransfer(): Promise<void> {
         <Button
           label="Взять в работу"
           aria-label="Подтвердить назначение на себя"
-          :loading="controller.mutating.value"
-          :disabled="controller.unknownOutcome.value || !canClaim || !claimTeamId"
+          :loading="mutating"
+          :disabled="unknownOutcome || !canClaim || !claimTeamId"
           @click="confirmClaim"
         />
       </template>
@@ -348,8 +376,8 @@ async function confirmTransfer(): Promise<void> {
         />
         <small>{{ releaseNote.length }}/500</small>
       </label>
-      <Message v-if="controller.error.value" severity="error" :closable="false">
-        {{ controller.error.value }}
+      <Message v-if="error" severity="error" :closable="false">
+        {{ error }}
       </Message>
       <template #footer>
         <Button
@@ -362,8 +390,8 @@ async function confirmTransfer(): Promise<void> {
           label="Подтвердить"
           severity="danger"
           aria-label="Подтвердить снятие назначения"
-          :loading="controller.mutating.value"
-          :disabled="controller.unknownOutcome.value || !canRelease"
+          :loading="mutating"
+          :disabled="unknownOutcome || !canRelease"
           @click="confirmRelease"
         />
       </template>
@@ -429,8 +457,8 @@ async function confirmTransfer(): Promise<void> {
         />
         <small>{{ transferNote.length }}/500</small>
       </label>
-      <Message v-if="controller.error.value" severity="error" :closable="false">
-        {{ controller.error.value }}
+      <Message v-if="error" severity="error" :closable="false">
+        {{ error }}
       </Message>
       <template #footer>
         <Button
@@ -442,9 +470,9 @@ async function confirmTransfer(): Promise<void> {
         <Button
           label="Передать"
           aria-label="Подтвердить передачу назначения"
-          :loading="controller.mutating.value"
+          :loading="mutating"
           :disabled="
-            controller.unknownOutcome.value ||
+            unknownOutcome ||
             !canTransfer ||
             !transferTeamId ||
             !transferOperatorId

@@ -137,11 +137,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="page sla-settings-page">
+  <section class="page sla-settings-page" aria-labelledby="sla-settings-title">
     <header class="page-header sla-settings-header">
       <div>
         <div class="eyebrow"><i class="pi pi-clock" /> Настройки поддержки</div>
-        <h1>Календарь и правила SLA</h1>
+        <h1 id="sla-settings-title">Календарь и правила SLA</h1>
         <p class="subtitle">
           Определите рабочее время и сроки ответа для обращений. Публикация
           создаёт неизменяемые редакции, но не включает расчёт SLA автоматически.
@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
         />
       </template>
     </Dialog>
-  </main>
+  </section>
 </template>
 
 <style scoped>
@@ -444,6 +444,13 @@ onBeforeUnmount(() => {
 }
 .sla-live-region:empty {
   display: none;
+}
+.sla-settings-page :deep(.p-message-info .p-message-text) {
+  color: var(--text-primary);
+}
+.sla-settings-page :deep(.p-message-info) {
+  opacity: 1 !important;
+  transition: none !important;
 }
 .sla-editor-skeletons {
   display: grid;
