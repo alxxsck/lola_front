@@ -95,6 +95,13 @@ function assertOpenApiDocument(document, source) {
 }
 
 function assertContractMetadata(metadata, snapshot) {
+  const composed = metadata?.composedBackendSources;
+  const composedValid =
+    composed === undefined ||
+    (composed &&
+      typeof composed === "object" &&
+      /^[0-9a-f]{40}$/u.test(composed.base ?? "") &&
+      /^[0-9a-f]{40}$/u.test(composed.caseIntelligence ?? ""));
   if (
     metadata?.schemaVersion !== 1 ||
     metadata.backend?.repository !== "alxxsck/lola_back" ||
@@ -102,7 +109,9 @@ function assertContractMetadata(metadata, snapshot) {
     !/^[0-9a-f]{64}$/u.test(metadata.sha256 ?? "") ||
     metadata.contractRevision !== `sha256:${metadata.sha256}` ||
     (metadata.backendSourceRevision !== undefined &&
-      !/^[0-9a-f]{40}$/u.test(metadata.backendSourceRevision))
+      !/^[0-9a-f]{40}$/u.test(metadata.backendSourceRevision)) ||
+    !composedValid ||
+    (metadata.backendSourceRevision !== undefined && composed !== undefined)
   ) {
     throw new Error("Backend OpenAPI contract metadata is invalid");
   }
@@ -293,6 +302,7 @@ async function main() {
       const content = `${JSON.stringify(canonicalize(current), null, 2)}\n`;
       const baseMetadata = { ...metadata };
       delete baseMetadata.backendSourceRevision;
+      delete baseMetadata.composedBackendSources;
       await writeFile(options.snapshot, content, "utf8");
       await writeFile(
         options.metadata,

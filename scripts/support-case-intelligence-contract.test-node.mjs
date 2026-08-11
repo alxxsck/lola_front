@@ -42,3 +42,30 @@ test("validator rejects publication without fresh strong authentication", () => 
     /fresh strong authentication/,
   );
 });
+
+test("validator rejects the old compiler bounds and topic shape", () => {
+  const broken = cloneDocument();
+  broken.components.schemas.CaseIntelligenceRouterContextDto.properties.maxSignals.maximum =
+    20;
+  delete broken.components.schemas.CaseIntelligenceTopicDto.properties.label;
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /must publish label|maxSignals/,
+  );
+});
+
+test("validator rejects untyped preview errors", () => {
+  const broken = cloneDocument();
+  const validate = Object.values(broken.paths)
+    .flatMap((pathItem) => Object.values(pathItem))
+    .find(
+      (operation) =>
+        operation.operationId === "CaseIntelligence_validateDetection",
+    );
+  delete validate.responses[503].content["application/json"].schema.properties
+    .error.properties.code.enum;
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /validateDetection 503 must publish a typed error code/,
+  );
+});

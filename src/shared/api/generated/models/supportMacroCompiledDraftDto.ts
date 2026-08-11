@@ -17,8 +17,8 @@ export interface SupportMacroCompiledDraftDto {
   contentHash: string;
   locale: string;
   shortcuts: string[];
-  translations: SupportMacroCompiledDraftDtoTranslations;
   title: string;
+  translations: SupportMacroCompiledDraftDtoTranslations;
   variables: SupportMacroCompiledVariableDto[];
   visibility: SupportMacroCompiledVisibilityDto;
 }

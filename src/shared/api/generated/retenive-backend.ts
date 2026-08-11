@@ -102,6 +102,8 @@ import type {
   CanonicalIdentityPolicyPreviewResponseDto,
   CanonicalIdentityPolicyResponseDto,
   CaseIntelligenceBudgetRevisionResponseDto,
+  CaseIntelligenceCalibrationQueryDto,
+  CaseIntelligenceCalibrationResponseDto,
   CaseIntelligenceCommandLookupResponseDto,
   CaseIntelligenceCorrectionResponseDto,
   CaseIntelligenceCurrentResponseDto,
@@ -109,15 +111,20 @@ import type {
   CaseIntelligenceDetectionCompileResponseDto,
   CaseIntelligenceDetectionPolicyDto,
   CaseIntelligenceDetectionRevisionResponseDto,
+  CaseIntelligenceDetectionValidationResponseDto,
   CaseIntelligenceDryRunDto,
   CaseIntelligenceDryRunResponseDto,
   CaseIntelligenceEscalationCompileResponseDto,
   CaseIntelligenceEscalationPolicyDto,
   CaseIntelligenceEscalationRevisionResponseDto,
   CaseIntelligenceExplainCaseParams,
+  CaseIntelligenceFailedWorkPageResponseDto,
   CaseIntelligenceLifecycleCommandDto,
   CaseIntelligenceListDecisionsParams,
+  CaseIntelligenceListFailedWorkParams,
+  CaseIntelligenceModelProfileCatalogResponseDto,
   CaseIntelligenceReleaseRevisionResponseDto,
+  CaseIntelligenceRepairResponseDto,
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
   ChangeIntegrationDirectionPauseDto,
@@ -498,6 +505,7 @@ import type {
   RemoveProjectMembershipDto,
   RenameConversationDto,
   RenameSupportIdentityDto,
+  RepairCaseIntelligenceFailedWorkDto,
   ReplaceCmsUserPlatformRolesDto,
   ReplaceSavedSupportViewDraftDto,
   ReplaceSupportDefaultViewDto,
@@ -2334,6 +2342,24 @@ export const caseIntelligenceCorrectDecision = (
   );
 };
 
+export const caseIntelligenceCalibration = (
+  projectId: string,
+  caseIntelligenceCalibrationQueryDto: BodyType<CaseIntelligenceCalibrationQueryDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceCalibrationResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceCalibrationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/calibration`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceCalibrationQueryDto,
+    },
+    options,
+  );
+};
+
 export const caseIntelligenceCompileDetection = (
   projectId: unknown,
   caseIntelligenceDetectionPolicyDto: BodyType<CaseIntelligenceDetectionPolicyDto>,
@@ -2422,6 +2448,24 @@ export const caseIntelligencePublishDetection = (
   );
 };
 
+export const caseIntelligenceValidateDetection = (
+  projectId: unknown,
+  caseIntelligenceDetectionPolicyDto: BodyType<CaseIntelligenceDetectionPolicyDto>,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionValidationResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionValidationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: caseIntelligenceDetectionPolicyDto,
+    },
+    options,
+  );
+};
+
 export const caseIntelligenceCompileEscalation = (
   projectId: unknown,
   caseIntelligenceEscalationPolicyDto: BodyType<CaseIntelligenceEscalationPolicyDto>,
@@ -2494,6 +2538,21 @@ export const caseIntelligencePublishEscalation = (
   );
 };
 
+export const caseIntelligenceModelProfiles = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceModelProfileCatalogResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceModelProfileCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/model-profiles`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const caseIntelligenceGetRelease = (
   projectId: string,
   releaseId: string,
@@ -2559,6 +2618,39 @@ export const caseIntelligenceRollbackRelease = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: rollbackCaseIntelligenceReleaseDto,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceListFailedWork = (
+  projectId: string,
+  params?: CaseIntelligenceListFailedWorkParams,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceFailedWorkPageResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceFailedWorkPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/repairs`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceRepairFailedWork = (
+  projectId: string,
+  repairCaseIntelligenceFailedWorkDto: BodyType<RepairCaseIntelligenceFailedWorkDto>,
+  options?: SecondParameter<typeof request<CaseIntelligenceRepairResponseDto>>,
+) => {
+  return request<CaseIntelligenceRepairResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/repairs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: repairCaseIntelligenceFailedWorkDto,
     },
     options,
   );
@@ -12882,6 +12974,9 @@ export type CaseIntelligenceListDecisionsResult = NonNullable<
 export type CaseIntelligenceCorrectDecisionResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceCorrectDecision>>
 >;
+export type CaseIntelligenceCalibrationResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceCalibration>>
+>;
 export type CaseIntelligenceCompileDetectionResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceCompileDetection>>
 >;
@@ -12897,6 +12992,9 @@ export type CaseIntelligenceDryRunResult = NonNullable<
 export type CaseIntelligencePublishDetectionResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligencePublishDetection>>
 >;
+export type CaseIntelligenceValidateDetectionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceValidateDetection>>
+>;
 export type CaseIntelligenceCompileEscalationResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceCompileEscalation>>
 >;
@@ -12909,6 +13007,9 @@ export type CaseIntelligenceSaveEscalationDraftResult = NonNullable<
 export type CaseIntelligencePublishEscalationResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligencePublishEscalation>>
 >;
+export type CaseIntelligenceModelProfilesResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceModelProfiles>>
+>;
 export type CaseIntelligenceGetReleaseResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceGetRelease>>
 >;
@@ -12920,6 +13021,12 @@ export type CaseIntelligencePauseReleaseResult = NonNullable<
 >;
 export type CaseIntelligenceRollbackReleaseResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceRollbackRelease>>
+>;
+export type CaseIntelligenceListFailedWorkResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceListFailedWork>>
+>;
+export type CaseIntelligenceRepairFailedWorkResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceRepairFailedWork>>
 >;
 export type SupportInternalNoteListResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteList>>

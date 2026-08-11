@@ -14,7 +14,4 @@ export const CaseIntelligenceDecisionLogItemDtoSafetyState = {
   PENDING: "PENDING",
   READY: "READY",
   FAILED: "FAILED",
-  DEFERRED: "DEFERRED",
-  BUDGET_REJECTED: "BUDGET_REJECTED",
-  PAUSED: "PAUSED",
 } as const;

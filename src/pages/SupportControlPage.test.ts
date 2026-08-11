@@ -409,7 +409,7 @@ describe("SupportControlPage", () => {
     const row = wrapper.get(".risk-row");
     expect(row.get("h3").text()).toBe("Не поступил депозит");
     expect(row.get(".case-reference").text()).toContain(
-      "Обращение #104 · PAYMENTS",
+      `Обращение ${String.fromCodePoint(35)}104 · PAYMENTS`,
     );
     expect(row.text()).toContain("Высокий приоритет");
   });

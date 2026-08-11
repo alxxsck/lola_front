@@ -23,6 +23,7 @@ test("edits, checks, saves and publishes classification rules", async ({
 }) => {
   await page.getByRole("button", { name: "Добавить категорию" }).click();
   await page.getByLabel("Постоянный код").first().fill("DELIVERY");
+  await page.getByLabel("Название для команды").fill("Доставка");
   await page
     .getByLabel("Что относится к категории")
     .fill("Доставка и сроки получения заказа");
@@ -50,8 +51,8 @@ test("edits, checks, saves and publishes classification rules", async ({
     await mobileWorkflow.getByRole("button", { name: "Проверка" }).click();
     await expect(page).toHaveURL(/panel=preview/);
   }
-  await page.getByLabel("Сообщение пользователя").fill("Где мой заказ?");
-  await page.getByRole("button", { name: "Проверить" }).click();
+  await page.getByLabel("Текст сообщения 1").fill("Где мой заказ?");
+  await page.getByRole("button", { name: "Проверить диалог" }).click();
   await expect(
     page.getByText("Создать обращение", { exact: true }).last(),
   ).toBeVisible();
@@ -95,6 +96,9 @@ test("keeps the permanent settings navigation responsive and accessible", async 
   await expect(
     page.getByRole("heading", { name: "Ограничения расходов" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Проверить покрытие" }).click();
+  await expect(page.getByText("Покрытие достаточно", { exact: true })).toBeVisible();
+  await expect(page.getByText("4 из 4", { exact: true })).toBeVisible();
   await sectionNavigation
     .getByRole("link", { name: "Категории и правила" })
     .click();
@@ -131,6 +135,13 @@ test("keeps the permanent settings navigation responsive and accessible", async 
 
   await page.evaluate(() => localStorage.setItem("retenive-theme", "dark"));
   await page.reload();
+  await expect(page.locator(".intelligence-page")).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Категории и правила обращений",
+    }),
+  ).toBeVisible();
   const darkAccessibility = await new AxeBuilder({ page })
     .include(".intelligence-page")
     .analyze();

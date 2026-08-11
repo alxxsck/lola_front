@@ -7,20 +7,11 @@
  */
 
 export interface EndUserCaseCostOperationResponseDto {
-  billedCostComplete: boolean;
-  /** @nullable */
-  billedCostUsd: string | null;
-  cachedInputTokens: string;
-  cacheWriteInputTokens: string;
+  billedCostUsd: string;
   /** @minimum 0 */
   caseCount: number;
-  durationSeconds: string;
   estimatedCostUsd: string;
-  inputTokens: string;
-  /** @minimum 0 */
-  missingBilledCostCount: number;
   operation: string;
-  outputTokens: string;
   /** @minimum 0 */
   requestCount: number;
   totalTokens: string;

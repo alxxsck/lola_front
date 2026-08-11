@@ -5,31 +5,31 @@ closed DTO для Case Detection, Human Escalation, Safety, budget и immutable
 Decision; создать frontend repository/controller seams и постоянный
 route-level settings shell без legacy JSON как второго source of truth.
 
-**Backend basis:** локальный завершённый backend commit `e9650e8e` (Tickets
-31–32). Новые server-owned поля подключаются последующими contract sync без
-временных frontend моделей.
+**Backend basis:** локальные завершённые backend commits `13c67cf2` (Ticket 34)
+и `b26be183` (Ticket 35). Они добавляют название категории, точные ограничения
+компилятора, каталог моделей, адресную проверку полей, безопасный прогон диалога,
+калибровку и Project-readable состояние обязательной защиты.
 
-**Status:** implemented-current-scope — backend-contract-follow-up
+**Status:** frontend-complete — production integration awaits backend merge
 
-**Completed against:** backend `e9650e8e8d2831232eeabf09f88960fac1f52f6d1`
-and pinned OpenAPI
-`sha256:cf4da961270d5946a3b1f1fd81afef0960ed57169d7ecd3bc2e0b2db6caed18f`.
-Новые server-owned projections подключаются последующим additive contract sync;
-этот foundation не подменяет их временными браузерными моделями. Известный
-backend follow-up: OpenAPI пока публикует `routerContext.maxSignals <= 20`, тогда
-как pinned compiler принимает `<= 8`, и не публикует верхние границы 365 дней
-для attach/reopen windows и часть compiler-ограничений stable codes/scalars.
-Frontend валидирует фактические ограничения pinned compiler, но не объявляет
-этот разрыв закрытым typed contract до исправления backend OpenAPI.
+**Completed against:** составной pinned OpenAPI
+`sha256:89e5ca742adb3f39649fc893fc50109b098a77cfbbc343b67ebae48403e3f90e`:
+актуальная серверная база `4603a03944c6cec9751fd95eb8ce2133783fd07f` и
+Case Intelligence `b26be183a6e1ab5c32c143ee6bab34c8fe16d00b`. Это честный
+временный артефакт для сборки фронта: локальные SP-34/35 ещё не объединены с
+актуальным backend `origin/main`, поэтому production-кандидат должен сначала
+содержать обе линии изменений в одном проверенном серверном commit.
 
 **Normative spec:**
 [16-case-intelligence-detection-escalation.ru.md](../../../docs/specs/support-workspace-frontend/16-case-intelligence-detection-escalation.ru.md).
 
-- [ ] Pinned OpenAPI содержит все доступные versioned Detection/Escalation/
+- [ ] Pinned OpenAPI содержит доступные versioned Detection/Escalation/
       Safety/budget DTO, revisions, allowedActions и exact permissions; UI не
-      выдумывает отсутствующие model, confidence или error projections.
-      **Backend follow-up:** выровнять schema bounds с compiler для
-      `maxSignals`, attach/reopen windows, stable codes и scalar collections.
+      выдумывает model, confidence или error projections. До production backend
+      должен допубликовать точные compiler bounds: OpenAPI разрешает
+      `maxSignals=20`, тогда как compiler принимает не больше `8`, а верхние
+      границы attach/reopen и часть stable-code/scalar правил пока описаны только
+      в compiler. Фронт уже применяет более строгие фактические ограничения.
 - [x] Decision различает conversation class, Case decision, review disposition,
       handoff action, Safety decision и independent stage
       states; frontend не вычисляет их из Messages.

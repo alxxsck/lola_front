@@ -11,6 +11,8 @@ import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
+import SupportDetectionCalibrationCard from "@/features/support-case-intelligence/ui/SupportDetectionCalibrationCard.vue";
+import SupportDetectionPreviewConsole from "@/features/support-case-intelligence/ui/SupportDetectionPreviewConsole.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import {
@@ -18,7 +20,6 @@ import {
   useSupportCaseIntelligence,
 } from "@/features/support-case-intelligence/model/use-support-case-intelligence";
 import {
-  caseIntelligenceReasonLabel,
   createRule,
   createTopic,
   presentCaseIntelligenceRuntime,
@@ -35,8 +36,6 @@ const accessDenied = ref(false);
 const publishKind = ref<"DETECTION" | "BUDGET" | null>(null);
 const discardVisible = ref(false);
 const reason = ref("");
-const previewInput = ref("Списали деньги дважды, помогите вернуть оплату");
-const previewLocale = ref("ru-RU");
 const selectedTopicIndex = ref(0);
 const selectedRuleIndex = ref(0);
 const mobilePanel = computed<"MAP" | "EDITOR" | "PREVIEW">(() => {
@@ -157,6 +156,41 @@ const audienceKinds = ["include", "exclude"] as const;
 const runtimePresentation = computed(() =>
   presentCaseIntelligenceRuntime(controller.snapshot.value),
 );
+const modelProfileOptions = computed(
+  () => controller.modelProfiles.value?.items ?? [],
+);
+const selectedModelProfile = computed(() =>
+  modelProfileOptions.value.find(
+    (profile) =>
+      profile.revisionId ===
+      controller.detection.value.modelProfileRevisionId,
+  ),
+);
+const safetyPresentation = computed(() => {
+  const safety = controller.snapshot.value?.safety;
+  if (safety?.state === "READY")
+    return {
+      label: "Защита согласована",
+      copy:
+        safety.assistantReleaseGate === "ALLOW"
+          ? "Обязательные правила безопасности проверены. Обычные ответы Lola разрешены."
+          : "Сервер использует только безопасный резервный ответ.",
+      tone: "success",
+    };
+  if (safety?.state === "SAFETY_RECONCILING")
+    return {
+      label: "Защита обновляется",
+      copy:
+        "Платформа согласует обязательную версию. Проект не может отменить или ослабить эту проверку.",
+      tone: "warning",
+    };
+  return {
+    label: "Защита недоступна",
+    copy:
+      "Обычные автоматические ответы заблокированы до восстановления обязательной проверки.",
+    tone: "warning",
+  };
+});
 
 function examplesText(values: string[]) {
   return values.join("\n");
@@ -554,13 +588,22 @@ onBeforeUnmount(() => {
               <Tag
                 v-for="topic in controller.detection.value.topics.slice(0, 6)"
                 :key="topic.code"
-                :value="topic.code"
+                :value="topic.label || topic.code"
                 severity="secondary"
               /><span
                 v-if="!controller.detection.value.topics.length"
                 class="muted"
                 >Категории ещё не созданы</span
               >
+            </div>
+          </article>
+          <article class="summary-card" :data-tone="safetyPresentation.tone">
+            <div class="card-kicker">Обязательная безопасность</div>
+            <h2>{{ safetyPresentation.label }}</h2>
+            <p>{{ safetyPresentation.copy }}</p>
+            <div class="platform-owned-note">
+              <i class="pi pi-shield" aria-hidden="true" />
+              Управляется платформой и доступно здесь только для просмотра.
             </div>
           </article>
           <article class="summary-card">
@@ -629,7 +672,7 @@ onBeforeUnmount(() => {
                 "
               >
                 <span class="map-code">{{ topic.code || "БЕЗ_КОДА" }}</span
-                ><span>{{ topic.description || "Новая категория" }}</span
+                ><span>{{ topic.label || topic.description || "Новая категория" }}</span
                 ><i class="pi pi-chevron-right" />
               </button>
               <div
@@ -767,7 +810,7 @@ onBeforeUnmount(() => {
                   <div class="card-kicker">
                     Категория {{ selectedTopicIndex + 1 }}
                   </div>
-                  <h2>{{ selectedTopic.description || "Новая категория" }}</h2>
+                  <h2>{{ selectedTopic.label || "Новая категория" }}</h2>
                 </div>
                 <Button
                   v-if="controller.canManageDetection.value"
@@ -798,6 +841,21 @@ onBeforeUnmount(() => {
                   >
                 </div>
                 <div class="field">
+                  <label for="topic-label">Название для команды</label>
+                  <InputText
+                    id="topic-label"
+                    v-model="selectedTopic.label"
+                    maxlength="120"
+                    :aria-invalid="Boolean(issueFor(`topics.${selectedTopicIndex}.label`))"
+                    :aria-describedby="`topic-label-error-${selectedTopicIndex}`"
+                    :disabled="!controller.canManageDetection.value"
+                  />
+                  <small :id="`topic-label-error-${selectedTopicIndex}`" class="field-error">{{
+                    issueFor(`topics.${selectedTopicIndex}.label`)
+                  }}</small>
+                </div>
+              </div>
+              <div class="field">
                   <label for="topic-description"
                     >Что относится к категории</label
                   ><Textarea
@@ -810,7 +868,6 @@ onBeforeUnmount(() => {
                   /><small class="field-error">{{
                     issueFor(`topics.${selectedTopicIndex}.description`)
                   }}</small>
-                </div>
               </div>
               <div class="field-grid">
                 <div class="field">
@@ -1107,17 +1164,22 @@ onBeforeUnmount(() => {
                       issueFor("debounceMs")
                     }}</small>
                   </div>
-                  <div class="field">
-                    <label for="model-revision">Версия модели</label
-                    ><InputText
-                      id="model-revision"
-                      v-model="
-                        controller.detection.value.modelProfileRevisionId
-                      "
+                  <div class="field model-profile-field">
+                    <label for="model-revision">Модель классификации</label
+                    ><Select
+                      input-id="model-revision"
+                      v-model="controller.detection.value.modelProfileRevisionId"
+                      :options="modelProfileOptions"
+                      option-label="displayName"
+                      option-value="revisionId"
+                      placeholder="Выберите разрешённую модель"
                       :aria-invalid="Boolean(issueFor('modelProfileRevisionId'))"
-                      aria-describedby="model-revision-error"
+                      aria-describedby="model-revision-description model-revision-error"
                       :disabled="!controller.canManageDetection.value"
                     />
+                    <small id="model-revision-description">
+                      {{ selectedModelProfile?.description ?? "Сервер не вернул описание выбранной модели." }}
+                    </small>
                     <small id="model-revision-error" class="field-error">{{
                       issueFor("modelProfileRevisionId")
                     }}</small>
@@ -1292,6 +1354,14 @@ onBeforeUnmount(() => {
                   }}
                   рекомендаций</span
                 >
+                <span
+                  v-if="controller.validatedPolicyHash.value"
+                  class="validation-confirmation"
+                  role="status"
+                >
+                  <i class="pi pi-check-circle" aria-hidden="true" />
+                  Серверная проверка пройдена
+                </span>
                 <ul
                   v-if="controller.hasDetectionErrors.value"
                   class="error-summary"
@@ -1304,6 +1374,15 @@ onBeforeUnmount(() => {
                 </ul>
               </div>
               <Button
+                v-if="controller.canPreview.value"
+                label="Проверить правила"
+                icon="pi pi-shield"
+                severity="secondary"
+                outlined
+                :loading="controller.validating.value"
+                :disabled="controller.hasDetectionErrors.value || controller.hasPendingRecovery.value"
+                @click="controller.validateDraft"
+              /><Button
                 v-if="draftDetection && controller.canManageDetection.value"
                 label="Удалить черновик"
                 severity="danger"
@@ -1330,64 +1409,14 @@ onBeforeUnmount(() => {
               />
             </div>
           </div>
-
-          <aside class="test-console">
-            <div class="test-console__heading">
-              <div class="card-kicker">Проверка примера</div>
-              <h2>Как сработает правило</h2>
-              <p>Проверка ничего не меняет в обращениях.</p>
-            </div>
-            <div class="field">
-              <label for="preview-input">Сообщение пользователя</label
-              ><Textarea
-                id="preview-input"
-                v-model="previewInput"
-                rows="6"
-                auto-resize
-                maxlength="4000"
-              />
-            </div>
-            <div class="field">
-              <label for="preview-locale">Язык</label
-              ><InputText id="preview-locale" v-model="previewLocale" />
-            </div>
-            <Button
-              label="Проверить"
-              icon="pi pi-play"
-              :loading="controller.previewing.value"
-              :disabled="
-                !controller.canPreview.value ||
-                controller.hasDetectionErrors.value ||
-                !previewInput.trim()
-              "
-              @click="controller.preview(previewInput, previewLocale)"
-            />
-            <p v-if="!controller.canPreview.value" class="permission-note">
-              <i class="pi pi-lock" /> У вашей роли нет права проверять примеры.
-            </p>
-            <div v-if="controller.dryRunResult.value" class="test-result">
-              <span class="result-label">Решение</span
-              ><strong>{{
-                decisionLabel(controller.dryRunResult.value.caseDecision)
-              }}</strong>
-              <p>
-                Причина:
-                {{ caseIntelligenceReasonLabel(controller.dryRunResult.value.reasonCode) }}
-              </p>
-              <div>
-                <Tag
-                  v-for="code in controller.dryRunResult.value.matchedRuleCodes"
-                  :key="code"
-                  :value="code"
-                  severity="info"
-                /><span
-                  v-if="!controller.dryRunResult.value.matchedRuleCodes.length"
-                  class="muted"
-                  >Совпавших правил нет</span
-                >
-              </div>
-            </div>
-          </aside>
+          <SupportDetectionPreviewConsole
+            :result="controller.dryRunResult.value"
+            :locales="controller.detection.value.locales"
+            :can-preview="controller.canPreview.value"
+            :blocked="controller.hasDetectionErrors.value || controller.hasPendingRecovery.value"
+            :loading="controller.previewing.value || controller.validating.value"
+            @preview="controller.preview"
+          />
         </main>
         </div>
 
@@ -1589,6 +1618,13 @@ onBeforeUnmount(() => {
               повторяется автоматически.
             </p>
           </aside>
+          <SupportDetectionCalibrationCard
+            class="budget-calibration"
+            :calibration="controller.calibration.value"
+            :loading="controller.calibrating.value || controller.validating.value"
+            :can-preview="controller.canPreview.value"
+            @load="controller.loadCalibration"
+          />
         </main>
       </template>
     </template>
@@ -1847,6 +1883,17 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 18px;
+}
+.platform-owned-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ci-line);
+  color: var(--ci-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 .muted {
   color: var(--ci-muted);
@@ -2178,7 +2225,18 @@ onBeforeUnmount(() => {
   padding-top: 16px;
   color: var(--ci-muted);
 }
-@media (max-width: 1400px) {
+.budget-calibration {
+  grid-column: 1 / -1;
+}
+.validation-confirmation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--status-success-text);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+@media (max-width: 1560px) {
   .policy-layout {
     grid-template-columns: 210px minmax(0, 1fr);
   }

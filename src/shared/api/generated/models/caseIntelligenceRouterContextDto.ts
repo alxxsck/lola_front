@@ -19,7 +19,7 @@ export interface CaseIntelligenceRouterContextDto {
   maxContextMessages: number;
   /**
    * @minimum 1
-   * @maximum 20
+   * @maximum 8
    */
   maxSignals: number;
 }

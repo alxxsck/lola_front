@@ -9,7 +9,10 @@ import type { CaseIntelligenceAttributePredicateDtoOperator } from "./caseIntell
 import type { CaseIntelligenceAttributePredicateDtoValue } from "./caseIntelligenceAttributePredicateDtoValue";
 
 export interface CaseIntelligenceAttributePredicateDto {
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   attributeCode: string;
   operator: CaseIntelligenceAttributePredicateDtoOperator;
   value: CaseIntelligenceAttributePredicateDtoValue;

@@ -11,6 +11,7 @@ import type { CaseIntelligenceCurrentResponseDtoDetection } from "./caseIntellig
 import type { CaseIntelligenceCurrentResponseDtoEscalation } from "./caseIntelligenceCurrentResponseDtoEscalation";
 import type { CaseIntelligenceCurrentResponseDtoRelease } from "./caseIntelligenceCurrentResponseDtoRelease";
 import type { CaseIntelligenceCurrentResponseDtoRuntime } from "./caseIntelligenceCurrentResponseDtoRuntime";
+import type { CaseIntelligenceProjectSafetyStateDto } from "./caseIntelligenceProjectSafetyStateDto";
 
 export interface CaseIntelligenceCurrentResponseDto {
   allowedActions: CaseIntelligenceCurrentResponseDtoAllowedActionsItem[];
@@ -22,4 +23,5 @@ export interface CaseIntelligenceCurrentResponseDto {
   /** @nullable */
   release?: CaseIntelligenceCurrentResponseDtoRelease;
   runtime?: CaseIntelligenceCurrentResponseDtoRuntime;
+  safety: CaseIntelligenceProjectSafetyStateDto;
 }

@@ -11,7 +11,7 @@ export type CaseIntelligenceDecisionLogItemDtoAssistantReleaseGate =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CaseIntelligenceDecisionLogItemDtoAssistantReleaseGate = {
-  BLOCKED: "BLOCKED",
+  BLOCK: "BLOCK",
   SAFE_FALLBACK: "SAFE_FALLBACK",
-  ALLOWED: "ALLOWED",
+  ALLOW: "ALLOW",
 } as const;

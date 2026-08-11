@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CaseIntelligenceDetectionPolicyDto } from "./caseIntelligenceDetectionPolicyDto";
+import type { CaseIntelligencePreviewMessageDto } from "./caseIntelligencePreviewMessageDto";
 
 export interface CaseIntelligenceDryRunDto {
   definition: CaseIntelligenceDetectionPolicyDto;
-  /** @maxLength 4000 */
-  input: string;
-  /** @maxLength 35 */
-  locale: string;
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  messages: CaseIntelligencePreviewMessageDto[];
 }

@@ -8,8 +8,11 @@ import {
 
 const PROJECT_OPERATIONS = [
   ["CaseIntelligence_current", "project.case_intelligence.read"],
+  ["CaseIntelligence_modelProfiles", "project.case_intelligence.read"],
   ["CaseIntelligence_compileDetection", "project.case_intelligence.preview"],
+  ["CaseIntelligence_validateDetection", "project.case_intelligence.preview"],
   ["CaseIntelligence_dryRun", "project.case_intelligence.preview"],
+  ["CaseIntelligence_calibration", "project.case_intelligence.preview"],
   [
     "CaseIntelligence_saveDetectionDraft",
     "project.case_intelligence.detection.manage",
@@ -53,7 +56,7 @@ const PROJECT_OPERATIONS = [
     "CaseIntelligence_correctDecision",
     "project.case_intelligence.labels.review",
   ],
-  ["EndUserCases_costSummary", "project.case_intelligence.cost.read"],
+  ["EndUserCases_costSummary", "project.ai_usage.read"],
 ];
 
 const STRONG_AUTH_OPERATIONS = [
@@ -103,6 +106,7 @@ export function validateSupportCaseIntelligenceContract(document) {
   }
 
   requireSchemaFields(document, "CaseIntelligenceCurrentResponseDto", [
+    "safety",
     "detection",
     "escalation",
     "budget",
@@ -130,6 +134,7 @@ export function validateSupportCaseIntelligenceContract(document) {
   ]);
   requireSchemaFields(document, "CaseIntelligenceTopicDto", [
     "code",
+    "label",
     "description",
     "positiveExamples",
     "negativeExamples",
@@ -140,6 +145,76 @@ export function validateSupportCaseIntelligenceContract(document) {
     "kind",
     ["EXACT", "PHRASE", "ATTRIBUTE", "SEMANTIC_STATEMENT"],
   );
+  requireSchemaFields(document, "CaseIntelligenceDetectionValidationResponseDto", [
+    "valid",
+    "issues",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceModelProfileCatalogItemDto", [
+    "revisionId",
+    "displayName",
+    "description",
+    "scope",
+    "provider",
+    "modelId",
+    "reasoningEffort",
+    "maxOutputTokens",
+    "compatibilityHash",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceDryRunDto", [
+    "definition",
+    "messages",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceDryRunResponseDto", [
+    "executionMode",
+    "dialogMessageIds",
+    "caseDecision",
+    "reasonCode",
+    "matchedRuleCodes",
+    "messageResults",
+    "candidates",
+    "cost",
+    "stages",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceCalibrationResponseDto", [
+    "state",
+    "modelProfileRevisionId",
+    "calibratorRevisionId",
+    "datasetRevisionId",
+    "minimumSamples",
+    "maximumIntervalWidth",
+    "autoApplyThreshold",
+    "cells",
+  ]);
+
+  const routerContext = contractSchema(
+    document,
+    "CaseIntelligenceRouterContextDto",
+  );
+  if (routerContext.properties?.maxSignals?.maximum !== 8)
+    throw new Error("CaseIntelligenceRouterContextDto.maxSignals must remain <= 8");
+  const detectionPolicy = contractSchema(
+    document,
+    "CaseIntelligenceDetectionPolicyDto",
+  );
+  for (const field of ["attachWindowMs", "reopenWindowMs"]) {
+    if (detectionPolicy.properties?.[field]?.maximum !== 31_536_000_000)
+      throw new Error(`${field} must retain the one-year maximum`);
+  }
+
+  for (const operationId of [
+    "CaseIntelligence_modelProfiles",
+    "CaseIntelligence_validateDetection",
+    "CaseIntelligence_dryRun",
+    "CaseIntelligence_calibration",
+  ]) {
+    const operation = contractOperation(document, operationId);
+    for (const status of ["400", "401", "403", "404", "409", "428", "503"]) {
+      const schema = operation.responses?.[status]?.content?.["application/json"]?.schema;
+      const codes = schema?.properties?.error?.properties?.code?.enum;
+      if (!Array.isArray(codes) || codes.length === 0)
+        throw new Error(`${operationId} ${status} must publish a typed error code`);
+    }
+  }
   requireSchemaPropertyEnum(
     document,
     "CaseIntelligenceDetectionRuleDto",

@@ -14,4 +14,5 @@ export const CaseIntelligenceEvidenceRefDtoKind = {
   SIGNAL: "SIGNAL",
   MESSAGE: "MESSAGE",
   CASE: "CASE",
+  SAFETY_ANALYSIS: "SAFETY_ANALYSIS",
 } as const;

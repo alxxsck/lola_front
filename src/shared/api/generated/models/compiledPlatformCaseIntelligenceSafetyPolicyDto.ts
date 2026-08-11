@@ -8,6 +8,7 @@
 import type { CompiledPlatformCaseIntelligenceSafetyPolicyDtoChannelsItem } from "./compiledPlatformCaseIntelligenceSafetyPolicyDtoChannelsItem";
 import type { PlatformCaseIntelligenceSafetyClassDto } from "./platformCaseIntelligenceSafetyClassDto";
 import type { PlatformCaseIntelligenceSafetyGateDto } from "./platformCaseIntelligenceSafetyGateDto";
+import type { CompiledPlatformCaseIntelligenceSafetyPolicyDtoRuntimeClassifier } from "./compiledPlatformCaseIntelligenceSafetyPolicyDtoRuntimeClassifier";
 import type { CompiledPlatformCaseIntelligenceSafetyPolicyDtoSchemaVersion } from "./compiledPlatformCaseIntelligenceSafetyPolicyDtoSchemaVersion";
 
 export interface CompiledPlatformCaseIntelligenceSafetyPolicyDto {
@@ -35,6 +36,7 @@ export interface CompiledPlatformCaseIntelligenceSafetyPolicyDto {
    */
   locales: string[];
   revisionId: string;
+  runtimeClassifier?: CompiledPlatformCaseIntelligenceSafetyPolicyDtoRuntimeClassifier;
   schemaVersion: CompiledPlatformCaseIntelligenceSafetyPolicyDtoSchemaVersion;
   /** @maxLength 128 */
   sentinelDatasetRevisionId: string;

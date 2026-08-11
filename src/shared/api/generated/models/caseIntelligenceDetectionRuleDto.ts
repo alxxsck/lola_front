@@ -12,22 +12,37 @@ import type { CaseIntelligenceDetectionRuleDtoValue } from "./caseIntelligenceDe
 
 export interface CaseIntelligenceDetectionRuleDto {
   action: CaseIntelligenceDetectionRuleDtoAction;
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   attributeCode?: string;
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   code: string;
   kind: CaseIntelligenceDetectionRuleDtoKind;
-  /** @maxLength 35 */
+  /**
+   * @maxLength 35
+   * @pattern ^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-\d{3})?$
+   */
   locale?: string;
   operator?: CaseIntelligenceDetectionRuleDtoOperator;
-  /** @maxLength 500 */
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
   phrase?: string;
   /**
    * @minimum 0
    * @maximum 10000
    */
   priority: number;
-  /** @maxLength 1000 */
+  /**
+   * @minLength 1
+   * @maxLength 1000
+   */
   statement?: string;
   value?: CaseIntelligenceDetectionRuleDtoValue;
 }

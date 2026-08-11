@@ -34,6 +34,16 @@ export interface CompiledCaseIntelligenceEscalationPolicyDto {
    */
   noMatchLimit: number;
   /**
+   * @minimum 60
+   * @maximum 604800
+   */
+  offerCooldownSeconds: number;
+  /**
+   * @minimum 60
+   * @maximum 86400
+   */
+  offerResponseTimeoutSeconds: number;
+  /**
    * @minimum 1
    * @maximum 20
    */

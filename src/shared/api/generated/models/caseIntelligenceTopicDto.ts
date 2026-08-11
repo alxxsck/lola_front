@@ -7,10 +7,18 @@
  */
 
 export interface CaseIntelligenceTopicDto {
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   code: string;
   /** @maxLength 1000 */
   description: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  label: string;
   /** @maxItems 20 */
   negativeExamples: string[];
   /** @maxItems 20 */

@@ -19,13 +19,13 @@ export interface SupportMacroDraftDto {
   locale: string;
   /** @maxItems 10 */
   shortcuts?: string[];
-  /** Localized bodies keyed by canonical BCP 47 Project locale; source locale is required. */
-  translations?: SupportMacroDraftDtoTranslations;
   /**
    * @minLength 1
    * @maxLength 160
    */
   title: string;
+  /** Localized bodies keyed by canonical BCP 47 Project locale; source locale is required. */
+  translations?: SupportMacroDraftDtoTranslations;
   /** @maxItems 20 */
   variables: SupportMacroVariableDto[];
   visibility: SupportMacroVisibilityDto;

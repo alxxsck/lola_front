@@ -10,11 +10,17 @@ import type { CaseIntelligenceScenarioDtoUrgency } from "./caseIntelligenceScena
 
 export interface CaseIntelligenceScenarioDto {
   action: CaseIntelligenceScenarioDtoAction;
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   code: string;
   /** @maxItems 20 */
   dataToCollect: string[];
-  /** @maxLength 64 */
+  /**
+   * @maxLength 64
+   * @pattern ^[A-Z][A-Z0-9_]{0,63}$
+   */
   reasonCode: string;
   urgency: CaseIntelligenceScenarioDtoUrgency;
 }

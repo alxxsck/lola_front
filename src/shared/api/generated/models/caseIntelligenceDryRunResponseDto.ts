@@ -5,11 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { CaseIntelligencePreviewCandidateDto } from "./caseIntelligencePreviewCandidateDto";
 import type { CaseIntelligenceDryRunResponseDtoCaseDecision } from "./caseIntelligenceDryRunResponseDtoCaseDecision";
+import type { CaseIntelligencePreviewCostDto } from "./caseIntelligencePreviewCostDto";
+import type { CaseIntelligenceDryRunResponseDtoExecutionMode } from "./caseIntelligenceDryRunResponseDtoExecutionMode";
+import type { CaseIntelligencePreviewMessageResultDto } from "./caseIntelligencePreviewMessageResultDto";
+import type { CaseIntelligencePreviewStageDto } from "./caseIntelligencePreviewStageDto";
 
 export interface CaseIntelligenceDryRunResponseDto {
+  /** @maxItems 8 */
+  candidates: CaseIntelligencePreviewCandidateDto[];
   caseDecision: CaseIntelligenceDryRunResponseDtoCaseDecision;
+  cost: CaseIntelligencePreviewCostDto;
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  dialogMessageIds: string[];
+  executionMode: CaseIntelligenceDryRunResponseDtoExecutionMode;
+  /** @maxItems 20 */
   matchedRuleCodes: string[];
+  /** @maxItems 8 */
+  messageResults: CaseIntelligencePreviewMessageResultDto[];
   /** @maxLength 64 */
   reasonCode: string;
+  /**
+   * @minItems 6
+   * @maxItems 6
+   */
+  stages: CaseIntelligencePreviewStageDto[];
 }

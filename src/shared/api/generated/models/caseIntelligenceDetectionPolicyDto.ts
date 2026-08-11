@@ -16,7 +16,10 @@ import type { CaseIntelligenceTopicDto } from "./caseIntelligenceTopicDto";
 
 export interface CaseIntelligenceDetectionPolicyDto {
   ambiguityAction: CaseIntelligenceDetectionPolicyDtoAmbiguityAction;
-  /** @minimum 60000 */
+  /**
+   * @minimum 60000
+   * @maximum 31536000000
+   */
   attachWindowMs: number;
   audience: CaseIntelligenceAudienceDto;
   /**
@@ -32,13 +35,19 @@ export interface CaseIntelligenceDetectionPolicyDto {
    * @maximum 60000
    */
   debounceMs: number;
-  /** @maxLength 35 */
+  /**
+   * @maxLength 35
+   * @pattern ^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-\d{3})?$
+   */
   fallbackLocale: string;
   /** @maxItems 20 */
   locales: string[];
   /** @maxLength 128 */
   modelProfileRevisionId: string;
-  /** @minimum 60000 */
+  /**
+   * @minimum 60000
+   * @maximum 31536000000
+   */
   reopenWindowMs: number;
   routerContext: CaseIntelligenceRouterContextDto;
   /** @maxItems 200 */

@@ -11,10 +11,7 @@ export type CaseIntelligenceDecisionLogItemDtoEscalationState =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CaseIntelligenceDecisionLogItemDtoEscalationState = {
-  PENDING: "PENDING",
   READY: "READY",
-  FAILED: "FAILED",
   DEFERRED: "DEFERRED",
-  BUDGET_REJECTED: "BUDGET_REJECTED",
-  PAUSED: "PAUSED",
+  FAILED: "FAILED",
 } as const;

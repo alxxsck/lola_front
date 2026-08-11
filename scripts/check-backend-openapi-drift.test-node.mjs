@@ -141,7 +141,7 @@ test("standalone check verifies the committed artifact without a sibling backend
   }
 });
 
-test("committed contract metadata pins the exact Backend source revision", async () => {
+test("committed contract metadata pins every exact Backend source revision", async () => {
   const metadata = JSON.parse(
     await readFile(
       path.join(repositoryRoot, "openapi/retenive-backend.contract.json"),
@@ -149,7 +149,15 @@ test("committed contract metadata pins the exact Backend source revision", async
     ),
   );
 
-  assert.match(metadata.backendSourceRevision, /^[0-9a-f]{40}$/u);
+  if (metadata.backendSourceRevision) {
+    assert.match(metadata.backendSourceRevision, /^[0-9a-f]{40}$/u);
+    return;
+  }
+  assert.match(metadata.composedBackendSources?.base, /^[0-9a-f]{40}$/u);
+  assert.match(
+    metadata.composedBackendSources?.caseIntelligence,
+    /^[0-9a-f]{40}$/u,
+  );
 });
 
 test("explicit Backend export regenerates Prisma Client before compiling", async () => {
@@ -170,6 +178,7 @@ test("directory write resolves and persists the verified Backend HEAD", async ()
     /backendSourceRevision = await assertRequestedBackendRevision/u,
   );
   assert.match(source, /\{ backendSourceRevision \}/u);
+  assert.match(source, /delete baseMetadata\.composedBackendSources/u);
 });
 
 test("standalone check fails when contract metadata is missing", async () => {

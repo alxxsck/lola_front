@@ -156,14 +156,13 @@ describe("useSupportCaseIntelligence", () => {
     let projectId = "preview-project-a";
     const source: SupportCaseIntelligenceSource = {
       ...mockSupportCaseIntelligenceSource,
-      dryRun: vi.fn(async (id, definition, input, locale, signal) =>
+      dryRun: vi.fn(async (id, definition, messages, signal) =>
         id === "preview-project-a"
           ? previewResult.promise
           : mockSupportCaseIntelligenceSource.dryRun(
               id,
               definition,
-              input,
-              locale,
+              messages,
               signal,
             ),
       ),
@@ -173,11 +172,25 @@ describe("useSupportCaseIntelligence", () => {
       source,
     });
     await controller.load();
-    const oldPreview = controller.preview("Тест", "ru-RU");
+    const messages = [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        role: "USER" as const,
+        text: "Тест",
+        locale: "ru-RU",
+      },
+    ];
+    const oldPreview = controller.preview(messages);
     projectId = "preview-project-b";
     controller.reset({ forgetRetained: true });
     await controller.load();
+    const result = await mockSupportCaseIntelligenceSource.dryRun(
+      "preview-project-a",
+      controller.detection.value,
+      messages,
+    );
     previewResult.resolve({
+      ...result,
       caseDecision: "CREATE",
       matchedRuleCodes: ["OLD_PROJECT_RULE"],
       reasonCode: "CASE_INTELLIGENCE_DETERMINISTIC_RULE_MATCH",
@@ -310,5 +323,182 @@ describe("useSupportCaseIntelligence", () => {
       "unchanged-command-key",
       expect.any(AbortSignal),
     );
+  });
+
+  it("uses the server-selected model for a new policy and blocks an unknown profile", async () => {
+    const projectId = crypto.randomUUID();
+    const snapshot = await mockSupportCaseIntelligenceSource.read(projectId);
+    snapshot.detection = { draft: null, published: null };
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      read: vi.fn().mockResolvedValue(snapshot),
+      readModelProfiles: vi.fn().mockResolvedValue({
+        selectedRevisionId: "profile-approved",
+        items: [
+          {
+            revisionId: "profile-approved",
+            displayName: "Основная модель",
+            description: "Разрешена для проекта",
+            scope: "PROJECT",
+            provider: "xai",
+            modelId: "grok-4-fast",
+            reasoningEffort: "low",
+            maxOutputTokens: 512,
+            compatibilityHash: "b".repeat(64),
+          },
+        ],
+      }),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({ actorId: "actor-profile", projectId, permissions }),
+      source,
+    });
+
+    await controller.load();
+    expect(controller.detection.value.modelProfileRevisionId).toBe(
+      "profile-approved",
+    );
+    controller.detection.value.modelProfileRevisionId = "profile-hostile";
+    expect(controller.detectionIssues.value).toContainEqual(
+      expect.objectContaining({
+        path: "modelProfileRevisionId",
+        severity: "ERROR",
+      }),
+    );
+  });
+
+  it("maps server validation issues to the exact field and does not save", async () => {
+    const projectId = crypto.randomUUID();
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      validateDetection: vi.fn().mockResolvedValue({
+        valid: false,
+        compiledPolicyHash: null,
+        issues: [
+          {
+            code: "CASE_INTELLIGENCE_RULE_TOO_BROAD",
+            severity: "ERROR",
+            path: "rules[0].phrase",
+            relatedPaths: ["rules[1].phrase"],
+            message: "unsafe server text",
+          },
+        ],
+      }),
+      saveDetectionDraft: vi.fn(),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({ actorId: "actor-validation", projectId, permissions }),
+      source,
+    });
+    await controller.load();
+
+    expect(await controller.saveDetection()).toBe(false);
+    expect(source.saveDetectionDraft).not.toHaveBeenCalled();
+    expect(controller.detectionIssues.value).toContainEqual(
+      expect.objectContaining({
+        path: "rules.0.phrase",
+        message: expect.stringContaining("слишком широкое"),
+        source: "SERVER",
+      }),
+    );
+    expect(controller.error.value).not.toContain("unsafe server text");
+  });
+
+  it("fails closed when an authoring error contains malformed issue details", async () => {
+    const projectId = crypto.randomUUID();
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      saveDetectionDraft: vi.fn().mockRejectedValue(
+        new ApiError(400, "unsafe server text", {
+          issues: [
+            {
+              code: "CASE_INTELLIGENCE_RULE_TOO_BROAD",
+              severity: "ERROR",
+              path: "rules[0].phrase",
+              relatedPaths: null,
+              message: "unsafe server text",
+            },
+          ],
+        }),
+      ),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({ actorId: "actor-malformed", projectId, permissions }),
+      source,
+    });
+    await controller.load();
+
+    expect(await controller.saveDetection()).toBe(false);
+    expect(controller.pendingAttempt.value).toBeNull();
+    expect(controller.serverDetectionIssues.value).toEqual([]);
+    expect(controller.error.value).toBe(
+      "Команда не выполнена. Проверьте данные и попробуйте ещё раз.",
+    );
+    expect(controller.error.value).not.toContain("unsafe server text");
+  });
+
+  it("does not require preview authority for a detection manager to save", async () => {
+    const projectId = crypto.randomUUID();
+    const managePermissions = [
+      "project.case_intelligence.read",
+      "project.case_intelligence.detection.manage",
+    ];
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      validateDetection: vi.fn(),
+      saveDetectionDraft: vi.fn(
+        mockSupportCaseIntelligenceSource.saveDetectionDraft,
+      ),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({
+        actorId: "actor-manage-only",
+        projectId,
+        permissions: managePermissions,
+      }),
+      source,
+    });
+    await controller.load();
+
+    expect(await controller.saveDetection()).toBe(true);
+    expect(source.validateDetection).not.toHaveBeenCalled();
+    expect(source.saveDetectionDraft).toHaveBeenCalledOnce();
+  });
+
+  it("discards a late calibration response from a previous project", async () => {
+    const result = deferred<
+      Awaited<ReturnType<SupportCaseIntelligenceSource["readCalibration"]>>
+    >();
+    let projectId = "calibration-project-a";
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      readCalibration: vi.fn(async (id, definition, signal) =>
+        id === "calibration-project-a"
+          ? result.promise
+          : mockSupportCaseIntelligenceSource.readCalibration(
+              id,
+              definition,
+              signal,
+            ),
+      ),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({ actorId: "actor-calibration", projectId, permissions }),
+      source,
+    });
+    await controller.load();
+    const previous = controller.loadCalibration();
+    projectId = "calibration-project-b";
+    controller.reset({ forgetRetained: true });
+    await controller.load();
+    result.resolve(
+      await mockSupportCaseIntelligenceSource.readCalibration(
+        "calibration-project-a",
+        controller.detection.value,
+      ),
+    );
+    await previous;
+
+    expect(controller.calibration.value).toBeNull();
   });
 });

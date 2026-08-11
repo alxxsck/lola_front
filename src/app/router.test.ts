@@ -61,6 +61,10 @@ vi.mock("@/features/auth/auth.api", () => ({
   },
 }));
 
+vi.mock("@/pages/SupportCaseIntelligenceSettingsPage.vue", () => ({
+  default: { template: "<div />" },
+}));
+
 describe("authentication routes", () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
@@ -1000,7 +1004,7 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("telegram-broadcast-detail");
   });
 
-  it("gates Support Workspace with the exact conversation read permission", async () => {
+  function authenticatedSupportProject(effectivePermissionCodes: string[]) {
     const auth = useAuthStore();
     const project = {
       id: "project-1",
@@ -1013,7 +1017,7 @@ describe("authentication routes", () => {
       assistantName: "Retenive",
       systemPrompt: "",
       voiceInstructions: "",
-      effectivePermissionCodes: ["project.conversations.reply"],
+      effectivePermissionCodes,
     };
     auth.$patch({
       restored: true,
@@ -1027,6 +1031,11 @@ describe("authentication routes", () => {
       project,
       projects: [project],
     });
+    return auth;
+  }
+
+  it("gates Support operator routes with their exact permissions", async () => {
+    const auth = authenticatedSupportProject(["project.conversations.reply"]);
 
     await router.push("/support/inbox");
     expect(router.currentRoute.value.name).toBe("overview");
@@ -1046,6 +1055,12 @@ describe("authentication routes", () => {
 
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("support-notification-settings");
+  });
+
+  it("gates Support authoring routes with their exact permissions", async () => {
+    const auth = authenticatedSupportProject([
+      "project.support.lead_control.read",
+    ]);
 
     await router.push("/support/settings/macros");
     expect(router.currentRoute.value.name).toBe("overview");
@@ -1062,19 +1077,28 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe(
       "support-case-intelligence-detection",
     );
+  });
+
+  it("gates Support operational settings with their exact permissions", async () => {
+    const auth = authenticatedSupportProject([
+      "project.case_intelligence.read",
+    ]);
 
     await router.push("/support/settings/sla-calendars");
     expect(router.currentRoute.value.name).toBe("overview");
-
     auth.project!.effectivePermissionCodes = ["project.support.sla.read"];
     await router.push("/support/settings/sla-calendars");
     expect(router.currentRoute.value.name).toBe("support-sla-settings");
 
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("overview");
+  });
 
+  it("gates External Work routes with their exact permissions", async () => {
+    const auth = authenticatedSupportProject([
+      "project.integrations.manage",
+    ]);
 
-    auth.project!.effectivePermissionCodes = ["project.integrations.manage"];
     await router.push("/support/settings/integrations");
     expect(router.currentRoute.value.name).toBe("overview");
 

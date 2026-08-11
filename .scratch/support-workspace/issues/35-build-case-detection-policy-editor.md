@@ -6,12 +6,13 @@ product inquiry или product problem, и как backend создаёт/свя�
 
 **Blocked by:** 34 — синхронизировать Case Intelligence contracts.
 
-**Status:** implemented-available-scope
+**Status:** frontend-complete — production integration awaits backend merge
 
-**Completed against:** backend `e9650e8e8d2831232eeabf09f88960fac1f52f6d1`.
-Поля, которых ещё нет в typed server response (например, calibrator coverage и
-расширенная оценка качества), остаются additive scope следующих контрактов и не
-имитируются на клиенте.
+**Completed against:** backend Case Intelligence
+`b26be183a6e1ab5c32c143ee6bab34c8fe16d00b` и составной pinned OpenAPI
+`sha256:89e5ca742adb3f39649fc893fc50109b098a77cfbbc343b67ebae48403e3f90e`.
+Перед production deploy этот commit должен быть объединён с актуальной
+серверной базой в один проверенный кандидат.
 
 - [x] Редактор поддерживает Project scope, stable category codes,
       descriptions, positive/negative examples и locale scope.
@@ -24,14 +25,16 @@ product inquiry или product problem, и как backend создаёт/свя�
       controls; отсутствующие server projections не имитируются в браузере.
 - [x] Keywords показываются как evidence/candidate rule; quoted/negated word
       не обещает автоматический Case без semantic decision.
-- [x] Test console принимает поддерживаемую backend одну фразу и показывает
-      `NO_CASE/CREATE/ATTACH/REOPEN/DEFER`, reason и matched rules. Confidence,
-      cost и bounded dialog добавляются только после появления typed response.
-- [x] Доступная confidence configuration отображается как server-owned
-      threshold; UI не заявляет calibrator coverage/interval, пока их нет в DTO.
-- [x] Локальная validation связывает структурные ошибки с exact field/rule;
-      server overlap/unsafe-broad issues подключаются после публикации typed
-      field-addressable errors.
+- [x] Безопасная проверка принимает диалог до восьми сообщений и показывает
+      `NO_CASE/CREATE/ATTACH/REOPEN/DEFER`, причину, совпавшие правила,
+      категории-кандидаты, доверие, интервал, стоимость и все этапы. Режим
+      `NON_DISPATCHING` не вызывает модель и не изменяет обращения.
+- [x] Каталог разрешённых моделей заменяет ручной ввод revision ID. Покрытие
+      калибровки показывается по решению, языку и каналу; недостаток данных
+      явно блокирует автоматическое действие.
+- [x] Локальная и серверная проверки связывают duplicate/overlap/broad и
+      структурные ошибки с точным полем; английский backend message не попадает
+      в интерфейс.
 - [x] Draft сохраняется при mobile navigation, `409`, revoke и reconnect по
       правилам authority; Lead может сохранить и опубликовать доступную
       Detection revision через server commands.

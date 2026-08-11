@@ -1,10 +1,18 @@
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import type {
+  CaseIntelligenceAuthoringIssueDto,
   CaseIntelligenceBudgetPolicyDto,
+  CaseIntelligenceCalibrationResponseDto,
   CaseIntelligenceCurrentResponseDtoAllowedActionsItem,
   CaseIntelligenceCurrentResponseDto,
   CaseIntelligenceDetectionPolicyDto,
   CaseIntelligenceDryRunResponseDto,
+  CaseIntelligenceModelProfileCatalogResponseDto,
+  CaseIntelligencePreviewMessageDto,
+} from "@/shared/api/generated/models";
+import {
+  CaseIntelligenceAuthoringIssueDtoCode,
+  CaseIntelligenceAuthoringIssueDtoSeverity,
 } from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 import type { SupportCaseIntelligenceSource } from "../api/support-case-intelligence-source";
@@ -13,7 +21,10 @@ import {
   clonePolicy,
   createDefaultBudgetPolicy,
   createDefaultDetectionPolicy,
+  mergePolicyIssues,
   policyHasErrors,
+  presentServerAuthoringIssues,
+  type PolicyIssue,
   validateBudgetPolicy,
   validateDetectionPolicy,
 } from "./support-case-intelligence-policy";
@@ -156,6 +167,39 @@ function budgetDefinition(
   };
 }
 
+function authoringIssuesFromDetails(details: unknown): PolicyIssue[] {
+  if (
+    !details ||
+    typeof details !== "object" ||
+    !("issues" in details) ||
+    !Array.isArray(details.issues)
+  )
+    return [];
+  const codes = new Set<string>(
+    Object.values(CaseIntelligenceAuthoringIssueDtoCode),
+  );
+  const severities = new Set<string>(
+    Object.values(CaseIntelligenceAuthoringIssueDtoSeverity),
+  );
+  const issues = details.issues.filter(
+    (candidate): candidate is CaseIntelligenceAuthoringIssueDto => {
+      if (!candidate || typeof candidate !== "object") return false;
+      const value = candidate as Record<string, unknown>;
+      return (
+        typeof value.code === "string" &&
+        codes.has(value.code) &&
+        typeof value.message === "string" &&
+        typeof value.path === "string" &&
+        Array.isArray(value.relatedPaths) &&
+        value.relatedPaths.every((path) => typeof path === "string") &&
+        typeof value.severity === "string" &&
+        severities.has(value.severity)
+      );
+    },
+  );
+  return presentServerAuthoringIssues(issues);
+}
+
 export function useSupportCaseIntelligence(
   context: SupportCaseIntelligenceContext,
 ) {
@@ -170,6 +214,8 @@ export function useSupportCaseIntelligence(
   const loading = ref(false);
   const mutating = ref(false);
   const previewing = ref(false);
+  const validating = ref(false);
+  const calibrating = ref(false);
   const accessDenied = ref(false);
   const error = ref("");
   const feedback = ref("");
@@ -177,10 +223,20 @@ export function useSupportCaseIntelligence(
   const dryRunResult = shallowRef<CaseIntelligenceDryRunResponseDto | null>(
     null,
   );
+  const modelProfiles = shallowRef<CaseIntelligenceModelProfileCatalogResponseDto | null>(
+    null,
+  );
+  const calibration = shallowRef<CaseIntelligenceCalibrationResponseDto | null>(
+    null,
+  );
+  const serverDetectionIssues = shallowRef<PolicyIssue[]>([]);
+  const validatedPolicyHash = ref<string | null>(null);
   const generation = ref(0);
   let readAbort: AbortController | null = null;
   let operationAbort: AbortController | null = null;
   let previewAbort: AbortController | null = null;
+  let validationAbort: AbortController | null = null;
+  let calibrationAbort: AbortController | null = null;
   let activeScope: CaseIntelligenceAuthority | null = null;
 
   const authority = computed(() => context.authority());
@@ -219,8 +275,30 @@ export function useSupportCaseIntelligence(
   const canReadCost = computed(() =>
     permission(authority.value, "project.case_intelligence.cost.read"),
   );
+  const modelProfileIssues = computed<PolicyIssue[]>(() => {
+    if (!modelProfiles.value) return [];
+    const selected = modelProfiles.value.items.some(
+      (profile) =>
+        profile.revisionId === detection.value.modelProfileRevisionId,
+    );
+    return selected
+      ? []
+      : [
+          {
+            path: "modelProfileRevisionId",
+            severity: "ERROR",
+            source: "SERVER",
+            message:
+              "Выберите модель из списка, разрешённого для этого проекта.",
+          },
+        ];
+  });
   const detectionIssues = computed(() =>
-    validateDetectionPolicy(detection.value),
+    mergePolicyIssues(
+      validateDetectionPolicy(detection.value),
+      modelProfileIssues.value,
+      serverDetectionIssues.value,
+    ),
   );
   const budgetIssues = computed(() => validateBudgetPolicy(budget.value));
   const hasDetectionErrors = computed(() =>
@@ -228,6 +306,17 @@ export function useSupportCaseIntelligence(
   );
   const hasBudgetErrors = computed(() => policyHasErrors(budgetIssues.value));
   const hasPendingRecovery = computed(() => pendingAttempt.value !== null);
+
+  watch(
+    detection,
+    () => {
+      serverDetectionIssues.value = [];
+      validatedPolicyHash.value = null;
+      dryRunResult.value = null;
+      calibration.value = null;
+    },
+    { deep: true },
+  );
 
   function current(
     scope: CaseIntelligenceAuthority,
@@ -290,17 +379,27 @@ export function useSupportCaseIntelligence(
     readAbort?.abort();
     operationAbort?.abort();
     previewAbort?.abort();
+    validationAbort?.abort();
+    calibrationAbort?.abort();
     readAbort = null;
     operationAbort = null;
     previewAbort = null;
+    validationAbort = null;
+    calibrationAbort = null;
     snapshot.value = null;
     detection.value = createDefaultDetectionPolicy();
     budget.value = createDefaultBudgetPolicy();
     dryRunResult.value = null;
+    modelProfiles.value = null;
+    calibration.value = null;
+    serverDetectionIssues.value = [];
+    validatedPolicyHash.value = null;
     pendingAttempt.value = null;
     loading.value = false;
     mutating.value = false;
     previewing.value = false;
+    validating.value = false;
+    calibrating.value = false;
     error.value = "";
     feedback.value = "";
   }
@@ -343,9 +442,20 @@ export function useSupportCaseIntelligence(
     const retained = readRetained(scope);
     pendingAttempt.value = retained;
     try {
-      const value = await source.read(scope.projectId, readAbort.signal);
+      const [value, profiles] = await Promise.all([
+        source.read(scope.projectId, readAbort.signal),
+        source.readModelProfiles(scope.projectId, readAbort.signal),
+      ]);
       if (!current(scope, capturedGeneration)) return;
       applySnapshot(value, options.preserveForms === true);
+      modelProfiles.value = profiles;
+      if (
+        !options.preserveForms &&
+        !value.detection?.draft &&
+        !value.detection?.published &&
+        profiles.selectedRevisionId
+      )
+        detection.value.modelProfileRevisionId = profiles.selectedRevisionId;
       if (pendingAttempt.value && !canRunAttempt(scope, pendingAttempt.value))
         forget(scope);
     } catch (cause) {
@@ -445,6 +555,13 @@ export function useSupportCaseIntelligence(
       if (!current(scope, capturedGeneration) || value.name === "AbortError")
         return false;
       if (handleTerminalAccess(value, scope)) return false;
+      const authoringIssues = authoringIssuesFromDetails(value.details);
+      if ([400, 422].includes(value.status) && authoringIssues.length) {
+        forget(scope);
+        serverDetectionIssues.value = authoringIssues;
+        error.value = "Исправьте отмеченные сервером поля.";
+        return false;
+      }
       if (value.status === 409) {
         forget(scope);
         error.value =
@@ -490,6 +607,7 @@ export function useSupportCaseIntelligence(
       pendingAttempt.value
     )
       return false;
+    if (canPreview.value && !(await validateDraft())) return false;
     return execute(
       {
         operation: "SAVE_DETECTION",
@@ -561,15 +679,53 @@ export function useSupportCaseIntelligence(
     );
   }
 
-  async function preview(input: string, locale: string) {
+  async function validateDraft(): Promise<boolean> {
+    const scope = context.authority();
+    if (!scope || !canPreview.value || validating.value) return false;
+    const localIssues = validateDetectionPolicy(detection.value);
+    if (policyHasErrors(localIssues)) return false;
+    const capturedGeneration = generation.value;
+    validationAbort?.abort();
+    validationAbort = new AbortController();
+    validating.value = true;
+    error.value = "";
+    try {
+      const result = await source.validateDetection(
+        scope.projectId,
+        clonePolicy(detection.value),
+        validationAbort.signal,
+      );
+      if (!current(scope, capturedGeneration)) return false;
+      serverDetectionIssues.value = presentServerAuthoringIssues(result.issues);
+      validatedPolicyHash.value = result.compiledPolicyHash ?? null;
+      return result.valid && !policyHasErrors(serverDetectionIssues.value);
+    } catch (cause) {
+      if (!current(scope, capturedGeneration)) return false;
+      const value = normalizeApiError(cause);
+      if (!handleTerminalAccess(value, scope)) {
+        const issues = authoringIssuesFromDetails(value.details);
+        if (issues.length) serverDetectionIssues.value = issues;
+        error.value = issues.length
+          ? "Исправьте отмеченные сервером поля."
+          : "Не удалось проверить правила на сервере.";
+      }
+      return false;
+    } finally {
+      if (current(scope, capturedGeneration)) validating.value = false;
+    }
+  }
+
+  async function preview(messages: CaseIntelligencePreviewMessageDto[]) {
     const scope = context.authority();
     if (
       !scope ||
       !canPreview.value ||
       previewing.value ||
-      hasDetectionErrors.value
+      hasDetectionErrors.value ||
+      !messages.some((message) => message.role === "USER")
     )
       return;
+    if (!(await validateDraft())) return;
     const capturedGeneration = generation.value;
     previewAbort?.abort();
     previewAbort = new AbortController();
@@ -579,8 +735,7 @@ export function useSupportCaseIntelligence(
       const result = await source.dryRun(
         scope.projectId,
         clonePolicy(detection.value),
-        input,
-        locale,
+        clonePolicy(messages),
         previewAbort.signal,
       );
       if (!current(scope, capturedGeneration)) return;
@@ -591,6 +746,40 @@ export function useSupportCaseIntelligence(
         error.value = "Не удалось проверить пример.";
     } finally {
       if (current(scope, capturedGeneration)) previewing.value = false;
+    }
+  }
+
+  async function loadCalibration() {
+    const scope = context.authority();
+    if (
+      !scope ||
+      !canPreview.value ||
+      calibrating.value ||
+      hasDetectionErrors.value
+    )
+      return false;
+    if (!(await validateDraft())) return false;
+    const capturedGeneration = generation.value;
+    calibrationAbort?.abort();
+    calibrationAbort = new AbortController();
+    calibrating.value = true;
+    error.value = "";
+    try {
+      const result = await source.readCalibration(
+        scope.projectId,
+        clonePolicy(detection.value),
+        calibrationAbort.signal,
+      );
+      if (!current(scope, capturedGeneration)) return false;
+      calibration.value = result;
+      return true;
+    } catch (cause) {
+      if (!current(scope, capturedGeneration)) return false;
+      if (!handleTerminalAccess(cause, scope))
+        error.value = "Не удалось загрузить покрытие модели.";
+      return false;
+    } finally {
+      if (current(scope, capturedGeneration)) calibrating.value = false;
     }
   }
 
@@ -675,14 +864,24 @@ export function useSupportCaseIntelligence(
     readAbort?.abort();
     operationAbort?.abort();
     previewAbort?.abort();
+    validationAbort?.abort();
+    calibrationAbort?.abort();
     readAbort = null;
     operationAbort = null;
     previewAbort = null;
+    validationAbort = null;
+    calibrationAbort = null;
     snapshot.value = null;
     dryRunResult.value = null;
+    modelProfiles.value = null;
+    calibration.value = null;
+    serverDetectionIssues.value = [];
+    validatedPolicyHash.value = null;
     loading.value = false;
     mutating.value = false;
     previewing.value = false;
+    validating.value = false;
+    calibrating.value = false;
     error.value = "";
     feedback.value = "";
     pendingAttempt.value = null;
@@ -696,11 +895,17 @@ export function useSupportCaseIntelligence(
     loading,
     mutating,
     previewing,
+    validating,
+    calibrating,
     accessDenied,
     error,
     feedback,
     pendingAttempt,
     dryRunResult,
+    modelProfiles,
+    calibration,
+    serverDetectionIssues,
+    validatedPolicyHash,
     detectionIssues,
     budgetIssues,
     hasDetectionErrors,
@@ -722,6 +927,8 @@ export function useSupportCaseIntelligence(
     saveBudget,
     publishBudget,
     preview,
+    validateDraft,
+    loadCalibration,
     retryPending,
   };
 }

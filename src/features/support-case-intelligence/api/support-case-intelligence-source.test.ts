@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  caseIntelligenceCalibration,
   caseIntelligenceCurrent,
   caseIntelligenceDryRun,
+  caseIntelligenceModelProfiles,
   caseIntelligencePublishDetection,
   caseIntelligenceSaveBudgetDraft,
   caseIntelligenceSaveDetectionDraft,
+  caseIntelligenceValidateDetection,
 } from "@/shared/api/generated/retenive-backend";
 import {
   createDefaultBudgetPolicy,
@@ -14,14 +17,17 @@ import { apiSupportCaseIntelligenceSource } from "./support-case-intelligence-so
 
 vi.mock("@/shared/api/generated/retenive-backend", () => ({
   caseIntelligenceCompileDetection: vi.fn(),
+  caseIntelligenceCalibration: vi.fn(),
   caseIntelligenceCurrent: vi.fn(),
   caseIntelligenceDiscardDetectionDraft: vi.fn(),
   caseIntelligenceDryRun: vi.fn(),
   caseIntelligenceLookupCommand: vi.fn(),
+  caseIntelligenceModelProfiles: vi.fn(),
   caseIntelligencePublishBudget: vi.fn(),
   caseIntelligencePublishDetection: vi.fn(),
   caseIntelligenceSaveBudgetDraft: vi.fn(),
   caseIntelligenceSaveDetectionDraft: vi.fn(),
+  caseIntelligenceValidateDetection: vi.fn(),
 }));
 
 describe("apiSupportCaseIntelligenceSource", () => {
@@ -30,20 +36,75 @@ describe("apiSupportCaseIntelligenceSource", () => {
   it("reads and previews through the generated client", async () => {
     vi.mocked(caseIntelligenceCurrent).mockResolvedValue({
       allowedActions: [],
+      safety: {
+        state: "READY",
+        authority: "PLATFORM",
+        assistantReleaseGate: "ALLOW",
+        projectOverrideAllowed: false,
+      },
+    });
+    vi.mocked(caseIntelligenceModelProfiles).mockResolvedValue({
+      items: [],
+      selectedRevisionId: null,
+    });
+    vi.mocked(caseIntelligenceValidateDetection).mockResolvedValue({
+      valid: true,
+      issues: [],
+      compiledPolicyHash: "a".repeat(64),
+    });
+    vi.mocked(caseIntelligenceCalibration).mockResolvedValue({
+      state: "UNAVAILABLE",
+      modelProfileRevisionId: null,
+      calibratorRevisionId: null,
+      datasetRevisionId: null,
+      minimumSamples: null,
+      maximumIntervalWidth: null,
+      autoApplyThreshold: 0.9,
+      cells: [],
     });
     vi.mocked(caseIntelligenceDryRun).mockResolvedValue({
+      executionMode: "NON_DISPATCHING",
+      dialogMessageIds: ["11111111-1111-4111-8111-111111111111"],
       caseDecision: "DEFER",
       matchedRuleCodes: [],
       reasonCode: "NO_RULE_MATCH",
+      messageResults: [],
+      candidates: [],
+      cost: {
+        currency: "USD",
+        estimatedMicroUsd: "0",
+        billedMicroUsd: "0",
+        inputTokens: 0,
+        outputTokens: 0,
+        providerCalls: 0,
+        basis: "DETERMINISTIC_PREVIEW",
+      },
+      stages: [],
     });
     const definition = createDefaultDetectionPolicy();
+    const messages = [
+      {
+        id: "11111111-1111-4111-8111-111111111111",
+        role: "USER" as const,
+        text: "Нужна помощь",
+        locale: "ru-RU",
+      },
+    ];
 
     await apiSupportCaseIntelligenceSource.read("project-1");
+    await apiSupportCaseIntelligenceSource.readModelProfiles("project-1");
+    await apiSupportCaseIntelligenceSource.validateDetection(
+      "project-1",
+      definition,
+    );
+    await apiSupportCaseIntelligenceSource.readCalibration(
+      "project-1",
+      definition,
+    );
     await apiSupportCaseIntelligenceSource.dryRun(
       "project-1",
       definition,
-      "Нужна помощь",
-      "ru-RU",
+      messages,
     );
 
     expect(caseIntelligenceCurrent).toHaveBeenCalledWith(
@@ -52,7 +113,17 @@ describe("apiSupportCaseIntelligenceSource", () => {
     );
     expect(caseIntelligenceDryRun).toHaveBeenCalledWith(
       "project-1",
-      { definition, input: "Нужна помощь", locale: "ru-RU" },
+      { definition, messages },
+      undefined,
+    );
+    expect(caseIntelligenceValidateDetection).toHaveBeenCalledWith(
+      "project-1",
+      definition,
+      undefined,
+    );
+    expect(caseIntelligenceCalibration).toHaveBeenCalledWith(
+      "project-1",
+      { definition },
       undefined,
     );
   });

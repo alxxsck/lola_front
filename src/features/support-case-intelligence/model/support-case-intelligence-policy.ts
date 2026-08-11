@@ -1,5 +1,7 @@
 import type {
+  CaseIntelligenceAuthoringIssueDto,
   CaseIntelligenceBudgetPolicyDto,
+  CaseIntelligenceCalibrationResponseDto,
   CaseIntelligenceCurrentResponseDto,
   CaseIntelligenceDetectionPolicyDto,
   CaseIntelligenceDetectionRuleDto,
@@ -10,6 +12,9 @@ export type PolicyIssue = {
   path: string;
   message: string;
   severity: "ERROR" | "WARNING";
+  code?: string;
+  relatedPaths?: string[];
+  source?: "LOCAL" | "SERVER";
 };
 
 export type CaseIntelligenceRuntimePresentation = {
@@ -113,6 +118,7 @@ export function clonePolicy<T>(value: T): T {
 export function createTopic(index: number): CaseIntelligenceTopicDto {
   return {
     code: `CATEGORY_${index}`,
+    label: "",
     description: "",
     positiveExamples: [],
     negativeExamples: [],
@@ -195,9 +201,16 @@ export function validateDetectionPolicy(
   required(policy.locales.length > 0, "locales", "Добавьте хотя бы один язык.");
   required(policy.locales.length <= 20, "locales", "Можно указать не больше 20 языков.");
   required(
-    policy.locales.every((locale) => locale.length <= 35),
+    policy.locales.every((locale) =>
+      /^[a-z]{2,3}(?:-[A-Z][a-z]{3})?(?:-[A-Z]{2}|-\d{3})?$/.test(locale),
+    ),
     "locales",
-    "Код языка должен быть короче 35 знаков.",
+    "Используйте код языка вида ru-RU или en-US.",
+  );
+  required(
+    new Set(policy.locales).size === policy.locales.length,
+    "locales",
+    "Удалите повторяющиеся языки.",
   );
   required(
     policy.locales.includes(policy.fallbackLocale),
@@ -210,6 +223,11 @@ export function validateDetectionPolicy(
     "Выберите хотя бы один канал.",
   );
   required(policy.channels.length <= 3, "channels", "Можно выбрать не больше трёх каналов.");
+  required(
+    new Set(policy.channels).size === policy.channels.length,
+    "channels",
+    "Удалите повторяющиеся каналы.",
+  );
   required(policy.topics.length <= 50, "topics", "Можно создать не больше 50 категорий.");
   required(policy.rules.length <= 200, "rules", "Можно создать не больше 200 правил.");
   required(policy.fallbackLocale.length <= 35, "fallbackLocale", "Код языка должен быть короче 35 знаков.");
@@ -262,6 +280,16 @@ export function validateDetectionPolicy(
       "Код: латинские заглавные буквы, цифры и подчёркивание.",
     );
     required(
+      Boolean(topic.label.trim()),
+      `topics.${index}.label`,
+      "Введите короткое название категории.",
+    );
+    required(
+      topic.label.trim().length <= 120,
+      `topics.${index}.label`,
+      "Название должно быть короче 120 знаков.",
+    );
+    required(
       Boolean(topic.description.trim()),
       `topics.${index}.description`,
       "Опишите категорию понятным языком.",
@@ -271,6 +299,18 @@ export function validateDetectionPolicy(
     required(topic.negativeExamples.length <= 20, `topics.${index}.negativeExamples`, "Можно добавить не больше 20 исключений.");
     required(topic.positiveExamples.every((item) => Boolean(item.trim()) && item.trim().length <= 500), `topics.${index}.positiveExamples`, "Каждый пример должен быть непустым и короче 500 знаков.");
     required(topic.negativeExamples.every((item) => Boolean(item.trim()) && item.trim().length <= 500), `topics.${index}.negativeExamples`, "Каждое исключение должно быть непустым и короче 500 знаков.");
+    required(
+      new Set(topic.positiveExamples.map((item) => item.trim())).size ===
+        topic.positiveExamples.length,
+      `topics.${index}.positiveExamples`,
+      "Удалите повторяющиеся подходящие примеры.",
+    );
+    required(
+      new Set(topic.negativeExamples.map((item) => item.trim())).size ===
+        topic.negativeExamples.length,
+      `topics.${index}.negativeExamples`,
+      "Удалите повторяющиеся исключения.",
+    );
     if (topic.positiveExamples.length === 0) {
       issues.push({
         path: `topics.${index}.positiveExamples`,
@@ -407,6 +447,106 @@ export function validateBudgetPolicy(
 
 export function policyHasErrors(issues: readonly PolicyIssue[]): boolean {
   return issues.some((issue) => issue.severity === "ERROR");
+}
+
+function normalizeIssuePath(path: string): string {
+  return path
+    .replace(/^\$\.?/u, "")
+    .replace(/\[(\d+)\]/gu, ".$1")
+    .replace(/^\./u, "");
+}
+
+function serverIssueMessage(code: string): string {
+  const labels: Record<string, string> = {
+    CASE_INTELLIGENCE_DUPLICATE_TOPIC_CODE:
+      "Код категории уже используется.",
+    CASE_INTELLIGENCE_DUPLICATE_RULE_CODE: "Код правила уже используется.",
+    CASE_INTELLIGENCE_DUPLICATE_RULE:
+      "Другое правило уже описывает это совпадение.",
+    CASE_INTELLIGENCE_OVERLAPPING_RULES:
+      "Правила пересекаются. Проверьте порядок и итоговое действие.",
+    CASE_INTELLIGENCE_RULE_TOO_BROAD:
+      "Правило слишком широкое: короткая фраза может давать лишние совпадения.",
+    CASE_INTELLIGENCE_FALLBACK_LOCALE_NOT_DECLARED:
+      "Основной язык должен входить в список языков.",
+    CASE_INTELLIGENCE_CONFIDENCE_TIERS_INVALID:
+      "Пороги должны возрастать: наблюдение, подсказка, автоматическое действие.",
+    CASE_INTELLIGENCE_DUPLICATE_LOCALE: "Язык указан повторно.",
+    CASE_INTELLIGENCE_DUPLICATE_CHANNEL: "Канал указан повторно.",
+    CASE_INTELLIGENCE_RULE_FIELD_REQUIRED:
+      "Для выбранного типа правила заполните обязательное поле.",
+    CASE_INTELLIGENCE_RULE_FIELD_FORBIDDEN:
+      "Это поле не используется выбранным типом правила.",
+    CASE_INTELLIGENCE_RULE_LOCALE_NOT_DECLARED:
+      "Язык правила должен входить в список языков.",
+    CASE_INTELLIGENCE_FIELD_INVALID: "Проверьте значение поля.",
+    CASE_INTELLIGENCE_DUPLICATE_TOPIC_EXAMPLE:
+      "Такой пример уже добавлен в эту категорию.",
+    CASE_INTELLIGENCE_ROUTER_POLICY_EVIDENCE_TOO_LARGE:
+      "Правила содержат слишком много текста для одной проверки.",
+    CASE_INTELLIGENCE_POLICY_UNKNOWN_FIELD:
+      "Правила содержат поле, которое сервер не поддерживает.",
+    CASE_INTELLIGENCE_POLICY_INVALID:
+      "Правила не прошли обязательную серверную проверку.",
+    CASE_INTELLIGENCE_ISSUES_TRUNCATED:
+      "Показана только первая часть ошибок. Исправьте их и проверьте снова.",
+  };
+  return labels[code] ?? "Сервер отклонил это значение. Проверьте поле.";
+}
+
+export function presentServerAuthoringIssues(
+  issues: readonly CaseIntelligenceAuthoringIssueDto[],
+): PolicyIssue[] {
+  return issues.map((issue) => ({
+    path: normalizeIssuePath(issue.path),
+    relatedPaths: issue.relatedPaths.map(normalizeIssuePath),
+    code: issue.code,
+    message: serverIssueMessage(issue.code),
+    severity: issue.severity,
+    source: "SERVER",
+  }));
+}
+
+export function mergePolicyIssues(
+  ...groups: readonly (readonly PolicyIssue[])[]
+): PolicyIssue[] {
+  const result: PolicyIssue[] = [];
+  const seen = new Set<string>();
+  for (const issue of groups.flat()) {
+    const identity = `${issue.severity}:${issue.path}:${issue.message}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    result.push(issue);
+  }
+  return result;
+}
+
+export function calibrationStateLabel(
+  state: CaseIntelligenceCalibrationResponseDto["state"],
+): string {
+  if (state === "READY") return "Покрытие достаточно";
+  if (state === "PARTIAL") return "Покрытие неполное";
+  return "Калибровка недоступна";
+}
+
+export function calibrationBlockedReasonLabel(value: string | null): string {
+  if (value === "CALIBRATION_CELL_MISSING") return "Нет данных для этой группы";
+  if (value === "MINIMUM_SAMPLES_NOT_MET") return "Недостаточно примеров";
+  if (value === "CONFIDENCE_INTERVAL_TOO_WIDE")
+    return "Слишком широкий интервал доверия";
+  return value ? "Автоматическое действие заблокировано" : "Требуется оценка";
+}
+
+export function previewStageLabel(value: string): string {
+  const labels: Record<string, string> = {
+    POLICY_VALIDATION: "Проверка правил",
+    NORMALIZATION: "Нормализация текста",
+    DETERMINISTIC_RULES: "Точные правила",
+    SEMANTIC_ROUTER: "Смысловая проверка",
+    CALIBRATION: "Калибровка доверия",
+    COST_ACCOUNTING: "Учёт расходов",
+  };
+  return labels[value] ?? "Неизвестный этап";
 }
 
 export function caseIntelligenceReasonLabel(code: string): string {
