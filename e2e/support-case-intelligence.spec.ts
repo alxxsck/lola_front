@@ -25,7 +25,7 @@ test("edits, checks, saves and publishes classification rules", async ({
     page.getByRole("heading", { name: "Категории", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Настроить область применения" }),
+    page.getByRole("button", { name: "Настроить охват" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Открыть проверку" }),
@@ -119,15 +119,21 @@ test("keeps the permanent settings navigation responsive and accessible", async 
     .getByRole("link", { name: "Категории и правила" })
     .click();
 
-  await page.getByRole("button", { name: "Настроить область применения" }).click();
-  const scopeDialog = page.getByRole("dialog", { name: "Область применения" });
+  await page.getByRole("button", { name: "Настроить охват" }).click();
+  const scopeDialog = page.getByRole("dialog", { name: "Охват классификации" });
+  await expect(scopeDialog.getByText("Язык здесь — не переключатель понимания Lola")).toBeVisible();
+  await expect(scopeDialog.getByText(/Сообщение на другом языке не пропадёт/)).toBeVisible();
+  await scopeDialog.locator(".p-multiselect").click();
+  await page.getByRole("option", { name: "Английский · en", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(scopeDialog.getByLabel("Запасной язык")).toBeEnabled();
   await scopeDialog
-    .getByLabel("Для чего нужна классификация")
+    .getByLabel("Зачем проекту нужна классификация")
     .fill("Черновик на телефоне");
   await scopeDialog.getByRole("button", { name: "Готово" }).click();
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Настроить область применения" }),
+    page.getByRole("button", { name: "Настроить охват" }),
   ).toBeVisible();
 
   const geometry = await page.evaluate(() => ({

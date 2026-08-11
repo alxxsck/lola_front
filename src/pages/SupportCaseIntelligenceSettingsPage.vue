@@ -7,6 +7,7 @@ import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
+import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
@@ -28,6 +29,7 @@ import type {
   CaseIntelligenceAttributePredicateDto,
   CaseIntelligenceDetectionRuleDto,
 } from "@/shared/api/generated/models";
+import { localeDisplayName } from "@/shared/lib/locale";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -151,6 +153,11 @@ const ambiguityOptions = [
   { label: "Добавить в очередь разбора", value: "REVIEW" },
 ];
 const audienceKinds = ["include", "exclude"] as const;
+const commonClassificationLocales = [
+  "ru-RU", "en-US", "en-GB", "es-ES", "de-DE", "fr-FR", "it-IT",
+  "pt-PT", "pt-BR", "pl-PL", "uk-UA", "tr-TR", "ar-SA", "zh-CN",
+  "ja-JP", "ko-KR", "hi-IN", "id-ID", "kk-KZ", "uz-UZ",
+] as const;
 
 const runtimePresentation = computed(() =>
   presentCaseIntelligenceRuntime(controller.snapshot.value),
@@ -165,8 +172,40 @@ const selectedModelProfile = computed(() =>
       controller.detection.value.modelProfileRevisionId,
   ),
 );
+const classificationLocaleOptions = computed(() => {
+  const projectLocales = auth.project?.supportedLocales ?? [];
+  const values = [...new Set([
+    ...projectLocales,
+    ...controller.detection.value.locales,
+    controller.detection.value.fallbackLocale,
+    ...commonClassificationLocales,
+  ])].filter(Boolean);
+  const projectLocaleSet = new Set(projectLocales);
+  return values.map((value) => ({
+    value,
+    label: `${humanLocaleName(value)} · ${value}`,
+    project: projectLocaleSet.has(value),
+  })).sort((left, right) =>
+    Number(right.project) - Number(left.project) ||
+    left.label.localeCompare(right.label, "ru"),
+  );
+});
+const fallbackLocaleOptions = computed(() =>
+  controller.detection.value.locales.map((value) => ({
+    value,
+    label: `${humanLocaleName(value)} · ${value}`,
+  })),
+);
+const classificationLocaleSummary = computed(() =>
+  humanLocaleList(controller.detection.value.locales),
+);
+const fallbackLocaleSummary = computed(() =>
+  controller.detection.value.fallbackLocale
+    ? humanLocaleName(controller.detection.value.fallbackLocale)
+    : "Не выбран",
+);
 const detectionEditorTitle = computed(() => {
-  if (detectionEditor.value === "SCOPE") return "Область применения";
+  if (detectionEditor.value === "SCOPE") return "Охват классификации";
   if (detectionEditor.value === "TOPIC")
     return selectedTopic.value?.label || "Новая категория";
   if (detectionEditor.value === "RULE")
@@ -230,16 +269,23 @@ function updateExamples(
     .slice(0, 20);
 }
 
-function localeText() {
-  return controller.detection.value.locales.join(", ");
+function humanLocaleName(value: string) {
+  const name = localeDisplayName(value);
+  return name.charAt(0).toLocaleUpperCase("ru-RU") + name.slice(1);
 }
 
-function updateLocales(value: string | undefined) {
-  controller.detection.value.locales = String(value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 20);
+function humanLocaleList(values: string[]) {
+  if (!values.length) return "Не выбраны";
+  return new Intl.ListFormat("ru", { style: "long", type: "conjunction" })
+    .format(values.map(humanLocaleName));
+}
+
+function updateLocales(value: string[] | undefined) {
+  const locales = [...new Set(value ?? [])].slice(0, 20);
+  controller.detection.value.locales = locales;
+  if (!locales.includes(controller.detection.value.fallbackLocale)) {
+    controller.detection.value.fallbackLocale = locales[0] ?? "";
+  }
 }
 
 function addTopic() {
@@ -694,13 +740,16 @@ onBeforeUnmount(() => {
                 <div class="card-kicker">Текущий черновик</div>
                 <h2>Карта классификации</h2>
                 <p>
-                  Сначала опишите категории обращений. Точные правила добавляйте
-                  только для фраз, которые всегда означают одно и то же.
+                  Категория объясняет тему обращения через название, описание и
+                  примеры. Lola сравнивает с ними смысл сообщения. Точное
+                  правило нужно только для однозначной фразы; если уверенного
+                  совпадения нет, система не придумывает новую категорию и
+                  передаёт решение на проверку.
                 </p>
               </div>
               <div class="brief-actions">
                 <Button
-                  label="Настроить область применения"
+                  label="Настроить охват"
                   icon="pi pi-sliders-h"
                   severity="secondary"
                   outlined
@@ -715,14 +764,14 @@ onBeforeUnmount(() => {
               </div>
               <div class="scope-facts">
                 <div>
-                  <span class="scope-facts__label">Сообщения</span>
-                  <strong>{{ controller.detection.value.locales.join(", ") }}</strong>
-                  <small>Языки, которые Lola должна распознавать.</small>
+                  <span class="scope-facts__label">Языки классификации</span>
+                  <strong>{{ classificationLocaleSummary }}</strong>
+                  <small>Для этих языков применяются свои правила и проверенные пороги.</small>
                 </div>
                 <div>
-                  <span class="scope-facts__label">Если язык не определён</span>
-                  <strong>{{ controller.detection.value.fallbackLocale }}</strong>
-                  <small>На этом языке сервер разберёт сообщение без метки языка.</small>
+                  <span class="scope-facts__label">Запасной язык</span>
+                  <strong>{{ fallbackLocaleSummary }}</strong>
+                  <small>Используется, когда источник не сообщил язык.</small>
                 </div>
                 <div>
                   <span class="scope-facts__label">Каналы</span>
@@ -737,7 +786,7 @@ onBeforeUnmount(() => {
                         .join(", ")
                     }}
                   </strong>
-                  <small>Только сообщения из этих каналов участвуют в проверке.</small>
+                  <small>Классификация запускается только для выбранных каналов.</small>
                 </div>
               </div>
             </section>
@@ -1109,8 +1158,9 @@ onBeforeUnmount(() => {
             <section v-if="detectionEditor === 'SCOPE'" class="editor-card">
               <div class="editor-card__heading">
                 <div>
-                  <div class="card-kicker">Область применения</div>
-                  <h2>Какие сообщения проверять</h2>
+                  <div class="card-kicker">Охват классификации</div>
+                  <h2>Какие сообщения относить к категориям</h2>
+                  <p>Здесь вы задаёте, для каких языков и каналов сервер будет применять правила классификации.</p>
                 </div>
                 <Tag
                   :value="
@@ -1121,47 +1171,95 @@ onBeforeUnmount(() => {
                   severity="secondary"
                 />
               </div>
-              <div class="field">
-                <label for="policy-scope">Для чего нужна классификация</label
-                ><Textarea
-                  id="policy-scope"
-                  v-model="controller.detection.value.scope"
-                  rows="2"
-                  auto-resize
-                  maxlength="2000"
-                  :aria-invalid="Boolean(issueFor('scope'))"
-                  :disabled="!controller.canManageDetection.value"
-                /><small :class="{ 'field-error': issueFor('scope') }"
-                  >Коротко опишите задачу для других руководителей поддержки.
-                  Пользователи этот текст не увидят. {{ issueFor("scope") }}</small
-                >
+              <section class="scope-explainer" aria-label="Как работает языковой охват">
+                <i class="pi pi-language" aria-hidden="true" />
+                <div>
+                  <strong>Язык здесь — не переключатель понимания Lola</strong>
+                  <p>Он выбирает языковые правила и пороги точности. Например, русское сообщение проверяется по русским правилам, а английское — по английским.</p>
+                </div>
+              </section>
+              <div class="scope-section">
+                <div class="scope-section__heading">
+                  <span>Описание для команды</span>
+                  <small>Пользователи этот текст не увидят.</small>
+                </div>
+                <div class="field field--flush">
+                  <label for="policy-scope">Зачем проекту нужна классификация</label
+                  ><Textarea
+                    id="policy-scope"
+                    v-model="controller.detection.value.scope"
+                    rows="2"
+                    auto-resize
+                    maxlength="2000"
+                    placeholder="Например: распределять обращения по темам и показывать оператору подходящую категорию"
+                    :aria-invalid="Boolean(issueFor('scope'))"
+                    aria-describedby="policy-scope-help"
+                    :disabled="!controller.canManageDetection.value"
+                  /><small id="policy-scope-help" :class="{ 'field-error': issueFor('scope') }"
+                    >Одно короткое предложение, понятное любому руководителю. {{ issueFor("scope") }}</small
+                  >
+                </div>
               </div>
-              <div class="field-grid field-grid--three">
-                <div class="field">
-                  <label for="policy-locales">Языки сообщений</label
-                  ><InputText
-                    id="policy-locales"
-                    :model-value="localeText()"
-                    :disabled="!controller.canManageDetection.value"
-                    @update:model-value="updateLocales"
-                  /><small>Какие языки Lola должна распознавать. Через запятую: ru-RU, en-US.</small>
-                  <small class="field-error">{{ issueFor("locales") }}</small>
+              <div class="scope-section scope-section--language">
+                <div class="scope-section__heading">
+                  <span>Языковой охват</span>
+                  <small>Добавьте все языки, на которых пользователи пишут в поддержку.</small>
                 </div>
-                <div class="field">
-                  <label for="policy-fallback">Язык без метки</label
-                  ><InputText
-                    id="policy-fallback"
-                    v-model="controller.detection.value.fallbackLocale"
-                    maxlength="35"
-                    :disabled="!controller.canManageDetection.value"
-                  /><small :class="{ 'field-error': issueFor('fallbackLocale') }">Используется, если канал не передал язык сообщения. {{ issueFor("fallbackLocale") }}</small>
+                <div class="field-grid scope-language-grid">
+                  <div class="field field--flush">
+                    <label for="policy-locales">Языки классификации</label
+                    ><MultiSelect
+                      input-id="policy-locales"
+                      :model-value="controller.detection.value.locales"
+                      :options="classificationLocaleOptions"
+                      option-label="label"
+                      option-value="value"
+                      display="chip"
+                      filter
+                      :max-selected-labels="4"
+                      selected-items-label="Выбрано языков: {0}"
+                      placeholder="Выберите языки"
+                      :disabled="!controller.canManageDetection.value"
+                      :aria-invalid="Boolean(issueFor('locales'))"
+                      aria-describedby="policy-locales-help policy-locales-error"
+                      @update:model-value="updateLocales"
+                    /><small id="policy-locales-help"
+                      >Список начинается с языков проекта. После названия показан технический код для интеграций.</small
+                    >
+                    <small id="policy-locales-error" class="field-error">{{ issueFor("locales") }}</small>
+                  </div>
+                  <div class="field field--flush">
+                    <label for="policy-fallback">Запасной язык</label
+                    ><Select
+                      input-id="policy-fallback"
+                      v-model="controller.detection.value.fallbackLocale"
+                      :options="fallbackLocaleOptions"
+                      option-label="label"
+                      option-value="value"
+                      placeholder="Сначала выберите языки"
+                      aria-label="Запасной язык"
+                      :disabled="!controller.canManageDetection.value || !fallbackLocaleOptions.length"
+                      :aria-invalid="Boolean(issueFor('fallbackLocale'))"
+                      aria-describedby="policy-fallback-help policy-fallback-error"
+                    /><small id="policy-fallback-help"
+                      >Сервер использует его, если канал или профиль пользователя не сообщил язык.</small
+                    >
+                    <small id="policy-fallback-error" class="field-error">{{ issueFor("fallbackLocale") }}</small>
+                  </div>
                 </div>
-                <div class="field">
-                  <span class="field-label">Каналы сообщений</span>
-                  <div class="check-row">
-                    <label
-                      v-for="channel in channelOptions"
-                      :key="channel.value"
+                <Message severity="warn" :closable="false" class="fallback-note">
+                  Сообщение на другом языке не пропадёт, но будет обработано по правилам запасного языка. Поэтому включите все языки, которые реально использует ваша поддержка.
+                </Message>
+              </div>
+              <div class="scope-section">
+                <div class="scope-section__heading">
+                  <span>Каналы</span>
+                  <small>Где должна запускаться классификация.</small>
+                </div>
+                <div class="field field--flush">
+                  <span class="field-label">Проверять сообщения из каналов</span>
+                  <div class="check-row channel-choice-row">
+                    <label v-for="channel in channelOptions" :key="channel.value"
                       ><Checkbox
                         v-model="controller.detection.value.channels"
                         :input-id="`channel-${channel.value}`"
@@ -1172,9 +1270,7 @@ onBeforeUnmount(() => {
                       /><span>{{ channel.label }}</span></label
                     >
                   </div>
-                  <small id="channels-error" class="field-error">{{
-                    issueFor("channels")
-                  }}</small>
+                  <small id="channels-error" class="field-error">{{ issueFor("channels") }}</small>
                 </div>
               </div>
             </section>
@@ -2724,6 +2820,62 @@ onBeforeUnmount(() => {
   gap: 16px;
   margin-bottom: 18px;
 }
+.scope-explainer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--ci-line);
+  border-radius: 12px;
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
+}
+.scope-explainer > i {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--surface-card);
+}
+.scope-explainer strong,
+.scope-section__heading > span { font-weight: 800; }
+.scope-explainer p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.scope-section {
+  display: grid;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--ci-line);
+}
+.scope-section__heading { display: grid; gap: 3px; }
+.scope-section__heading > span { font-size: 0.94rem; }
+.scope-section__heading small { color: var(--ci-muted); line-height: 1.4; }
+.field.field--flush { margin-top: 0; }
+.scope-language-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  align-items: start;
+}
+.scope-language-grid :deep(.p-multiselect) { width: 100%; min-height: 44px; }
+.scope-language-grid :deep(.p-multiselect-label) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.fallback-note { margin-top: 2px; }
+.fallback-note :deep(.p-message-text) { line-height: 1.45; }
+.channel-choice-row label {
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--ci-line);
+  border-radius: 10px;
+  background: var(--ci-soft);
+}
 .empty-card {
   text-align: center;
   padding: 54px 24px;
@@ -3072,7 +3224,8 @@ onBeforeUnmount(() => {
   .policy-layout,
   .budget-layout,
   .field-grid,
-  .field-grid--three {
+  .field-grid--three,
+  .scope-language-grid {
     grid-template-columns: 1fr;
   }
   .classification-brief,
