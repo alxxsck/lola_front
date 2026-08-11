@@ -16010,6 +16010,22 @@
         ],
         "type": "object"
       },
+      "CreateSupportMacroNoteDraftDto": {
+        "properties": {
+          "expectedMacroRevisionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "macroId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "macroId"
+        ],
+        "type": "object"
+      },
       "CreateSupportMacroReplyDraftDto": {
         "properties": {
           "endUserCaseId": {
@@ -16018,6 +16034,11 @@
           },
           "expectedMacroRevisionId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "minLength": 2,
             "type": "string"
           },
           "macroId": {
@@ -47190,6 +47211,12 @@
             },
             "type": "array"
           },
+          "translations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "title": {
             "type": "string"
           },
@@ -47209,6 +47236,7 @@
           "shortcuts",
           "locale",
           "body",
+          "translations",
           "visibility",
           "variables",
           "contentHash"
@@ -47291,6 +47319,17 @@
             },
             "maxItems": 10,
             "type": "array"
+          },
+          "translations": {
+            "additionalProperties": {
+              "maxLength": 10240,
+              "minLength": 1,
+              "type": "string"
+            },
+            "description": "Localized bodies keyed by canonical BCP 47 Project locale; source locale is required.",
+            "maxProperties": 20,
+            "minProperties": 1,
+            "type": "object"
           },
           "title": {
             "maxLength": 160,
@@ -47466,6 +47505,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "locale": {
+            "maxLength": 35,
+            "type": "string"
+          },
           "macroId": {
             "format": "uuid",
             "type": "string"
@@ -47520,6 +47563,7 @@
           "endUserCaseId",
           "state",
           "version",
+          "locale",
           "text",
           "renderedHash",
           "expiresAt",
@@ -68589,7 +68633,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateSupportMacroReplyDraftDto"
+                "$ref": "#/components/schemas/CreateSupportMacroNoteDraftDto"
               }
             }
           },

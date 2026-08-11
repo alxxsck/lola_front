@@ -26,6 +26,10 @@ const macro: SupportMacroResponseDto = {
       title: "Проверка платежа",
       locale: "ru",
       body: "Проверяю статус платежа.",
+      translations: {
+        ru: "Проверяю статус платежа.",
+        en: "I am checking the payment status.",
+      },
       shortcuts: ["deposit"],
       visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["PAYMENTS"] },
       variables: [],
@@ -47,7 +51,9 @@ function setup() {
     catalog: vi.fn(),
     createDraft: vi.fn(),
     editDraft: vi.fn(),
-    authoringCatalog: vi.fn().mockResolvedValue({ items: [macro], nextCursor: null }),
+    authoringCatalog: vi
+      .fn()
+      .mockResolvedValue({ items: [macro], nextCursor: null }),
     readAuthoring: vi.fn().mockResolvedValue(macro),
     preview: vi.fn().mockResolvedValue({
       compilerRevision: 1,
@@ -58,7 +64,11 @@ function setup() {
     }),
     create: vi.fn().mockResolvedValue(macro),
     replaceDraft: vi.fn().mockResolvedValue(macro),
-    publish: vi.fn().mockResolvedValue({ ...macro, draft: null, publishedRevision: macro.draft }),
+    publish: vi.fn().mockResolvedValue({
+      ...macro,
+      draft: null,
+      publishedRevision: macro.draft,
+    }),
     archive: vi.fn().mockResolvedValue({ ...macro, lifecycle: "ARCHIVED" }),
     revisions: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
     rollback: vi.fn().mockResolvedValue(macro),
@@ -94,12 +104,111 @@ describe("support macro authoring", () => {
     );
   });
 
+  it("saves one Russian source together with every localized variant", async () => {
+    const { controller, source } = setup();
+    await controller.select(macro);
+
+    controller.updateSourceBody("Проверяю обновлённый статус платежа.");
+    expect(controller.translationStates.value.en).toBe("OUTDATED");
+    expect(
+      controller.applyTranslation(
+        "en",
+        "I am checking the updated payment status.",
+        {
+          sourceText: "Проверяю обновлённый статус платежа.",
+          targetText: "I am checking the payment status.",
+        },
+      ),
+    ).toBe("APPLIED");
+
+    expect(await controller.saveDraft()).toBe(true);
+    expect(source.replaceDraft).toHaveBeenCalledWith(
+      "project-1",
+      "macro-1",
+      expect.objectContaining({
+        locale: "ru",
+        body: "Проверяю обновлённый статус платежа.",
+        translations: {
+          ru: "Проверяю обновлённый статус платежа.",
+          en: "I am checking the updated payment status.",
+        },
+      }),
+      '"sm1.4"',
+      expect.any(String),
+    );
+  });
+
+  it("does not apply a finished translation to a changed Russian source", async () => {
+    const { controller } = setup();
+    await controller.select(macro);
+    controller.updateSourceBody("Другой русский текст");
+
+    expect(
+      controller.applyTranslation("en", "Late output", {
+        sourceText: "Проверяю статус платежа.",
+        targetText: "I am checking the payment status.",
+      }),
+    ).toBe("STALE_SOURCE");
+    expect(controller.form.value.translations.en).toBe(
+      "I am checking the payment status.",
+    );
+  });
+
+  it("requires an explicit Russian source when opening a legacy foreign-language template", async () => {
+    const { controller, source } = setup();
+    const legacyEnglish = {
+      ...macro,
+      draft: {
+        ...macro.draft!,
+        configuration: {
+          ...macro.draft!.configuration,
+          locale: "en",
+          body: "Legacy English response",
+          translations: { en: "Legacy English response" },
+        },
+      },
+    };
+    vi.mocked(source.readAuthoring).mockResolvedValueOnce(legacyEnglish);
+
+    await controller.select(legacyEnglish);
+
+    expect(controller.form.value.body).toBe("");
+    expect(controller.form.value.translations).toEqual({
+      en: "Legacy English response",
+      ru: "",
+    });
+    expect(controller.canSubmit.value).toBe(false);
+    expect(source.replaceDraft).not.toHaveBeenCalled();
+  });
+
+  it("omits cleared translations from the saved aggregate", async () => {
+    const { controller, source } = setup();
+    await controller.select(macro);
+    controller.form.value.translations.en = "";
+
+    expect(await controller.saveDraft()).toBe(true);
+    expect(source.replaceDraft).toHaveBeenCalledWith(
+      "project-1",
+      "macro-1",
+      expect.objectContaining({
+        translations: { ru: "Проверяю статус платежа." },
+      }),
+      '"sm1.4"',
+      expect.any(String),
+    );
+  });
+
   it("keeps local text after an OCC conflict and refreshes the authoritative etag", async () => {
     const { controller, source } = setup();
     await controller.select(macro);
     controller.form.value.body = "Моя несохранённая правка";
-    vi.mocked(source.replaceDraft).mockRejectedValueOnce(new ApiError(409, "conflict"));
-    vi.mocked(source.readAuthoring).mockResolvedValueOnce({ ...macro, actionEtag: '"sm1.5"' });
+    vi.mocked(source.replaceDraft).mockRejectedValueOnce(
+      new ApiError(409, "conflict"),
+    );
+    vi.mocked(source.readAuthoring).mockResolvedValueOnce({
+      ...macro,
+      actionEtag: '"sm1.5"',
+    });
 
     expect(await controller.saveDraft()).toBe(false);
     expect(controller.form.value.body).toBe("Моя несохранённая правка");
@@ -128,7 +237,9 @@ describe("support macro authoring", () => {
   it("purges the authoring projection on concealed access loss", async () => {
     const { controller, source, onForbidden } = setup();
     await controller.load();
-    vi.mocked(source.readAuthoring).mockRejectedValueOnce(new ApiError(404, "not found"));
+    vi.mocked(source.readAuthoring).mockRejectedValueOnce(
+      new ApiError(404, "not found"),
+    );
 
     await controller.select(macro);
     expect(onForbidden).toHaveBeenCalledOnce();
@@ -198,11 +309,17 @@ describe("support macro authoring", () => {
     vi.mocked(source.revisions)
       .mockResolvedValueOnce({ items: [], nextCursor: "history-2" })
       .mockResolvedValueOnce({ items: [], nextCursor: null })
-      .mockResolvedValueOnce({ items: [], nextCursor: "history-after-rollback" });
+      .mockResolvedValueOnce({
+        items: [],
+        nextCursor: "history-after-rollback",
+      });
 
     await controller.load();
     await controller.load(controller.nextCursor.value ?? undefined);
-    expect(controller.items.value.map((item) => item.id)).toEqual(["macro-1", "macro-2"]);
+    expect(controller.items.value.map((item) => item.id)).toEqual([
+      "macro-1",
+      "macro-2",
+    ]);
     await controller.select(macro);
     await controller.loadMoreRevisions();
     await controller.rollback(
@@ -225,8 +342,12 @@ describe("support macro authoring", () => {
   it("purges protected authoring data when conflict recovery loses access", async () => {
     const { controller, source, onForbidden } = setup();
     await controller.select(macro);
-    vi.mocked(source.replaceDraft).mockRejectedValueOnce(new ApiError(409, "conflict"));
-    vi.mocked(source.readAuthoring).mockRejectedValueOnce(new ApiError(403, "revoked"));
+    vi.mocked(source.replaceDraft).mockRejectedValueOnce(
+      new ApiError(409, "conflict"),
+    );
+    vi.mocked(source.readAuthoring).mockRejectedValueOnce(
+      new ApiError(403, "revoked"),
+    );
 
     expect(await controller.saveDraft()).toBe(false);
     expect(onForbidden).toHaveBeenCalledOnce();

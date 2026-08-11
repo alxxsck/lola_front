@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportMacroCompiledDraftDtoCompilerRevision } from "./supportMacroCompiledDraftDtoCompilerRevision";
+import type { SupportMacroCompiledDraftDtoTranslations } from "./supportMacroCompiledDraftDtoTranslations";
 import type { SupportMacroCompiledVariableDto } from "./supportMacroCompiledVariableDto";
 import type { SupportMacroCompiledVisibilityDto } from "./supportMacroCompiledVisibilityDto";
 
@@ -16,6 +17,7 @@ export interface SupportMacroCompiledDraftDto {
   contentHash: string;
   locale: string;
   shortcuts: string[];
+  translations: SupportMacroCompiledDraftDtoTranslations;
   title: string;
   variables: SupportMacroCompiledVariableDto[];
   visibility: SupportMacroCompiledVisibilityDto;

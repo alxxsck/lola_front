@@ -129,18 +129,15 @@ import type {
 } from "@/shared/api/generated/models";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 
-const conversationLoadingSkeletons = Array.from(
-  { length: 16 },
-  (_, index) => {
-    const outbound = index % 3 === 1;
-    return {
-      id: index,
-      direction: outbound ? "outbound" : "inbound",
-      compact: !outbound && index % 5 === 4,
-      lineCount: index % 4 === 3 ? 2 : 3,
-    } as const;
-  },
-);
+const conversationLoadingSkeletons = Array.from({ length: 16 }, (_, index) => {
+  const outbound = index % 3 === 1;
+  return {
+    id: index,
+    direction: outbound ? "outbound" : "inbound",
+    compact: !outbound && index % 5 === 4,
+    lineCount: index % 4 === 3 ? 2 : 3,
+  } as const;
+});
 
 const auth = useAuthStore();
 const aiSuspension = useConversationAISuspensionStore();
@@ -668,14 +665,18 @@ const supportMacros = createSupportMacroController(
     actorId: () => auth.user?.id,
     canRead: () => canReadSupportMacros.value,
     canUse: () => canUseSupportMacros.value,
-    catalogContext: () => ({
-      ...(conversation.selection.value?.case?.groupCode
-        ? { topicCode: conversation.selection.value.case.groupCode }
-        : {}),
-      ...(conversation.selection.value?.endUser.locale
-        ? { locale: conversation.selection.value.endUser.locale }
-        : {}),
-    }),
+    catalogContext: () => {
+      const locale =
+        translation.state.value?.preference.workingLocale ??
+        conversation.selection.value?.endUser.locale ??
+        undefined;
+      return {
+        ...(conversation.selection.value?.case?.groupCode
+          ? { topicCode: conversation.selection.value.case.groupCode }
+          : {}),
+        ...(locale ? { locale } : {}),
+      };
+    },
     target: () => {
       const selection = conversation.selection.value;
       if (!selection) return null;
@@ -689,6 +690,10 @@ const supportMacros = createSupportMacroController(
             kind: "PUBLIC_REPLY" as const,
             endUserId: selection.endUser.id,
             conversationId: selection.conversation.id,
+            locale:
+              translation.state.value?.preference.workingLocale ??
+              selection.endUser.locale ??
+              "ru",
             ...(selection.case ? { caseId: selection.case.id } : {}),
           }
         : null;
@@ -1135,12 +1140,12 @@ const supportConversationComposer = computed<ConversationSurfaceComposer>(
       replyPreview,
       translationAssist:
         canManageTranslation.value && hasSupportTranslationBoundary.value
-        ? {
-            targetLocale: translation.targetLocale.value,
-            busy,
-            disabled: !reply.canReply.value || busy,
-          }
-        : null,
+          ? {
+              targetLocale: translation.targetLocale.value,
+              busy,
+              disabled: !reply.canReply.value || busy,
+            }
+          : null,
     };
   },
 );
@@ -4682,9 +4687,7 @@ onBeforeUnmount(() => {
     margin-right: auto;
     overflow: hidden;
   }
-  .support-workspace-page--full-tab
-    .header-actions
-    :deep(.p-tag-label) {
+  .support-workspace-page--full-tab .header-actions :deep(.p-tag-label) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -4706,9 +4709,7 @@ onBeforeUnmount(() => {
     white-space: nowrap;
     border: 0;
   }
-  .support-workspace-page--full-tab
-    .header-actions
-    .availability-button {
+  .support-workspace-page--full-tab .header-actions .availability-button {
     width: auto;
     max-width: 128px;
     padding: 0 8px;

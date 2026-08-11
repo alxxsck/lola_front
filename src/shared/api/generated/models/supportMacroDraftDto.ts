@@ -5,6 +5,7 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportMacroDraftDtoTranslations } from "./supportMacroDraftDtoTranslations";
 import type { SupportMacroVariableDto } from "./supportMacroVariableDto";
 import type { SupportMacroVisibilityDto } from "./supportMacroVisibilityDto";
 
@@ -18,6 +19,8 @@ export interface SupportMacroDraftDto {
   locale: string;
   /** @maxItems 10 */
   shortcuts?: string[];
+  /** Localized bodies keyed by canonical BCP 47 Project locale; source locale is required. */
+  translations?: SupportMacroDraftDtoTranslations;
   /**
    * @minLength 1
    * @maxLength 160

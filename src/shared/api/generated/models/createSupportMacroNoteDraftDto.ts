@@ -6,13 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateSupportMacroReplyDraftDto {
-  endUserCaseId?: string;
+export interface CreateSupportMacroNoteDraftDto {
   expectedMacroRevisionId?: string;
-  /**
-   * @minLength 2
-   * @maxLength 35
-   */
-  locale?: string;
   macroId: string;
 }

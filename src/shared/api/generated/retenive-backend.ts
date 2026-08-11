@@ -220,6 +220,7 @@ import type {
   CreateSupportKnowledgeProblemReportDto,
   CreateSupportKnowledgeTextDocumentDto,
   CreateSupportMacroDto,
+  CreateSupportMacroNoteDraftDto,
   CreateSupportMacroReplyDraftDto,
   CreateSupportPresentationAvatarUploadDto,
   CreateSupportQualityCalibrationDto,
@@ -2314,7 +2315,7 @@ export const supportInternalNoteAttachmentStartUpload = (
 export const supportMacroNoteDraftCreate = (
   projectId: string,
   caseId: string,
-  createSupportMacroReplyDraftDto: BodyType<CreateSupportMacroReplyDraftDto>,
+  createSupportMacroNoteDraftDto: BodyType<CreateSupportMacroNoteDraftDto>,
   options?: SecondParameter<typeof request<SupportMacroReplyDraftResponseDto>>,
 ) => {
   return request<SupportMacroReplyDraftResponseDto>(
@@ -2322,7 +2323,7 @@ export const supportMacroNoteDraftCreate = (
       url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/macro-note-drafts`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: createSupportMacroReplyDraftDto,
+      data: createSupportMacroNoteDraftDto,
     },
     options,
   );

@@ -34,6 +34,7 @@ const receipt = {
   endUserCaseId: "case-1",
   state: "READY" as const,
   version: 1,
+  locale: "ru",
   text: "Ответ",
   renderedHash: "a".repeat(64),
   expiresAt: "2026-08-09T10:15:00.000Z",
@@ -63,6 +64,7 @@ describe("support Macro transport", () => {
         caseId: "case-1",
         macroId: "macro-1",
         expectedMacroRevisionId: "revision-1",
+        locale: "pt-BR",
       },
       "public-command-key",
     );
@@ -81,13 +83,16 @@ describe("support Macro transport", () => {
       "project-1",
       "user-1",
       "conversation-1",
-      expect.any(Object),
+      expect.objectContaining({ locale: "pt-BR" }),
       { headers: { "Idempotency-Key": "public-command-key" } },
     );
     expect(generated.supportMacroNoteDraftCreate).toHaveBeenCalledWith(
       "project-1",
       "case-1",
-      expect.any(Object),
+      {
+        macroId: "macro-1",
+        expectedMacroRevisionId: "revision-1",
+      },
       { headers: { "Idempotency-Key": "note-command-key" } },
     );
   });

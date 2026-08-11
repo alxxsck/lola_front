@@ -18,6 +18,8 @@ export interface SupportMacroReplyDraftResponseDto {
   endUserCaseId: string | null;
   expiresAt: string;
   id: string;
+  /** @maxLength 35 */
+  locale: string;
   macroId: string;
   macroRevisionId: string;
   /** @minimum 1 */

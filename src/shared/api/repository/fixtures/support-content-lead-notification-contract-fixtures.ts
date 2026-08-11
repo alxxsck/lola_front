@@ -45,6 +45,7 @@ const macroReplyDraft = {
   targetKind: "PUBLIC_REPLY",
   state: "READY",
   version: 1,
+  locale: "ru",
   text: "Здравствуйте! Чем могу помочь?",
   renderedHash: "a".repeat(64),
   expiresAt: "2026-08-08T10:00:00.000Z",

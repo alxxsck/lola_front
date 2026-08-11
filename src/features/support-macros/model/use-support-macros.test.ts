@@ -21,6 +21,7 @@ const macro: SupportMacroResponseDto = {
       shortcuts: ["deposit"],
       locale: "ru",
       body: "Проверяю статус платежа.",
+      translations: { ru: "Проверяю статус платежа." },
       visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["PAYMENTS"] },
       variables: [],
       contentHash: "a".repeat(64),
@@ -46,6 +47,7 @@ function draft(text = "Проверяю статус платежа.") {
     endUserCaseId: "65000000-0000-4000-8000-000000000005",
     state: "READY" as const,
     version: 1,
+    locale: "ru",
     text,
     renderedHash: "a".repeat(64),
     expiresAt: "2026-08-09T10:15:00.000Z",
@@ -99,7 +101,9 @@ function setup() {
   return {
     source,
     controller: createSupportMacroController(context, source),
-    changeCase: (next: string) => { caseId = next; },
+    changeCase: (next: string) => {
+      caseId = next;
+    },
   };
 }
 
@@ -125,9 +129,9 @@ describe("support macro controller", () => {
     const { controller, source } = setup();
     await controller.apply(macro);
 
-    expect(await controller.prepareForSend("Проверил платёж, одну минуту.")).toBe(
-      "65000000-0000-4000-8000-000000000003",
-    );
+    expect(
+      await controller.prepareForSend("Проверил платёж, одну минуту."),
+    ).toBe("65000000-0000-4000-8000-000000000003");
     expect(source.editDraft).toHaveBeenCalledWith(
       expect.objectContaining({
         actionEtag: '"smd1.test"',
@@ -173,7 +177,9 @@ describe("support macro controller", () => {
     expect(source.editDraft).toHaveBeenCalledOnce();
 
     changeCase("65000000-0000-4000-8000-000000000099");
-    expect(await controller.prepareForSend("Проверяю статус платежа.")).toBeNull();
+    expect(
+      await controller.prepareForSend("Проверяю статус платежа."),
+    ).toBeNull();
     expect(controller.activeDraft.value).toBeNull();
   });
 
@@ -181,10 +187,18 @@ describe("support macro controller", () => {
     const { controller, source } = setup();
     await controller.apply(macro);
     vi.mocked(source.editDraft).mockRejectedValueOnce(
-      new ApiError(409, "stale", undefined, undefined, "SUPPORT_MACRO_DRAFT_SOURCE_STALE"),
+      new ApiError(
+        409,
+        "stale",
+        undefined,
+        undefined,
+        "SUPPORT_MACRO_DRAFT_SOURCE_STALE",
+      ),
     );
 
-    expect(await controller.prepareForSend("Проверяю статус платежа.")).toBeNull();
+    expect(
+      await controller.prepareForSend("Проверяю статус платежа."),
+    ).toBeNull();
     expect(controller.recoveryRequired.value).toBe(true);
     expect(controller.activeDraft.value).toBeNull();
     const recoveryMessage = controller.error.value;
@@ -217,7 +231,9 @@ describe("support macro controller", () => {
 
   it("releases the apply state when a stale draft response triggers catalog recovery", async () => {
     const { controller, source } = setup();
-    vi.mocked(source.createDraft).mockRejectedValueOnce(new ApiError(409, "catalog changed"));
+    vi.mocked(source.createDraft).mockRejectedValueOnce(
+      new ApiError(409, "catalog changed"),
+    );
 
     expect(await controller.apply(macro)).toBeNull();
     expect(controller.applyingId.value).toBeNull();

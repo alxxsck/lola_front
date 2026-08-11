@@ -21,6 +21,7 @@ const macro = {
       shortcuts: ["deposit"],
       locale: "ru",
       body: "Проверяю статус платежа.",
+      translations: { ru: "Проверяю статус платежа." },
       visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["PAYMENTS"] },
       variables: [],
       contentHash: "a".repeat(64),
