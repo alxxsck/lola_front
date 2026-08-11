@@ -72,3 +72,18 @@ _Avoid_: отдельный Macro, независимая revision, runtime-пе
 Несохранённый результат AI authoring job, привязанный к snapshot исходного текста. Пользователь
 может изменить его; только обычные Save и Publish делают текст частью Support Macro revision.
 _Avoid_: опубликованный перевод, runtime dependency, автоматическое сохранение
+
+**Global Safety Policy**:
+Обязательная platform-owned защита всех End User сообщений во всех Projects, языках и каналах.
+Project может настроить обработку выявленного риска, но не отключить или ослабить саму проверку.
+_Avoid_: Project safety setting, safety bundle, classifier configuration
+
+**Safety Model Profile**:
+Выбранные Platform Operator модель и глубина рассуждения для Global Safety Policy. Внутренние
+версии, пороги и формат решения принадлежат платформе и не являются пользовательской настройкой.
+_Avoid_: classifier revision, calibrator, model ID form
+
+**Safety Decision**:
+Зафиксированный результат обязательной проверки одного End User сообщения: безопасно,
+подозрение или срочный риск с одним каноническим Risk Class.
+_Avoid_: category, calibrated score, moderation tag

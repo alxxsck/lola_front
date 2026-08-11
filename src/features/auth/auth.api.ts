@@ -223,6 +223,9 @@ function readSessionCapabilities(response: CmsSessionContextResponseDto): {
 }
 
 function demoContext(login: string): AuthContext {
+  const platformPermissionCodes = login.startsWith("platform@")
+    ? ["platform.case_intelligence.safety.manage"]
+    : [];
   return {
     user: {
       id: "cms_1",
@@ -230,6 +233,7 @@ function demoContext(login: string): AuthContext {
       name: login.startsWith("admin@")
         ? "Алексей"
         : login.split("@")[0] || "Администратор",
+      platformPermissionCodes,
     },
     projects: [
       {

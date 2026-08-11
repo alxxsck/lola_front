@@ -2,47 +2,43 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
 import Dialog from "primevue/dialog";
 import Message from "primevue/message";
+import Select from "primevue/select";
 import Tag from "primevue/tag";
 import { useAuthStore } from "@/features/auth/auth.store";
 import {
   lookupPlatformCaseIntelligenceSafetyCommand,
   publishPlatformCaseIntelligenceSafety,
   readPlatformCaseIntelligenceSafety,
+  readPlatformSafetyModelCatalog,
+  type PlatformSafetyModelCatalog,
+  type PlatformSafetyState,
+  type PublishPlatformSafety,
 } from "@/features/platform-case-intelligence-safety/api/platform-case-intelligence-safety";
 import {
-  buildPlatformSafetyPolicy,
   createPlatformSafetyDraft,
-  hasUniformPlatformSafetyGates,
-  parsePlatformSafetyLocales,
+  normalizePlatformSafetyReasoning,
+  platformSafetyClassActions,
   platformSafetyClassLabels,
-  platformSafetyClasses,
   validatePlatformSafetyDraft,
-  type PlatformSafetyDraftIssue,
 } from "@/features/platform-case-intelligence-safety/model/platform-case-intelligence-safety";
-import type {
-  PlatformCaseIntelligenceSafetyStateResponseDto,
-  PlatformCaseIntelligenceSafetyPolicyDtoChannelsItem,
-  PublishPlatformCaseIntelligenceSafetyDto,
-} from "@/shared/api/generated/models";
 import { normalizeApiError } from "@/shared/api/http/api-error";
 
 const auth = useAuthStore();
 const router = useRouter();
-const state = ref<PlatformCaseIntelligenceSafetyStateResponseDto | null>(null);
-const draft = ref(createPlatformSafetyDraft());
+const state = ref<PlatformSafetyState | null>(null);
+const catalog = ref<PlatformSafetyModelCatalog | null>(null);
+const draft = ref(createPlatformSafetyDraft(null, []));
 const loading = ref(false);
 const publishing = ref(false);
 const reconciling = ref(false);
 const error = ref("");
 const notice = ref("");
 const freshAuthRequired = ref(false);
+const validationVisible = ref(false);
 const confirmationOpen = ref(false);
-const pendingPublication = ref<PublishPlatformCaseIntelligenceSafetyDto | null>(
-  null,
-);
+const pendingPublication = ref<PublishPlatformSafety | null>(null);
 const pendingCommandKey = ref("");
 const publicationOutcomeUnknown = ref(false);
 let requestGeneration = 0;
@@ -53,42 +49,81 @@ const canManage = computed(() =>
     "platform.case_intelligence.safety.manage",
   ),
 );
-const issues = computed(() => validatePlatformSafetyDraft(draft.value));
+const models = computed(() => catalog.value?.items ?? []);
+const selectedModel = computed(() =>
+  models.value.find((item) => item.id === draft.value.modelId),
+);
+const issues = computed(() =>
+  validatePlatformSafetyDraft(
+    draft.value,
+    models.value,
+    catalog.value?.stale ?? false,
+  ),
+);
 const issueMap = computed(() =>
   issues.value.reduce<Record<string, string>>((result, issue) => {
     result[issue.path] ??= issue.message;
     return result;
   }, {}),
 );
-const gateCount = computed(
+const publicationBlocked = computed(
   () =>
-    parsePlatformSafetyLocales(draft.value.localesText).length *
-    draft.value.channels.length *
-    4,
+    publicationOutcomeUnknown.value ||
+    issues.value.some((issue) => issue.path !== "reason"),
 );
-const activePolicy = computed(() => state.value?.revision.definition ?? null);
-const existingGatesAreUniform = computed(() =>
-  hasUniformPlatformSafetyGates(activePolicy.value ?? undefined),
+const formStatus = computed(() => {
+  if (validationVisible.value && issues.value.length)
+    return `${issues.value.length} ошибок`;
+  return draft.value.reason.trim()
+    ? "Готово к публикации"
+    : "Добавьте причину публикации";
+});
+const modelOptions = computed(() =>
+  models.value.map((model) => ({
+    label: `${model.displayName}${model.reteniveTested ? " · рекомендуемая" : ""}`,
+    value: model.id,
+    disabled: !model.selectable || model.providerAvailable === false,
+  })),
+);
+const reasoningOptions = computed(() =>
+  (selectedModel.value?.reasoningEfforts ?? []).map((value) => ({
+    value,
+    label: value === "medium" ? "Стандартная" : "Максимальная",
+    description:
+      value === "medium"
+        ? "Баланс качества, задержки и стоимости"
+        : "Больше рассуждений для самых сложных сообщений",
+  })),
 );
 
-const channelOptions: Array<{
-  value: PlatformCaseIntelligenceSafetyPolicyDtoChannelsItem;
-  label: string;
-}> = [
-  { value: "TEXT", label: "Текст" },
-  { value: "VOICE", label: "Голос" },
-  { value: "TELEGRAM", label: "Telegram" },
-];
+const riskRows = Object.entries(platformSafetyClassLabels).map(
+  ([code, label]) => ({
+    code: code as keyof typeof platformSafetyClassLabels,
+    label,
+    action: platformSafetyClassActions[
+      code as keyof typeof platformSafetyClassActions
+    ],
+  }),
+);
 
 function formatDate(value: string): string {
+  if (!value) return "дата не указана";
   return new Intl.DateTimeFormat("ru-RU", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-function resetDraftFromState(): void {
-  draft.value = createPlatformSafetyDraft(state.value?.revision.definition);
+function reasoningLabel(value: PlatformSafetyState["profile"]["reasoningEffort"]): string {
+  if (value === "high") return "максимальная";
+  if (value === "medium") return "стандартная";
+  if (value === "low") return "низкая (legacy)";
+  return "без reasoning (legacy)";
+}
+
+function resetDraft(): void {
+  draft.value = createPlatformSafetyDraft(state.value, models.value);
+  validationVisible.value = false;
 }
 
 function clearAuthorityState(): void {
@@ -96,6 +131,7 @@ function clearAuthorityState(): void {
   activeRequest = undefined;
   requestGeneration += 1;
   state.value = null;
+  catalog.value = null;
   confirmationOpen.value = false;
   pendingPublication.value = null;
   pendingCommandKey.value = "";
@@ -115,8 +151,7 @@ async function refreshAuthorityAfterForbidden(): Promise<void> {
     await router.replace({ name: "login" });
     return;
   }
-  if (!canManage.value)
-    await router.replace(auth.authenticatedLandingPath);
+  if (!canManage.value) await router.replace(auth.authenticatedLandingPath);
 }
 
 async function load(preserveDraft = false): Promise<void> {
@@ -127,35 +162,47 @@ async function load(preserveDraft = false): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const next = await readPlatformCaseIntelligenceSafety(controller.signal);
+    const [nextState, nextCatalog] = await Promise.all([
+      readPlatformCaseIntelligenceSafety(controller.signal),
+      readPlatformSafetyModelCatalog(controller.signal),
+    ]);
     if (generation !== requestGeneration) return;
-    state.value = next;
-    if (!preserveDraft) resetDraftFromState();
+    state.value = nextState;
+    catalog.value = nextCatalog;
+    if (!preserveDraft) resetDraft();
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
     const normalized = normalizeApiError(cause);
     if (normalized.status === 403) {
       error.value = "Платформенное право управления защитой отозвано.";
       await refreshAuthorityAfterForbidden();
+    } else if (normalized.status === 404) {
+      error.value =
+        "Сервер ещё не предоставляет каталог моделей безопасности. Нужен backend-контракт Global Safety v2.";
     } else {
-      error.value = "Не удалось загрузить состояние обязательной защиты.";
+      error.value = "Не удалось загрузить обязательную защиту и каталог xAI.";
     }
   } finally {
     if (generation === requestGeneration) loading.value = false;
   }
 }
 
+function onModelChange(): void {
+  normalizePlatformSafetyReasoning(draft.value, selectedModel.value);
+}
+
 function preparePublication(): void {
   error.value = "";
   notice.value = "";
   freshAuthRequired.value = false;
-  if (issues.value.length || !existingGatesAreUniform.value) return;
-  const idempotencyKey = crypto.randomUUID();
+  validationVisible.value = true;
+  if (issues.value.length) return;
   pendingPublication.value = {
     expectedVersion: state.value?.version ?? 0,
-    idempotencyKey,
+    idempotencyKey: crypto.randomUUID(),
+    modelId: draft.value.modelId,
+    reasoningEffort: draft.value.reasoningEffort,
     reason: draft.value.reason.trim(),
-    definition: buildPlatformSafetyPolicy(draft.value, crypto.randomUUID()),
   };
   confirmationOpen.value = true;
 }
@@ -173,8 +220,8 @@ async function publish(): Promise<void> {
     pendingPublication.value = null;
     pendingCommandKey.value = "";
     publicationOutcomeUnknown.value = false;
-    draft.value = createPlatformSafetyDraft(next.revision.definition);
-    notice.value = `Глобальная защита опубликована как версия ${next.version}.`;
+    resetDraft();
+    notice.value = `Обязательная защита опубликована как версия ${next.version}.`;
   } catch (cause) {
     const normalized = normalizeApiError(cause);
     if (
@@ -190,7 +237,7 @@ async function publish(): Promise<void> {
         "Требуется свежий вход с MFA. Публикация не повторялась автоматически.";
     } else if (normalized.status === 409) {
       error.value =
-        "Состояние защиты изменилось. Загружена актуальная версия; введённые значения сохранены.";
+        "Состояние защиты изменилось. Загружена актуальная версия; выбранные значения сохранены.";
       confirmationOpen.value = false;
       pendingPublication.value = null;
       await load(true);
@@ -204,10 +251,15 @@ async function publish(): Promise<void> {
       publicationOutcomeUnknown.value = true;
       confirmationOpen.value = false;
       error.value =
-        "Результат публикации неизвестен. Проверьте ту же команду перед новой попыткой.";
-    } else
+        "Результат публикации неизвестен. Проверьте эту же команду перед новой попыткой.";
+    } else if (normalized.code === "AI_MODEL_CATALOG_STALE") {
       error.value =
-        "Сервер отклонил публикацию. Проверьте идентификаторы артефактов и пороги допуска.";
+        "Доступность моделей xAI сейчас нельзя подтвердить. Обновите каталог и повторите.";
+    } else if (normalized.code === "AI_MODEL_UNAVAILABLE") {
+      error.value = "Выбранная модель недоступна для текущего ключа xAI.";
+    } else {
+      error.value = "Сервер отклонил публикацию обязательной защиты.";
+    }
   } finally {
     publishing.value = false;
   }
@@ -225,7 +277,7 @@ async function reconcileUnknownPublication(): Promise<void> {
     pendingCommandKey.value = "";
     pendingPublication.value = null;
     publicationOutcomeUnknown.value = false;
-    draft.value = createPlatformSafetyDraft(next.revision.definition);
+    resetDraft();
     notice.value = `Команда завершена. Активна версия ${next.version}.`;
   } catch (cause) {
     const normalized = normalizeApiError(cause);
@@ -249,10 +301,6 @@ async function requireFreshLogin(): Promise<void> {
     name: "login",
     query: { redirect: "/platform/case-intelligence/safety" },
   });
-}
-
-function fieldIssue(path: PlatformSafetyDraftIssue["path"]): string {
-  return issueMap.value[path] ?? "";
 }
 
 watch(
@@ -280,11 +328,11 @@ onBeforeUnmount(clearAuthorityState);
   <section class="page platform-safety-page">
     <header class="page-header">
       <div>
-        <div class="eyebrow">Control plane · Platform scope</div>
-        <h1>Обязательная защита Case Intelligence</h1>
+        <div class="eyebrow">Платформа · Обязательная защита</div>
+        <h1>Безопасность сообщений</h1>
         <p class="subtitle">
-          Одна неизменяемая политика для всех проектов. Проектные владельцы не
-          могут её отключить или ослабить.
+          Одна проверка для всех проектов. Проекты настраивают реакцию на риск,
+          но не могут отключить саму защиту.
         </p>
       </div>
       <Button
@@ -316,210 +364,141 @@ onBeforeUnmount(clearAuthorityState);
           size="small"
           @click="requireFreshLogin"
         />
+        <Button
+          v-else
+          label="Повторить"
+          size="small"
+          severity="secondary"
+          @click="load(false)"
+        />
       </div>
     </Message>
 
-    <div v-if="loading && !state" class="loading-card card" role="status">
+    <section v-if="loading && !catalog" class="loading-card card">
       <i class="pi pi-spin pi-spinner" />
-      Загружаем глобальную safety-политику…
-    </div>
+      Загружаем защиту и доступные модели xAI…
+    </section>
 
     <section v-else class="safety-workbench">
-      <article class="safety-status card" aria-labelledby="safety-status-title">
-        <div class="safety-status__mark">
-          <i :class="state ? 'pi pi-shield' : 'pi pi-exclamation-triangle'" />
-        </div>
+      <article class="safety-status card" :data-active="Boolean(state)">
+        <span class="safety-status__mark"><i class="pi pi-shield" /></span>
         <div>
-          <span class="eyebrow">Глобальное состояние</span>
-          <h2 id="safety-status-title">
-            {{ state ? `Защита активна · версия ${state.version}` : "Защита ещё не настроена" }}
+          <span class="eyebrow">Текущее состояние</span>
+          <h2>
+            {{ state ? `Защита активна · версия ${state.version}` : "Нужна первичная активация" }}
           </h2>
           <p v-if="state">
-            Ревизия {{ state.revision.version }} опубликована
-            {{ formatDate(state.revision.publishedAt) }} и автоматически
-            применяется ко всем проектам.
+            {{ state.profile.displayName }} ·
+            {{ reasoningLabel(state.profile.reasoningEffort) }}
+            глубина · опубликовано {{ formatDate(state.publishedAt) }}
           </p>
           <p v-else>
-            Case Intelligence работает fail-closed: проверка и публикация
-            проектных конфигураций заблокированы до первой глобальной ревизии.
+            До активации Case Intelligence работает fail-closed: публикация проектных
+            конфигураций заблокирована.
           </p>
         </div>
         <Tag
-          :value="state?.reconciliationState ?? 'NOT_CONFIGURED'"
-          :severity="state ? 'success' : 'warn'"
+          :value="state ? (state.reconciliationState === 'IDLE' ? 'Работает' : 'Применяется') : 'Не настроена'"
+          :severity="state ? (state.reconciliationState === 'IDLE' ? 'success' : 'warn') : 'danger'"
         />
       </article>
 
-      <Message
-        v-if="!existingGatesAreUniform"
-        severity="warn"
-        :closable="false"
-      >
-        В активной ревизии пороги различаются между отдельными рисками, языками
-        или каналами. Минимальная форма их не перезаписывает: публикация здесь
-        заблокирована, пока серверная конфигурация не будет приведена к единым
-        порогам.
-      </Message>
+      <article class="coverage-rail card" aria-labelledby="coverage-title">
+        <header>
+          <div>
+            <span class="eyebrow">Автоматический охват</span>
+            <h2 id="coverage-title">Ничего добавлять вручную не нужно</h2>
+          </div>
+          <span class="coverage-rail__lock"><i class="pi pi-lock" /> Обязательно</span>
+        </header>
+        <div class="coverage-rail__flow">
+          <div><i class="pi pi-building" /><span>Все проекты</span><small>текущие и новые</small></div>
+          <i class="pi pi-arrow-right" />
+          <div><i class="pi pi-language" /><span>Любой язык</span><small>включая неизвестный</small></div>
+          <i class="pi pi-arrow-right" />
+          <div><i class="pi pi-comments" /><span>Все каналы</span><small>текст, голос, Telegram</small></div>
+          <i class="pi pi-arrow-right" />
+          <div><i class="pi pi-shield" /><span>4 критических риска</span><small>единое ядро</small></div>
+        </div>
+      </article>
 
-      <form
-        class="safety-form card"
-        aria-labelledby="safety-form-title"
-        @submit.prevent="preparePublication"
-      >
+      <form v-if="catalog" class="safety-form card" @submit.prevent="preparePublication">
         <header class="section-heading">
           <div>
-            <span class="eyebrow">Новая неизменяемая ревизия</span>
-            <h2 id="safety-form-title">
-              {{ state ? "Опубликовать следующую версию" : "Активировать защиту" }}
-            </h2>
-            <p>
-              Сервер проверит совместимость всех артефактов. Публикация не
-              повторяется автоматически при неизвестном результате.
-            </p>
+            <span class="eyebrow">Новая неизменяемая версия</span>
+            <h2>{{ state ? "Изменить модель проверки" : "Активировать защиту" }}</h2>
+            <p>Сервер сам закрепит версию, правила, лимиты и формат результата.</p>
           </div>
-          <span class="gate-count">{{ gateCount }} admission gates</span>
+          <Tag value="Без внутренних ID" severity="secondary" />
         </header>
 
-        <section class="form-section" aria-labelledby="artifacts-title">
-          <div class="form-section__intro">
-            <span>01</span>
-            <div>
-              <h3 id="artifacts-title">Проверенные артефакты</h3>
-              <p>Ревизии должны уже существовать и быть допущены сервером.</p>
-            </div>
-          </div>
-          <div class="field-grid">
-            <label>
-              <span>Ревизия классификатора</span>
-              <input
-                v-model="draft.classifierRevisionId"
-                data-testid="safety-classifier"
-                type="text"
-                maxlength="128"
-                :aria-invalid="Boolean(fieldIssue('classifierRevisionId'))"
-              />
-              <small v-if="fieldIssue('classifierRevisionId')" class="field-error">{{ fieldIssue("classifierRevisionId") }}</small>
-            </label>
-            <label>
-              <span>Ревизия калибратора</span>
-              <input
-                v-model="draft.calibratorRevisionId"
-                data-testid="safety-calibrator"
-                type="text"
-                maxlength="128"
-                :aria-invalid="Boolean(fieldIssue('calibratorRevisionId'))"
-              />
-              <small v-if="fieldIssue('calibratorRevisionId')" class="field-error">{{ fieldIssue("calibratorRevisionId") }}</small>
-            </label>
-            <label>
-              <span>Размеченный dataset</span>
-              <input
-                v-model="draft.labelledDatasetRevisionId"
-                data-testid="safety-labelled-dataset"
-                type="text"
-                maxlength="128"
-                :aria-invalid="Boolean(fieldIssue('labelledDatasetRevisionId'))"
-              />
-              <small v-if="fieldIssue('labelledDatasetRevisionId')" class="field-error">{{ fieldIssue("labelledDatasetRevisionId") }}</small>
-            </label>
-            <label>
-              <span>Sentinel dataset</span>
-              <input
-                v-model="draft.sentinelDatasetRevisionId"
-                data-testid="safety-sentinel-dataset"
-                type="text"
-                maxlength="128"
-                :aria-invalid="Boolean(fieldIssue('sentinelDatasetRevisionId'))"
-              />
-              <small v-if="fieldIssue('sentinelDatasetRevisionId')" class="field-error">{{ fieldIssue("sentinelDatasetRevisionId") }}</small>
-            </label>
-          </div>
-        </section>
+        <Message v-if="catalog.stale" severity="warn" :closable="false" class="catalog-warning">
+          Каталог xAI устарел. Новую версию нельзя публиковать, пока сервер не подтвердит
+          доступность моделей.
+        </Message>
 
-        <section class="form-section" aria-labelledby="coverage-title">
-          <div class="form-section__intro">
-            <span>02</span>
+        <section class="configuration-grid">
+          <div class="configuration-copy">
+            <span class="step-number">01</span>
             <div>
-              <h3 id="coverage-title">Обязательный охват</h3>
-              <p>Для каждой комбинации язык × канал × риск создаётся gate.</p>
+              <h3>Модель безопасности</h3>
+              <p>
+                Выберите модель из каталога, который доступен текущему ключу xAI.
+                Grok 4.5 — рекомендуемый вариант.
+              </p>
             </div>
           </div>
-          <div class="coverage-grid">
+          <div class="field-stack">
             <label>
-              <span>Языки</span>
-              <textarea
-                v-model="draft.localesText"
-                data-testid="safety-locales"
-                rows="4"
-                placeholder="ru&#10;en"
-                :aria-invalid="Boolean(fieldIssue('localesText'))"
+              <span>Модель</span>
+              <Select
+                v-model="draft.modelId"
+                data-testid="safety-model"
+                :options="modelOptions"
+                option-label="label"
+                option-value="value"
+                option-disabled="disabled"
+                placeholder="Выберите модель"
+                fluid
+                @change="onModelChange"
               />
-              <small>Один код в строке или через запятую.</small>
-              <small v-if="fieldIssue('localesText')" class="field-error">{{ fieldIssue("localesText") }}</small>
-            </label>
-            <fieldset>
-              <legend>Каналы</legend>
-              <label
-                v-for="channel in channelOptions"
-                :key="channel.value"
-                class="check-option"
-              >
-                <Checkbox
-                  v-model="draft.channels"
-                  :input-id="`safety-channel-${channel.value}`"
-                  :value="channel.value"
-                />
-                <span>{{ channel.label }}</span>
-              </label>
-              <small v-if="fieldIssue('channels')" class="field-error">{{ fieldIssue("channels") }}</small>
-            </fieldset>
-          </div>
-        </section>
-
-        <section class="form-section" aria-labelledby="quality-title">
-          <div class="form-section__intro">
-            <span>03</span>
-            <div>
-              <h3 id="quality-title">Минимальная линия допуска</h3>
-              <p>Единые безопасные пороги для всех созданных gates.</p>
-            </div>
-          </div>
-          <div class="threshold-grid">
-            <label>
-              <span>Critical recall</span>
-              <input v-model="draft.minimumCriticalRecall" data-testid="safety-recall" type="number" min="0.9" max="1" step="0.01" />
-              <small v-if="fieldIssue('minimumCriticalRecall')" class="field-error">{{ fieldIssue("minimumCriticalRecall") }}</small>
+              <small v-if="validationVisible && issueMap.modelId" class="field-error">{{ issueMap.modelId }}</small>
+              <small v-else-if="selectedModel">
+                Вход ${{ selectedModel.inputPricePerMillion }} · выход ${{ selectedModel.outputPricePerMillion }} за 1 млн токенов
+              </small>
             </label>
             <label>
-              <span>Максимальный false-negative rate</span>
-              <input v-model="draft.maximumFalseNegativeRate" data-testid="safety-fnr" type="number" min="0" max="0.1" step="0.01" />
-              <small v-if="fieldIssue('maximumFalseNegativeRate')" class="field-error">{{ fieldIssue("maximumFalseNegativeRate") }}</small>
-            </label>
-            <label>
-              <span>Минимум примеров</span>
-              <input v-model="draft.minimumSamples" data-testid="safety-samples" type="number" min="1" max="1000000" step="1" />
-              <small v-if="fieldIssue('minimumSamples')" class="field-error">{{ fieldIssue("minimumSamples") }}</small>
+              <span>Глубина проверки</span>
+              <Select
+                v-model="draft.reasoningEffort"
+                data-testid="safety-reasoning"
+                :options="reasoningOptions"
+                option-label="label"
+                option-value="value"
+                placeholder="Выберите глубину"
+                fluid
+              />
+              <small v-if="validationVisible && issueMap.reasoningEffort" class="field-error">{{ issueMap.reasoningEffort }}</small>
+              <small v-else>
+                {{ reasoningOptions.find((item) => item.value === draft.reasoningEffort)?.description }}
+              </small>
             </label>
           </div>
-          <small v-if="fieldIssue('gates')" class="field-error">{{ fieldIssue("gates") }}</small>
         </section>
 
         <section class="risk-ledger" aria-labelledby="risk-title">
           <header>
             <div>
               <span class="eyebrow">Неизменяемое ядро</span>
-              <h3 id="risk-title">Четыре обязательных риска</h3>
+              <h3 id="risk-title">Что проверяет платформа</h3>
             </div>
             <span>Проектное переопределение запрещено</span>
           </header>
           <div class="risk-list">
-            <article v-for="risk in platformSafetyClasses" :key="risk.code">
-              <div>
-                <strong>{{ platformSafetyClassLabels[risk.code] }}</strong>
-                <small>{{ risk.code }}</small>
-              </div>
-              <Tag :value="risk.severity" :severity="risk.severity === 'URGENT' ? 'danger' : 'warn'" />
-              <span>{{ risk.consequences.length }} обязательных действия</span>
+            <article v-for="risk in riskRows" :key="risk.code">
+              <span class="risk-icon"><i class="pi pi-shield" /></span>
+              <div><strong>{{ risk.label }}</strong><small>{{ risk.action }}</small></div>
+              <Tag :value="risk.code === 'RESPONSIBLE_GAMING_CRISIS' ? 'Высокий' : 'Срочный'" :severity="risk.code === 'RESPONSIBLE_GAMING_CRISIS' ? 'warn' : 'danger'" />
             </article>
           </div>
         </section>
@@ -532,22 +511,23 @@ onBeforeUnmount(clearAuthorityState);
             rows="3"
             maxlength="2000"
             placeholder="Например: первичная активация обязательной защиты"
-            :aria-invalid="Boolean(fieldIssue('reason'))"
+            :aria-invalid="validationVisible && Boolean(issueMap.reason)"
           />
-          <small v-if="fieldIssue('reason')" class="field-error">{{ fieldIssue("reason") }}</small>
+          <small>Причина попадёт в аудит и не будет показана пользователям.</small>
+          <small v-if="validationVisible && issueMap.reason" class="field-error">{{ issueMap.reason }}</small>
         </label>
 
         <footer class="form-footer">
           <div>
-            <strong>{{ issues.length ? `${issues.length} ошибок` : "Форма готова" }}</strong>
-            <span>Публикация потребует свежего входа с MFA.</span>
+            <strong>{{ formStatus }}</strong>
+            <span>Потребуется свежий вход с MFA.</span>
           </div>
           <Button
             data-testid="prepare-safety-publication"
             type="submit"
-            :label="state ? 'Проверить новую версию' : 'Проверить и активировать'"
+            :label="state ? 'Проверить изменение' : 'Проверить и активировать'"
             icon="pi pi-shield"
-            :disabled="publicationOutcomeUnknown || !existingGatesAreUniform"
+            :disabled="publicationBlocked"
           />
         </footer>
       </form>
@@ -556,21 +536,24 @@ onBeforeUnmount(clearAuthorityState);
     <Dialog
       v-model:visible="confirmationOpen"
       modal
-      header="Опубликовать глобальную защиту?"
+      header="Опубликовать обязательную защиту?"
       :closable="!publishing"
       :dismissable-mask="false"
       class="safety-confirmation"
     >
       <div v-if="pendingPublication" class="confirmation-copy">
         <i class="pi pi-shield" />
-        <p>
-          Новая ревизия станет минимальной обязательной политикой для всех
-          проектов. Отключить её на уровне проекта будет нельзя.
-        </p>
+        <div>
+          <h3>{{ selectedModel?.displayName }}</h3>
+          <p>
+            {{ pendingPublication.reasoningEffort === "high" ? "Максимальная" : "Стандартная" }}
+            глубина проверки станет обязательной для всех проектов, языков и каналов.
+          </p>
+        </div>
         <dl>
-          <div><dt>Языки</dt><dd>{{ pendingPublication.definition.locales.length }}</dd></div>
-          <div><dt>Каналы</dt><dd>{{ pendingPublication.definition.channels.length }}</dd></div>
-          <div><dt>Admission gates</dt><dd>{{ pendingPublication.definition.gates.length }}</dd></div>
+          <div><dt>Проекты</dt><dd>Все</dd></div>
+          <div><dt>Языки</dt><dd>Все</dd></div>
+          <div><dt>Каналы</dt><dd>Все</dd></div>
         </dl>
       </div>
       <template #footer>
@@ -588,60 +571,66 @@ onBeforeUnmount(clearAuthorityState);
 .loading-card { min-height: 160px; display: grid; place-content: center; gap: 10px; color: var(--muted); }
 .safety-workbench { display: grid; gap: 16px; }
 .safety-status { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 18px; }
-.safety-status__mark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; color: var(--brand); background: var(--brand-soft); font-size: 1.2rem; }
-.safety-status h2, .section-heading h2, .form-section h3, .risk-ledger h3 { margin: 3px 0 0; letter-spacing: -.02em; }
-.safety-status p, .section-heading p, .form-section__intro p { margin: 5px 0 0; color: var(--muted); line-height: 1.45; }
+.safety-status__mark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; color: var(--danger-color); background: color-mix(in srgb, var(--danger-color) 10%, var(--surface)); font-size: 1.2rem; }
+.safety-status[data-active="true"] .safety-status__mark { color: var(--status-success-text); background: var(--status-success-soft); }
+.safety-status h2, .coverage-rail h2, .section-heading h2, .configuration-copy h3, .risk-ledger h3 { margin: 3px 0 0; letter-spacing: -.02em; }
+.safety-status p, .section-heading p, .configuration-copy p { margin: 5px 0 0; color: var(--muted); line-height: 1.45; }
+.coverage-rail { overflow: hidden; padding: 0; }
+.coverage-rail > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.coverage-rail__lock { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .76rem; font-weight: 750; }
+.coverage-rail__flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; align-items: center; gap: 12px; padding: 16px 20px; background: var(--surface-soft); }
+.coverage-rail__flow > div { display: grid; grid-template-columns: auto 1fr; gap: 2px 9px; align-items: center; min-width: 0; }
+.coverage-rail__flow > div i { grid-row: 1 / 3; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; color: var(--brand); background: var(--surface); }
+.coverage-rail__flow span { font-size: .82rem; font-weight: 780; }
+.coverage-rail__flow small { color: var(--muted); }
+.coverage-rail__flow > i { color: var(--muted); font-size: .75rem; }
 .safety-form { display: grid; gap: 0; overflow: hidden; padding: 0; }
 .section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 20px; border-bottom: 1px solid var(--line); }
-.gate-count { padding: 6px 9px; border-radius: 999px; background: var(--surface-soft); color: var(--muted); font-size: .72rem; font-weight: 750; font-variant-numeric: tabular-nums; }
-.form-section { display: grid; grid-template-columns: minmax(190px, .65fr) minmax(0, 1.35fr); gap: 24px; padding: 20px; border-bottom: 1px solid var(--line); }
-.form-section__intro { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-content: start; }
-.form-section__intro > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-soft); color: var(--muted); font-size: .68rem; font-weight: 800; }
-.field-grid, .threshold-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.threshold-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.coverage-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .7fr); gap: 16px; }
-label, fieldset { display: grid; align-content: start; gap: 6px; min-width: 0; }
-label > span, legend { color: var(--text); font-size: .8rem; font-weight: 750; }
-input, textarea { width: 100%; min-height: 44px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--text); padding: 10px 12px; font: inherit; }
-textarea { resize: vertical; }
-input:focus, textarea:focus { outline: 2px solid color-mix(in srgb, var(--brand) 28%, transparent); border-color: var(--brand); }
-input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger-color); }
+.catalog-warning { margin: 16px 20px 0; }
+.configuration-grid { display: grid; grid-template-columns: minmax(220px, .7fr) minmax(0, 1.3fr); gap: 28px; padding: 20px; border-bottom: 1px solid var(--line); }
+.configuration-copy { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-content: start; }
+.step-number { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: var(--brand-soft); color: var(--brand); font-size: .7rem; font-weight: 800; }
+.field-stack { display: grid; gap: 16px; }
+label { display: grid; gap: 6px; min-width: 0; }
+label > span { color: var(--text); font-size: .8rem; font-weight: 750; }
+textarea { width: 100%; min-height: 44px; box-sizing: border-box; resize: vertical; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); color: var(--text); padding: 10px 12px; font: inherit; }
+textarea:focus { outline: 2px solid color-mix(in srgb, var(--brand) 28%, transparent); border-color: var(--brand); }
+textarea[aria-invalid="true"] { border-color: var(--danger-color); }
 small { color: var(--muted); line-height: 1.35; }
 .field-error { color: var(--danger-color); font-weight: 650; }
-fieldset { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
-legend { padding: 0 4px; }
-.check-option { grid-template-columns: auto 1fr; align-items: center; min-height: 40px; }
 .risk-ledger { padding: 20px; border-bottom: 1px solid var(--line); }
 .risk-ledger > header { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 12px; }
 .risk-ledger > header > span { color: var(--muted); font-size: .72rem; font-weight: 700; }
 .risk-list { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.risk-list article { min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(150px, auto); align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.risk-list article { min-height: 54px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .risk-list article:last-child { border-bottom: 0; }
+.risk-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: var(--surface-soft); color: var(--muted); }
 .risk-list article > div { display: grid; gap: 2px; }
-.risk-list article > span { color: var(--muted); font-size: .76rem; text-align: right; }
 .reason-field { padding: 20px; border-bottom: 1px solid var(--line); }
 .form-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 20px; background: var(--surface-soft); }
 .form-footer > div { display: grid; gap: 2px; }
 .form-footer span { color: var(--muted); font-size: .74rem; }
 .confirmation-copy { display: grid; justify-items: center; gap: 14px; max-width: 520px; text-align: center; }
 .confirmation-copy > i { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: var(--brand-soft); color: var(--brand); font-size: 1.3rem; }
-.confirmation-copy p { margin: 0; color: var(--muted); line-height: 1.5; }
+.confirmation-copy h3, .confirmation-copy p { margin: 0; }
+.confirmation-copy p { margin-top: 5px; color: var(--muted); line-height: 1.5; }
 .confirmation-copy dl { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .confirmation-copy dl > div { display: grid; gap: 3px; padding: 10px; border-right: 1px solid var(--line); }
 .confirmation-copy dl > div:last-child { border-right: 0; }
 .confirmation-copy dt { color: var(--muted); font-size: .7rem; }
-.confirmation-copy dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
-@media (max-width: 820px) {
-  .form-section { grid-template-columns: 1fr; gap: 16px; }
-  .threshold-grid { grid-template-columns: 1fr; }
+.confirmation-copy dd { margin: 0; font-weight: 800; }
+@media (max-width: 900px) {
+  .coverage-rail__flow { grid-template-columns: 1fr 1fr; }
+  .coverage-rail__flow > i { display: none; }
 }
-@media (max-width: 620px) {
+@media (max-width: 720px) {
+  .configuration-grid { grid-template-columns: 1fr; gap: 16px; }
   .safety-status { grid-template-columns: auto 1fr; }
   .safety-status > :last-child { grid-column: 1 / -1; justify-self: start; }
-  .section-heading, .form-footer, .risk-ledger > header { align-items: stretch; flex-direction: column; }
-  .field-grid, .coverage-grid { grid-template-columns: 1fr; }
-  .risk-list article { grid-template-columns: minmax(0, 1fr) auto; }
-  .risk-list article > span { grid-column: 1 / -1; text-align: left; }
+}
+@media (max-width: 560px) {
+  .coverage-rail > header, .section-heading, .form-footer, .risk-ledger > header { align-items: stretch; flex-direction: column; }
+  .coverage-rail__flow { grid-template-columns: 1fr; }
   .form-footer :deep(.p-button) { width: 100%; min-height: 44px; }
   .message-action { align-items: stretch; flex-direction: column; }
 }

@@ -1,71 +1,80 @@
 import { describe, expect, it } from "vitest";
+import type { PlatformSafetyModelCatalogItem } from "@/features/platform-case-intelligence-safety/api/platform-case-intelligence-safety";
 import {
-  buildPlatformSafetyPolicy,
   createPlatformSafetyDraft,
-  hasUniformPlatformSafetyGates,
-  parsePlatformSafetyLocales,
+  normalizePlatformSafetyReasoning,
   validatePlatformSafetyDraft,
 } from "./platform-case-intelligence-safety";
 
-describe("platform Case Intelligence safety policy", () => {
-  it("builds all mandatory risk gates for every language and channel", () => {
-    const draft = createPlatformSafetyDraft();
-    draft.classifierRevisionId = "classifier-v1";
-    draft.calibratorRevisionId = "calibrator-v1";
-    draft.labelledDatasetRevisionId = "labelled-v1";
-    draft.sentinelDatasetRevisionId = "sentinel-v1";
-    draft.localesText = "ru, en\nru";
-    draft.channels = ["TEXT", "TELEGRAM"];
-    draft.reason = "Первичная активация обязательной защиты";
+const models: PlatformSafetyModelCatalogItem[] = [
+  {
+    id: "grok-4.3",
+    displayName: "Grok 4.3",
+    reasoningEfforts: ["medium", "high"],
+    reteniveTested: false,
+    selectable: true,
+    providerAvailable: true,
+    inputPricePerMillion: "2",
+    cachedInputPricePerMillion: "0.5",
+    outputPricePerMillion: "10",
+  },
+  {
+    id: "grok-4.5",
+    displayName: "Grok 4.5",
+    reasoningEfforts: ["medium", "high"],
+    reteniveTested: true,
+    selectable: true,
+    providerAvailable: true,
+    inputPricePerMillion: "3",
+    cachedInputPricePerMillion: "0.75",
+    outputPricePerMillion: "15",
+  },
+];
 
-    expect(validatePlatformSafetyDraft(draft)).toEqual([]);
-    expect(parsePlatformSafetyLocales(draft.localesText)).toEqual(["ru", "en"]);
+describe("platform Global Safety profile", () => {
+  it("defaults to the recommended available model without asking for internal IDs", () => {
+    const draft = createPlatformSafetyDraft(null, models);
 
-    const policy = buildPlatformSafetyPolicy(
-      draft,
-      "00000000-0000-4000-8000-000000000001",
-    );
-    expect(policy.classes).toHaveLength(4);
-    expect(policy.gates).toHaveLength(16);
-    expect(policy.gates).toContainEqual({
-      locale: "ru",
-      channel: "TEXT",
-      riskClass: "SELF_HARM_OR_SUICIDE",
-      minimumCriticalRecall: 0.95,
-      maximumFalseNegativeRate: 0.05,
-      minimumSamples: 100,
+    expect(draft).toEqual({
+      modelId: "grok-4.5",
+      reasoningEffort: "medium",
+      reason: "",
     });
-  });
-
-  it("blocks an incomplete or unsafe publication draft", () => {
-    const draft = createPlatformSafetyDraft();
-    draft.minimumCriticalRecall = "0.89";
-    draft.maximumFalseNegativeRate = "0.11";
-
-    expect(validatePlatformSafetyDraft(draft)).toEqual(
+    expect(Object.keys(draft)).not.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ path: "classifierRevisionId" }),
-        expect.objectContaining({ path: "minimumCriticalRecall" }),
-        expect.objectContaining({ path: "maximumFalseNegativeRate" }),
-        expect.objectContaining({ path: "reason" }),
+        "classifierRevisionId",
+        "calibratorRevisionId",
+        "labelledDatasetRevisionId",
       ]),
     );
   });
 
-  it("detects existing per-gate threshold differences", () => {
-    const draft = createPlatformSafetyDraft();
-    draft.classifierRevisionId = "classifier-v1";
-    draft.calibratorRevisionId = "calibrator-v1";
-    draft.labelledDatasetRevisionId = "labelled-v1";
-    draft.sentinelDatasetRevisionId = "sentinel-v1";
-    draft.reason = "Проверка порогов";
-    const policy = buildPlatformSafetyPolicy(
-      draft,
-      "00000000-0000-4000-8000-000000000001",
-    );
+  it("validates only the product choices and audit reason", () => {
+    const draft = createPlatformSafetyDraft(null, models);
+    expect(validatePlatformSafetyDraft(draft, models, false)).toEqual([
+      expect.objectContaining({ path: "reason" }),
+    ]);
 
-    expect(hasUniformPlatformSafetyGates(policy)).toBe(true);
-    policy.gates[1]!.minimumSamples += 1;
-    expect(hasUniformPlatformSafetyGates(policy)).toBe(false);
+    draft.reason = "Первичная активация обязательной защиты";
+    expect(validatePlatformSafetyDraft(draft, models, false)).toEqual([]);
+    expect(validatePlatformSafetyDraft(draft, models, true)).toEqual([
+      expect.objectContaining({ path: "modelId" }),
+    ]);
+  });
+
+  it("keeps reasoning within the selected model capabilities", () => {
+    const draft = {
+      modelId: "grok-4.3",
+      reasoningEffort: "high" as const,
+      reason: "Смена модели",
+    };
+    const mediumOnly: PlatformSafetyModelCatalogItem = {
+      ...models[0]!,
+      reasoningEfforts: ["medium"],
+    };
+
+    normalizePlatformSafetyReasoning(draft, mediumOnly);
+
+    expect(draft.reasoningEffort).toBe("medium");
   });
 });
