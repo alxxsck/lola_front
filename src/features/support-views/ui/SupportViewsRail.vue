@@ -12,6 +12,8 @@ const props = defineProps<{
   saved: readonly SavedSupportViewResponseDto[];
   selection: SupportViewSelection | null;
   searchScope: SupportSearchScope;
+  canReadCases?: boolean;
+  canReadConversations?: boolean;
   canCreate: boolean;
   canManageAll: boolean;
   mutating: boolean;
@@ -48,6 +50,23 @@ const activeSaved = computed(() => {
 const canSaveSurface = computed(
   () => props.searchScope !== "END_USERS" && !props.selection,
 );
+type VisibleSystemView = Pick<SupportViewPresetResponseDto, "code"> &
+  Partial<Pick<SupportViewPresetResponseDto, "count" | "freshness">> & {
+    pending: boolean;
+  };
+const visibleSystem = computed<VisibleSystemView[]>(() => {
+  if (props.system.length) {
+    return props.system.map((item) => ({ ...item, pending: false }));
+  }
+  return [
+    ...(props.canReadCases
+      ? (["MY_ACTIVE", "MY_TEAM_UNASSIGNED", "ALL_CASES"] as const)
+      : []),
+    ...(props.canReadConversations
+      ? (["ALL_CONVERSATIONS"] as const)
+      : []),
+  ].map((code) => ({ code, pending: true }));
+});
 
 watch(
   () => activeSaved.value?.id,
@@ -76,9 +95,14 @@ const scopeNames = {
 } as const;
 
 function countLabel(item: {
-  count: { state: string; value?: number | null; cappedAt: number };
+  count?: { state: string; value?: number | null; cappedAt: number };
 }): string {
-  if (item.count.state === "UNAVAILABLE" || item.count.value == null) return "";
+  if (
+    !item.count ||
+    item.count.state === "UNAVAILABLE" ||
+    item.count.value == null
+  )
+    return "";
   return item.count.state === "LOWER_BOUND"
     ? `≥${item.count.value}`
     : String(item.count.value);
@@ -124,9 +148,11 @@ function submitCreate(): void {
 
     <nav class="view-list" aria-label="Системные представления">
       <button
-        v-for="item in system"
+        v-for="item in visibleSystem"
         :key="item.code"
         type="button"
+        :disabled="item.pending"
+        :aria-busy="item.pending"
         :class="{
           active: selection?.kind === 'SYSTEM' && selection.code === item.code,
         }"
@@ -139,7 +165,7 @@ function submitCreate(): void {
         >
         <small v-if="countLabel(item)">{{ countLabel(item) }}</small>
         <i
-          v-if="item.freshness.state !== 'READY'"
+          v-if="item.freshness && item.freshness.state !== 'READY'"
           class="pi pi-clock freshness"
           :title="freshnessLabel(item.freshness.state)"
         />

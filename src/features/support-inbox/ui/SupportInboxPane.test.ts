@@ -114,6 +114,26 @@ describe("SupportInboxPane", () => {
     expect(wrapper.find(".inbox-tools__trigger").exists()).toBe(true);
   });
 
+  it("shows canonical system views before remote view metadata arrives", async () => {
+    const wrapper = render({
+      mode: "ALL_CONVERSATIONS",
+      viewSystem: [],
+      viewSelection: null,
+      viewActive: false,
+    });
+    const trigger = wrapper.get(".inbox-tools__trigger");
+
+    expect(trigger.text()).toContain("Все диалоги");
+    expect(trigger.text()).toContain("Системное представление");
+
+    await trigger.trigger("click");
+
+    expect(wrapper.text()).toContain("Мои обращения");
+    expect(wrapper.text()).toContain("Неназначенные команды");
+    expect(wrapper.text()).toContain("Все обращения");
+    expect(wrapper.text()).toContain("Все диалоги");
+  });
+
   it("keeps search tools compact until the operator opens them", async () => {
     const wrapper = render({ viewSystem: [systemView] });
     const trigger = wrapper.get(".inbox-tools__trigger");

@@ -2946,7 +2946,7 @@ onMounted(async () => {
   syncCompactWorkspace(compactWorkspaceMedia);
   mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
   compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
-  await inbox.load();
+  const initialInboxLoad = inbox.load();
   const initialCustomSearch = shouldLoadCustomSupportView(
     route.query,
     hasSupportSearchCriteria(searchState.value),
@@ -2965,6 +2965,7 @@ onMounted(async () => {
     hasSupportSearchCriteria(searchState.value)
   )
     await supportSearch.search();
+  await initialInboxLoad;
   if (canReadAvailability.value) {
     await availability.load();
   }

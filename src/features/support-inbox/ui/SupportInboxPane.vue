@@ -95,6 +95,17 @@ const visibleModeCount = computed(
 const activeModeIsSecond = computed(
   () => props.canReadCases && props.mode === "ALL_CONVERSATIONS",
 );
+const displayedViewSelection = computed<SupportViewSelection | null>(() => {
+  if (props.viewSelection) return props.viewSelection;
+  if (props.searchActive || props.viewSystem.length) return null;
+  return {
+    kind: "SYSTEM",
+    code: props.mode === "CASES" ? "ALL_CASES" : "ALL_CONVERSATIONS",
+  };
+});
+const displayedViewActive = computed(
+  () => props.viewActive || Boolean(displayedViewSelection.value),
+);
 
 watch(
   () => [props.items.length, props.loading] as const,
@@ -123,10 +134,10 @@ const activeFilterCount = computed(() =>
 );
 
 const searchToolsTitle = computed(() => {
-  if (props.viewSelection?.kind === "SYSTEM")
-    return systemViewNames[props.viewSelection.code] ?? "Представление";
-  if (props.viewSelection?.kind === "SAVED") {
-    const selectedId = props.viewSelection.id;
+  if (displayedViewSelection.value?.kind === "SYSTEM")
+    return systemViewNames[displayedViewSelection.value.code] ?? "Представление";
+  if (displayedViewSelection.value?.kind === "SAVED") {
+    const selectedId = displayedViewSelection.value.id;
     return (
       props.viewSaved.find((item) => item.id === selectedId)?.draft
         .displayName ?? "Сохранённое представление"
@@ -148,8 +159,10 @@ function filterCountLabel(count: number): string {
 }
 
 const searchToolsDescription = computed(() => {
-  if (props.viewSelection?.kind === "SYSTEM") return "Системное представление";
-  if (props.viewSelection?.kind === "SAVED") return "Сохранённое представление";
+  if (displayedViewSelection.value?.kind === "SYSTEM")
+    return "Системное представление";
+  if (displayedViewSelection.value?.kind === "SAVED")
+    return "Сохранённое представление";
   if (props.searchActive) {
     const count = activeFilterCount.value;
     const filters = count ? ` · ${filterCountLabel(count)}` : "";
@@ -378,20 +391,20 @@ function unreadLabel(
       <button
         type="button"
         class="inbox-tools__trigger"
-        :class="{ active: searchActive || viewActive }"
+        :class="{ active: searchActive || displayedViewActive }"
         :aria-expanded="searchToolsExpanded"
         :aria-controls="searchToolsPanelId"
         @click="toggleSearchTools"
       >
         <span class="inbox-tools__icon" aria-hidden="true">
-          <i :class="viewActive ? 'pi pi-bookmark' : 'pi pi-search'" />
+          <i :class="displayedViewActive ? 'pi pi-bookmark' : 'pi pi-search'" />
         </span>
         <span class="inbox-tools__copy">
           <strong>{{ searchToolsTitle }}</strong>
           <small>{{ searchToolsDescription }}</small>
         </span>
         <span
-          v-if="!searchActive && !viewActive"
+          v-if="!searchActive && !displayedViewActive"
           class="inbox-tools__shortcut"
           aria-hidden="true"
           >⌘ K</span
@@ -409,8 +422,10 @@ function unreadLabel(
           <SupportViewsRail
             :system="viewSystem"
             :saved="viewSaved"
-            :selection="viewSelection"
+            :selection="displayedViewSelection"
             :search-scope="searchState.scope"
+            :can-read-cases="canReadCases"
+            :can-read-conversations="canReadConversations"
             :can-create="viewCanCreate"
             :can-manage-all="viewCanManageAll"
             :mutating="viewMutating"
