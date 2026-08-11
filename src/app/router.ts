@@ -398,6 +398,55 @@ export const router = createRouter({
           },
         },
         {
+          path: "support/settings/case-intelligence/evaluation",
+          name: "support-case-intelligence-evaluation",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAll: [
+              "project.case_intelligence.read",
+              "project.case_intelligence.release.manage",
+            ],
+          },
+        },
+        {
+          path: "support/settings/case-intelligence/observability",
+          name: "support-case-intelligence-observability",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAll: [
+              "project.case_intelligence.read",
+              "project.case_intelligence.cost.read",
+            ],
+          },
+        },
+        {
+          path: "support/settings/case-intelligence/decision-log",
+          name: "support-case-intelligence-decisions",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAll: [
+              "project.case_intelligence.read",
+              "project.case_intelligence.decisions.read",
+            ],
+          },
+        },
+        {
+          path: "support/settings/case-intelligence/versions-audit",
+          name: "support-case-intelligence-versions",
+          component: () =>
+            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.case_intelligence.read",
+          },
+        },
+        {
           path: "support/settings/macros",
           name: "support-macro-settings",
           component: () => import("@/pages/SupportMacroSettingsPage.vue"),
@@ -758,6 +807,16 @@ router.beforeEach(async (to) => {
   if (
     Array.isArray(to.meta.projectPermissionsAny) &&
     !to.meta.projectPermissionsAny.some((permission) =>
+      hasProjectPermission(
+        auth.project?.effectivePermissionCodes ?? [],
+        permission as Parameters<typeof hasProjectPermission>[1],
+      ),
+    )
+  )
+    return auth.authenticatedLandingPath;
+  if (
+    Array.isArray(to.meta.projectPermissionsAll) &&
+    !to.meta.projectPermissionsAll.every((permission) =>
       hasProjectPermission(
         auth.project?.effectivePermissionCodes ?? [],
         permission as Parameters<typeof hasProjectPermission>[1],

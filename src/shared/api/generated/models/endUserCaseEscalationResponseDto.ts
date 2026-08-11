@@ -25,11 +25,11 @@ export interface EndUserCaseEscalationResponseDto {
   /** @nullable */
   claimedAt?: string | null;
   /** @nullable */
-  closeReason?: string | null;
-  /** @nullable */
   closedAt?: string | null;
   /** @nullable */
   closedBy?: EndUserCaseEscalationResponseDtoClosedBy;
+  /** @nullable */
+  closeReason?: string | null;
   /** @nullable */
   conversationId?: string | null;
   createdAt: string;

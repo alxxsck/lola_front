@@ -89,3 +89,23 @@ test("validator rejects mutable or incomplete Project Safety projection", () => 
     /must publish projectOverrideAllowed/,
   );
 });
+
+test("validator rejects an evaluation report without an atomic admission gate", () => {
+  const broken = cloneDocument();
+  delete broken.components.schemas.CaseIntelligenceEvaluationReportResponseDto
+    .properties.capacityGatePassed;
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /must publish capacityGatePassed/,
+  );
+});
+
+test("validator rejects a decision log that loses immutable version pins", () => {
+  const broken = cloneDocument();
+  delete broken.components.schemas.CaseIntelligenceDecisionLogItemDto.properties
+    .calibratorRevisionId;
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /must publish calibratorRevisionId/,
+  );
+});

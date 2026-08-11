@@ -375,6 +375,34 @@ describe("authentication routes", () => {
     expect(router.resolve("/ai-costs").name).not.toBe("ai-operations");
   });
 
+  it("declares the Case Intelligence evaluation, cost, decision and version routes with exact authority", () => {
+    expect(
+      router.resolve("/support/settings/case-intelligence/evaluation").meta
+        .projectPermissionsAll,
+    ).toEqual([
+      "project.case_intelligence.read",
+      "project.case_intelligence.release.manage",
+    ]);
+    expect(
+      router.resolve("/support/settings/case-intelligence/observability").meta
+        .projectPermissionsAll,
+    ).toEqual([
+      "project.case_intelligence.read",
+      "project.case_intelligence.cost.read",
+    ]);
+    expect(
+      router.resolve("/support/settings/case-intelligence/decision-log").meta
+        .projectPermissionsAll,
+    ).toEqual([
+      "project.case_intelligence.read",
+      "project.case_intelligence.decisions.read",
+    ]);
+    expect(
+      router.resolve("/support/settings/case-intelligence/versions-audit").meta
+        .projectPermission,
+    ).toBe("project.case_intelligence.read");
+  });
+
   it("declares fail-closed Reporting routes for readers and authors", () => {
     expect(router.resolve("/reports").meta.reportingAccess).toBe("READ");
     expect(router.resolve("/reports/new").meta.reportingAccess).toBe(

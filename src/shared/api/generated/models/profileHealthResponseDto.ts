@@ -28,8 +28,8 @@ export interface ProfileHealthResponseDto {
   profileAgeDistribution: ProfileAgeDistributionResponseDto;
   readiness: ProfileReadinessResponseDto;
   requestCount: number;
-  sessionRequestsWithSnapshot: number;
   sessionRequestsWithoutSnapshot: number;
+  sessionRequestsWithSnapshot: number;
   since: string;
   totalUsers: number;
   usersWithSnapshot: number;

@@ -1418,6 +1418,12 @@ const canManageSelectedCase = computed(
       "project.cases.manage",
     ),
 );
+const canExplainSelectedCase = computed(() =>
+  hasProjectPermission(
+    auth.project?.effectivePermissionCodes ?? [],
+    "project.case_intelligence.decisions.read",
+  ),
+);
 const canReadSelectedCaseDesk = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
@@ -4039,6 +4045,8 @@ onBeforeUnmount(() => {
             :can-manage-case="canManageSelectedCase"
             :can-read-sla-context="canReadSlaContext"
             :can-read-routing-context="canReadRoutingContext"
+            :project-id="auth.project?.id ?? ''"
+            :can-explain-case="canExplainSelectedCase"
             :reservation-reconcile-attempt="reservationReconcileAttempt"
             :reservation-reconcile-in-flight="reservationReconcileInFlight"
             :assignment-controller="assignmentSurfaceController"

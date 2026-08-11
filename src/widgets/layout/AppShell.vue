@@ -270,6 +270,18 @@ const navigationItems = computed(() => [
       supportSection: true,
     },
     {
+      label: "Качество и версии",
+      icon: "pi pi-verified",
+      to: "/support/settings/case-intelligence/evaluation",
+      project: true,
+      projectPermissionsAll: [
+        "project.case_intelligence.read",
+        "project.case_intelligence.release.manage",
+      ],
+      nested: true,
+      supportSection: true,
+    },
+    {
       label: "Календарь и SLA",
       icon: "pi pi-clock",
       to: "/support/settings/sla-calendars",
@@ -424,6 +436,13 @@ const navigation = computed(() => {
         )) &&
       (!Array.isArray(item.projectPermissionsAny) ||
         item.projectPermissionsAny.some((permission) =>
+          hasProjectPermission(
+            auth.project?.effectivePermissionCodes ?? [],
+            permission as Parameters<typeof hasProjectPermission>[1],
+          ),
+        )) &&
+      (!Array.isArray(item.projectPermissionsAll) ||
+        item.projectPermissionsAll.every((permission) =>
           hasProjectPermission(
             auth.project?.effectivePermissionCodes ?? [],
             permission as Parameters<typeof hasProjectPermission>[1],

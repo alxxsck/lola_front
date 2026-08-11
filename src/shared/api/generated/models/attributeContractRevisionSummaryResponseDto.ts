@@ -13,10 +13,10 @@ export interface AttributeContractRevisionSummaryResponseDto {
   fieldCount: number;
   id: string;
   projectId: string;
-  publishReason: string;
   publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
+  publishReason: string;
   validationHash: string;
   version: number;
 }

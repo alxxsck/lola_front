@@ -119,9 +119,13 @@ import type {
   CaseIntelligenceEscalationDryRunResponseDto,
   CaseIntelligenceEscalationPolicyDto,
   CaseIntelligenceEscalationRevisionResponseDto,
+  CaseIntelligenceEvaluationDatasetsParams,
+  CaseIntelligenceEvaluationHistoryResponseDto,
   CaseIntelligenceEvaluationReportResponseDto,
+  CaseIntelligenceEvaluationsHistoryParams,
   CaseIntelligenceExplainCaseParams,
   CaseIntelligenceFailedWorkPageResponseDto,
+  CaseIntelligenceLabelledDatasetHistoryResponseDto,
   CaseIntelligenceLabelledDatasetResponseDto,
   CaseIntelligenceLifecycleCommandDto,
   CaseIntelligenceListDecisionsParams,
@@ -1710,24 +1714,6 @@ export const projectAIAnalysisCreate = (
   );
 };
 
-export const projectAIAnalysisEstimate = (
-  projectId: string,
-  estimateProjectAIAnalysisDto: BodyType<EstimateProjectAIAnalysisDto>,
-  options?: SecondParameter<
-    typeof request<ProjectAIAnalysisEstimateResponseDto>
-  >,
-) => {
-  return request<ProjectAIAnalysisEstimateResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-analyses/estimate`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: estimateProjectAIAnalysisDto,
-    },
-    options,
-  );
-};
-
 export const projectAIAnalysisDetail = (
   projectId: string,
   analysisId: string,
@@ -1751,6 +1737,24 @@ export const projectAIAnalysisCancel = (
     {
       url: `/api/v1/admin/projects/${projectId}/ai-analyses/${analysisId}/cancel`,
       method: "POST",
+    },
+    options,
+  );
+};
+
+export const projectAIAnalysisEstimate = (
+  projectId: string,
+  estimateProjectAIAnalysisDto: BodyType<EstimateProjectAIAnalysisDto>,
+  options?: SecondParameter<
+    typeof request<ProjectAIAnalysisEstimateResponseDto>
+  >,
+) => {
+  return request<ProjectAIAnalysisEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-analyses/estimate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: estimateProjectAIAnalysisDto,
     },
     options,
   );
@@ -1904,21 +1908,6 @@ export const aiOperationsList = (
   );
 };
 
-export const aiOperationsSummary = (
-  projectId: string,
-  params: AiOperationsSummaryParams,
-  options?: SecondParameter<typeof request<AiOperationSummaryResponseDto>>,
-) => {
-  return request<AiOperationSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/ai-operations/summary`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
 export const aiOperationsDetail = (
   projectId: string,
   operationId: string,
@@ -1962,6 +1951,21 @@ export const aiOperationsSubjects = (
   return request<AiOperationSubjectPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/ai-operations/${operationId}/subjects`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const aiOperationsSummary = (
+  projectId: string,
+  params: AiOperationsSummaryParams,
+  options?: SecondParameter<typeof request<AiOperationSummaryResponseDto>>,
+) => {
+  return request<AiOperationSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/ai-operations/summary`,
       method: "GET",
       params,
     },
@@ -2457,6 +2461,22 @@ export const caseIntelligencePublishDetection = (
   );
 };
 
+export const caseIntelligenceDetectionRevision = (
+  projectId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceDetectionRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceDetectionRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/detection/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const caseIntelligenceValidateDetection = (
   projectId: unknown,
   caseIntelligenceDetectionPolicyDto: BodyType<CaseIntelligenceDetectionPolicyDto>,
@@ -2565,6 +2585,39 @@ export const caseIntelligencePublishEscalation = (
   );
 };
 
+export const caseIntelligenceEscalationRevision = (
+  projectId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEscalationRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEscalationRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/escalation/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceEvaluationDatasets = (
+  projectId: string,
+  params?: CaseIntelligenceEvaluationDatasetsParams,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceLabelledDatasetHistoryResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceLabelledDatasetHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/evaluation/datasets`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const caseIntelligencePublishEvaluationDataset = (
   projectId: string,
   publishCaseIntelligenceDatasetDto: BodyType<PublishCaseIntelligenceDatasetDto>,
@@ -2594,6 +2647,23 @@ export const caseIntelligenceEvaluationDataset = (
     {
       url: `/api/v1/admin/projects/${projectId}/case-intelligence/evaluation/datasets/${datasetId}`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceEvaluationsHistory = (
+  projectId: string,
+  params?: CaseIntelligenceEvaluationsHistoryParams,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceEvaluationHistoryResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceEvaluationHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/evaluations`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -2665,6 +2735,22 @@ export const caseIntelligenceObservability = (
   );
 };
 
+export const caseIntelligenceGetRelease = (
+  projectId: string,
+  releaseId: string,
+  options?: SecondParameter<
+    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
+  >,
+) => {
+  return request<CaseIntelligenceReleaseRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/${releaseId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const caseIntelligenceActivateRelease = (
   projectId: string,
   activateCaseIntelligenceReleaseDto: BodyType<ActivateCaseIntelligenceReleaseDto>,
@@ -2714,22 +2800,6 @@ export const caseIntelligenceRollbackRelease = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: rollbackCaseIntelligenceReleaseDto,
-    },
-    options,
-  );
-};
-
-export const caseIntelligenceGetRelease = (
-  projectId: string,
-  releaseId: string,
-  options?: SecondParameter<
-    typeof request<CaseIntelligenceReleaseRevisionResponseDto>
-  >,
-) => {
-  return request<CaseIntelligenceReleaseRevisionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/case-intelligence/releases/${releaseId}`,
-      method: "GET",
     },
     options,
   );
@@ -2816,6 +2886,61 @@ export const supportInternalNoteCreate = (
   );
 };
 
+export const supportInternalNoteCorrect = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  correctSupportInternalNoteDto: BodyType<CorrectSupportInternalNoteDto>,
+  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
+) => {
+  return request<SupportInternalNoteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/corrections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctSupportInternalNoteDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteRevisions = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  params?: SupportInternalNoteRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportInternalNoteRevisionPageResponseDto>
+  >,
+) => {
+  return request<SupportInternalNoteRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportInternalNoteTombstone = (
+  projectId: string,
+  caseId: string,
+  noteId: string,
+  tombstoneSupportInternalNoteDto: BodyType<TombstoneSupportInternalNoteDto>,
+  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
+) => {
+  return request<SupportInternalNoteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/tombstone`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: tombstoneSupportInternalNoteDto,
+    },
+    options,
+  );
+};
+
 export const supportInternalNoteAttachmentListDraft = (
   projectId: string,
   caseId: string,
@@ -2828,25 +2953,6 @@ export const supportInternalNoteAttachmentListDraft = (
     {
       url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachment-drafts/${draftKey}`,
       method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportInternalNoteAttachmentStartUpload = (
-  projectId: string,
-  caseId: string,
-  createSupportInternalNoteAttachmentUploadDto: BodyType<CreateSupportInternalNoteAttachmentUploadDto>,
-  options?: SecondParameter<
-    typeof request<SupportInternalNoteAttachmentUploadResponseDto>
-  >,
-) => {
-  return request<SupportInternalNoteAttachmentUploadResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/uploads`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createSupportInternalNoteAttachmentUploadDto,
     },
     options,
   );
@@ -2920,56 +3026,20 @@ export const supportInternalNoteAttachmentRevoke = (
   );
 };
 
-export const supportInternalNoteCorrect = (
+export const supportInternalNoteAttachmentStartUpload = (
   projectId: string,
   caseId: string,
-  noteId: string,
-  correctSupportInternalNoteDto: BodyType<CorrectSupportInternalNoteDto>,
-  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
-) => {
-  return request<SupportInternalNoteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/corrections`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: correctSupportInternalNoteDto,
-    },
-    options,
-  );
-};
-
-export const supportInternalNoteRevisions = (
-  projectId: string,
-  caseId: string,
-  noteId: string,
-  params?: SupportInternalNoteRevisionsParams,
+  createSupportInternalNoteAttachmentUploadDto: BodyType<CreateSupportInternalNoteAttachmentUploadDto>,
   options?: SecondParameter<
-    typeof request<SupportInternalNoteRevisionPageResponseDto>
+    typeof request<SupportInternalNoteAttachmentUploadResponseDto>
   >,
 ) => {
-  return request<SupportInternalNoteRevisionPageResponseDto>(
+  return request<SupportInternalNoteAttachmentUploadResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/revisions`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const supportInternalNoteTombstone = (
-  projectId: string,
-  caseId: string,
-  noteId: string,
-  tombstoneSupportInternalNoteDto: BodyType<TombstoneSupportInternalNoteDto>,
-  options?: SecondParameter<typeof request<SupportInternalNoteResponseDto>>,
-) => {
-  return request<SupportInternalNoteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/${noteId}/tombstone`,
+      url: `/api/v1/admin/projects/${projectId}/cases/${caseId}/internal-notes/attachments/uploads`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: tombstoneSupportInternalNoteDto,
+      data: createSupportInternalNoteAttachmentUploadDto,
     },
     options,
   );
@@ -3020,6 +3090,63 @@ export const supportMacroNoteDraftEdit = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: editSupportMacroReplyDraftDto,
+    },
+    options,
+  );
+};
+
+export const conversationMessageContentCurrent = (
+  projectId: string,
+  conversationId: string,
+  messageId: string,
+  options?: SecondParameter<
+    typeof request<ConversationMessageContentResponseDto>
+  >,
+) => {
+  return request<ConversationMessageContentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const conversationMessageContentCorrect = (
+  projectId: string,
+  conversationId: string,
+  messageId: string,
+  correctConversationMessageContentDto: BodyType<CorrectConversationMessageContentDto>,
+  options?: SecondParameter<
+    typeof request<ConversationMessageContentResponseDto>
+  >,
+) => {
+  return request<ConversationMessageContentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content/corrections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: correctConversationMessageContentDto,
+    },
+    options,
+  );
+};
+
+export const conversationMessageContentTombstone = (
+  projectId: string,
+  conversationId: string,
+  messageId: string,
+  tombstoneConversationMessageContentDto: BodyType<TombstoneConversationMessageContentDto>,
+  options?: SecondParameter<
+    typeof request<ConversationMessageContentResponseDto>
+  >,
+) => {
+  return request<ConversationMessageContentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content/tombstone`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: tombstoneConversationMessageContentDto,
     },
     options,
   );
@@ -3157,63 +3284,6 @@ export const conversationContentGovernanceUpdateRollout = (
   );
 };
 
-export const conversationMessageContentCurrent = (
-  projectId: string,
-  conversationId: string,
-  messageId: string,
-  options?: SecondParameter<
-    typeof request<ConversationMessageContentResponseDto>
-  >,
-) => {
-  return request<ConversationMessageContentResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const conversationMessageContentCorrect = (
-  projectId: string,
-  conversationId: string,
-  messageId: string,
-  correctConversationMessageContentDto: BodyType<CorrectConversationMessageContentDto>,
-  options?: SecondParameter<
-    typeof request<ConversationMessageContentResponseDto>
-  >,
-) => {
-  return request<ConversationMessageContentResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content/corrections`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: correctConversationMessageContentDto,
-    },
-    options,
-  );
-};
-
-export const conversationMessageContentTombstone = (
-  projectId: string,
-  conversationId: string,
-  messageId: string,
-  tombstoneConversationMessageContentDto: BodyType<TombstoneConversationMessageContentDto>,
-  options?: SecondParameter<
-    typeof request<ConversationMessageContentResponseDto>
-  >,
-) => {
-  return request<ConversationMessageContentResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content/tombstone`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: tombstoneConversationMessageContentDto,
-    },
-    options,
-  );
-};
-
 export const endUserCasePolicyGet = (
   projectId: string,
   options?: SecondParameter<typeof request<EndUserCasePolicyResponseDto>>,
@@ -3291,45 +3361,6 @@ export const endUserCasesList = (
       url: `/api/v1/admin/projects/${projectId}/end-user-cases`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const endUserCasesAssignees = (
-  projectId: string,
-  options?: SecondParameter<typeof request<EndUserCaseAssigneesResponseDto>>,
-) => {
-  return request<EndUserCaseAssigneesResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/assignees`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const endUserCasesSummary = (
-  projectId: string,
-  options?: SecondParameter<typeof request<EndUserCaseSummaryResponseDto>>,
-) => {
-  return request<EndUserCaseSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const endUserCasesCostSummary = (
-  projectId: string,
-  options?: SecondParameter<typeof request<EndUserCaseCostSummaryResponseDto>>,
-) => {
-  return request<EndUserCaseCostSummaryResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary/cost`,
-      method: "GET",
     },
     options,
   );
@@ -3678,6 +3709,45 @@ export const endUserCasesWorkflow = (
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       data: updateEndUserCaseWorkflowDto,
+    },
+    options,
+  );
+};
+
+export const endUserCasesAssignees = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseAssigneesResponseDto>>,
+) => {
+  return request<EndUserCaseAssigneesResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/assignees`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseSummaryResponseDto>>,
+) => {
+  return request<EndUserCaseSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const endUserCasesCostSummary = (
+  projectId: string,
+  options?: SecondParameter<typeof request<EndUserCaseCostSummaryResponseDto>>,
+) => {
+  return request<EndUserCaseCostSummaryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/end-user-cases/summary/cost`,
+      method: "GET",
     },
     options,
   );
@@ -4643,70 +4713,6 @@ export const integrationConnectionList = (
   );
 };
 
-export const integrationConnectionCreateAmplitude = (
-  projectId: string,
-  createAmplitudeConnectionDto: BodyType<CreateAmplitudeConnectionDto>,
-  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
-) => {
-  return request<IntegrationConnectionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createAmplitudeConnectionDto,
-    },
-    options,
-  );
-};
-
-export const integrationConnectionCreateAmplitudeInbound = (
-  projectId: string,
-  createAmplitudeInboundConnectionDto: BodyType<CreateAmplitudeInboundConnectionDto>,
-  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
-) => {
-  return request<IntegrationConnectionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude/inbound`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createAmplitudeInboundConnectionDto,
-    },
-    options,
-  );
-};
-
-export const integrationConnectionCreateCustomerIo = (
-  projectId: string,
-  createCustomerIoConnectionDto: BodyType<CreateCustomerIoConnectionDto>,
-  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
-) => {
-  return request<IntegrationConnectionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createCustomerIoConnectionDto,
-    },
-    options,
-  );
-};
-
-export const integrationConnectionCreateCustomerIoInbound = (
-  projectId: string,
-  createCustomerIoInboundConnectionDto: BodyType<CreateCustomerIoInboundConnectionDto>,
-  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
-) => {
-  return request<IntegrationConnectionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io/inbound`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createCustomerIoInboundConnectionDto,
-    },
-    options,
-  );
-};
-
 export const integrationConnectionGet = (
   projectId: string,
   connectionId: string,
@@ -4952,6 +4958,70 @@ export const integrationConnectionGetTest = (
   );
 };
 
+export const integrationConnectionCreateAmplitude = (
+  projectId: string,
+  createAmplitudeConnectionDto: BodyType<CreateAmplitudeConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionCreateAmplitudeInbound = (
+  projectId: string,
+  createAmplitudeInboundConnectionDto: BodyType<CreateAmplitudeInboundConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/amplitude/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAmplitudeInboundConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionCreateCustomerIo = (
+  projectId: string,
+  createCustomerIoConnectionDto: BodyType<CreateCustomerIoConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoConnectionDto,
+    },
+    options,
+  );
+};
+
+export const integrationConnectionCreateCustomerIoInbound = (
+  projectId: string,
+  createCustomerIoInboundConnectionDto: BodyType<CreateCustomerIoInboundConnectionDto>,
+  options?: SecondParameter<typeof request<IntegrationConnectionResponseDto>>,
+) => {
+  return request<IntegrationConnectionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-connections/customer-io/inbound`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createCustomerIoInboundConnectionDto,
+    },
+    options,
+  );
+};
+
 export const integrationEventRouteList = (
   projectId: string,
   options?: SecondParameter<
@@ -4962,6 +5032,74 @@ export const integrationEventRouteList = (
     {
       url: `/api/v1/admin/projects/${projectId}/integration-event-routes`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteDisable = (
+  projectId: string,
+  routeId: string,
+  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationEventRouteVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteEditDraft = (
+  projectId: string,
+  routeId: string,
+  editIntegrationEventRouteDraftDto: BodyType<EditIntegrationEventRouteDraftDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/draft`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: editIntegrationEventRouteDraftDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRouteEnable = (
+  projectId: string,
+  routeId: string,
+  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/enable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: integrationEventRouteVersionDto,
+    },
+    options,
+  );
+};
+
+export const integrationEventRoutePublish = (
+  projectId: string,
+  routeId: string,
+  publishIntegrationEventRouteDto: BodyType<PublishIntegrationEventRouteDto>,
+  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
+) => {
+  return request<IntegrationEventRouteResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishIntegrationEventRouteDto,
     },
     options,
   );
@@ -5150,74 +5288,6 @@ export const integrationEventRouteEventDefinitionSummary = (
   );
 };
 
-export const integrationEventRouteDisable = (
-  projectId: string,
-  routeId: string,
-  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
-  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
-) => {
-  return request<IntegrationEventRouteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/disable`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: integrationEventRouteVersionDto,
-    },
-    options,
-  );
-};
-
-export const integrationEventRouteEditDraft = (
-  projectId: string,
-  routeId: string,
-  editIntegrationEventRouteDraftDto: BodyType<EditIntegrationEventRouteDraftDto>,
-  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
-) => {
-  return request<IntegrationEventRouteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/draft`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: editIntegrationEventRouteDraftDto,
-    },
-    options,
-  );
-};
-
-export const integrationEventRouteEnable = (
-  projectId: string,
-  routeId: string,
-  integrationEventRouteVersionDto: BodyType<IntegrationEventRouteVersionDto>,
-  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
-) => {
-  return request<IntegrationEventRouteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/enable`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: integrationEventRouteVersionDto,
-    },
-    options,
-  );
-};
-
-export const integrationEventRoutePublish = (
-  projectId: string,
-  routeId: string,
-  publishIntegrationEventRouteDto: BodyType<PublishIntegrationEventRouteDto>,
-  options?: SecondParameter<typeof request<IntegrationEventRouteResponseDto>>,
-) => {
-  return request<IntegrationEventRouteResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-event-routes/${routeId}/publish`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: publishIntegrationEventRouteDto,
-    },
-    options,
-  );
-};
-
 export const integrationRecoveryOperationsList = (
   projectId: string,
   params?: IntegrationRecoveryOperationsListParams,
@@ -5230,6 +5300,23 @@ export const integrationRecoveryOperationsList = (
       url: `/api/v1/admin/projects/${projectId}/integration-operations`,
       method: "GET",
       params,
+    },
+    options,
+  );
+};
+
+export const integrationRecoveryOperationsDetail = (
+  projectId: string,
+  operationKind: "INGRESS" | "DISPATCH" | "CONNECTION",
+  operationId: string,
+  options?: SecondParameter<
+    typeof request<IntegrationRecoveryOperationDetailDto>
+  >,
+) => {
+  return request<IntegrationRecoveryOperationDetailDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/integration-operations/${operationKind}/${operationId}`,
+      method: "GET",
     },
     options,
   );
@@ -5346,23 +5433,6 @@ export const integrationRecoveryOperationsReplayIngress = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: replayIntegrationIngressDto,
-    },
-    options,
-  );
-};
-
-export const integrationRecoveryOperationsDetail = (
-  projectId: string,
-  operationKind: "INGRESS" | "DISPATCH" | "CONNECTION",
-  operationId: string,
-  options?: SecondParameter<
-    typeof request<IntegrationRecoveryOperationDetailDto>
-  >,
-) => {
-  return request<IntegrationRecoveryOperationDetailDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/integration-operations/${operationKind}/${operationId}`,
-      method: "GET",
     },
     options,
   );
@@ -5513,24 +5583,6 @@ export const projectMembershipCreate = (
 };
 
 /**
- * @summary List active Project Roles assignable through Membership management
- */
-export const projectMembershipAssignableRoles = (
-  projectId: string,
-  options?: SecondParameter<
-    typeof request<AssignableProjectRoleCatalogResponseDto>
-  >,
-) => {
-  return request<AssignableProjectRoleCatalogResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-/**
  * @summary Get one safe Project Membership summary
  */
 export const projectMembershipGet = (
@@ -5587,6 +5639,24 @@ export const projectMembershipRemove = (
   );
 };
 
+/**
+ * @summary List active Project Roles assignable through Membership management
+ */
+export const projectMembershipAssignableRoles = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<AssignableProjectRoleCatalogResponseDto>
+  >,
+) => {
+  return request<AssignableProjectRoleCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/memberships/assignable-roles`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const notificationDestinationList = (
   projectId: string,
   options?: SecondParameter<
@@ -5613,22 +5683,6 @@ export const notificationDestinationCreate = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createSlackNotificationDestinationDto,
-    },
-    options,
-  );
-};
-
-export const notificationDestinationCreateTelegram = (
-  projectId: string,
-  createOperationalTelegramDestinationDto: BodyType<CreateOperationalTelegramDestinationDto>,
-  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
-) => {
-  return request<NotificationDestinationResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/notification-destinations/telegram-operational`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createOperationalTelegramDestinationDto,
     },
     options,
   );
@@ -5720,6 +5774,22 @@ export const notificationDestinationTest = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: testNotificationDestinationDto,
+    },
+    options,
+  );
+};
+
+export const notificationDestinationCreateTelegram = (
+  projectId: string,
+  createOperationalTelegramDestinationDto: BodyType<CreateOperationalTelegramDestinationDto>,
+  options?: SecondParameter<typeof request<NotificationDestinationResponseDto>>,
+) => {
+  return request<NotificationDestinationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/notification-destinations/telegram-operational`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createOperationalTelegramDestinationDto,
     },
     options,
   );
@@ -5950,6 +6020,22 @@ export const platformOperationsRotate = (
   );
 };
 
+export const scenarioAdmissionDecisionsGet = (
+  projectId: string,
+  decisionId: string,
+  options?: SecondParameter<
+    typeof request<ScenarioAdmissionDecisionResponseDto>
+  >,
+) => {
+  return request<ScenarioAdmissionDecisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-admission-decisions/${decisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const scenarioAdmissionDecisionsPage = (
   projectId: string,
   params?: ScenarioAdmissionDecisionsPageParams,
@@ -5962,22 +6048,6 @@ export const scenarioAdmissionDecisionsPage = (
       url: `/api/v1/admin/projects/${projectId}/scenario-admission-decisions/page`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const scenarioAdmissionDecisionsGet = (
-  projectId: string,
-  decisionId: string,
-  options?: SecondParameter<
-    typeof request<ScenarioAdmissionDecisionResponseDto>
-  >,
-) => {
-  return request<ScenarioAdmissionDecisionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/scenario-admission-decisions/${decisionId}`,
-      method: "GET",
     },
     options,
   );
@@ -6412,6 +6482,20 @@ export const scenarioRunsList = (
   );
 };
 
+export const scenarioRunsExplain = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<ScenarioRunExplainResponseDto>>,
+) => {
+  return request<ScenarioRunExplainResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/scenario-runs/${runId}/explain`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const scenarioRunsPage = (
   projectId: string,
   params?: ScenarioRunsPageParams,
@@ -6422,20 +6506,6 @@ export const scenarioRunsPage = (
       url: `/api/v1/admin/projects/${projectId}/scenario-runs/page`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const scenarioRunsExplain = (
-  projectId: string,
-  runId: string,
-  options?: SecondParameter<typeof request<ScenarioRunExplainResponseDto>>,
-) => {
-  return request<ScenarioRunExplainResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/scenario-runs/${runId}/explain`,
-      method: "GET",
     },
     options,
   );
@@ -7411,6 +7481,25 @@ export const supportExternalInboxList = (
   );
 };
 
+export const supportExternalInboxLinkToCase = (
+  projectId: string,
+  remoteItemId: string,
+  linkHelpDeskCompatibilityTicketDto: BodyType<LinkHelpDeskCompatibilityTicketDto>,
+  options?: SecondParameter<
+    typeof request<LinkHelpDeskCompatibilityTicketResponseDto>
+  >,
+) => {
+  return request<LinkHelpDeskCompatibilityTicketResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/${remoteItemId}:link`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: linkHelpDeskCompatibilityTicketDto,
+    },
+    options,
+  );
+};
+
 export const supportExternalInboxRead = (
   projectId: string,
   itemId: string,
@@ -7440,25 +7529,6 @@ export const supportExternalInboxTimelineList = (
       url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/items/${itemId}/timeline`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const supportExternalInboxLinkToCase = (
-  projectId: string,
-  remoteItemId: string,
-  linkHelpDeskCompatibilityTicketDto: BodyType<LinkHelpDeskCompatibilityTicketDto>,
-  options?: SecondParameter<
-    typeof request<LinkHelpDeskCompatibilityTicketResponseDto>
-  >,
-) => {
-  return request<LinkHelpDeskCompatibilityTicketResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/external-work/inbox/${remoteItemId}:link`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: linkHelpDeskCompatibilityTicketDto,
     },
     options,
   );
@@ -7695,22 +7765,6 @@ export const supportExternalMappingRollback = (
   );
 };
 
-export const supportExternalConnectionListOAuthTenants = (
-  projectId: string,
-  sessionId: string,
-  options?: SecondParameter<
-    typeof request<SupportExternalOAuthTenantListResponseDto>
-  >,
-) => {
-  return request<SupportExternalOAuthTenantListResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/external-work/oauth-sessions/${sessionId}/tenants`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
 export const supportExternalConnectionSelectOAuthTenant = (
   projectId: string,
   sessionId: string,
@@ -7725,6 +7779,22 @@ export const supportExternalConnectionSelectOAuthTenant = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: selectSupportExternalOAuthTenantDto,
+    },
+    options,
+  );
+};
+
+export const supportExternalConnectionListOAuthTenants = (
+  projectId: string,
+  sessionId: string,
+  options?: SecondParameter<
+    typeof request<SupportExternalOAuthTenantListResponseDto>
+  >,
+) => {
+  return request<SupportExternalOAuthTenantListResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/external-work/oauth-sessions/${sessionId}/tenants`,
+      method: "GET",
     },
     options,
   );
@@ -7900,24 +7970,6 @@ export const supportInternalKnowledgeReadCommandOutcome = (
   );
 };
 
-export const supportInternalKnowledgeCreateTextDocument = (
-  projectId: string,
-  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
-  options?: SecondParameter<
-    typeof request<SupportKnowledgeCommandReceiptResponseDto>
-  >,
-) => {
-  return request<SupportKnowledgeCommandReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/text-drafts`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createSupportKnowledgeTextDocumentDto,
-    },
-    options,
-  );
-};
-
 export const supportInternalKnowledgeOpen = (
   projectId: string,
   documentId: string,
@@ -8077,6 +8129,24 @@ export const supportInternalKnowledgeCreateTextRevision = (
   return request<SupportKnowledgeCommandReceiptResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/${documentId}/text-drafts`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportKnowledgeTextDocumentDto,
+    },
+    options,
+  );
+};
+
+export const supportInternalKnowledgeCreateTextDocument = (
+  projectId: string,
+  createSupportKnowledgeTextDocumentDto: BodyType<CreateSupportKnowledgeTextDocumentDto>,
+  options?: SecondParameter<
+    typeof request<SupportKnowledgeCommandReceiptResponseDto>
+  >,
+) => {
+  return request<SupportKnowledgeCommandReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/knowledge/documents/text-drafts`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createSupportKnowledgeTextDocumentDto,
@@ -8464,37 +8534,6 @@ export const supportMacroCreate = (
   );
 };
 
-export const supportMacroAuthoringCatalog = (
-  projectId: string,
-  params?: SupportMacroAuthoringCatalogParams,
-  options?: SecondParameter<typeof request<SupportMacroCatalogResponseDto>>,
-) => {
-  return request<SupportMacroCatalogResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/macros/authoring`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const supportMacroPreview = (
-  projectId: string,
-  previewSupportMacroDto: BodyType<PreviewSupportMacroDto>,
-  options?: SecondParameter<typeof request<SupportMacroPreviewResponseDto>>,
-) => {
-  return request<SupportMacroPreviewResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/macros/preview`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: previewSupportMacroDto,
-    },
-    options,
-  );
-};
-
 export const supportMacroRead = (
   projectId: string,
   macroId: string,
@@ -8604,6 +8643,37 @@ export const supportMacroRollback = (
   );
 };
 
+export const supportMacroAuthoringCatalog = (
+  projectId: string,
+  params?: SupportMacroAuthoringCatalogParams,
+  options?: SecondParameter<typeof request<SupportMacroCatalogResponseDto>>,
+) => {
+  return request<SupportMacroCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/authoring`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportMacroPreview = (
+  projectId: string,
+  previewSupportMacroDto: BodyType<PreviewSupportMacroDto>,
+  options?: SecondParameter<typeof request<SupportMacroPreviewResponseDto>>,
+) => {
+  return request<SupportMacroPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/macros/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: previewSupportMacroDto,
+    },
+    options,
+  );
+};
+
 export const personalSupportNotificationReadPreferences = (
   projectId: string,
   options?: SecondParameter<
@@ -8705,6 +8775,41 @@ export const supportRoutingOfferDecline = (
   );
 };
 
+export const supportOperatorAvailabilityRead = (
+  projectId: string,
+  operatorId: string,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportOperatorAvailabilityOverrideOperator = (
+  projectId: string,
+  operatorId: string,
+  setSupportOperatorAvailabilityDto: BodyType<SetSupportOperatorAvailabilityDto>,
+  options?: SecondParameter<
+    typeof request<SupportOperatorAvailabilityResponseDto>
+  >,
+) => {
+  return request<SupportOperatorAvailabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: setSupportOperatorAvailabilityDto,
+    },
+    options,
+  );
+};
+
 export const supportOperatorAvailabilitySetOwn = (
   projectId: string,
   setSupportOperatorAvailabilityDto: BodyType<SetSupportOperatorAvailabilityDto>,
@@ -8736,41 +8841,6 @@ export const supportOperatorAvailabilityHeartbeatOwn = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: emptySupportAvailabilityHeartbeatDto,
-    },
-    options,
-  );
-};
-
-export const supportOperatorAvailabilityRead = (
-  projectId: string,
-  operatorId: string,
-  options?: SecondParameter<
-    typeof request<SupportOperatorAvailabilityResponseDto>
-  >,
-) => {
-  return request<SupportOperatorAvailabilityResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportOperatorAvailabilityOverrideOperator = (
-  projectId: string,
-  operatorId: string,
-  setSupportOperatorAvailabilityDto: BodyType<SetSupportOperatorAvailabilityDto>,
-  options?: SecondParameter<
-    typeof request<SupportOperatorAvailabilityResponseDto>
-  >,
-) => {
-  return request<SupportOperatorAvailabilityResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/operators/${operatorId}/availability`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: setSupportOperatorAvailabilityDto,
     },
     options,
   );
@@ -9669,35 +9739,6 @@ export const savedSupportViewCreate = (
   );
 };
 
-export const savedSupportViewDefaultView = (
-  projectId: string,
-  options?: SecondParameter<typeof request<SupportDefaultViewResponseDto>>,
-) => {
-  return request<SupportDefaultViewResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/saved-views/default`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const savedSupportViewReplaceDefaultView = (
-  projectId: string,
-  replaceSupportDefaultViewDto: BodyType<ReplaceSupportDefaultViewDto>,
-  options?: SecondParameter<typeof request<SupportDefaultViewResponseDto>>,
-) => {
-  return request<SupportDefaultViewResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/saved-views/default`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: replaceSupportDefaultViewDto,
-    },
-    options,
-  );
-};
-
 export const savedSupportViewArchive = (
   projectId: string,
   viewId: string,
@@ -9761,6 +9802,35 @@ export const savedSupportViewQuery = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: savedSupportViewQueryDto,
+    },
+    options,
+  );
+};
+
+export const savedSupportViewDefaultView = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportDefaultViewResponseDto>>,
+) => {
+  return request<SupportDefaultViewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/default`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const savedSupportViewReplaceDefaultView = (
+  projectId: string,
+  replaceSupportDefaultViewDto: BodyType<ReplaceSupportDefaultViewDto>,
+  options?: SecondParameter<typeof request<SupportDefaultViewResponseDto>>,
+) => {
+  return request<SupportDefaultViewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/saved-views/default`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportDefaultViewDto,
     },
     options,
   );
@@ -10601,6 +10671,23 @@ export const telegramChannelAdminCreate = (
   );
 };
 
+export const telegramChannelAdminTest = (
+  projectId: string,
+  installationId: string,
+  testTelegramChannelDto: BodyType<TestTelegramChannelDto>,
+  options?: SecondParameter<typeof request<TelegramChannelTestResponseDto>>,
+) => {
+  return request<TelegramChannelTestResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/telegram-channel/${installationId}/test`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: testTelegramChannelDto,
+    },
+    options,
+  );
+};
+
 export const telegramChannelAdminSetBroadcastsEnabled = (
   projectId: string,
   setTelegramBroadcastsEnabledDto: BodyType<SetTelegramBroadcastsEnabledDto>,
@@ -10632,23 +10719,6 @@ export const telegramChannelAdminDisable = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: disableTelegramChannelDto,
-    },
-    options,
-  );
-};
-
-export const telegramChannelAdminTest = (
-  projectId: string,
-  installationId: string,
-  testTelegramChannelDto: BodyType<TestTelegramChannelDto>,
-  options?: SecondParameter<typeof request<TelegramChannelTestResponseDto>>,
-) => {
-  return request<TelegramChannelTestResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/telegram-channel/${installationId}/test`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: testTelegramChannelDto,
     },
     options,
   );
@@ -10844,31 +10914,6 @@ export const platformOperationsUpsertUser = (
   );
 };
 
-export const presenceList = (
-  projectId: string,
-  options?: SecondParameter<typeof request<ActiveUserResponseDto[]>>,
-) => {
-  return request<ActiveUserResponseDto[]>(
-    { url: `/api/v1/admin/projects/${projectId}/users/active`, method: "GET" },
-    options,
-  );
-};
-
-export const platformOperationsUsersPage = (
-  projectId: string,
-  params?: PlatformOperationsUsersPageParams,
-  options?: SecondParameter<typeof request<EndUserPageResponseDto>>,
-) => {
-  return request<EndUserPageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/users/page`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
 export const conversationAISuspensionsGet = (
   projectId: string,
   endUserId: string,
@@ -11008,40 +11053,6 @@ export const userMemoryDeleteFact = (
   );
 };
 
-export const adminChatAttachmentListDraft = (
-  projectId: string,
-  userId: string,
-  draftKey: string,
-  params: AdminChatAttachmentListDraftParams,
-  options?: SecondParameter<typeof request<ChatAttachmentDraftResponseDto>>,
-) => {
-  return request<ChatAttachmentDraftResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/drafts/${draftKey}`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const adminChatAttachmentStartUpload = (
-  projectId: string,
-  userId: string,
-  createAdminChatAttachmentUploadDto: BodyType<CreateAdminChatAttachmentUploadDto>,
-  options?: SecondParameter<typeof request<ChatAttachmentUploadResponseDto>>,
-) => {
-  return request<ChatAttachmentUploadResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/uploads`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createAdminChatAttachmentUploadDto,
-    },
-    options,
-  );
-};
-
 export const adminChatAttachmentStatus = (
   projectId: string,
   userId: string,
@@ -11107,6 +11118,40 @@ export const adminChatAttachmentRevoke = (
       url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/${attachmentId}/revoke`,
       method: "POST",
       params,
+    },
+    options,
+  );
+};
+
+export const adminChatAttachmentListDraft = (
+  projectId: string,
+  userId: string,
+  draftKey: string,
+  params: AdminChatAttachmentListDraftParams,
+  options?: SecondParameter<typeof request<ChatAttachmentDraftResponseDto>>,
+) => {
+  return request<ChatAttachmentDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/drafts/${draftKey}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const adminChatAttachmentStartUpload = (
+  projectId: string,
+  userId: string,
+  createAdminChatAttachmentUploadDto: BodyType<CreateAdminChatAttachmentUploadDto>,
+  options?: SecondParameter<typeof request<ChatAttachmentUploadResponseDto>>,
+) => {
+  return request<ChatAttachmentUploadResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/attachments/uploads`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createAdminChatAttachmentUploadDto,
     },
     options,
   );
@@ -11419,23 +11464,6 @@ export const adminMessagingSend = (
 };
 
 /**
- * @summary Look up an accepted admin message by its idempotency key
- */
-export const adminMessagingLookupOutcome = (
-  projectId: string,
-  userId: string,
-  options?: SecondParameter<typeof request<SendAdminMessageResponseDto>>,
-) => {
-  return request<SendAdminMessageResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/users/${userId}/messages/outcome`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-/**
  * @summary Retry one safely failed durable delivery generation
  */
 export const adminMessagingRetryFailedDelivery = (
@@ -11458,6 +11486,23 @@ export const adminMessagingRetryFailedDelivery = (
   );
 };
 
+/**
+ * @summary Look up an accepted admin message by its idempotency key
+ */
+export const adminMessagingLookupOutcome = (
+  projectId: string,
+  userId: string,
+  options?: SecondParameter<typeof request<SendAdminMessageResponseDto>>,
+) => {
+  return request<SendAdminMessageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/${userId}/messages/outcome`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const adminVoiceStart = (
   projectId: string,
   userId: string,
@@ -11470,6 +11515,31 @@ export const adminVoiceStart = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: startAdminVoiceConversationDto,
+    },
+    options,
+  );
+};
+
+export const presenceList = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ActiveUserResponseDto[]>>,
+) => {
+  return request<ActiveUserResponseDto[]>(
+    { url: `/api/v1/admin/projects/${projectId}/users/active`, method: "GET" },
+    options,
+  );
+};
+
+export const platformOperationsUsersPage = (
+  projectId: string,
+  params?: PlatformOperationsUsersPageParams,
+  options?: SecondParameter<typeof request<EndUserPageResponseDto>>,
+) => {
+  return request<EndUserPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/users/page`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -11776,18 +11846,6 @@ export const iamMfaManagementSummary = (
 };
 
 /**
- * @summary Begin adding another passkey after fresh strong authentication
- */
-export const iamMfaManagementBeginPasskeyEnrollment = (
-  options?: SecondParameter<typeof request<IamMfaEnrollmentOptionsResponseDto>>,
-) => {
-  return request<IamMfaEnrollmentOptionsResponseDto>(
-    { url: `/api/v1/auth/me/mfa/passkeys/enrollment/options`, method: "POST" },
-    options,
-  );
-};
-
-/**
  * @summary Revoke a passkey while preserving at least one active factor
  */
 export const iamMfaManagementRemovePasskey = (
@@ -11796,6 +11854,18 @@ export const iamMfaManagementRemovePasskey = (
 ) => {
   return request<IamMfaPasskeyRemovedResponseDto>(
     { url: `/api/v1/auth/me/mfa/passkeys/${passkeyId}`, method: "DELETE" },
+    options,
+  );
+};
+
+/**
+ * @summary Begin adding another passkey after fresh strong authentication
+ */
+export const iamMfaManagementBeginPasskeyEnrollment = (
+  options?: SecondParameter<typeof request<IamMfaEnrollmentOptionsResponseDto>>,
+) => {
+  return request<IamMfaEnrollmentOptionsResponseDto>(
+    { url: `/api/v1/auth/me/mfa/passkeys/enrollment/options`, method: "POST" },
     options,
   );
 };
@@ -11862,18 +11932,6 @@ export const cmsSecuritySettingsList = (
 };
 
 /**
- * @summary Revoke all other sessions owned by the current CMS User
- */
-export const cmsSecuritySettingsRevokeOthers = (
-  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
-) => {
-  return request<CmsSecurityMutationResponseDto>(
-    { url: `/api/v1/auth/me/sessions/revoke-others`, method: "POST" },
-    options,
-  );
-};
-
-/**
  * @summary Revoke one active session owned by the current CMS User
  */
 export const cmsSecuritySettingsRevoke = (
@@ -11882,6 +11940,18 @@ export const cmsSecuritySettingsRevoke = (
 ) => {
   return request<CmsSecurityMutationResponseDto>(
     { url: `/api/v1/auth/me/sessions/${sessionId}`, method: "DELETE" },
+    options,
+  );
+};
+
+/**
+ * @summary Revoke all other sessions owned by the current CMS User
+ */
+export const cmsSecuritySettingsRevokeOthers = (
+  options?: SecondParameter<typeof request<CmsSecurityMutationResponseDto>>,
+) => {
+  return request<CmsSecurityMutationResponseDto>(
+    { url: `/api/v1/auth/me/sessions/revoke-others`, method: "POST" },
     options,
   );
 };
@@ -12050,21 +12120,6 @@ export const initialAccessRefresh = (
   );
 };
 
-export const chatAttachmentsStart = (
-  createChatAttachmentUploadDto: BodyType<CreateChatAttachmentUploadDto>,
-  options?: SecondParameter<typeof request<ChatAttachmentUploadResponseDto>>,
-) => {
-  return request<ChatAttachmentUploadResponseDto>(
-    {
-      url: `/api/v1/chat/attachments/uploads`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: createChatAttachmentUploadDto,
-    },
-    options,
-  );
-};
-
 export const chatAttachmentsStatus = (
   attachmentId: string,
   params?: ChatAttachmentsStatusParams,
@@ -12108,6 +12163,21 @@ export const chatAttachmentsGrant = (
   );
 };
 
+export const chatAttachmentsStart = (
+  createChatAttachmentUploadDto: BodyType<CreateChatAttachmentUploadDto>,
+  options?: SecondParameter<typeof request<ChatAttachmentUploadResponseDto>>,
+) => {
+  return request<ChatAttachmentUploadResponseDto>(
+    {
+      url: `/api/v1/chat/attachments/uploads`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createChatAttachmentUploadDto,
+    },
+    options,
+  );
+};
+
 export const chatListConversations = (
   params?: ChatListConversationsParams,
   options?: SecondParameter<typeof request<void>>,
@@ -12129,15 +12199,6 @@ export const chatCreateConversation = (
       headers: { "Content-Type": "application/json" },
       data: createConversationDto,
     },
-    options,
-  );
-};
-
-export const chatCurrentConversation = (
-  options?: SecondParameter<typeof request<void>>,
-) => {
-  return request<void>(
-    { url: `/api/v1/chat/conversations/current`, method: "GET" },
     options,
   );
 };
@@ -12234,6 +12295,15 @@ export const chatSelectConversation = (
       url: `/api/v1/chat/conversations/${conversationId}/select`,
       method: "POST",
     },
+    options,
+  );
+};
+
+export const chatCurrentConversation = (
+  options?: SecondParameter<typeof request<void>>,
+) => {
+  return request<void>(
+    { url: `/api/v1/chat/conversations/current`, method: "GET" },
     options,
   );
 };
@@ -12978,14 +13048,14 @@ export type ProjectAIAnalysisListResult = NonNullable<
 export type ProjectAIAnalysisCreateResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisCreate>>
 >;
-export type ProjectAIAnalysisEstimateResult = NonNullable<
-  Awaited<ReturnType<typeof projectAIAnalysisEstimate>>
->;
 export type ProjectAIAnalysisDetailResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisDetail>>
 >;
 export type ProjectAIAnalysisCancelResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisCancel>>
+>;
+export type ProjectAIAnalysisEstimateResult = NonNullable<
+  Awaited<ReturnType<typeof projectAIAnalysisEstimate>>
 >;
 export type ProjectAIAnalysisUsageReadResult = NonNullable<
   Awaited<ReturnType<typeof projectAIAnalysisUsageRead>>
@@ -13017,9 +13087,6 @@ export type AiModelSettingsCatalogResult = NonNullable<
 export type AiOperationsListResult = NonNullable<
   Awaited<ReturnType<typeof aiOperationsList>>
 >;
-export type AiOperationsSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof aiOperationsSummary>>
->;
 export type AiOperationsDetailResult = NonNullable<
   Awaited<ReturnType<typeof aiOperationsDetail>>
 >;
@@ -13028,6 +13095,9 @@ export type AiOperationsAccessHistoryResult = NonNullable<
 >;
 export type AiOperationsSubjectsResult = NonNullable<
   Awaited<ReturnType<typeof aiOperationsSubjects>>
+>;
+export type AiOperationsSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof aiOperationsSummary>>
 >;
 export type AIReviewEstimateResult = NonNullable<
   Awaited<ReturnType<typeof aIReviewEstimate>>
@@ -13119,6 +13189,9 @@ export type CaseIntelligenceDryRunResult = NonNullable<
 export type CaseIntelligencePublishDetectionResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligencePublishDetection>>
 >;
+export type CaseIntelligenceDetectionRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceDetectionRevision>>
+>;
 export type CaseIntelligenceValidateDetectionResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceValidateDetection>>
 >;
@@ -13137,11 +13210,20 @@ export type CaseIntelligenceDryRunEscalationResult = NonNullable<
 export type CaseIntelligencePublishEscalationResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligencePublishEscalation>>
 >;
+export type CaseIntelligenceEscalationRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceEscalationRevision>>
+>;
+export type CaseIntelligenceEvaluationDatasetsResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceEvaluationDatasets>>
+>;
 export type CaseIntelligencePublishEvaluationDatasetResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligencePublishEvaluationDataset>>
 >;
 export type CaseIntelligenceEvaluationDatasetResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceEvaluationDataset>>
+>;
+export type CaseIntelligenceEvaluationsHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceEvaluationsHistory>>
 >;
 export type CaseIntelligenceRunEvaluationResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceRunEvaluation>>
@@ -13155,6 +13237,9 @@ export type CaseIntelligenceModelProfilesResult = NonNullable<
 export type CaseIntelligenceObservabilityResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceObservability>>
 >;
+export type CaseIntelligenceGetReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceGetRelease>>
+>;
 export type CaseIntelligenceActivateReleaseResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceActivateRelease>>
 >;
@@ -13163,9 +13248,6 @@ export type CaseIntelligencePauseReleaseResult = NonNullable<
 >;
 export type CaseIntelligenceRollbackReleaseResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceRollbackRelease>>
->;
-export type CaseIntelligenceGetReleaseResult = NonNullable<
-  Awaited<ReturnType<typeof caseIntelligenceGetRelease>>
 >;
 export type CaseIntelligenceListFailedWorkResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceListFailedWork>>
@@ -13182,11 +13264,17 @@ export type SupportInternalNoteListResult = NonNullable<
 export type SupportInternalNoteCreateResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteCreate>>
 >;
+export type SupportInternalNoteCorrectResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteCorrect>>
+>;
+export type SupportInternalNoteRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteRevisions>>
+>;
+export type SupportInternalNoteTombstoneResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteTombstone>>
+>;
 export type SupportInternalNoteAttachmentListDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteAttachmentListDraft>>
->;
-export type SupportInternalNoteAttachmentStartUploadResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalNoteAttachmentStartUpload>>
 >;
 export type SupportInternalNoteAttachmentStatusResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteAttachmentStatus>>
@@ -13200,14 +13288,8 @@ export type SupportInternalNoteAttachmentGrantDownloadResult = NonNullable<
 export type SupportInternalNoteAttachmentRevokeResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteAttachmentRevoke>>
 >;
-export type SupportInternalNoteCorrectResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalNoteCorrect>>
->;
-export type SupportInternalNoteRevisionsResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalNoteRevisions>>
->;
-export type SupportInternalNoteTombstoneResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalNoteTombstone>>
+export type SupportInternalNoteAttachmentStartUploadResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalNoteAttachmentStartUpload>>
 >;
 export type SupportMacroNoteDraftCreateResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroNoteDraftCreate>>
@@ -13217,6 +13299,15 @@ export type SupportMacroNoteDraftReadResult = NonNullable<
 >;
 export type SupportMacroNoteDraftEditResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroNoteDraftEdit>>
+>;
+export type ConversationMessageContentCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageContentCurrent>>
+>;
+export type ConversationMessageContentCorrectResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageContentCorrect>>
+>;
+export type ConversationMessageContentTombstoneResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageContentTombstone>>
 >;
 export type ConversationContentGovernanceListHoldsResult = NonNullable<
   Awaited<ReturnType<typeof conversationContentGovernanceListHolds>>
@@ -13242,15 +13333,6 @@ export type ConversationContentGovernanceRolloutResult = NonNullable<
 export type ConversationContentGovernanceUpdateRolloutResult = NonNullable<
   Awaited<ReturnType<typeof conversationContentGovernanceUpdateRollout>>
 >;
-export type ConversationMessageContentCurrentResult = NonNullable<
-  Awaited<ReturnType<typeof conversationMessageContentCurrent>>
->;
-export type ConversationMessageContentCorrectResult = NonNullable<
-  Awaited<ReturnType<typeof conversationMessageContentCorrect>>
->;
-export type ConversationMessageContentTombstoneResult = NonNullable<
-  Awaited<ReturnType<typeof conversationMessageContentTombstone>>
->;
 export type EndUserCasePolicyGetResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasePolicyGet>>
 >;
@@ -13265,15 +13347,6 @@ export type EndUserCasePolicyPublishResult = NonNullable<
 >;
 export type EndUserCasesListResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesList>>
->;
-export type EndUserCasesAssigneesResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesAssignees>>
->;
-export type EndUserCasesSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesSummary>>
->;
-export type EndUserCasesCostSummaryResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesCostSummary>>
 >;
 export type EndUserCasesDetailResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesDetail>>
@@ -13334,6 +13407,15 @@ export type CaseVerificationEstimateResult = NonNullable<
 >;
 export type EndUserCasesWorkflowResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesWorkflow>>
+>;
+export type EndUserCasesAssigneesResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesAssignees>>
+>;
+export type EndUserCasesSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesSummary>>
+>;
+export type EndUserCasesCostSummaryResult = NonNullable<
+  Awaited<ReturnType<typeof endUserCasesCostSummary>>
 >;
 export type AdminEndUserProfilesListResult = NonNullable<
   Awaited<ReturnType<typeof adminEndUserProfilesList>>
@@ -13503,18 +13585,6 @@ export type IntegrationActivityContentResult = NonNullable<
 export type IntegrationConnectionListResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionList>>
 >;
-export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
-  Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
->;
-export type IntegrationConnectionCreateAmplitudeInboundResult = NonNullable<
-  Awaited<ReturnType<typeof integrationConnectionCreateAmplitudeInbound>>
->;
-export type IntegrationConnectionCreateCustomerIoResult = NonNullable<
-  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIo>>
->;
-export type IntegrationConnectionCreateCustomerIoInboundResult = NonNullable<
-  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIoInbound>>
->;
 export type IntegrationConnectionGetResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionGet>>
 >;
@@ -13560,8 +13630,32 @@ export type IntegrationConnectionTestResult = NonNullable<
 export type IntegrationConnectionGetTestResult = NonNullable<
   Awaited<ReturnType<typeof integrationConnectionGetTest>>
 >;
+export type IntegrationConnectionCreateAmplitudeResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateAmplitude>>
+>;
+export type IntegrationConnectionCreateAmplitudeInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateAmplitudeInbound>>
+>;
+export type IntegrationConnectionCreateCustomerIoResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIo>>
+>;
+export type IntegrationConnectionCreateCustomerIoInboundResult = NonNullable<
+  Awaited<ReturnType<typeof integrationConnectionCreateCustomerIoInbound>>
+>;
 export type IntegrationEventRouteListResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteList>>
+>;
+export type IntegrationEventRouteDisableResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteDisable>>
+>;
+export type IntegrationEventRouteEditDraftResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteEditDraft>>
+>;
+export type IntegrationEventRouteEnableResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRouteEnable>>
+>;
+export type IntegrationEventRoutePublishResult = NonNullable<
+  Awaited<ReturnType<typeof integrationEventRoutePublish>>
 >;
 export type IntegrationEventRouteInboundActivityListResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteInboundActivityList>>
@@ -13596,20 +13690,11 @@ export type IntegrationEventIdentityPolicyPublishResult = NonNullable<
 export type IntegrationEventRouteEventDefinitionSummaryResult = NonNullable<
   Awaited<ReturnType<typeof integrationEventRouteEventDefinitionSummary>>
 >;
-export type IntegrationEventRouteDisableResult = NonNullable<
-  Awaited<ReturnType<typeof integrationEventRouteDisable>>
->;
-export type IntegrationEventRouteEditDraftResult = NonNullable<
-  Awaited<ReturnType<typeof integrationEventRouteEditDraft>>
->;
-export type IntegrationEventRouteEnableResult = NonNullable<
-  Awaited<ReturnType<typeof integrationEventRouteEnable>>
->;
-export type IntegrationEventRoutePublishResult = NonNullable<
-  Awaited<ReturnType<typeof integrationEventRoutePublish>>
->;
 export type IntegrationRecoveryOperationsListResult = NonNullable<
   Awaited<ReturnType<typeof integrationRecoveryOperationsList>>
+>;
+export type IntegrationRecoveryOperationsDetailResult = NonNullable<
+  Awaited<ReturnType<typeof integrationRecoveryOperationsDetail>>
 >;
 export type IntegrationRecoveryOperationsPauseDirectionResult = NonNullable<
   Awaited<ReturnType<typeof integrationRecoveryOperationsPauseDirection>>
@@ -13628,9 +13713,6 @@ export type IntegrationRecoveryOperationsQuarantineIngressResult = NonNullable<
 >;
 export type IntegrationRecoveryOperationsReplayIngressResult = NonNullable<
   Awaited<ReturnType<typeof integrationRecoveryOperationsReplayIngress>>
->;
-export type IntegrationRecoveryOperationsDetailResult = NonNullable<
-  Awaited<ReturnType<typeof integrationRecoveryOperationsDetail>>
 >;
 export type KnowledgeListResult = NonNullable<
   Awaited<ReturnType<typeof knowledgeList>>
@@ -13656,9 +13738,6 @@ export type ProjectMembershipListResult = NonNullable<
 export type ProjectMembershipCreateResult = NonNullable<
   Awaited<ReturnType<typeof projectMembershipCreate>>
 >;
-export type ProjectMembershipAssignableRolesResult = NonNullable<
-  Awaited<ReturnType<typeof projectMembershipAssignableRoles>>
->;
 export type ProjectMembershipGetResult = NonNullable<
   Awaited<ReturnType<typeof projectMembershipGet>>
 >;
@@ -13668,14 +13747,14 @@ export type ProjectMembershipUpdateResult = NonNullable<
 export type ProjectMembershipRemoveResult = NonNullable<
   Awaited<ReturnType<typeof projectMembershipRemove>>
 >;
+export type ProjectMembershipAssignableRolesResult = NonNullable<
+  Awaited<ReturnType<typeof projectMembershipAssignableRoles>>
+>;
 export type NotificationDestinationListResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationList>>
 >;
 export type NotificationDestinationCreateResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationCreate>>
->;
-export type NotificationDestinationCreateTelegramResult = NonNullable<
-  Awaited<ReturnType<typeof notificationDestinationCreateTelegram>>
 >;
 export type NotificationDestinationUpdateResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationUpdate>>
@@ -13694,6 +13773,9 @@ export type NotificationDestinationTestTelegramResult = NonNullable<
 >;
 export type NotificationDestinationTestResult = NonNullable<
   Awaited<ReturnType<typeof notificationDestinationTest>>
+>;
+export type NotificationDestinationCreateTelegramResult = NonNullable<
+  Awaited<ReturnType<typeof notificationDestinationCreateTelegram>>
 >;
 export type ProjectPermissionListResult = NonNullable<
   Awaited<ReturnType<typeof projectPermissionList>>
@@ -13740,11 +13822,11 @@ export type ProjectRoleReassignResult = NonNullable<
 export type PlatformOperationsRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsRotate>>
 >;
-export type ScenarioAdmissionDecisionsPageResult = NonNullable<
-  Awaited<ReturnType<typeof scenarioAdmissionDecisionsPage>>
->;
 export type ScenarioAdmissionDecisionsGetResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAdmissionDecisionsGet>>
+>;
+export type ScenarioAdmissionDecisionsPageResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioAdmissionDecisionsPage>>
 >;
 export type ScenarioAudienceEvaluationEvaluateUserResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAudienceEvaluationEvaluateUser>>
@@ -13830,11 +13912,11 @@ export type PlatformOperationsUpdateScenarioAdmissionSettingsResult =
 export type ScenarioRunsListResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsList>>
 >;
-export type ScenarioRunsPageResult = NonNullable<
-  Awaited<ReturnType<typeof scenarioRunsPage>>
->;
 export type ScenarioRunsExplainResult = NonNullable<
   Awaited<ReturnType<typeof scenarioRunsExplain>>
+>;
+export type ScenarioRunsPageResult = NonNullable<
+  Awaited<ReturnType<typeof scenarioRunsPage>>
 >;
 export type SegmentCatalogCatalogResult = NonNullable<
   Awaited<ReturnType<typeof segmentCatalogCatalog>>
@@ -14004,14 +14086,14 @@ export type SupportExternalImportPreviewResult = NonNullable<
 export type SupportExternalInboxListResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalInboxList>>
 >;
+export type SupportExternalInboxLinkToCaseResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalInboxLinkToCase>>
+>;
 export type SupportExternalInboxReadResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalInboxRead>>
 >;
 export type SupportExternalInboxTimelineListResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalInboxTimelineList>>
->;
-export type SupportExternalInboxLinkToCaseResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalInboxLinkToCase>>
 >;
 export type SupportExternalItemListResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalItemList>>
@@ -14052,11 +14134,11 @@ export type SupportExternalMappingListRevisionsResult = NonNullable<
 export type SupportExternalMappingRollbackResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalMappingRollback>>
 >;
-export type SupportExternalConnectionListOAuthTenantsResult = NonNullable<
-  Awaited<ReturnType<typeof supportExternalConnectionListOAuthTenants>>
->;
 export type SupportExternalConnectionSelectOAuthTenantResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalConnectionSelectOAuthTenant>>
+>;
+export type SupportExternalConnectionListOAuthTenantsResult = NonNullable<
+  Awaited<ReturnType<typeof supportExternalConnectionListOAuthTenants>>
 >;
 export type SupportExternalOperationsReadHealthResult = NonNullable<
   Awaited<ReturnType<typeof supportExternalOperationsReadHealth>>
@@ -14088,9 +14170,6 @@ export type SupportInternalKnowledgeUpdateCitationDraftResult = NonNullable<
 export type SupportInternalKnowledgeReadCommandOutcomeResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeReadCommandOutcome>>
 >;
-export type SupportInternalKnowledgeCreateTextDocumentResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextDocument>>
->;
 export type SupportInternalKnowledgeOpenResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeOpen>>
 >;
@@ -14117,6 +14196,9 @@ export type SupportInternalKnowledgeUpdateTextDraftResult = NonNullable<
 >;
 export type SupportInternalKnowledgeCreateTextRevisionResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextRevision>>
+>;
+export type SupportInternalKnowledgeCreateTextDocumentResult = NonNullable<
+  Awaited<ReturnType<typeof supportInternalKnowledgeCreateTextDocument>>
 >;
 export type SupportInternalKnowledgeExchangeDownloadGrantResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeExchangeDownloadGrant>>
@@ -14185,12 +14267,6 @@ export type SupportMacroCatalogResult = NonNullable<
 export type SupportMacroCreateResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroCreate>>
 >;
-export type SupportMacroAuthoringCatalogResult = NonNullable<
-  Awaited<ReturnType<typeof supportMacroAuthoringCatalog>>
->;
-export type SupportMacroPreviewResult = NonNullable<
-  Awaited<ReturnType<typeof supportMacroPreview>>
->;
 export type SupportMacroReadResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroRead>>
 >;
@@ -14212,6 +14288,12 @@ export type SupportMacroListRevisionsResult = NonNullable<
 export type SupportMacroRollbackResult = NonNullable<
   Awaited<ReturnType<typeof supportMacroRollback>>
 >;
+export type SupportMacroAuthoringCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroAuthoringCatalog>>
+>;
+export type SupportMacroPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportMacroPreview>>
+>;
 export type PersonalSupportNotificationReadPreferencesResult = NonNullable<
   Awaited<ReturnType<typeof personalSupportNotificationReadPreferences>>
 >;
@@ -14230,17 +14312,17 @@ export type SupportRoutingOfferAcceptResult = NonNullable<
 export type SupportRoutingOfferDeclineResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingOfferDecline>>
 >;
-export type SupportOperatorAvailabilitySetOwnResult = NonNullable<
-  Awaited<ReturnType<typeof supportOperatorAvailabilitySetOwn>>
->;
-export type SupportOperatorAvailabilityHeartbeatOwnResult = NonNullable<
-  Awaited<ReturnType<typeof supportOperatorAvailabilityHeartbeatOwn>>
->;
 export type SupportOperatorAvailabilityReadResult = NonNullable<
   Awaited<ReturnType<typeof supportOperatorAvailabilityRead>>
 >;
 export type SupportOperatorAvailabilityOverrideOperatorResult = NonNullable<
   Awaited<ReturnType<typeof supportOperatorAvailabilityOverrideOperator>>
+>;
+export type SupportOperatorAvailabilitySetOwnResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilitySetOwn>>
+>;
+export type SupportOperatorAvailabilityHeartbeatOwnResult = NonNullable<
+  Awaited<ReturnType<typeof supportOperatorAvailabilityHeartbeatOwn>>
 >;
 export type SupportPresentationsCreateAvatarUploadResult = NonNullable<
   Awaited<ReturnType<typeof supportPresentationsCreateAvatarUpload>>
@@ -14408,12 +14490,6 @@ export type SavedSupportViewCatalogResult = NonNullable<
 export type SavedSupportViewCreateResult = NonNullable<
   Awaited<ReturnType<typeof savedSupportViewCreate>>
 >;
-export type SavedSupportViewDefaultViewResult = NonNullable<
-  Awaited<ReturnType<typeof savedSupportViewDefaultView>>
->;
-export type SavedSupportViewReplaceDefaultViewResult = NonNullable<
-  Awaited<ReturnType<typeof savedSupportViewReplaceDefaultView>>
->;
 export type SavedSupportViewArchiveResult = NonNullable<
   Awaited<ReturnType<typeof savedSupportViewArchive>>
 >;
@@ -14425,6 +14501,12 @@ export type SavedSupportViewPublishResult = NonNullable<
 >;
 export type SavedSupportViewQueryResult = NonNullable<
   Awaited<ReturnType<typeof savedSupportViewQuery>>
+>;
+export type SavedSupportViewDefaultViewResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewDefaultView>>
+>;
+export type SavedSupportViewReplaceDefaultViewResult = NonNullable<
+  Awaited<ReturnType<typeof savedSupportViewReplaceDefaultView>>
 >;
 export type SupportSearchCasesResult = NonNullable<
   Awaited<ReturnType<typeof supportSearchCases>>
@@ -14573,14 +14655,14 @@ export type TelegramChannelAdminRotateResult = NonNullable<
 export type TelegramChannelAdminCreateResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminCreate>>
 >;
+export type TelegramChannelAdminTestResult = NonNullable<
+  Awaited<ReturnType<typeof telegramChannelAdminTest>>
+>;
 export type TelegramChannelAdminSetBroadcastsEnabledResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminSetBroadcastsEnabled>>
 >;
 export type TelegramChannelAdminDisableResult = NonNullable<
   Awaited<ReturnType<typeof telegramChannelAdminDisable>>
->;
-export type TelegramChannelAdminTestResult = NonNullable<
-  Awaited<ReturnType<typeof telegramChannelAdminTest>>
 >;
 export type TranslationCreateResult = NonNullable<
   Awaited<ReturnType<typeof translationCreate>>
@@ -14621,12 +14703,6 @@ export type PlatformOperationsUsersResult = NonNullable<
 export type PlatformOperationsUpsertUserResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsUpsertUser>>
 >;
-export type PresenceListResult = NonNullable<
-  Awaited<ReturnType<typeof presenceList>>
->;
-export type PlatformOperationsUsersPageResult = NonNullable<
-  Awaited<ReturnType<typeof platformOperationsUsersPage>>
->;
 export type ConversationAISuspensionsGetResult = NonNullable<
   Awaited<ReturnType<typeof conversationAISuspensionsGet>>
 >;
@@ -14651,12 +14727,6 @@ export type UserMemoryFactsResult = NonNullable<
 export type UserMemoryDeleteFactResult = NonNullable<
   Awaited<ReturnType<typeof userMemoryDeleteFact>>
 >;
-export type AdminChatAttachmentListDraftResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentListDraft>>
->;
-export type AdminChatAttachmentStartUploadResult = NonNullable<
-  Awaited<ReturnType<typeof adminChatAttachmentStartUpload>>
->;
 export type AdminChatAttachmentStatusResult = NonNullable<
   Awaited<ReturnType<typeof adminChatAttachmentStatus>>
 >;
@@ -14668,6 +14738,12 @@ export type AdminChatAttachmentGrantDownloadResult = NonNullable<
 >;
 export type AdminChatAttachmentRevokeResult = NonNullable<
   Awaited<ReturnType<typeof adminChatAttachmentRevoke>>
+>;
+export type AdminChatAttachmentListDraftResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentListDraft>>
+>;
+export type AdminChatAttachmentStartUploadResult = NonNullable<
+  Awaited<ReturnType<typeof adminChatAttachmentStartUpload>>
 >;
 export type AdminConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminConversationsList>>
@@ -14717,14 +14793,20 @@ export type ConversationTranslationPutResult = NonNullable<
 export type AdminMessagingSendResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingSend>>
 >;
-export type AdminMessagingLookupOutcomeResult = NonNullable<
-  Awaited<ReturnType<typeof adminMessagingLookupOutcome>>
->;
 export type AdminMessagingRetryFailedDeliveryResult = NonNullable<
   Awaited<ReturnType<typeof adminMessagingRetryFailedDelivery>>
 >;
+export type AdminMessagingLookupOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof adminMessagingLookupOutcome>>
+>;
 export type AdminVoiceStartResult = NonNullable<
   Awaited<ReturnType<typeof adminVoiceStart>>
+>;
+export type PresenceListResult = NonNullable<
+  Awaited<ReturnType<typeof presenceList>>
+>;
+export type PlatformOperationsUsersPageResult = NonNullable<
+  Awaited<ReturnType<typeof platformOperationsUsersPage>>
 >;
 export type XaiVoiceCatalogListResult = NonNullable<
   Awaited<ReturnType<typeof xaiVoiceCatalogList>>
@@ -14792,11 +14874,11 @@ export type IamEmailIdentityRequestVerificationResult = NonNullable<
 export type IamMfaManagementSummaryResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementSummary>>
 >;
-export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
-  Awaited<ReturnType<typeof iamMfaManagementBeginPasskeyEnrollment>>
->;
 export type IamMfaManagementRemovePasskeyResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementRemovePasskey>>
+>;
+export type IamMfaManagementBeginPasskeyEnrollmentResult = NonNullable<
+  Awaited<ReturnType<typeof iamMfaManagementBeginPasskeyEnrollment>>
 >;
 export type IamMfaManagementRotateRecoveryCodesResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaManagementRotateRecoveryCodes>>
@@ -14810,11 +14892,11 @@ export type NotificationPreferencesSetEmailCaseEscalationsResult = NonNullable<
 export type CmsSecuritySettingsListResult = NonNullable<
   Awaited<ReturnType<typeof cmsSecuritySettingsList>>
 >;
-export type CmsSecuritySettingsRevokeOthersResult = NonNullable<
-  Awaited<ReturnType<typeof cmsSecuritySettingsRevokeOthers>>
->;
 export type CmsSecuritySettingsRevokeResult = NonNullable<
   Awaited<ReturnType<typeof cmsSecuritySettingsRevoke>>
+>;
+export type CmsSecuritySettingsRevokeOthersResult = NonNullable<
+  Awaited<ReturnType<typeof cmsSecuritySettingsRevokeOthers>>
 >;
 export type IamMfaCompleteAuthenticationResult = NonNullable<
   Awaited<ReturnType<typeof iamMfaCompleteAuthentication>>
@@ -14843,9 +14925,6 @@ export type InitialAccessSetupPasswordResult = NonNullable<
 export type InitialAccessRefreshResult = NonNullable<
   Awaited<ReturnType<typeof initialAccessRefresh>>
 >;
-export type ChatAttachmentsStartResult = NonNullable<
-  Awaited<ReturnType<typeof chatAttachmentsStart>>
->;
 export type ChatAttachmentsStatusResult = NonNullable<
   Awaited<ReturnType<typeof chatAttachmentsStatus>>
 >;
@@ -14855,14 +14934,14 @@ export type ChatAttachmentsCompleteResult = NonNullable<
 export type ChatAttachmentsGrantResult = NonNullable<
   Awaited<ReturnType<typeof chatAttachmentsGrant>>
 >;
+export type ChatAttachmentsStartResult = NonNullable<
+  Awaited<ReturnType<typeof chatAttachmentsStart>>
+>;
 export type ChatListConversationsResult = NonNullable<
   Awaited<ReturnType<typeof chatListConversations>>
 >;
 export type ChatCreateConversationResult = NonNullable<
   Awaited<ReturnType<typeof chatCreateConversation>>
->;
-export type ChatCurrentConversationResult = NonNullable<
-  Awaited<ReturnType<typeof chatCurrentConversation>>
 >;
 export type ChatGetConversationResult = NonNullable<
   Awaited<ReturnType<typeof chatGetConversation>>
@@ -14884,6 +14963,9 @@ export type ChatReopenConversationResult = NonNullable<
 >;
 export type ChatSelectConversationResult = NonNullable<
   Awaited<ReturnType<typeof chatSelectConversation>>
+>;
+export type ChatCurrentConversationResult = NonNullable<
+  Awaited<ReturnType<typeof chatCurrentConversation>>
 >;
 export type ChatListResult = NonNullable<Awaited<ReturnType<typeof chatList>>>;
 export type ChatSendResult = NonNullable<Awaited<ReturnType<typeof chatSend>>>;

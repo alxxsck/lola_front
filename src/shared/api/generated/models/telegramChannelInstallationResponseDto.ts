@@ -26,9 +26,9 @@ export interface TelegramChannelInstallationResponseDto {
   healthStatus: TelegramChannelHealthStatus;
   id: string;
   /** @nullable */
-  lastTestFailureCode?: string | null;
-  /** @nullable */
   lastTestedAt?: string | null;
+  /** @nullable */
+  lastTestFailureCode?: string | null;
   /** @minimum 0 */
   linkedUserCount: number;
   projectId: string;

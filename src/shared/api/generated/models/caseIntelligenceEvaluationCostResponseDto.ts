@@ -13,9 +13,9 @@ export interface CaseIntelligenceEvaluationCostResponseDto {
    */
   billedMicroUsd?: string | null;
   /** @minimum 0 */
-  cacheWriteInputTokens: number;
-  /** @minimum 0 */
   cachedInputTokens: number;
+  /** @minimum 0 */
+  cacheWriteInputTokens: number;
   /**
    * @nullable
    * @pattern ^\d+$

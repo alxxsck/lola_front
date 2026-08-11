@@ -14,9 +14,9 @@ export interface CaseIntelligenceObservabilityCostResponseDto {
    */
   billedMicroUsd?: string | null;
   /** @minimum 0 */
-  cacheWriteInputTokens: number;
-  /** @minimum 0 */
   cachedInputTokens: number;
+  /** @minimum 0 */
+  cacheWriteInputTokens: number;
   completeness: CaseIntelligenceObservabilityCostResponseDtoCompleteness;
   /**
    * @nullable

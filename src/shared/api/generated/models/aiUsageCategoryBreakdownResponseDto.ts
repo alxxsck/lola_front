@@ -9,11 +9,11 @@ import type { AiUsageCategoryBreakdownResponseDtoCategory } from "./aiUsageCateg
 
 export interface AiUsageCategoryBreakdownResponseDto {
   billedCost: string;
-  cacheWriteInputTokens: number;
   cachedInputAudioTokens: number;
   cachedInputImageTokens: number;
   cachedInputTextTokens: number;
   cachedInputTokens: number;
+  cacheWriteInputTokens: number;
   category: AiUsageCategoryBreakdownResponseDtoCategory;
   currency: string;
   durationSeconds: string;

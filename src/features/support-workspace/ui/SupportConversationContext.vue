@@ -10,6 +10,7 @@ import { createSupportCaseDeskController } from "@/features/support-case-desk/mo
 import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
 import SupportCaseBrief from "@/features/support-case-desk/ui/SupportCaseBrief.vue";
 import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
+import SupportCaseDecisionExplain from "@/features/support-case-intelligence/ui/SupportCaseDecisionExplain.vue";
 import type { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
 import SupportInspectorState from "@/features/support-inspector/ui/SupportInspectorState.vue";
 import type { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
@@ -41,6 +42,8 @@ const props = withDefaults(
     canReadCaseDesk?: boolean;
     canReadSlaContext?: boolean;
     canReadRoutingContext?: boolean;
+    projectId?: string;
+    canExplainCase?: boolean;
     reservationReconcileAttempt?: number;
     reservationReconcileInFlight?: boolean;
     assignmentController?: ReturnType<typeof createSupportAssignmentController>;
@@ -66,6 +69,8 @@ const props = withDefaults(
     canReadCaseDesk: false,
     canReadSlaContext: false,
     canReadRoutingContext: false,
+    projectId: "",
+    canExplainCase: false,
     reservationReconcileAttempt: 0,
     reservationReconcileInFlight: false,
     assignmentController: undefined,
@@ -493,6 +498,12 @@ defineExpose({ requestClassification });
                 severity="secondary"
                 outlined
                 @click="emit('openInternalNotes')"
+              />
+              <SupportCaseDecisionExplain
+                v-if="projectId && selection.case"
+                :project-id="projectId"
+                :case-id="selection.case.id"
+                :can-read="canExplainCase"
               />
             </div>
             <p v-else class="empty-copy">

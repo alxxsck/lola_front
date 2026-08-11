@@ -49,6 +49,30 @@ const PROJECT_OPERATIONS = [
     "project.case_intelligence.release.manage",
   ],
   ["CaseIntelligence_getRelease", "project.case_intelligence.read"],
+  ["CaseIntelligence_detectionRevision", "project.case_intelligence.read"],
+  ["CaseIntelligence_escalationRevision", "project.case_intelligence.read"],
+  [
+    "CaseIntelligence_evaluationDatasets",
+    "project.case_intelligence.labels.review",
+  ],
+  [
+    "CaseIntelligence_publishEvaluationDataset",
+    "project.case_intelligence.labels.review",
+  ],
+  [
+    "CaseIntelligence_evaluationDataset",
+    "project.case_intelligence.labels.review",
+  ],
+  [
+    "CaseIntelligence_evaluationsHistory",
+    "project.case_intelligence.release.manage",
+  ],
+  ["CaseIntelligence_runEvaluation", "project.case_intelligence.release.manage"],
+  ["CaseIntelligence_evaluation", "project.case_intelligence.release.manage"],
+  ["CaseIntelligence_observability", "project.case_intelligence.cost.read"],
+  ["CaseIntelligence_activateRelease", "project.case_intelligence.release.manage"],
+  ["CaseIntelligence_pauseRelease", "project.case_intelligence.release.manage"],
+  ["CaseIntelligence_rollbackRelease", "project.case_intelligence.release.manage"],
   [
     "CaseIntelligence_listDecisions",
     "project.case_intelligence.decisions.read",
@@ -117,6 +141,84 @@ export function validateSupportCaseIntelligenceContract(document) {
     "minimumSafetyRevisionId",
     "allowedActions",
   ]);
+  requireSchemaFields(document, "CaseIntelligenceEvaluationReportResponseDto", [
+    "id",
+    "version",
+    "status",
+    "datasetRevisionId",
+    "candidateFingerprint",
+    "securityGatePassed",
+    "qualityGatePassed",
+    "calibrationGatePassed",
+    "costGatePassed",
+    "capacityGatePassed",
+    "report",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceEvaluationReportBodyResponseDto", [
+    "candidate",
+    "published",
+    "coverage",
+    "calibration",
+    "strata",
+    "confusion",
+    "observations",
+    "cost",
+    "latency",
+    "queueImpact",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceEvaluationHistoryItemResponseDto", [
+    "detectionPolicyRevisionId",
+    "escalationPolicyRevisionId",
+    "safetyPolicyRevisionId",
+    "modelProfileRevisionId",
+    "calibratorRevisionId",
+    "calibrationDatasetId",
+    "routingOverlayRevisionId",
+    "compilerRevisionId",
+    "gates",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceLabelledDatasetSummaryResponseDto", [
+    "id",
+    "version",
+    "status",
+    "name",
+    "description",
+    "sampleCount",
+    "definitionHash",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceObservabilityResponseDto", [
+    "authority",
+    "completeThrough",
+    "cost",
+    "definitionsRevision",
+    "from",
+    "to",
+    "funnel",
+  ]);
+  requireSchemaFields(document, "CaseIntelligenceDecisionLogItemDto", [
+    "id",
+    "decidedAt",
+    "caseDecision",
+    "reasonCodes",
+    "matchedRuleCodes",
+    "evidenceRefs",
+    "corrections",
+    "releaseRevisionId",
+    "detectionPolicyRevisionId",
+    "escalationPolicyRevisionId",
+    "safetyPolicyRevisionId",
+    "modelProfileRevisionId",
+    "calibratorRevisionId",
+    "datasetRevisionId",
+    "routingOverlayRevisionId",
+    "compilerRevisionId",
+  ]);
+  requireSchemaPropertyEnum(
+    document,
+    "CaseIntelligenceEvaluationReportResponseDto",
+    "status",
+    ["PENDING", "PROCESSING", "OUTCOME_UNKNOWN", "PASSED", "FAILED"],
+  );
   requireSchemaFields(document, "CaseIntelligenceDetectionPolicyDto", [
     "scope",
     "locales",

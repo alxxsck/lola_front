@@ -15,8 +15,8 @@ export interface TranslationUsageTargetLocaleBreakdownResponseDto {
   admitted: number;
   billableCharacters: number;
   billingCurrency: string;
-  cacheHits: number;
   cachedInputTokens: number;
+  cacheHits: number;
   /** Terminal attempts that did not succeed. ADMITTED attempts are not errors. */
   errors: number;
   estimatedCostMicros: string;

@@ -577,6 +577,9 @@ onBeforeUnmount(() => {
           :aria-current="section === 'BUDGET' ? 'page' : undefined"
           ><i class="pi pi-gauge" /> Модель и лимиты</RouterLink
         >
+        <RouterLink to="/support/settings/case-intelligence/evaluation"
+          ><i class="pi pi-verified" /> Качество и публикация</RouterLink
+        >
       </nav>
 
       <div class="live-region" aria-live="polite" aria-atomic="true">
