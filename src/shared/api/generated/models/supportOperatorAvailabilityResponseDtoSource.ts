@@ -18,4 +18,5 @@ export const SupportOperatorAvailabilityResponseDtoSource = {
   SELF: "SELF",
   LEAD_OVERRIDE: "LEAD_OVERRIDE",
   LEASE_EXPIRY: "LEASE_EXPIRY",
+  BUSINESS_EXPIRY: "BUSINESS_EXPIRY",
 } as const;

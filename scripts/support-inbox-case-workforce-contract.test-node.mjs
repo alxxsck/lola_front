@@ -282,6 +282,37 @@ test("availability, workforce, queue, routing and SLA projections retain authori
       );
     },
     (contract) => {
+      const reasonCode =
+        contract.components.schemas.SupportOperatorAvailabilityResponseDto
+          .properties.reasonCode;
+      reasonCode.enum = reasonCode.enum.filter(
+        (value) => value !== "BUSINESS_EXPIRY",
+      );
+    },
+    (contract) => {
+      const source =
+        contract.components.schemas.SupportOperatorAvailabilityResponseDto
+          .properties.source;
+      source.enum = source.enum.filter(
+        (value) => value !== "BUSINESS_EXPIRY",
+      );
+    },
+    (contract) => {
+      const reasonCode =
+        contract.components.schemas.SupportLeadSafeFactDto.properties.reasonCode;
+      reasonCode.enum = reasonCode.enum.filter(
+        (value) => value !== "BUSINESS_EXPIRY",
+      );
+    },
+    (contract) => {
+      const topic =
+        contract.components.schemas
+          .PersonalSupportNotificationPreferenceResponseDto.properties.topic;
+      topic.enum = topic.enum.filter(
+        (value) => value !== "SUPPORT_CASE_ASSIGNED_TO_ME",
+      );
+    },
+    (contract) => {
       operation(
         contract,
         "SupportOperatorAvailability_overrideOperator",

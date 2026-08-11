@@ -768,8 +768,24 @@ export function validateSupportInboxCaseWorkforceContract(document) {
   requirePropertyEnum(
     document,
     "SupportOperatorAvailabilityResponseDto",
+    "reasonCode",
+    ["LEASE_EXPIRED", "BUSINESS_EXPIRY"],
+  );
+  requirePropertyEnum(
+    document,
+    "SupportOperatorAvailabilityResponseDto",
     "source",
-    ["SELF", "LEAD_OVERRIDE", "LEASE_EXPIRY"],
+    ["SELF", "LEAD_OVERRIDE", "LEASE_EXPIRY", "BUSINESS_EXPIRY"],
+  );
+  requirePropertyEnum(document, "SupportLeadSafeFactDto", "reasonCode", [
+    "LEASE_EXPIRED",
+    "BUSINESS_EXPIRY",
+  ]);
+  requirePropertyEnum(
+    document,
+    "PersonalSupportNotificationPreferenceResponseDto",
+    "topic",
+    ["SUPPORT_CASE_ASSIGNED_TO_ME"],
   );
 
   const workforceRead = operation(document, "SupportWorkforce_getWorkforce");

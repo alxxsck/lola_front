@@ -25,8 +25,6 @@ export interface ChangeOwnAvailabilityInput {
   hardDurationSeconds?: number;
 }
 
-const SUPPORT_AVAILABILITY_HEARTBEAT_INTERVAL_MS = 45_000;
-
 /** Owns the authoritative self-availability snapshot and one idempotent intent. */
 export function createSupportAvailabilityController(
   context: SupportAvailabilityContext,
@@ -51,49 +49,13 @@ export function createSupportAvailabilityController(
   let mutationGeneration = 0;
   let readAbort: AbortController | null = null;
   let mutationAbort: AbortController | null = null;
-  let heartbeatAbort: AbortController | null = null;
-  let heartbeatGeneration = 0;
-  let heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
-  let heartbeatEnabled = false;
-  let heartbeatRunning = false;
   let pendingCommand: SetOwnAvailabilityCommand | null = null;
-
-  function clearHeartbeatTimer(): void {
-    if (heartbeatTimer !== null) clearTimeout(heartbeatTimer);
-    heartbeatTimer = null;
-  }
-
-  function canHeartbeat(): boolean {
-    return (
-      context.canManage() &&
-      availability.value !== null &&
-      availability.value.declaredState !== "OFFLINE"
-    );
-  }
-
-  function scheduleHeartbeat(): void {
-    clearHeartbeatTimer();
-    if (!heartbeatEnabled || !canHeartbeat()) return;
-    heartbeatTimer = setTimeout(() => {
-      void renewOwnLease();
-    }, SUPPORT_AVAILABILITY_HEARTBEAT_INTERVAL_MS);
-  }
-
-  function stopHeartbeat(): void {
-    heartbeatEnabled = false;
-    heartbeatGeneration += 1;
-    heartbeatAbort?.abort();
-    heartbeatAbort = null;
-    heartbeatRunning = false;
-    clearHeartbeatTimer();
-  }
 
   function reset(): void {
     readGeneration += 1;
     mutationGeneration += 1;
     readAbort?.abort();
     mutationAbort?.abort();
-    stopHeartbeat();
     readAbort = null;
     mutationAbort = null;
     availability.value = null;
@@ -171,7 +133,6 @@ export function createSupportAvailabilityController(
         return;
       }
       availability.value = result;
-      scheduleHeartbeat();
     } catch (cause) {
       if (!isCurrentRead(projectId, operatorId, requestGeneration)) return;
       if (isAccessLost(cause)) {
@@ -246,7 +207,6 @@ export function createSupportAvailabilityController(
         return;
       }
       availability.value = result;
-      scheduleHeartbeat();
       pendingCommand = null;
       unknownOutcome.value = false;
       needsReconcile.value = false;
@@ -264,8 +224,20 @@ export function createSupportAvailabilityController(
         unknownOutcome.value = false;
         needsReconcile.value = true;
         conflictVersion.value = availability.value?.version ?? null;
-        error.value =
-          "Статус уже изменён в другом окне. Обновите данные и повторите сохранение.";
+        await load();
+        if (!isCurrentMutation(projectId, operatorId, requestGeneration)) return;
+        if (
+          needsReconcile.value &&
+          availability.value !== null &&
+          conflictVersion.value !== null &&
+          availability.value.version !== conflictVersion.value
+        ) {
+          error.value =
+            "Статус уже изменён в другом окне. Серверные данные обновлены — проверьте их и повторите сохранение.";
+        } else if (!error.value) {
+          error.value =
+            "Статус уже изменён в другом окне. Обновите данные и повторите сохранение.";
+        }
         return;
       }
       if (
@@ -334,72 +306,6 @@ export function createSupportAvailabilityController(
     await submit(command);
   }
 
-  async function renewOwnLease(): Promise<void> {
-    clearHeartbeatTimer();
-    const snapshot = availability.value;
-    const projectId = context.projectId();
-    const operatorId = context.operatorId();
-    if (
-      heartbeatRunning ||
-      !heartbeatEnabled ||
-      !snapshot ||
-      !projectId ||
-      !operatorId ||
-      !canHeartbeat()
-    )
-      return;
-
-    heartbeatRunning = true;
-    const requestGeneration = ++heartbeatGeneration;
-    const abort = new AbortController();
-    heartbeatAbort = abort;
-    try {
-      const result = await source.renewOwn(
-        projectId,
-        operatorId,
-        snapshot.version,
-        abort.signal,
-      );
-      if (
-        requestGeneration !== heartbeatGeneration ||
-        context.projectId() !== projectId ||
-        context.operatorId() !== operatorId ||
-        !context.canManage()
-      )
-        return;
-      if (!isExpectedTarget(result, projectId, operatorId)) {
-        error.value = "Статус доступности вернул данные другого сотрудника";
-        return;
-      }
-      availability.value = result;
-      if (error.value === "Не удалось продлить статус доступности") error.value = "";
-    } catch (cause) {
-      if (requestGeneration !== heartbeatGeneration) return;
-      if (isAccessLost(cause)) {
-        reset();
-        await context.onForbidden?.();
-        return;
-      }
-      if (cause instanceof ApiError && cause.status === 409) {
-        await load();
-        return;
-      }
-      error.value = "Не удалось продлить статус доступности";
-    } finally {
-      if (requestGeneration === heartbeatGeneration) {
-        heartbeatRunning = false;
-        heartbeatAbort = null;
-        scheduleHeartbeat();
-      }
-    }
-  }
-
-  function startHeartbeat(): void {
-    heartbeatEnabled = true;
-    clearHeartbeatTimer();
-    if (canHeartbeat()) void renewOwnLease();
-  }
-
   return {
     availability,
     loading,
@@ -413,9 +319,6 @@ export function createSupportAvailabilityController(
     change,
     retryUnknownOutcome,
     retryAfterReconcile,
-    renewOwnLease,
-    startHeartbeat,
-    stopHeartbeat,
     reset,
   };
 }

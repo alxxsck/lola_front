@@ -476,9 +476,9 @@ function toggleRiskSelection(caseId: string, selected: boolean): void {
     : selectedRiskCaseIds.value.filter((item) => item !== caseId);
 }
 
-function startAvailabilityHeartbeat(): void {
+function loadAvailability(): void {
   if (!canReadAvailability.value) return;
-  void availability.load().then(() => availability.startHeartbeat());
+  void availability.load();
 }
 
 function labelRiskType(value: SupportLeadRiskType): string {
@@ -748,7 +748,7 @@ onMounted(async () => {
     fallbackCaseId.value = routedCaseId;
     await leadControl.selectCase(routedCaseId);
   }
-  startAvailabilityHeartbeat();
+  loadAvailability();
 });
 
 watch(
@@ -769,7 +769,7 @@ watch(
     leadAssignmentBatch.reset();
     selectedRiskCaseIds.value = [];
     reload();
-    startAvailabilityHeartbeat();
+    loadAvailability();
   },
 );
 
@@ -802,7 +802,7 @@ watch(canReadAvailability, (allowed) => {
     availability.reset();
     return;
   }
-  startAvailabilityHeartbeat();
+  loadAvailability();
 });
 
 watch(canReadAlerts, (allowed) => {

@@ -25,4 +25,5 @@ export const SupportOperatorAvailabilityResponseDtoReasonCode = {
   SHIFT_END: "SHIFT_END",
   LEAD_INTERVENTION: "LEAD_INTERVENTION",
   LEASE_EXPIRED: "LEASE_EXPIRED",
+  BUSINESS_EXPIRY: "BUSINESS_EXPIRY",
 } as const;

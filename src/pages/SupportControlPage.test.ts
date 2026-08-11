@@ -26,7 +26,6 @@ const api = vi.hoisted(() => ({
   readAlertDetail: vi.fn(),
   readAvailability: vi.fn(),
   setOwnAvailability: vi.fn(),
-  renewAvailability: vi.fn(),
 }));
 
 vi.mock("@/features/support-control/api/support-lead-source", () => ({
@@ -43,7 +42,6 @@ vi.mock("@/features/support-availability/api/support-availability-source", () =>
   supportAvailabilitySource: {
     read: api.readAvailability,
     setOwn: api.setOwnAvailability,
-    renewOwn: api.renewAvailability,
   },
 }));
 
@@ -242,7 +240,6 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     version: 7,
   };
   api.readAvailability.mockResolvedValue(availability);
-  api.renewAvailability.mockResolvedValue(availability);
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -453,7 +450,7 @@ describe("SupportControlPage", () => {
     expect(wrapper.text()).not.toContain("Операционные сигналы");
   });
 
-  it("keeps an available operator lease alive while viewing support control", async () => {
+  it("loads durable availability without renewing a browser presence lease", async () => {
     const { wrapper } = await render(summary, { allowAvailability: true });
 
     expect(api.readAvailability).toHaveBeenCalledWith(
@@ -461,14 +458,8 @@ describe("SupportControlPage", () => {
       "operator-1",
       expect.any(AbortSignal),
     );
-    expect(api.renewAvailability).toHaveBeenCalledWith(
-      "project-1",
-      "operator-1",
-      7,
-      expect.any(AbortSignal),
-    );
-
     wrapper.unmount();
+    expect(api.setOwnAvailability).not.toHaveBeenCalled();
   });
 
   it("does not treat an incomplete risk projection as an empty queue", async () => {

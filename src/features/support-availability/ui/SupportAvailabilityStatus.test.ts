@@ -19,10 +19,13 @@ const availability: SupportAvailabilitySnapshot = {
   version: 1,
 };
 
-function render(canManage = true) {
+function render(
+  canManage = true,
+  value: SupportAvailabilitySnapshot = availability,
+) {
   return mount(SupportAvailabilityStatus, {
     props: {
-      availability,
+      availability: value,
       loading: false,
       changing: false,
       error: "",
@@ -44,6 +47,38 @@ describe("SupportAvailabilityStatus", () => {
     expect(wrapper.text()).toContain("Получаете новые обращения");
     expect(wrapper.text()).toContain("Вы выбрали");
     expect(wrapper.text()).not.toContain("online presence");
+  });
+
+  it("does not present a past compatibility lease as availability expiry", () => {
+    const wrapper = render(
+      true,
+      {
+        ...availability,
+        effectiveUntil: null,
+        leaseUntil: "2026-08-06T09:58:00.000Z",
+      },
+    );
+
+    expect(wrapper.text()).toContain("Доступен");
+    expect(wrapper.text()).toContain("Получаете новые обращения");
+    expect(wrapper.text()).not.toContain("Подтверждён до");
+    expect(wrapper.text()).not.toContain("Истёк срок подтверждения");
+  });
+
+  it("explains server-owned business expiry without blaming the connection", () => {
+    const wrapper = render(true, {
+      ...availability,
+      declaredState: "AVAILABLE",
+      effectiveState: "OFFLINE",
+      acceptsNewWork: false,
+      effectiveUntil: "2026-08-06T10:00:00.000Z",
+      reasonCode: "BUSINESS_EXPIRY",
+      source: "BUSINESS_EXPIRY",
+    });
+
+    expect(wrapper.text()).toContain("Офлайн");
+    expect(wrapper.text()).toContain("Окно доступности завершено");
+    expect(wrapper.text()).not.toMatch(/соединен|подтвержден|heartbeat/iu);
   });
 
   it("emits an explicit state change with a reason", async () => {

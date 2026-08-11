@@ -16,6 +16,9 @@ vi.mock("@/shared/api/http/axios-instance", () => ({
   refreshAccessToken: mocks.refreshAccessToken,
 }));
 import { CmsRealtimeClient } from "./cms-realtime-client";
+import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
+import type { SupportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
+import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
 
 function fakeSocket() {
   const listeners = new Map<string, (...args: never[]) => void>();
@@ -85,6 +88,57 @@ describe("CmsRealtimeClient", () => {
     expect(socket.disconnect).not.toHaveBeenCalled();
     expect(cases).toHaveBeenCalledWith({ eventId: "case-summary-1" });
     expect(suspensions).toHaveBeenCalledWith({ eventId: "suspension-1" });
+  });
+
+  it("keeps the page availability controller out of real workspace reconnect callbacks", async () => {
+    const socket = fakeSocket();
+    mocks.io.mockReturnValue(socket);
+    const setOwn = vi.fn();
+    const availabilitySource: SupportAvailabilitySource = {
+      read: vi.fn().mockResolvedValue({
+        operatorId: "operator-1",
+        projectId: "project-1",
+        declaredState: "AVAILABLE",
+        effectiveState: "AVAILABLE",
+        acceptsNewWork: true,
+        effectiveUntil: null,
+        leaseRenewedAt: "2026-08-06T10:00:00.000Z",
+        leaseUntil: null,
+        reasonCode: "SHIFT_START",
+        source: "SELF",
+        transitionedAt: "2026-08-06T10:00:00.000Z",
+        version: 7,
+      }),
+      setOwn,
+    };
+    const availability = createSupportAvailabilityController(
+      {
+        projectId: () => "project-1",
+        operatorId: () => "operator-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      availabilitySource,
+    );
+    const realtime = new CmsRealtimeClient();
+    const workspaceLive = createSupportWorkspaceLiveController(
+      { reconcile: vi.fn().mockResolvedValue(undefined) },
+      realtime,
+    );
+
+    await availability.load();
+    await workspaceLive.setSelection("project-1", "conversation-1");
+    await vi.waitFor(() => expect(workspaceLive.state.value).toBe("CONNECTED"));
+
+    socket.trigger("disconnect", "transport close");
+    expect(workspaceLive.state.value).toBe("DEGRADED");
+    socket.trigger("connect");
+    await vi.waitFor(() => expect(workspaceLive.state.value).toBe("CONNECTED"));
+
+    expect(availability.availability.value?.effectiveState).toBe("AVAILABLE");
+    expect(setOwn).not.toHaveBeenCalled();
+    workspaceLive.dispose();
+    realtime.deactivateProject();
   });
 
   it("uses only the access token and project in the Socket.IO handshake", async () => {

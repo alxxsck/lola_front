@@ -124,6 +124,7 @@ function labelReason(value: string | null): string {
       SHIFT_END: "Конец смены",
       LEAD_INTERVENTION: "Решение лида",
       LEASE_EXPIRED: "Истёк срок подтверждения",
+      BUSINESS_EXPIRY: "Окно доступности завершено",
     }[value ?? ""] ?? "Причина не указана"
   );
 }
@@ -134,6 +135,7 @@ function labelSource(value: string | null): string {
       SELF: "Вы выбрали",
       LEAD_OVERRIDE: "Изменил лид",
       LEASE_EXPIRY: "Истёк срок подтверждения",
+      BUSINESS_EXPIRY: "По правилам доступности",
     }[value ?? ""] ?? "Источник не указан"
   );
 }
@@ -216,12 +218,14 @@ function submit(): void {
           <dd>{{ relativeTime(availability.transitionedAt) }}</dd>
         </div>
         <div v-if="availability.effectiveUntil">
-          <dt>Действует до</dt>
+          <dt>
+            {{
+              availability.source === "BUSINESS_EXPIRY"
+                ? "Окно завершилось"
+                : "Действует до"
+            }}
+          </dt>
           <dd>{{ relativeTime(availability.effectiveUntil) }}</dd>
-        </div>
-        <div v-if="availability.leaseUntil">
-          <dt>Подтверждён до</dt>
-          <dd>{{ relativeTime(availability.leaseUntil) }}</dd>
         </div>
       </dl>
 

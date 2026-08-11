@@ -871,6 +871,16 @@ test("moves through visible inbox rows with j/k and arrows without hijacking inp
 test("shows and changes only the operator's authoritative availability intent", async ({
   page,
 }) => {
+  await page.evaluate(() => {
+    Object.assign(window, { __supportAvailabilityCommandCount: 0 });
+    window.addEventListener("retenive:support-availability-command", () => {
+      const state = window as typeof window & {
+        __supportAvailabilityCommandCount?: number;
+      };
+      state.__supportAvailabilityCommandCount =
+        (state.__supportAvailabilityCommandCount ?? 0) + 1;
+    });
+  });
   await page.getByRole("button", { name: "Моя доступность" }).click();
   const status = page.getByRole("region", {
     name: "Статус для новых обращений",
@@ -880,6 +890,34 @@ test("shows and changes only the operator's authoritative availability intent", 
     status.getByText("Доступен", { exact: true }).first(),
   ).toBeVisible();
   await expect(status).toContainText("Получаете новые обращения");
+
+  const commandCountBeforeReconnect = await page.evaluate(
+    () =>
+      (
+        window as typeof window & {
+          __supportAvailabilityCommandCount?: number;
+        }
+      ).__supportAvailabilityCommandCount ?? 0,
+  );
+  await page.context().setOffline(true);
+  await expect(
+    status.getByText("Доступен", { exact: true }).first(),
+  ).toBeVisible();
+  await page.context().setOffline(false);
+  await status.getByRole("button", { name: "Обновить" }).click();
+  await expect(
+    status.getByText("Доступен", { exact: true }).first(),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __supportAvailabilityCommandCount?: number;
+          }
+        ).__supportAvailabilityCommandCount ?? 0,
+    ),
+  ).toBe(commandCountBeforeReconnect);
 
   const selects = status.locator("select");
   await selects.nth(0).selectOption("AWAY");
@@ -891,6 +929,22 @@ test("shows and changes only the operator's authoritative availability intent", 
     status.getByText("Отошёл", { exact: true }).first(),
   ).toBeVisible();
   await expect(status).toContainText("Новые обращения не назначаются");
+
+  await selects.nth(0).selectOption("AVAILABLE");
+  await status.getByRole("button", { name: "Сохранить статус" }).click();
+  await expect(
+    status.getByText("Доступен", { exact: true }).first(),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.goto("/overview");
+  await page.goto("/support/inbox?view=system:ALL_CONVERSATIONS");
+  await page.getByRole("button", { name: "Моя доступность" }).click();
+  await expect(
+    page
+      .getByRole("region", { name: "Статус для новых обращений" })
+      .getByText("Доступен", { exact: true })
+      .first(),
+  ).toBeVisible();
 });
 
 test("switches one inbox between Conversations and Cases and exposes exact context", async ({

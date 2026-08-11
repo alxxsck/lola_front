@@ -31,52 +31,76 @@ function source(
 ): SupportAvailabilitySource {
   return {
     read: vi.fn().mockResolvedValue(snapshot()),
-    renewOwn: vi.fn().mockResolvedValue(snapshot()),
     setOwn: vi.fn().mockResolvedValue(snapshot({ version: 2 })),
     ...overrides,
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe("support availability controller", () => {
-  it("renews an active lease immediately and periodically while the workspace is active", async () => {
+  it("keeps a manually declared AVAILABLE state after workspace teardown and two minutes away", async () => {
     vi.useFakeTimers();
-    const renewOwn = vi.fn().mockResolvedValue(
-      snapshot({
-        leaseRenewedAt: "2026-08-06T10:00:45.000Z",
-        leaseUntil: "2026-08-06T10:02:45.000Z",
-      }),
-    );
-    const controller = createSupportAvailabilityController(
-      {
-        projectId: () => "project-1",
-        operatorId: () => "operator-1",
-        canRead: () => true,
-        canManage: () => true,
-      },
-      source({ renewOwn }),
-    );
+    vi.setSystemTime(new Date("2026-08-06T10:00:00.000Z"));
+    let authoritative = snapshot({
+      declaredState: "OFFLINE",
+      effectiveState: "OFFLINE",
+      acceptsNewWork: false,
+      reasonCode: "SHIFT_END",
+    });
+    const read = vi.fn(async () => structuredClone(authoritative));
+    const setOwn = vi.fn(async () => {
+      authoritative = snapshot({
+        version: 2,
+        declaredState: "AVAILABLE",
+        effectiveState: "AVAILABLE",
+        acceptsNewWork: true,
+        reasonCode: "SHIFT_START",
+        leaseUntil: "2026-08-06T10:02:00.000Z",
+      });
+      return structuredClone(authoritative);
+    });
+    const context = {
+      projectId: () => "project-1",
+      operatorId: () => "operator-1",
+      canRead: () => true,
+      canManage: () => true,
+    };
 
-    await controller.load();
-    controller.startHeartbeat();
-    await vi.waitFor(() => expect(renewOwn).toHaveBeenCalledTimes(1));
-    expect(renewOwn).toHaveBeenLastCalledWith(
-      "project-1",
-      "operator-1",
-      1,
-      expect.any(AbortSignal),
+    const firstWorkspace = createSupportAvailabilityController(
+      context,
+      source({ read, setOwn }),
     );
+    await firstWorkspace.load();
+    await firstWorkspace.change({
+      state: "AVAILABLE",
+      reasonCode: "SHIFT_START",
+    });
+    firstWorkspace.reset();
 
-    await vi.advanceTimersByTimeAsync(45_000);
-    expect(renewOwn).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(120_001);
+    const reopenedWorkspace = createSupportAvailabilityController(
+      context,
+      source({ read, setOwn }),
+    );
+    await reopenedWorkspace.load();
 
-    controller.reset();
-    await vi.advanceTimersByTimeAsync(45_000);
-    expect(renewOwn).toHaveBeenCalledTimes(2);
+    expect(reopenedWorkspace.availability.value?.effectiveState).toBe(
+      "AVAILABLE",
+    );
+    expect(reopenedWorkspace.availability.value?.acceptsNewWork).toBe(true);
+    expect(setOwn).toHaveBeenCalledOnce();
     vi.useRealTimers();
   });
 
-  it("restores a manually declared AVAILABLE state after a legacy lease expiry", async () => {
-    const renewOwn = vi.fn().mockResolvedValue(snapshot({ version: 3 }));
+  it("does not send an availability command when the workspace connection lifecycle changes", async () => {
+    const setOwn = vi.fn();
     const controller = createSupportAvailabilityController(
       {
         projectId: () => "project-1",
@@ -84,28 +108,14 @@ describe("support availability controller", () => {
         canRead: () => true,
         canManage: () => true,
       },
-      source({
-        read: vi.fn().mockResolvedValue(
-          snapshot({
-            declaredState: "AVAILABLE",
-            effectiveState: "OFFLINE",
-            acceptsNewWork: false,
-            leaseRenewedAt: null,
-            leaseUntil: null,
-            reasonCode: "LEASE_EXPIRED",
-            source: "LEASE_EXPIRY",
-            version: 2,
-          }),
-        ),
-        renewOwn,
-      }),
+      source({ setOwn }),
     );
 
     await controller.load();
-    controller.startHeartbeat();
-    await vi.waitFor(() => expect(renewOwn).toHaveBeenCalledOnce());
+    controller.reset();
+    await controller.load();
 
-    expect(controller.availability.value?.effectiveState).toBe("AVAILABLE");
+    expect(setOwn).not.toHaveBeenCalled();
   });
 
   it("does not commit an availability snapshot for another operator", async () => {
@@ -277,13 +287,12 @@ describe("support availability controller", () => {
     expect(controller.error.value).toContain("Проверьте статус");
   });
 
-  it("keeps the draft on a conflict and retries it only after a fresh version", async () => {
+  it("never renders optimistic OFFLINE on conflict and retries only from the fresh server version", async () => {
+    const authoritativeRead = deferred<SupportAvailabilitySnapshot>();
     const read = vi
       .fn()
       .mockResolvedValueOnce(snapshot())
-      .mockResolvedValueOnce(
-        snapshot({ version: 2, declaredState: "BUSY", effectiveState: "BUSY" }),
-      );
+      .mockImplementationOnce(() => authoritativeRead.promise);
     const createIdempotencyKey = vi
       .fn()
       .mockReturnValueOnce("availability-intent-1")
@@ -294,8 +303,8 @@ describe("support availability controller", () => {
       .mockResolvedValueOnce(
         snapshot({
           version: 3,
-          declaredState: "AWAY",
-          effectiveState: "AWAY",
+          declaredState: "OFFLINE",
+          effectiveState: "OFFLINE",
           acceptsNewWork: false,
         }),
       );
@@ -311,29 +320,76 @@ describe("support availability controller", () => {
     );
 
     await controller.load();
-    await controller.change({
-      state: "AWAY",
-      reasonCode: "BREAK",
-      reasonNote: "Перерыв",
-      hardDurationSeconds: 900,
+    const change = controller.change({
+      state: "OFFLINE",
+      reasonCode: "SHIFT_END",
     });
-    await controller.retryAfterReconcile();
-    expect(setOwn).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    expect(controller.availability.value?.effectiveState).toBe("AVAILABLE");
 
-    await controller.load();
+    authoritativeRead.resolve(
+      snapshot({
+        version: 2,
+        declaredState: "BUSY",
+        effectiveState: "BUSY",
+        acceptsNewWork: false,
+      }),
+    );
+    await change;
+
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(controller.availability.value?.effectiveState).toBe("BUSY");
     expect(controller.canRetryAfterReconcile.value).toBe(true);
     await controller.retryAfterReconcile();
 
     expect(setOwn).toHaveBeenCalledTimes(2);
     expect(setOwn.mock.calls[1]?.[2]).toEqual({
-      state: "AWAY",
-      reasonCode: "BREAK",
-      reasonNote: "Перерыв",
-      hardDurationSeconds: 900,
+      state: "OFFLINE",
+      reasonCode: "SHIFT_END",
       expectedVersion: 2,
       idempotencyKey: "availability-intent-2",
     });
     expect(controller.draft.value).toBeNull();
+  });
+
+  it("does not publish a stale conflict after its scope is reset during reconciliation", async () => {
+    const authoritativeRead = deferred<SupportAvailabilitySnapshot>();
+    const read = vi
+      .fn()
+      .mockResolvedValueOnce(snapshot())
+      .mockImplementationOnce(() => authoritativeRead.promise);
+    const controller = createSupportAvailabilityController(
+      {
+        projectId: () => "project-1",
+        operatorId: () => "operator-1",
+        canRead: () => true,
+        canManage: () => true,
+      },
+      source({
+        read,
+        setOwn: vi.fn().mockRejectedValue(new ApiError(409, "conflict")),
+      }),
+    );
+
+    await controller.load();
+    const change = controller.change({
+      state: "OFFLINE",
+      reasonCode: "SHIFT_END",
+    });
+    await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+    controller.reset();
+    authoritativeRead.resolve(
+      snapshot({
+        version: 2,
+        declaredState: "BUSY",
+        effectiveState: "BUSY",
+      }),
+    );
+    await change;
+
+    expect(controller.availability.value).toBeNull();
+    expect(controller.error.value).toBe("");
+    expect(controller.needsReconcile.value).toBe(false);
   });
 
   it("purges a cached snapshot after concealed target loss", async () => {

@@ -2967,7 +2967,6 @@ onMounted(async () => {
     await supportSearch.search();
   if (canReadAvailability.value) {
     await availability.load();
-    availability.startHeartbeat();
   }
   if (canManageRoutingOffers.value) await assignment.loadOffers();
 });
@@ -3048,7 +3047,6 @@ watch(
         await supportSearch.search();
       if (canReadAvailability.value) {
         await availability.load();
-        availability.startHeartbeat();
       }
       if (canManageRoutingOffers.value) await assignment.loadOffers();
     })();
@@ -3060,7 +3058,7 @@ watch(canReadAvailability, (allowed) => {
     availability.reset();
     return;
   }
-  void availability.load().then(() => availability.startHeartbeat());
+  void availability.load();
 });
 
 watch(canUseSupportSearch, (allowed) => {

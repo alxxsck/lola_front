@@ -160,6 +160,7 @@ const auditReasonLabels = {
   TRAINING: "Обучение",
   WRAP_UP: "Завершение текущей работы",
   LEASE_EXPIRED: "Срок резерва истёк",
+  BUSINESS_EXPIRY: "Окно доступности завершено",
   END_USER_CASE_CREATED: "Обращение создано",
   END_USER_CASE_MESSAGE_LINKED: "Сообщение связано с обращением",
   END_USER_CASE_REOPENED: "Обращение открыто повторно",

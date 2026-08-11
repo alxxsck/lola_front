@@ -1,5 +1,4 @@
 import {
-  supportOperatorAvailabilityHeartbeatOwn,
   supportOperatorAvailabilityRead,
   supportOperatorAvailabilitySetOwn,
 } from "@/shared/api/generated/retenive-backend";
@@ -52,8 +51,17 @@ export interface SupportAvailabilitySnapshot {
   effectiveUntil: string | null;
   leaseRenewedAt: string | null;
   leaseUntil: string | null;
-  reasonCode: SupportAvailabilityReasonCode | "LEASE_EXPIRED" | null;
-  source: "SELF" | "LEAD_OVERRIDE" | "LEASE_EXPIRY" | null;
+  reasonCode:
+    | SupportAvailabilityReasonCode
+    | "LEASE_EXPIRED"
+    | "BUSINESS_EXPIRY"
+    | null;
+  source:
+    | "SELF"
+    | "LEAD_OVERRIDE"
+    | "LEASE_EXPIRY"
+    | "BUSINESS_EXPIRY"
+    | null;
   transitionedAt: string | null;
   version: number;
 }
@@ -79,13 +87,10 @@ export interface SupportAvailabilitySource {
     command: SetOwnAvailabilityCommand,
     signal?: AbortSignal,
   ): Promise<SupportAvailabilitySnapshot>;
-  renewOwn(
-    projectId: string,
-    operatorId: string,
-    expectedVersion: number,
-    signal?: AbortSignal,
-  ): Promise<SupportAvailabilitySnapshot>;
 }
+
+export const SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT =
+  "retenive:support-availability-command";
 
 function mapAvailability(
   response: SupportOperatorAvailabilityResponseDto,
@@ -142,22 +147,6 @@ const apiSource: SupportAvailabilitySource = {
       throw normalizeApiError(cause);
     }
   },
-  async renewOwn(projectId, _operatorId, expectedVersion, signal) {
-    try {
-      return mapAvailability(
-        await supportOperatorAvailabilityHeartbeatOwn(
-          projectId,
-          {},
-          {
-            signal,
-            headers: { "If-Match": `"${expectedVersion}"` },
-          },
-        ),
-      );
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
 };
 
 const mockSnapshots = new Map<string, SupportAvailabilitySnapshot>();
@@ -199,6 +188,9 @@ const mockSource: SupportAvailabilitySource = {
   },
   async setOwn(projectId, operatorId, command, signal) {
     if (signal?.aborted) throw signal.reason;
+    globalThis.dispatchEvent?.(
+      new CustomEvent(SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT),
+    );
     const current = mockSnapshot(projectId, operatorId);
     if (current.version !== command.expectedVersion)
       throw new ApiError(409, "Availability version is stale");
@@ -211,24 +203,9 @@ const mockSource: SupportAvailabilitySource = {
       reasonCode: command.reasonCode,
       source: "SELF",
       transitionedAt: now,
-      leaseRenewedAt: now,
+      leaseRenewedAt: current.leaseRenewedAt,
+      leaseUntil: null,
       version: current.version + 1,
-    };
-    mockSnapshots.set(mockKey(projectId, operatorId), next);
-    return next;
-  },
-  async renewOwn(projectId, operatorId, expectedVersion, signal) {
-    if (signal?.aborted) throw signal.reason;
-    const current = mockSnapshot(projectId, operatorId);
-    if (current.version !== expectedVersion)
-      throw new ApiError(409, "Availability version is stale");
-    if (current.effectiveState === "OFFLINE")
-      throw new ApiError(409, "Availability lease cannot be renewed");
-    const renewedAt = new Date();
-    const next: SupportAvailabilitySnapshot = {
-      ...current,
-      leaseRenewedAt: renewedAt.toISOString(),
-      leaseUntil: new Date(renewedAt.getTime() + 120_000).toISOString(),
     };
     mockSnapshots.set(mockKey(projectId, operatorId), next);
     return next;
