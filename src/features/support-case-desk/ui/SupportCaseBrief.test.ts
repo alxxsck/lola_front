@@ -47,6 +47,17 @@ describe("SupportCaseBrief", () => {
 
     const dialog = wrapper.get('[role="dialog"]');
     expect(dialog.text()).toContain("Контекст обращения #48");
+    expect(dialog.get(".case-brief-sheet__summary").text()).toContain(
+      "Что произошло",
+    );
+    expect(dialog.get(".case-brief-sheet__goal").text()).toContain(
+      "Что нужно получить",
+    );
+    expect(
+      dialog.get(".case-brief-sheet__signals").attributes("aria-label"),
+    ).toBe("Риски и ограничения");
+    expect(dialog.findAll(".case-brief-sheet__blockers li")).toHaveLength(2);
+    expect(dialog.findAll(".case-brief-sheet__limitations li")).toHaveLength(1);
     expect(dialog.text()).toContain(
       "Подтвердить статус депозита и сообщить пользователю проверяемый следующий шаг.",
     );
