@@ -38,6 +38,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
   const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const cancellationReconcileTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const requestSequences = new Map<string, number>()
+  const detailReads = new Map<string, Promise<boolean>>()
   const revokedConversationIds = new Set<string>()
   let lastSequence = 0n
   let generation = 0
@@ -233,6 +234,35 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     }
   }
 
+  function ensureDetail(
+    endUserId: string,
+    conversationId: string,
+    knownVersion?: string | null,
+  ): Promise<boolean> {
+    let current = getEntry(conversationId)
+    if (!current && knownVersion === null) {
+      applyState(conversationId, endUserId, {
+        mode: 'AUTOMATIC',
+        lifecycle: 'NONE',
+        version: '0',
+        suspendedUntil: null,
+        serverTime: new Date().toISOString(),
+      })
+      current = getEntry(conversationId)
+    }
+    if (current?.detail || current?.summary.lifecycle === 'NONE') {
+      return Promise.resolve(true)
+    }
+    const key = `${endUserId}\u0000${conversationId}`
+    const existing = detailReads.get(key)
+    if (existing) return existing
+    const request = loadDetail(endUserId, conversationId).finally(() => {
+      if (detailReads.get(key) === request) detailReads.delete(key)
+    })
+    detailReads.set(key, request)
+    return request
+  }
+
   async function mutate(
     conversationId: string,
     endUserId: string,
@@ -357,6 +387,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     cancellationReconcileTimers.forEach((timer) => clearTimeout(timer))
     cancellationReconcileTimers.clear()
     requestSequences.clear()
+    detailReads.clear()
     revokedConversationIds.clear()
     entries.value = new Map()
     transientErrors.value = new Map()
@@ -395,6 +426,9 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
       conversationId,
       (requestSequences.get(conversationId) ?? 0) + 1,
     )
+    for (const key of detailReads.keys()) {
+      if (key.endsWith(`\u0000${conversationId}`)) detailReads.delete(key)
+    }
     clearExpiryTimer(conversationId)
     clearCancellationReconcileTimer(conversationId)
     const nextEntries = new Map(entries.value)
@@ -418,6 +452,7 @@ export const useConversationAISuspensionStore = defineStore('conversation-ai-sus
     ingestConversations,
     applyConfirmedState,
     loadDetail,
+    ensureDetail,
     start,
     extend,
     resume,

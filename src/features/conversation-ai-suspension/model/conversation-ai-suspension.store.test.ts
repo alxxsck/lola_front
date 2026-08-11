@@ -79,6 +79,50 @@ describe('хранилище приостановок AI по диалогам',
     expect(store.getEntry('conversation-2')?.summary.mode).toBe('AUTOMATIC')
   })
 
+  it('не читает detail для автоматического состояния и объединяет параллельные чтения', async () => {
+    const store = useConversationAISuspensionStore()
+    await store.activateProject('project-1')
+
+    await expect(store.ensureDetail('user-1', 'conversation-1', null)).resolves.toBe(true)
+    expect(store.getEntry('conversation-1')?.summary.lifecycle).toBe('NONE')
+    expect(mocks.get).not.toHaveBeenCalled()
+
+    store.ingestConversations([{
+      ...conversation('conversation-2'),
+      aiSuspension: {
+        ...automatic,
+        mode: 'SUSPENDED',
+        lifecycle: 'ACTIVE',
+        version: '1',
+        suspendedUntil: '2026-07-20T14:00:00.000Z',
+      },
+    }])
+    let finish!: (value: unknown) => void
+    mocks.get.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+
+    const reads = Array.from(
+      { length: 11 },
+      () => store.ensureDetail('user-1', 'conversation-2'),
+    )
+
+    expect(mocks.get).toHaveBeenCalledTimes(1)
+    finish({
+      ...automatic,
+      mode: 'SUSPENDED',
+      lifecycle: 'ACTIVE',
+      version: '1',
+      suspendedUntil: '2026-07-20T14:00:00.000Z',
+      startedAt: '2026-07-20T13:00:00.000Z',
+      startedBy: null,
+      reason: 'OPERATOR_TAKEOVER',
+      note: null,
+      resumedAt: null,
+      resumedBy: null,
+    })
+
+    await expect(Promise.all(reads)).resolves.toEqual(Array(11).fill(true))
+  })
+
   it('игнорирует запоздалое событие и принимает более новое', async () => {
     const store = useConversationAISuspensionStore()
     await store.activateProject('project-1')

@@ -2822,7 +2822,14 @@ function reloadSelectedAiSuspension(): void {
   const selection = conversation.selection.value;
   if (!canReadSelectedAiSuspension.value || !selection?.conversation) return;
   aiSuspension.restoreConversation(selection.conversation.id);
-  void aiSuspension.loadDetail(selection.endUser.id, selection.conversation.id);
+  // A null action revision authoritatively means that no suspension row exists,
+  // so the workspace response is already complete. Active states still load the
+  // actor/note detail, with parallel reads coalesced by the store.
+  void aiSuspension.ensureDetail(
+    selection.endUser.id,
+    selection.conversation.id,
+    selection.actionRevisions.aiSuspensionVersion,
+  );
 }
 
 function revokeSelectedAiSuspensionAccess(scope?: {
