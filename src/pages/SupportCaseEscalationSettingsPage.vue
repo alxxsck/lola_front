@@ -931,6 +931,17 @@ onBeforeUnmount(() => controller.reset());
         >
       </nav>
 
+      <Message
+        v-if="controller.safetyUnavailable.value"
+        severity="warn"
+        :closable="false"
+      >
+        Обязательная политика безопасности ещё не опубликована администратором
+        платформы. Это не проблема вашей роли: правила передачи можно открыть и
+        подготовить, но сервер не разрешит проверку и публикацию до настройки
+        политики безопасности.
+      </Message>
+
       <div class="live-region" aria-live="polite" aria-atomic="true">
         <Message
           v-if="controller.error.value"

@@ -132,6 +132,33 @@ describe("AppShell", () => {
     disabled.unmount();
   });
 
+  it("links Categories directly to its nested workspace section", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One", [
+        "project.case_intelligence.read",
+      ]),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/overview", component: { template: "<div />" } }],
+    });
+    await router.push("/overview");
+    await router.isReady();
+
+    const wrapper = mountProjectMenu(pinia, router);
+    await flushPromises();
+
+    const categories = wrapper
+      .findAll(".sidebar-scroll nav a")
+      .find((link) => link.text().includes("Категории и правила"));
+    expect(categories?.attributes("href")).toBe(
+      "/support/settings/case-intelligence/detection",
+    );
+  });
+
   it("links a Cases-only operator to the exact canonical inbox mode", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -928,6 +955,55 @@ describe("AppShell", () => {
     auth.user!.platformPermissionCodes = ["platform.ai_pricing.write"];
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).not.toContain("Тарифы AI");
+  });
+
+  it("shows global Case Intelligence safety only to Platform managers", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Оператор",
+        platformPermissionCodes: [
+          "platform.case_intelligence.safety.manage",
+        ],
+      },
+      project: null,
+      projects: [],
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: "/platform/case-intelligence/safety",
+          component: { template: "<div />" },
+        },
+      ],
+    });
+    await router.push("/platform/case-intelligence/safety");
+    await router.isReady();
+    const wrapper = mount(AppShell, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          Button: { template: '<button type="button"><slot /></button>' },
+          Avatar: { template: "<span />" },
+          Menu: { template: "<div />" },
+          Tag: { template: "<span />" },
+        },
+      },
+    });
+
+    expect(
+      wrapper.findAll(".sidebar-scroll nav a").map((link) => link.text()),
+    ).toEqual(["Обязательная защита"]);
+
+    auth.user!.platformPermissionCodes = [];
+    await wrapper.vm.$nextTick();
+    expect(wrapper.text()).not.toContain("Обязательная защита");
   });
 
   it("shows Project administrators only with the exact selected-Project read Permission", async () => {

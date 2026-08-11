@@ -107,10 +107,10 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SupportInboxPane", () => {
-  it("uses the unified view picker as the only mode control when it is available", () => {
+  it("keeps the direct mode control alongside the unified view picker", () => {
     const wrapper = render({ viewSystem: [systemView] });
 
-    expect(wrapper.find(".inbox-modes").exists()).toBe(false);
+    expect(wrapper.find(".inbox-modes").exists()).toBe(true);
     expect(wrapper.find(".inbox-tools__trigger").exists()).toBe(true);
   });
 

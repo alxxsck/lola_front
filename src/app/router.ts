@@ -203,6 +203,15 @@ export const router = createRouter({
           meta: { platformPermission: "platform.ai_pricing.read" },
         },
         {
+          path: "platform/case-intelligence/safety",
+          name: "platform-case-intelligence-safety",
+          component: () =>
+            import("@/pages/PlatformCaseIntelligenceSafetyPage.vue"),
+          meta: {
+            platformPermission: "platform.case_intelligence.safety.manage",
+          },
+        },
+        {
           path: "project",
           name: "project",
           component: () => import("@/pages/ProjectPage.vue"),

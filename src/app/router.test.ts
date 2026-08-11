@@ -284,6 +284,32 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("security-settings");
   });
 
+  it("allows global Case Intelligence safety only with the manage Permission", async () => {
+    const auth = useAuthStore();
+    auth.$patch({
+      restored: true,
+      phase: "AUTHENTICATED",
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+        platformPermissionCodes: [
+          "platform.case_intelligence.safety.manage",
+        ],
+      },
+    });
+
+    await router.push("/platform/case-intelligence/safety");
+    expect(router.currentRoute.value.name).toBe(
+      "platform-case-intelligence-safety",
+    );
+
+    auth.user!.platformPermissionCodes = [];
+    await router.push("/settings/security");
+    await router.push("/platform/case-intelligence/safety");
+    expect(router.currentRoute.value.name).toBe("security-settings");
+  });
+
   it("allows every authenticated CMS User to open personal security settings", async () => {
     const auth = useAuthStore();
     auth.$patch({

@@ -102,6 +102,7 @@ export function useSupportCaseEscalation(
   const source = context.source ?? supportCaseEscalationSource;
   const snapshot = shallowRef<EscalationWorkspaceSnapshot | null>(null);
   const safety = shallowRef<EscalationSafetyPolicy | null>(null);
+  const safetyUnavailable = ref(false);
   const policy = ref<EscalationPolicy>(createDefaultEscalationPolicy());
   const simulationSteps = ref<EscalationSimulationStep[]>([]);
   const simulation = shallowRef<EscalationSimulationResult | null>(null);
@@ -212,6 +213,7 @@ export function useSupportCaseEscalation(
       writeRetained(activeScope, null);
     snapshot.value = null;
     safety.value = null;
+    safetyUnavailable.value = false;
     policy.value = createDefaultEscalationPolicy();
     simulationSteps.value = [];
     simulation.value = null;
@@ -251,16 +253,29 @@ export function useSupportCaseEscalation(
     readAbort?.abort();
     readAbort = new AbortController();
     loading.value = true;
+    safetyUnavailable.value = false;
     error.value = "";
     pendingAttempt.value = readRetained(scope);
+    let missingSafety = false;
     try {
       const [value, safetyPolicy] = await Promise.all([
         source.read(scope.projectId, readAbort.signal),
-        source.readSafety(scope.projectId, readAbort.signal),
+        source.readSafety(scope.projectId, readAbort.signal).catch((cause) => {
+          const value = normalizeApiError(cause);
+          if (
+            value.status === 404 &&
+            value.code === "CASE_INTELLIGENCE_SAFETY_NOT_CONFIGURED"
+          ) {
+            missingSafety = true;
+            return null;
+          }
+          throw value;
+        }),
       ]);
       if (!current(scope, captured)) return;
       applySnapshot(value, options.preservePolicy === true);
       safety.value = safetyPolicy;
+      safetyUnavailable.value = missingSafety;
       if (pendingAttempt.value && !canRun(scope, pendingAttempt.value)) {
         writeRetained(scope, null);
         pendingAttempt.value = null;
@@ -524,6 +539,7 @@ export function useSupportCaseEscalation(
   return {
     snapshot,
     safety,
+    safetyUnavailable,
     policy,
     simulationSteps,
     simulation,

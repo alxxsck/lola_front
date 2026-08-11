@@ -5,7 +5,10 @@ import {
   createDefaultDetectionPolicy,
   createRule,
   createTopic,
+  normalizeStableCode,
+  prepareDetectionPolicyForAuthoring,
   presentCaseIntelligenceRuntime,
+  synchronizeProjectLocales,
   validateBudgetPolicy,
   validateDetectionPolicy,
 } from "./support-case-intelligence-policy";
@@ -16,6 +19,36 @@ describe("Case Intelligence policy form", () => {
     expect(validateDetectionPolicy(policy)).toEqual([]);
     expect(policy.channels).toEqual(["TEXT"]);
     expect(policy.ambiguityAction).toBe("DEFER");
+  });
+
+  it("normalizes category codes while the operator types", () => {
+    expect(normalizeStableCode(" deposit-1 ")).toBe("DEPOSIT_1");
+    expect(normalizeStableCode("12 deposits")).toBe("C_12_DEPOSITS");
+    expect(normalizeStableCode("оплата")).toBe("");
+  });
+
+  it("uses all project languages and the project default as fallback", () => {
+    const policy = createDefaultDetectionPolicy();
+    policy.locales = ["en-US"];
+    policy.fallbackLocale = "en-US";
+
+    synchronizeProjectLocales(policy, ["ru", "en", "ru"], "ru");
+
+    expect(policy.locales).toEqual(["ru", "en"]);
+    expect(policy.fallbackLocale).toBe("ru");
+  });
+
+  it("repairs the invalid hidden rule limit from a migrated policy", () => {
+    const policy = createDefaultDetectionPolicy();
+    policy.runtimeLimits.maxRulesEvaluated = 0;
+
+    const prepared = prepareDetectionPolicyForAuthoring(policy);
+
+    expect(prepared.runtimeLimits.maxRulesEvaluated).toBe(20);
+    expect(policy.runtimeLimits.maxRulesEvaluated).toBe(0);
+    expect(validateDetectionPolicy(prepared)).not.toContainEqual(
+      expect.objectContaining({ path: "runtimeLimits.maxRulesEvaluated" }),
+    );
   });
 
   it("finds duplicate and incomplete categories and rules", () => {

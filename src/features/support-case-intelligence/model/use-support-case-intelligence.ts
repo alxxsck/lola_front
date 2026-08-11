@@ -23,6 +23,7 @@ import {
   createDefaultDetectionPolicy,
   mergePolicyIssues,
   policyHasErrors,
+  prepareDetectionPolicyForAuthoring,
   presentServerAuthoringIssues,
   type PolicyIssue,
   validateBudgetPolicy,
@@ -365,7 +366,7 @@ export function useSupportCaseIntelligence(
   ) {
     snapshot.value = value;
     if (!preserveForms) {
-      detection.value = clonePolicy(
+      detection.value = prepareDetectionPolicyForAuthoring(
         value.detection?.draft?.definition ??
           value.detection?.published?.definition ??
           createDefaultDetectionPolicy(),

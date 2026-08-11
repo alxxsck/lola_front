@@ -120,7 +120,7 @@ test("keeps the permanent settings navigation responsive and accessible", async 
   await expect(
     page.getByText("Покрытие достаточно", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("4 из 4", { exact: true })).toBeVisible();
+  await expect(page.getByText("8 из 8", { exact: true })).toBeVisible();
   await sectionNavigation
     .getByRole("link", { name: "Категории и правила" })
     .click();
@@ -130,15 +130,19 @@ test("keeps the permanent settings navigation responsive and accessible", async 
   await expect(
     scopeDialog.getByText("Язык здесь — не переключатель понимания Lola"),
   ).toBeVisible();
+  const projectLanguages = scopeDialog.getByLabel("Языки проекта");
+  await expect(projectLanguages.getByText("Русский · ru")).toBeVisible();
   await expect(
-    scopeDialog.getByText(/Сообщение на другом языке не пропадёт/),
+    projectLanguages.getByText("Английский · en"),
   ).toBeVisible();
-  await scopeDialog.locator(".p-multiselect").click();
-  await page
-    .getByRole("option", { name: "Английский · en", exact: true })
-    .click();
-  await page.keyboard.press("Escape");
-  await expect(scopeDialog.getByLabel("Запасной язык")).toBeEnabled();
+  await expect(
+    scopeDialog.getByText(
+      "Равен основному языку проекта и используется, если канал или профиль пользователя не сообщил язык.",
+    ),
+  ).toBeVisible();
+  await expect(
+    scopeDialog.getByText(/Здесь ничего не нужно выбирать вручную/),
+  ).toBeVisible();
   await scopeDialog
     .getByLabel("Зачем проекту нужна классификация")
     .fill("Черновик на телефоне");

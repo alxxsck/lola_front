@@ -115,6 +115,25 @@ export function clonePolicy<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+export function prepareDetectionPolicyForAuthoring(
+  value: CaseIntelligenceDetectionPolicyDto,
+): CaseIntelligenceDetectionPolicyDto {
+  const defaults = createDefaultDetectionPolicy();
+  const policy = clonePolicy(value);
+  policy.runtimeLimits = {
+    ...defaults.runtimeLimits,
+    ...(policy.runtimeLimits ?? {}),
+  };
+  if (
+    !Number.isInteger(policy.runtimeLimits.maxRulesEvaluated) ||
+    policy.runtimeLimits.maxRulesEvaluated < 1
+  ) {
+    policy.runtimeLimits.maxRulesEvaluated =
+      defaults.runtimeLimits.maxRulesEvaluated;
+  }
+  return policy;
+}
+
 export function createTopic(index: number): CaseIntelligenceTopicDto {
   return {
     code: `CATEGORY_${index}`,
@@ -133,6 +152,34 @@ export function createRule(index: number): CaseIntelligenceDetectionRuleDto {
     phrase: "",
     priority: 100,
   };
+}
+
+export function normalizeStableCode(value: string): string {
+  const normalized = value
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_")
+    .replace(/[^A-Z0-9_]/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (!normalized) return "";
+  return /^[A-Z]/.test(normalized)
+    ? normalized.slice(0, 64)
+    : `C_${normalized}`.slice(0, 64);
+}
+
+export function synchronizeProjectLocales(
+  policy: CaseIntelligenceDetectionPolicyDto,
+  supportedLocales: readonly string[],
+  defaultLocale?: string,
+): void {
+  const locales = [...new Set(supportedLocales.filter(Boolean))];
+  if (!locales.length) return;
+  policy.locales = locales;
+  policy.fallbackLocale =
+    defaultLocale && locales.includes(defaultLocale)
+      ? defaultLocale
+      : locales[0]!;
 }
 
 function isStableCode(value: string): boolean {
@@ -248,7 +295,7 @@ export function validateDetectionPolicy(
   required(policy.routerContext.maxSignals >= 1 && policy.routerContext.maxSignals <= 8, "routerContext.maxSignals", "Укажите от 1 до 8 сигналов.");
   required(policy.routerContext.maxContextMessages >= 0 && policy.routerContext.maxContextMessages <= 50, "routerContext.maxContextMessages", "Укажите от 0 до 50 сообщений.");
   required(policy.routerContext.maxCandidateCases >= 0 && policy.routerContext.maxCandidateCases <= 20, "routerContext.maxCandidateCases", "Укажите от 0 до 20 обращений.");
-  required(policy.runtimeLimits.maxRulesEvaluated >= 1 && policy.runtimeLimits.maxRulesEvaluated <= 20, "runtimeLimits.maxRulesEvaluated", "Укажите от 1 до 20 правил.");
+  required(policy.runtimeLimits.maxRulesEvaluated >= 1 && policy.runtimeLimits.maxRulesEvaluated <= 20, "runtimeLimits.maxRulesEvaluated", "Лимит точных правил на одну проверку — от 1 до 20.");
   required(policy.runtimeLimits.maxSemanticStatements >= 0 && policy.runtimeLimits.maxSemanticStatements <= 50, "runtimeLimits.maxSemanticStatements", "Укажите от 0 до 50 смысловых признаков.");
   required(policy.runtimeLimits.maxEvaluationMs >= 1 && policy.runtimeLimits.maxEvaluationMs <= 5000, "runtimeLimits.maxEvaluationMs", "Укажите от 1 до 5000 мс.");
   for (const kind of ["include", "exclude"] as const) {

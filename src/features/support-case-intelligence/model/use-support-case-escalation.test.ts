@@ -122,6 +122,38 @@ describe("useSupportCaseEscalation", () => {
     expect(controller.safety.value?.projectOverrideAllowed).toBe(false);
   });
 
+  it("keeps the workspace readable when Project Safety is not configured", async () => {
+    const onForbidden = vi.fn();
+    const adapter = source({
+      readSafety: vi.fn().mockRejectedValue(
+        new ApiError(
+          404,
+          "Запрошенный ресурс не найден.",
+          undefined,
+          "request-1",
+          "CASE_INTELLIGENCE_SAFETY_NOT_CONFIGURED",
+        ),
+      ),
+    });
+    const controller = useSupportCaseEscalation({
+      authority: () => ({
+        actorId: "lead-1",
+        projectId: "project-1",
+        permissions,
+      }),
+      source: adapter,
+      onForbidden,
+    });
+
+    await controller.load();
+
+    expect(controller.snapshot.value).not.toBeNull();
+    expect(controller.safety.value).toBeNull();
+    expect(controller.safetyUnavailable.value).toBe(true);
+    expect(controller.canRead.value).toBe(true);
+    expect(onForbidden).not.toHaveBeenCalled();
+  });
+
   it("requires both exact IAM and server allowed action", async () => {
     const adapter = source({
       read: vi.fn().mockResolvedValue(snapshot(["PREVIEW"])),

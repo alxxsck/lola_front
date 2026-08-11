@@ -7,7 +7,6 @@ import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
@@ -23,7 +22,9 @@ import {
 import {
   createRule,
   createTopic,
+  normalizeStableCode,
   presentCaseIntelligenceRuntime,
+  synchronizeProjectLocales,
 } from "@/features/support-case-intelligence/model/support-case-intelligence-policy";
 import type {
   CaseIntelligenceAttributePredicateDto,
@@ -153,12 +154,6 @@ const ambiguityOptions = [
   { label: "Добавить в очередь разбора", value: "REVIEW" },
 ];
 const audienceKinds = ["include", "exclude"] as const;
-const commonClassificationLocales = [
-  "ru-RU", "en-US", "en-GB", "es-ES", "de-DE", "fr-FR", "it-IT",
-  "pt-PT", "pt-BR", "pl-PL", "uk-UA", "tr-TR", "ar-SA", "zh-CN",
-  "ja-JP", "ko-KR", "hi-IN", "id-ID", "kk-KZ", "uz-UZ",
-] as const;
-
 const runtimePresentation = computed(() =>
   presentCaseIntelligenceRuntime(controller.snapshot.value),
 );
@@ -173,29 +168,12 @@ const selectedModelProfile = computed(() =>
   ),
 );
 const classificationLocaleOptions = computed(() => {
-  const projectLocales = auth.project?.supportedLocales ?? [];
-  const values = [...new Set([
-    ...projectLocales,
-    ...controller.detection.value.locales,
-    controller.detection.value.fallbackLocale,
-    ...commonClassificationLocales,
-  ])].filter(Boolean);
-  const projectLocaleSet = new Set(projectLocales);
+  const values = [...new Set(auth.project?.supportedLocales ?? [])];
   return values.map((value) => ({
     value,
     label: `${humanLocaleName(value)} · ${value}`,
-    project: projectLocaleSet.has(value),
-  })).sort((left, right) =>
-    Number(right.project) - Number(left.project) ||
-    left.label.localeCompare(right.label, "ru"),
-  );
+  }));
 });
-const fallbackLocaleOptions = computed(() =>
-  controller.detection.value.locales.map((value) => ({
-    value,
-    label: `${humanLocaleName(value)} · ${value}`,
-  })),
-);
 const classificationLocaleSummary = computed(() =>
   humanLocaleList(controller.detection.value.locales),
 );
@@ -280,12 +258,27 @@ function humanLocaleList(values: string[]) {
     .format(values.map(humanLocaleName));
 }
 
-function updateLocales(value: string[] | undefined) {
-  const locales = [...new Set(value ?? [])].slice(0, 20);
-  controller.detection.value.locales = locales;
-  if (!locales.includes(controller.detection.value.fallbackLocale)) {
-    controller.detection.value.fallbackLocale = locales[0] ?? "";
-  }
+function applyProjectLocales() {
+  synchronizeProjectLocales(
+    controller.detection.value,
+    auth.project?.supportedLocales ?? [],
+    auth.project?.defaultLocale,
+  );
+}
+
+function topicIssue(index: number) {
+  return (
+    issueFor(`topics.${index}.code`) ||
+    issueFor(`topics.${index}.label`) ||
+    issueFor(`topics.${index}.description`)
+  );
+}
+
+function topicStatus(index: number) {
+  if (issueFor(`topics.${index}.code`)) return "Исправьте код";
+  if (issueFor(`topics.${index}.label`)) return "Добавьте название";
+  if (issueFor(`topics.${index}.description`)) return "Добавьте описание";
+  return "Готово";
 }
 
 function addTopic() {
@@ -480,6 +473,7 @@ async function confirmDiscard() {
 
 async function load() {
   await controller.load();
+  if (controller.snapshot.value) applyProjectLocales();
   selectedTopicIndex.value = 0;
   selectedRuleIndex.value = 0;
 }
@@ -498,7 +492,13 @@ onBeforeRouteLeave(() => {
 });
 
 watch(
-  () => [auth.user?.id, auth.project?.id, permissionSignature.value] as const,
+  () => [
+    auth.user?.id,
+    auth.project?.id,
+    permissionSignature.value,
+    auth.project?.defaultLocale,
+    (auth.project?.supportedLocales ?? []).join(","),
+  ] as const,
   () => {
     accessDenied.value = false;
     controller.reset({ nextAuthority: currentAuthority() });
@@ -805,11 +805,12 @@ onBeforeUnmount(() => {
               class="model-empty-message"
             >
               <div>
-                <strong>Для проекта ещё не подготовлена модель классификации.</strong>
+                <strong>Сервер ещё не назначил проекту модель классификации.</strong>
                 <span
-                  >Категории можно заполнить сейчас, но сохранить и проверить
-                  общий черновик получится после того, как администратор
-                  платформы опубликует модель для этого проекта.</span
+                  >Это не поле категории и не проблема ваших прав. Каталог
+                  моделей сейчас пуст, поэтому сервер не сможет проверить и
+                  опубликовать новый черновик, пока администратор платформы не
+                  назначит проекту модель.</span
                 >
               </div>
               <Button
@@ -854,20 +855,8 @@ onBeforeUnmount(() => {
                 >
                   <div class="topic-card__topline">
                     <Tag
-                      :value="
-                        issueFor(`topics.${index}.code`) ||
-                        issueFor(`topics.${index}.label`) ||
-                        issueFor(`topics.${index}.description`)
-                          ? 'Нужно заполнить'
-                          : 'Готово'
-                      "
-                      :severity="
-                        issueFor(`topics.${index}.code`) ||
-                        issueFor(`topics.${index}.label`) ||
-                        issueFor(`topics.${index}.description`)
-                          ? 'warn'
-                          : 'success'
-                      "
+                      :value="topicStatus(index)"
+                      :severity="topicIssue(index) ? 'warn' : 'success'"
                     />
                     <span class="stable-code">{{
                       topic.code || "КОД НЕ ЗАДАН"
@@ -1210,52 +1199,44 @@ onBeforeUnmount(() => {
               <div class="scope-section scope-section--language">
                 <div class="scope-section__heading">
                   <span>Языковой охват</span>
-                  <small>Добавьте все языки, на которых пользователи пишут в поддержку.</small>
+                  <small>Берётся автоматически из языков профиля проекта.</small>
                 </div>
                 <div class="field-grid scope-language-grid">
                   <div class="field field--flush">
-                    <label for="policy-locales">Языки классификации</label
-                    ><MultiSelect
-                      input-id="policy-locales"
-                      :model-value="controller.detection.value.locales"
-                      :options="classificationLocaleOptions"
-                      option-label="label"
-                      option-value="value"
-                      display="chip"
-                      filter
-                      :max-selected-labels="4"
-                      selected-items-label="Выбрано языков: {0}"
-                      placeholder="Выберите языки"
-                      :disabled="!controller.canManageDetection.value"
-                      :aria-invalid="Boolean(issueFor('locales'))"
-                      aria-describedby="policy-locales-help policy-locales-error"
-                      @update:model-value="updateLocales"
-                    /><small id="policy-locales-help"
-                      >Список начинается с языков проекта. После названия показан технический код для интеграций.</small
+                    <span class="field-label">Языки классификации</span>
+                    <div class="project-locale-list" aria-label="Языки проекта">
+                      <Tag
+                        v-for="locale in classificationLocaleOptions"
+                        :key="locale.value"
+                        :value="locale.label"
+                        severity="secondary"
+                      />
+                      <span v-if="!classificationLocaleOptions.length"
+                        >Языки не заданы в профиле проекта</span
+                      >
+                    </div>
+                    <small id="policy-locales-help"
+                      >При добавлении языка в профиль проекта он автоматически
+                      попадёт в классификацию.</small
                     >
                     <small id="policy-locales-error" class="field-error">{{ issueFor("locales") }}</small>
                   </div>
                   <div class="field field--flush">
-                    <label for="policy-fallback">Запасной язык</label
-                    ><Select
-                      input-id="policy-fallback"
-                      v-model="controller.detection.value.fallbackLocale"
-                      :options="fallbackLocaleOptions"
-                      option-label="label"
-                      option-value="value"
-                      placeholder="Сначала выберите языки"
-                      aria-label="Запасной язык"
-                      :disabled="!controller.canManageDetection.value || !fallbackLocaleOptions.length"
-                      :aria-invalid="Boolean(issueFor('fallbackLocale'))"
-                      aria-describedby="policy-fallback-help policy-fallback-error"
-                    /><small id="policy-fallback-help"
-                      >Сервер использует его, если канал или профиль пользователя не сообщил язык.</small
+                    <span class="field-label">Запасной язык</span>
+                    <div class="readonly-value">
+                      {{ fallbackLocaleSummary }}
+                    </div>
+                    <small id="policy-fallback-help"
+                      >Равен основному языку проекта и используется, если канал
+                      или профиль пользователя не сообщил язык.</small
                     >
                     <small id="policy-fallback-error" class="field-error">{{ issueFor("fallbackLocale") }}</small>
                   </div>
                 </div>
-                <Message severity="warn" :closable="false" class="fallback-note">
-                  Сообщение на другом языке не пропадёт, но будет обработано по правилам запасного языка. Поэтому включите все языки, которые реально использует ваша поддержка.
+                <Message severity="info" :closable="false" class="fallback-note">
+                  Здесь ничего не нужно выбирать вручную. Источник истины — языки
+                  профиля проекта; для каждого из них сервер применяет свои
+                  правила и проверенные пороги.
                 </Message>
               </div>
               <div class="scope-section">
@@ -1307,9 +1288,13 @@ onBeforeUnmount(() => {
                   <label for="topic-code">Код категории</label
                   ><InputText
                     id="topic-code"
-                    v-model="selectedTopic.code"
+                    :model-value="selectedTopic.code"
                     maxlength="64"
                     :disabled="!controller.canManageDetection.value"
+                    :aria-invalid="Boolean(issueFor(`topics.${selectedTopicIndex}.code`))"
+                    @update:model-value="
+                      selectedTopic.code = normalizeStableCode(String($event ?? ''))
+                    "
                   /><small
                     :class="{
                       'field-error': issueFor(
@@ -2867,12 +2852,27 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
   align-items: start;
 }
-.scope-language-grid :deep(.p-multiselect) { width: 100%; min-height: 44px; }
-.scope-language-grid :deep(.p-multiselect-label) {
+.project-locale-list {
   display: flex;
+  min-height: 44px;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 8px;
   align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--ci-line);
+  border-radius: 10px;
+  background: var(--ci-soft);
+}
+.project-locale-list > span:not(.p-tag) { color: var(--ci-muted); }
+.readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--ci-line);
+  border-radius: 10px;
+  background: var(--ci-soft);
+  font-weight: 700;
 }
 .fallback-note { margin-top: 2px; }
 .fallback-note :deep(.p-message-text) { line-height: 1.45; }

@@ -77,7 +77,7 @@ const safetyNotice = computed(() => {
   if (!snapshot || snapshot.safetyState === "READY") return null;
   return snapshot.safetyState === "SAFETY_RECONCILING"
     ? { severity: "warn" as const, text: "Платформа применяет обязательную версию безопасности. Публикация временно закрыта; проект не может остановить или откатить это обновление." }
-    : { severity: "error" as const, text: "Данные обязательной безопасности недоступны. Система работает в безопасном режиме, публикация закрыта до серверного восстановления." };
+    : { severity: "warn" as const, text: "Администратор платформы ещё не опубликовал обязательную политику безопасности. Это не ошибка ваших прав: настройки проекта доступны, но проверка и публикация останутся закрыты до настройки на сервере." };
 });
 const pageTitle = computed(() => ({ evaluation: "Качество и публикация", observability: "Расходы и путь обращения", decisions: "Журнал решений", versions: "Версии" })[section.value]);
 const pageDescription = computed(() => ({
