@@ -254,10 +254,81 @@ test("retention and notification boundaries stay explicit and fail closed", asyn
         .requestBody;
     },
     (contract) => {
+      delete operation(contract, "PersonalSupportNotification_resolveDeepLink")
+        .responses["200"];
+    },
+  ];
+
+  for (const mutate of mutations) {
+    assertMutationRejected(
+      validateSupportContentLeadNotificationContract,
+      baseline,
+      mutate,
+    );
+  }
+});
+
+test("new Case notifications retain exact Project authority, safe preview and receipt recovery", async () => {
+  const { validateSupportContentLeadNotificationContract } =
+    await import("./support-content-lead-notification-contract.mjs");
+  const baseline = await pinnedContract();
+  assert.doesNotThrow(() =>
+    validateSupportContentLeadNotificationContract(baseline),
+  );
+
+  const mutations = [
+    (contract) => {
       delete operation(
         contract,
-        "PersonalSupportNotification_resolveDeepLink",
-      ).responses["200"];
+        "SupportCaseNotificationPolicy_listAvailableTeams",
+      )["x-iam-permission"];
+    },
+    (contract) => {
+      operation(
+        contract,
+        "SupportCaseNotificationPolicy_saveDraft",
+      ).parameters.find(
+        (parameter) => parameter.name === "Idempotency-Key",
+      ).required = false;
+    },
+    (contract) => {
+      const target =
+        contract.components.schemas
+          .SupportCaseNotificationPolicyPreviewResponseDto;
+      target.required = target.required.filter((field) => field !== "examples");
+    },
+    (contract) => {
+      contract.components.schemas.SupportCaseNotificationPolicyPreviewResponseDto.properties.examples.maxItems = 6;
+    },
+    (contract) => {
+      contract.components.schemas.SupportCaseNotificationPolicyPreviewExampleDto.properties.caseId =
+        { type: "string", format: "uuid" };
+    },
+    (contract) => {
+      const target =
+        contract.components.schemas
+          .SupportCaseNotificationPolicyReceiptResponseDto;
+      target.required = target.required.filter(
+        (field) => field !== "receiptId",
+      );
+    },
+    (contract) => {
+      contract.components.schemas.ReadSupportCaseNotificationCommandResultDto.properties.operation.enum =
+        contract.components.schemas.ReadSupportCaseNotificationCommandResultDto.properties.operation.enum.filter(
+          (value) => value !== "RESTORE",
+        );
+    },
+    (contract) => {
+      contract.components.schemas.UpdatePersonalSupportNotificationPreferenceDto.properties.topic.enum =
+        contract.components.schemas.UpdatePersonalSupportNotificationPreferenceDto.properties.topic.enum.filter(
+          (value) => value !== "SUPPORT_CASE_CREATED",
+        );
+    },
+    (contract) => {
+      const target =
+        contract.components.schemas
+          .PersonalSupportNotificationAdmissionCapabilitiesDto;
+      target.required = target.required.filter((field) => field !== "newCases");
     },
   ];
 

@@ -123,10 +123,7 @@ function requireBrowserNotificationsPublished(document) {
     subscriptionsRegister,
     "RegisterBrowserPushSubscriptionDto",
   );
-  requireRequestSchema(
-    subscriptionsRevoke,
-    "RevokeBrowserPushSubscriptionDto",
-  );
+  requireRequestSchema(subscriptionsRevoke, "RevokeBrowserPushSubscriptionDto");
   requireResponseSchema(
     preferencesRead,
     "200",
@@ -161,6 +158,184 @@ function requireBrowserNotificationsPublished(document) {
     deepLinkResolve,
     "200",
     "PersonalSupportNotificationDeepLinkTargetDto",
+  );
+}
+
+function requireNewCaseNotificationPolicyPublished(document) {
+  const permission = "project.support.notification_policy.manage";
+  const readCurrent = operation(
+    document,
+    "SupportCaseNotificationPolicy_readCurrent",
+  );
+  const listTeams = operation(
+    document,
+    "SupportCaseNotificationPolicy_listAvailableTeams",
+  );
+  const readCommandResult = operation(
+    document,
+    "SupportCaseNotificationPolicy_readCommandResult",
+  );
+  const preview = operation(document, "SupportCaseNotificationPolicy_preview");
+  const metrics = operation(
+    document,
+    "SupportCaseNotificationPolicy_readMetrics",
+  );
+  const saveDraft = operation(
+    document,
+    "SupportCaseNotificationPolicy_saveDraft",
+  );
+  const publish = operation(document, "SupportCaseNotificationPolicy_publish");
+  const disable = operation(document, "SupportCaseNotificationPolicy_disable");
+  const restore = operation(document, "SupportCaseNotificationPolicy_restore");
+
+  for (const operationValue of [
+    readCurrent,
+    listTeams,
+    readCommandResult,
+    preview,
+    metrics,
+    saveDraft,
+    publish,
+    disable,
+    restore,
+  ]) {
+    requirePermission(operationValue, permission);
+  }
+  for (const operationValue of [saveDraft, publish, disable, restore]) {
+    requireHeader(operationValue, "Idempotency-Key");
+    requireResponseSchema(
+      operationValue,
+      "200",
+      "SupportCaseNotificationPolicyReceiptResponseDto",
+    );
+  }
+  requireBound(listTeams, "limit", "maximum", 100);
+  if (parameter(listTeams, "cursor").schema?.format !== "uuid") {
+    throw new Error(
+      "Notification policy team cursor must remain an opaque UUID",
+    );
+  }
+  requireRequestSchema(
+    readCommandResult,
+    "ReadSupportCaseNotificationCommandResultDto",
+  );
+  requireRequestSchema(preview, "SupportCaseNotificationPolicyInputDto");
+  requireRequestSchema(saveDraft, "SaveSupportCaseNotificationDraftDto");
+  requireRequestSchema(publish, "PublishSupportCaseNotificationPolicyDto");
+  requireRequestSchema(disable, "DisableSupportCaseNotificationPolicyDto");
+  requireRequestSchema(restore, "RestoreSupportCaseNotificationPolicyDto");
+  requireResponseSchema(
+    readCurrent,
+    "200",
+    "SupportCaseNotificationPolicyCurrentResponseDto",
+  );
+  requireResponseSchema(
+    listTeams,
+    "200",
+    "SupportCaseNotificationAvailableTeamsResponseDto",
+  );
+  requireResponseSchema(
+    readCommandResult,
+    "200",
+    "SupportCaseNotificationCommandResultResponseDto",
+  );
+  requireResponseSchema(
+    preview,
+    "200",
+    "SupportCaseNotificationPolicyPreviewResponseDto",
+  );
+  requireResponseSchema(
+    metrics,
+    "200",
+    "SupportCaseNotificationMetricsResponseDto",
+  );
+
+  requirePropertyEnum(
+    document,
+    "SupportCaseNotificationPolicyInputDto",
+    "mode",
+    ["OFF", "IMMEDIATE", "DIGEST"],
+  );
+  requireArrayItemEnum(
+    document,
+    "SupportCaseNotificationPolicyInputDto",
+    "occurrences",
+    ["CREATED", "REOPENED"],
+  );
+  requireArrayItemEnum(
+    document,
+    "SupportCaseNotificationPolicyInputDto",
+    "channels",
+    ["BROWSER_PUSH"],
+  );
+  requirePropertyEnum(
+    document,
+    "SupportCaseNotificationPolicyInputDto",
+    "recipientRule",
+    ["ALL_ELIGIBLE_SUBSCRIBERS", "TEAM_SUBSCRIBERS"],
+  );
+  requireProperties(
+    document,
+    "SupportCaseNotificationPolicyPreviewResponseDto",
+    [
+      "issues",
+      "estimatedEligibleRecipients",
+      "matchingOccurrencesLast7Days",
+      "estimatedImmediateDeliveriesLast7Days",
+      "estimatedDigestWindowsLast7Days",
+      "examples",
+      "publishable",
+    ],
+  );
+  const examples =
+    document.components.schemas.SupportCaseNotificationPolicyPreviewResponseDto
+      .properties.examples;
+  if (examples.maxItems !== 5) {
+    throw new Error(
+      "Notification policy preview must expose at most five examples",
+    );
+  }
+  requireProperties(
+    document,
+    "SupportCaseNotificationPolicyPreviewExampleDto",
+    ["occurrence", "conversationClass", "topicCode", "priority", "occurredAt"],
+  );
+  for (const forbidden of ["caseId", "title", "message", "endUserId"]) {
+    if (
+      document.components.schemas.SupportCaseNotificationPolicyPreviewExampleDto
+        .properties[forbidden]
+    ) {
+      throw new Error(
+        `Notification preview example must not expose ${forbidden}`,
+      );
+    }
+  }
+  requireProperties(
+    document,
+    "SupportCaseNotificationPolicyReceiptResponseDto",
+    ["receiptId", "replayed", "policy"],
+  );
+  requirePropertyEnum(
+    document,
+    "ReadSupportCaseNotificationCommandResultDto",
+    "operation",
+    ["SAVE_DRAFT", "PUBLISH", "DISABLE", "RESTORE"],
+  );
+  requireProperties(
+    document,
+    "SupportCaseNotificationCommandResultResponseDto",
+    ["found", "operation"],
+  );
+  requirePropertyEnum(
+    document,
+    "UpdatePersonalSupportNotificationPreferenceDto",
+    "topic",
+    ["SUPPORT_CASE_CREATED"],
+  );
+  requireProperties(
+    document,
+    "PersonalSupportNotificationAdmissionCapabilitiesDto",
+    ["newCases"],
   );
 }
 
@@ -940,4 +1115,5 @@ export function validateSupportContentLeadNotificationContract(document) {
   );
 
   requireBrowserNotificationsPublished(document);
+  requireNewCaseNotificationPolicyPublished(document);
 }

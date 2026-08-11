@@ -164,6 +164,7 @@ describe("createSupportNotificationsController", () => {
     vi.mocked(source.readConfiguration).mockResolvedValueOnce({
       ...(await vi.mocked(source.readConfiguration)("project-1")),
       capabilities: {
+        newCases: "UNAVAILABLE",
         assignedToMe: "DISABLE_ONLY",
         attention: "UNAVAILABLE",
         deviceRegistration: "UNAVAILABLE",

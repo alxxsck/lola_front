@@ -16,6 +16,7 @@ import type {
 import { dataMode } from "@/shared/config/data-mode";
 
 export type SupportNotificationTopic =
+  | "SUPPORT_CASE_CREATED"
   | "SUPPORT_CASE_ATTENTION"
   | "SUPPORT_CASE_ASSIGNED_TO_ME";
 
@@ -53,7 +54,9 @@ export interface SupportNotificationsSource {
     },
     signal?: AbortSignal,
   ): Promise<readonly PersonalSupportNotificationPreferenceResponseDto[]>;
-  listDevices(signal?: AbortSignal): Promise<readonly BrowserPushSubscriptionResponseDto[]>;
+  listDevices(
+    signal?: AbortSignal,
+  ): Promise<readonly BrowserPushSubscriptionResponseDto[]>;
   registerDevice(
     input: BrowserSubscriptionMaterial & {
       expectedVersion?: number;
@@ -77,7 +80,9 @@ export const apiSupportNotificationsSource: SupportNotificationsSource = {
     return personalSupportNotificationReadAdmission(projectId, { signal });
   },
   async readPreferences(projectId, signal) {
-    return (await personalSupportNotificationReadPreferences(projectId, { signal })).items;
+    return (
+      await personalSupportNotificationReadPreferences(projectId, { signal })
+    ).items;
   },
   async updatePreference(projectId, input, signal) {
     const { idempotencyKey, ...body } = input;
@@ -110,9 +115,10 @@ export const apiSupportNotificationsSource: SupportNotificationsSource = {
   },
 };
 
-const mockPreferences = new Map<string, PersonalSupportNotificationPreferenceResponseDto[]>(
-  [],
-);
+const mockPreferences = new Map<
+  string,
+  PersonalSupportNotificationPreferenceResponseDto[]
+>([]);
 let mockDevices: BrowserPushSubscriptionResponseDto[] = [];
 const mockSourceStateKey = "support-notifications-source-mock:v1";
 
@@ -121,7 +127,10 @@ function hydrateMockSourceState(): void {
     const raw = sessionStorage.getItem(mockSourceStateKey);
     if (!raw) return;
     const value = JSON.parse(raw) as {
-      preferences?: Record<string, PersonalSupportNotificationPreferenceResponseDto[]>;
+      preferences?: Record<
+        string,
+        PersonalSupportNotificationPreferenceResponseDto[]
+      >;
       devices?: BrowserPushSubscriptionResponseDto[];
     };
     if (value.preferences && typeof value.preferences === "object") {
@@ -150,11 +159,20 @@ function persistMockSourceState(): void {
   }
 }
 
-function preferences(projectId: string): PersonalSupportNotificationPreferenceResponseDto[] {
+function preferences(
+  projectId: string,
+): PersonalSupportNotificationPreferenceResponseDto[] {
   hydrateMockSourceState();
   const current = mockPreferences.get(projectId);
   if (current) return current;
   const created: PersonalSupportNotificationPreferenceResponseDto[] = [
+    {
+      topic: "SUPPORT_CASE_CREATED",
+      channel: "BROWSER_PUSH",
+      subscribed: false,
+      source: "DEFAULT",
+      version: null,
+    },
     {
       topic: "SUPPORT_CASE_ATTENTION",
       channel: "BROWSER_PUSH",
@@ -180,8 +198,11 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
     hydrateMockSourceState();
     return {
       evaluatedAt: new Date().toISOString(),
-      activeSubscriptionCount: mockDevices.filter((item) => item.status === "ACTIVE").length,
+      activeSubscriptionCount: mockDevices.filter(
+        (item) => item.status === "ACTIVE",
+      ).length,
       capabilities: {
+        newCases: "AVAILABLE",
         assignedToMe: "AVAILABLE",
         attention: "AVAILABLE",
         deviceRegistration: "AVAILABLE",
@@ -243,7 +264,9 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
       version: device.version + 1,
       revokedAt: new Date().toISOString(),
     };
-    mockDevices = mockDevices.map((item) => (item.id === device.id ? revoked : item));
+    mockDevices = mockDevices.map((item) =>
+      item.id === device.id ? revoked : item,
+    );
     persistMockSourceState();
     return structuredClone(revoked);
   },
@@ -257,4 +280,6 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
 };
 
 export const supportNotificationsSource =
-  dataMode === "mock" ? mockSupportNotificationsSource : apiSupportNotificationsSource;
+  dataMode === "mock"
+    ? mockSupportNotificationsSource
+    : apiSupportNotificationsSource;

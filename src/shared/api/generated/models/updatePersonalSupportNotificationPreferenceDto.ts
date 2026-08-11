@@ -8,8 +8,8 @@
 import type { UpdatePersonalSupportNotificationPreferenceDtoTopic } from "./updatePersonalSupportNotificationPreferenceDtoTopic";
 
 export interface UpdatePersonalSupportNotificationPreferenceDto {
+  topic: UpdatePersonalSupportNotificationPreferenceDtoTopic;
+  subscribed: boolean;
   /** @minimum 1 */
   expectedVersion?: number;
-  subscribed: boolean;
-  topic: UpdatePersonalSupportNotificationPreferenceDtoTopic;
 }

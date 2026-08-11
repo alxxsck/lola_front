@@ -5,15 +5,15 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { PersonalSupportNotificationPreferenceResponseDtoTopic } from "./personalSupportNotificationPreferenceResponseDtoTopic";
 import type { PersonalSupportNotificationPreferenceResponseDtoChannel } from "./personalSupportNotificationPreferenceResponseDtoChannel";
 import type { PersonalSupportNotificationPreferenceResponseDtoSource } from "./personalSupportNotificationPreferenceResponseDtoSource";
-import type { PersonalSupportNotificationPreferenceResponseDtoTopic } from "./personalSupportNotificationPreferenceResponseDtoTopic";
 
 export interface PersonalSupportNotificationPreferenceResponseDto {
-  channel: PersonalSupportNotificationPreferenceResponseDtoChannel;
-  source: PersonalSupportNotificationPreferenceResponseDtoSource;
-  subscribed: boolean;
   topic: PersonalSupportNotificationPreferenceResponseDtoTopic;
+  channel: PersonalSupportNotificationPreferenceResponseDtoChannel;
+  subscribed: boolean;
+  source: PersonalSupportNotificationPreferenceResponseDtoSource;
   /**
    * @minimum 1
    * @nullable

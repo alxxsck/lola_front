@@ -13,4 +13,5 @@ export type UpdatePersonalSupportNotificationPreferenceDtoTopic =
 export const UpdatePersonalSupportNotificationPreferenceDtoTopic = {
   SUPPORT_CASE_ATTENTION: "SUPPORT_CASE_ATTENTION",
   SUPPORT_CASE_ASSIGNED_TO_ME: "SUPPORT_CASE_ASSIGNED_TO_ME",
+  SUPPORT_CASE_CREATED: "SUPPORT_CASE_CREATED",
 } as const;

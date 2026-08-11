@@ -275,6 +275,7 @@ import type {
   CreateUiElementDto,
   CustomerIoInboundBatchReceiptDto,
   DeleteKnowledgeDocumentResponseDto,
+  DisableSupportCaseNotificationPolicyDto,
   DisableTelegramChannelDto,
   EditIntegrationEventRouteDraftDto,
   EditReplyTranslationDraftDto,
@@ -500,6 +501,7 @@ import type {
   PublishScenarioDto,
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
+  PublishSupportCaseNotificationPolicyDto,
   PublishedSegmentResponseDto,
   PutAiAllowanceAccrualRuleDto,
   PutAllowancePlanDto,
@@ -509,6 +511,7 @@ import type {
   PutEndUserOperationalAttributeDto,
   PutSupportExternalMessageRetentionPolicyDto,
   QuarantineIntegrationIngressDto,
+  ReadSupportCaseNotificationCommandResultDto,
   ReassignProjectRoleDto,
   ReceiveCustomerIoIntegrationEventsBody,
   ReconcileAiSpendReservationDto,
@@ -538,6 +541,7 @@ import type {
   ResolveSupportOperationalAlertDto,
   ResolveSupportQualityDisputeDto,
   RestoreEventDefinitionDto,
+  RestoreSupportCaseNotificationPolicyDto,
   ResumeConversationAIDto,
   RetryFailedConversationDeliveryDto,
   RetryFailedConversationDeliveryResponseDto,
@@ -564,6 +568,7 @@ import type {
   SaveEventQueryPolicyDraftDto,
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
+  SaveSupportCaseNotificationDraftDto,
   SavedSupportViewCatalogResponseDto,
   SavedSupportViewMutationResponseDto,
   SavedSupportViewQueryDto,
@@ -611,6 +616,14 @@ import type {
   SupportCaseAssignmentBatchResponseDto,
   SupportCaseAssignmentCandidatesResponseDto,
   SupportCaseAssignmentMutationResponseDto,
+  SupportCaseNotificationAvailableTeamsResponseDto,
+  SupportCaseNotificationCommandResultResponseDto,
+  SupportCaseNotificationMetricsResponseDto,
+  SupportCaseNotificationPolicyCurrentResponseDto,
+  SupportCaseNotificationPolicyInputDto,
+  SupportCaseNotificationPolicyListAvailableTeamsParams,
+  SupportCaseNotificationPolicyPreviewResponseDto,
+  SupportCaseNotificationPolicyReceiptResponseDto,
   SupportCaseSearchQueryDto,
   SupportContentGovernanceListHoldsParams,
   SupportContentGovernancePreviewRetentionParams,
@@ -12886,6 +12899,161 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
+export const supportCaseNotificationPolicyReadCurrent = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyCurrentResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyCurrentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyListAvailableTeams = (
+  projectId: string,
+  params?: SupportCaseNotificationPolicyListAvailableTeamsParams,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationAvailableTeamsResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationAvailableTeamsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/available-teams`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyReadCommandResult = (
+  projectId: string,
+  readSupportCaseNotificationCommandResultDto: BodyType<ReadSupportCaseNotificationCommandResultDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationCommandResultResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationCommandResultResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/command-result`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: readSupportCaseNotificationCommandResultDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyPreview = (
+  projectId: string,
+  supportCaseNotificationPolicyInputDto: BodyType<SupportCaseNotificationPolicyInputDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyPreviewResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportCaseNotificationPolicyInputDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyReadMetrics = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationMetricsResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationMetricsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/metrics`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicySaveDraft = (
+  projectId: string,
+  saveSupportCaseNotificationDraftDto: BodyType<SaveSupportCaseNotificationDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveSupportCaseNotificationDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyPublish = (
+  projectId: string,
+  publishSupportCaseNotificationPolicyDto: BodyType<PublishSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyDisable = (
+  projectId: string,
+  disableSupportCaseNotificationPolicyDto: BodyType<DisableSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: disableSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyRestore = (
+  projectId: string,
+  restoreSupportCaseNotificationPolicyDto: BodyType<RestoreSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/restore`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
 export type AiPricingRevisionGetResult = NonNullable<
   Awaited<ReturnType<typeof aiPricingRevisionGet>>
 >;
@@ -15096,4 +15264,31 @@ export type VoiceConnectResult = NonNullable<
 >;
 export type AppHealthResult = NonNullable<
   Awaited<ReturnType<typeof appHealth>>
+>;
+export type SupportCaseNotificationPolicyReadCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCurrent>>
+>;
+export type SupportCaseNotificationPolicyListAvailableTeamsResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyListAvailableTeams>>
+>;
+export type SupportCaseNotificationPolicyReadCommandResultResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCommandResult>>
+>;
+export type SupportCaseNotificationPolicyPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyPreview>>
+>;
+export type SupportCaseNotificationPolicyReadMetricsResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadMetrics>>
+>;
+export type SupportCaseNotificationPolicySaveDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicySaveDraft>>
+>;
+export type SupportCaseNotificationPolicyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyPublish>>
+>;
+export type SupportCaseNotificationPolicyDisableResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyDisable>>
+>;
+export type SupportCaseNotificationPolicyRestoreResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyRestore>>
 >;

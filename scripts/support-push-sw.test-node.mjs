@@ -43,7 +43,10 @@ async function harness({ rejectRotation = false } = {}) {
       listeners.set(type, listener);
     },
   };
-  const source = await readFile(new URL("../public/support-push-sw.js", import.meta.url), "utf8");
+  const source = await readFile(
+    new URL("../public/support-push-sw.js", import.meta.url),
+    "utf8",
+  );
   vm.runInNewContext(source, { self, URL });
   return { listeners, notifications, navigations, messages, self };
 }
@@ -78,11 +81,45 @@ test("Support Push renders only generic copy and keeps the capability in a fragm
   );
 });
 
+test("Case creation and later escalation remain two independent generic deliveries", async () => {
+  const runtime = await harness();
+  for (const [topic, capability] of [
+    ["SUPPORT_CASE_CREATED", "C".repeat(43)],
+    ["SUPPORT_CASE_ATTENTION", "E".repeat(43)],
+  ]) {
+    await dispatch(runtime.listeners.get("push"), {
+      data: {
+        json: () => ({
+          version: 2,
+          topic,
+          navigation: { kind: "PERSONAL_SUPPORT_NOTIFICATION", capability },
+          caseId: "must-not-be-rendered",
+          message: "must-not-be-rendered",
+        }),
+      },
+    });
+  }
+  assert.equal(runtime.notifications.length, 2);
+  assert.deepEqual(
+    runtime.notifications.map((item) => item.title),
+    ["Новое обращение поддержки", "Требуется внимание поддержки"],
+  );
+  assert.doesNotMatch(
+    JSON.stringify(runtime.notifications),
+    /must-not-be-rendered/u,
+  );
+  assert.notEqual(
+    runtime.notifications[0].options.tag,
+    runtime.notifications[1].options.tag,
+  );
+});
+
 for (const assignmentMode of ["MANUAL_ASSIGNMENT", "AUTO_ASSIGN"]) {
   test(`a committed ${assignmentMode} envelope reaches a closed browser and opens its deep link`, async () => {
     const runtime = await harness();
     runtime.self.clients.matchAll = async () => [];
-    const capability = assignmentMode === "AUTO_ASSIGN" ? "A".repeat(43) : "M".repeat(43);
+    const capability =
+      assignmentMode === "AUTO_ASSIGN" ? "A".repeat(43) : "M".repeat(43);
 
     await dispatch(runtime.listeners.get("push"), {
       data: {
@@ -120,17 +157,27 @@ test("notification click navigates with a fragment and subscription rotation not
   ]);
 
   await dispatch(runtime.listeners.get("pushsubscriptionchange"), {
-    oldSubscription: { options: { applicationServerKey: new Uint8Array([1, 2, 3]).buffer } },
+    oldSubscription: {
+      options: { applicationServerKey: new Uint8Array([1, 2, 3]).buffer },
+    },
   });
   assert.equal(runtime.messages.length, 1);
-  assert.equal(runtime.messages[0].type, "RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED");
+  assert.equal(
+    runtime.messages[0].type,
+    "RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED",
+  );
 });
 
 test("failed automatic rotation still tells an open page to reconcile", async () => {
   const runtime = await harness({ rejectRotation: true });
   await dispatch(runtime.listeners.get("pushsubscriptionchange"), {
-    oldSubscription: { options: { applicationServerKey: new Uint8Array([1]).buffer } },
+    oldSubscription: {
+      options: { applicationServerKey: new Uint8Array([1]).buffer },
+    },
   });
   assert.equal(runtime.messages.length, 1);
-  assert.equal(runtime.messages[0].type, "RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED");
+  assert.equal(
+    runtime.messages[0].type,
+    "RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED",
+  );
 });

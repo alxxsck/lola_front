@@ -7,12 +7,14 @@
  */
 import type { PersonalSupportNotificationAdmissionCapabilitiesDtoAssignedToMe } from "./personalSupportNotificationAdmissionCapabilitiesDtoAssignedToMe";
 import type { PersonalSupportNotificationAdmissionCapabilitiesDtoAttention } from "./personalSupportNotificationAdmissionCapabilitiesDtoAttention";
-import type { PersonalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve } from "./personalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve";
+import type { PersonalSupportNotificationAdmissionCapabilitiesDtoNewCases } from "./personalSupportNotificationAdmissionCapabilitiesDtoNewCases";
 import type { PersonalSupportNotificationAdmissionCapabilitiesDtoDeviceRegistration } from "./personalSupportNotificationAdmissionCapabilitiesDtoDeviceRegistration";
+import type { PersonalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve } from "./personalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve";
 
 export interface PersonalSupportNotificationAdmissionCapabilitiesDto {
   assignedToMe: PersonalSupportNotificationAdmissionCapabilitiesDtoAssignedToMe;
   attention: PersonalSupportNotificationAdmissionCapabilitiesDtoAttention;
-  deepLinkResolve: PersonalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve;
+  newCases: PersonalSupportNotificationAdmissionCapabilitiesDtoNewCases;
   deviceRegistration: PersonalSupportNotificationAdmissionCapabilitiesDtoDeviceRegistration;
+  deepLinkResolve: PersonalSupportNotificationAdmissionCapabilitiesDtoDeepLinkResolve;
 }

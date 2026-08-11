@@ -74,7 +74,13 @@ describe("authentication routes", () => {
 
   it("captures a Support notification capability before an anonymous login redirect", async () => {
     const auth = useAuthStore();
-    auth.$patch({ restored: true, phase: "ANONYMOUS", user: null, project: null, projects: [] });
+    auth.$patch({
+      restored: true,
+      phase: "ANONYMOUS",
+      user: null,
+      project: null,
+      projects: [],
+    });
     const capability = "N".repeat(43);
 
     await router.push(`/support/notifications/open#capability=${capability}`);
@@ -546,7 +552,9 @@ describe("authentication routes", () => {
   );
 
   it("keeps Cases as canonical Support redirects and retires the legacy settings surface", () => {
-    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTypeOf("function");
+    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTypeOf(
+      "function",
+    );
     expect(router.resolve("/cases/case-1").matched.at(-1)?.redirect).toBeTypeOf(
       "function",
     );
@@ -584,7 +592,11 @@ describe("authentication routes", () => {
     auth.$patch({
       restored: true,
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
       project,
       projects: [project],
       supportEnabled: true,
@@ -601,7 +613,9 @@ describe("authentication routes", () => {
     );
     expect(router.currentRoute.value.name).toBe("users");
     expect(router.currentRoute.value.params.endUserId).toBe("user-1");
-    expect(router.currentRoute.value.query.conversationId).toBe("conversation-1");
+    expect(router.currentRoute.value.query.conversationId).toBe(
+      "conversation-1",
+    );
 
     await router.push("/live?endUserId=user-2&projectId=project-1");
     expect(router.currentRoute.value.name).toBe("live");
@@ -624,7 +638,11 @@ describe("authentication routes", () => {
     auth.$patch({
       restored: true,
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
       project,
       projects: [project],
       supportEnabled: false,
@@ -653,7 +671,11 @@ describe("authentication routes", () => {
     auth.$patch({
       restored: true,
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
       project,
       projects: [project],
       supportEnabled: true,
@@ -684,7 +706,11 @@ describe("authentication routes", () => {
     auth.$patch({
       restored: true,
       phase: "AUTHENTICATED",
-      user: { id: "operator-1", email: "operator@example.com", name: "Operator" },
+      user: {
+        id: "operator-1",
+        email: "operator@example.com",
+        name: "Operator",
+      },
       project,
       projects: [project],
       supportEnabled: true,
@@ -1086,7 +1112,9 @@ describe("authentication routes", () => {
     expect(router.currentRoute.value.name).toBe("support-control");
 
     await router.push("/support/settings/notifications");
-    expect(router.currentRoute.value.name).toBe("support-notification-settings");
+    expect(router.currentRoute.value.name).toBe(
+      "support-notification-settings",
+    );
   });
 
   it("gates Support authoring routes with their exact permissions", async () => {
@@ -1124,12 +1152,20 @@ describe("authentication routes", () => {
 
     await router.push("/support/settings/notifications");
     expect(router.currentRoute.value.name).toBe("overview");
+
+    await router.push("/support/settings/notifications/new-cases");
+    expect(router.currentRoute.value.name).toBe("overview");
+    auth.project!.effectivePermissionCodes = [
+      "project.support.notification_policy.manage",
+    ];
+    await router.push("/support/settings/notifications/new-cases");
+    expect(router.currentRoute.value.name).toBe(
+      "support-case-notification-policy",
+    );
   });
 
   it("gates External Work routes with their exact permissions", async () => {
-    const auth = authenticatedSupportProject([
-      "project.integrations.manage",
-    ]);
+    const auth = authenticatedSupportProject(["project.integrations.manage"]);
 
     await router.push("/support/settings/integrations");
     expect(router.currentRoute.value.name).toBe("overview");
@@ -1138,8 +1174,10 @@ describe("authentication routes", () => {
       "project.support.external_work.manage",
     ];
     expect(
-      typeof router.getRoutes().find((route) => route.name === "support-external-settings")
-        ?.components?.default,
+      typeof router
+        .getRoutes()
+        .find((route) => route.name === "support-external-settings")?.components
+        ?.default,
     ).toBe("function");
     await router.push("/support/settings/integrations");
     expect(router.currentRoute.value.name).toBe("support-external-settings");

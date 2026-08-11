@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAccessSupportNotificationSettings,
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
   canForceSupportAssignments,
@@ -18,6 +19,21 @@ import {
 } from "./support-workspace-access";
 
 describe("support workspace access", () => {
+  it("opens notification settings for either personal controls or the exact Project policy permission", () => {
+    expect(
+      canAccessSupportNotificationSettings([
+        "project.support.assignments.self_manage",
+      ]),
+    ).toBe(true);
+    expect(
+      canAccessSupportNotificationSettings([
+        "project.support.notification_policy.manage",
+      ]),
+    ).toBe(true);
+    expect(canAccessSupportNotificationSettings(["project.cases.read"])).toBe(
+      false,
+    );
+  });
   it("requires the exact conversation read permission", () => {
     expect(canReadSupportWorkspace(["project.conversations.read"])).toBe(true);
     expect(canReadSupportWorkspace(["project.cases.read"])).toBe(true);
@@ -77,14 +93,10 @@ describe("support workspace access", () => {
 
   it("keeps Lead override and force assignment as independent explicit grants", () => {
     expect(
-      canOverrideSupportAssignments([
-        "project.support.assignments.override",
-      ]),
+      canOverrideSupportAssignments(["project.support.assignments.override"]),
     ).toBe(true);
     expect(
-      canForceSupportAssignments([
-        "project.support.assignments.override",
-      ]),
+      canForceSupportAssignments(["project.support.assignments.override"]),
     ).toBe(false);
     expect(
       canForceSupportAssignments([

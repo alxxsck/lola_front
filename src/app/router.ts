@@ -20,7 +20,7 @@ import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance"
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 import {
   canReadSupportControl,
-  canManagePersonalSupportNotifications,
+  canAccessSupportNotificationSettings,
   canReadSupportWorkspace,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
@@ -478,6 +478,16 @@ export const router = createRouter({
           },
         },
         {
+          path: "support/settings/notifications/new-cases",
+          name: "support-case-notification-policy",
+          component: () =>
+            import("@/pages/SupportCaseNotificationPolicyPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.support.notification_policy.manage",
+          },
+        },
+        {
           path: "support/settings/integrations",
           name: "support-external-settings",
           component: () => import("@/pages/SupportExternalSettingsPage.vue"),
@@ -785,7 +795,7 @@ router.beforeEach(async (to) => {
   if (
     to.meta.supportNotificationSettingsAccess &&
     (!auth.project ||
-      !canManagePersonalSupportNotifications(
+      !canAccessSupportNotificationSettings(
         auth.project.effectivePermissionCodes ?? [],
       ))
   )

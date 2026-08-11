@@ -5,12 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PersonalSupportNotificationAdmissionCapabilitiesDto } from "./personalSupportNotificationAdmissionCapabilitiesDto";
 import type { PersonalSupportNotificationAdmissionResponseDtoRolloutState } from "./personalSupportNotificationAdmissionResponseDtoRolloutState";
+import type { PersonalSupportNotificationAdmissionCapabilitiesDto } from "./personalSupportNotificationAdmissionCapabilitiesDto";
 
 export interface PersonalSupportNotificationAdmissionResponseDto {
+  rolloutState: PersonalSupportNotificationAdmissionResponseDtoRolloutState;
+  /** @pattern ^[a-f0-9]{16}$ */
+  rolloutRevision: string;
+  evaluatedAt: string;
   /** @minimum 0 */
   activeSubscriptionCount: number;
+  capabilities: PersonalSupportNotificationAdmissionCapabilitiesDto;
   /**
    * Server-owned VAPID public key for PushManager.subscribe()
    * @minLength 1
@@ -23,9 +28,4 @@ export interface PersonalSupportNotificationAdmissionResponseDto {
    * @pattern ^[a-f0-9]{16}$
    */
   applicationServerKeyRevision: string | null;
-  capabilities: PersonalSupportNotificationAdmissionCapabilitiesDto;
-  evaluatedAt: string;
-  /** @pattern ^[a-f0-9]{16}$ */
-  rolloutRevision: string;
-  rolloutState: PersonalSupportNotificationAdmissionResponseDtoRolloutState;
 }

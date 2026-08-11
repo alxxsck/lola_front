@@ -23,17 +23,24 @@ test("connects the browser without collapsing permission, preference and device 
   await expect(
     page.getByText("Регистрация на сервере", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("switch")).toHaveCount(2);
+  await expect(page.getByRole("switch")).toHaveCount(3);
   await expect(
-    page.getByText("Все новые обращения", { exact: true }),
-  ).toHaveCount(0);
+    page.getByText("Новые обращения", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/«Новые обращения» и «Требует внимания» — разные события/),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Подключить этот браузер" }).click();
   await expect(
     page.getByText("Этот браузер подключён к уведомлениям поддержки."),
   ).toBeVisible();
   await expect(page.getByText("Подтверждена", { exact: true })).toBeVisible();
-  await expect(page.getByText("Этот браузер", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Зарегистрированные браузеры")
+      .getByText("Этот браузер", { exact: true }),
+  ).toBeVisible();
 
   const attention = page.getByRole("switch", {
     name: /Обращения, требующие внимания/,
@@ -53,7 +60,11 @@ test("connects the browser without collapsing permission, preference and device 
     page.getByRole("heading", { level: 1, name: "Уведомления поддержки" }),
   ).toBeVisible();
   await expect(page.getByText("Подтверждена", { exact: true })).toBeVisible();
-  await expect(page.getByText("Этот браузер", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Зарегистрированные браузеры")
+      .getByText("Этот браузер", { exact: true }),
+  ).toBeVisible();
   await page.waitForTimeout(250);
   const geometry = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -79,8 +90,35 @@ test("connects the browser without collapsing permission, preference and device 
     .getByRole("button", { name: "Подключить этот браузер", exact: true })
     .click();
   await expect(page.getByText("Подтверждена", { exact: true })).toBeVisible();
-  await expect(page.getByText("Этот браузер", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Зарегистрированные браузеры")
+      .getByText("Этот браузер", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Активных: 1", { exact: true })).toBeVisible();
+});
+
+test("explains how to recover when this browser blocks notifications", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem(
+      "support-browser-push-mock:v1",
+      JSON.stringify({
+        granted: false,
+        denied: true,
+        subscribed: false,
+        endpoint: null,
+        applicationServerKey: null,
+      }),
+    );
+  });
+  await login(page);
+  await page.goto("/support/settings/notifications");
+  await expect(page.getByText("Заблокировано браузером")).toBeVisible();
+  await expect(
+    page.getByText(/Откройте разрешения сайта в настройках браузера/),
+  ).toBeVisible();
 });
 
 test("resolves a single-use notification capability into the exact Case route", async ({

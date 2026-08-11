@@ -19,7 +19,7 @@ import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
 import { conversationAISuspensionEnabled } from "@/shared/config/features";
 import {
   canReadSupportControl as canReadSupportControlAccess,
-  canManagePersonalSupportNotifications,
+  canAccessSupportNotificationSettings,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
 } from "@/features/support-workspace/model/support-workspace-access";
 import { productBrand } from "@/shared/config/product-brand";
@@ -117,7 +117,7 @@ const canReadSupportControl = computed(() =>
   canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 const canReadSupportNotificationSettings = computed(() =>
-  canManagePersonalSupportNotifications(
+  canAccessSupportNotificationSettings(
     auth.project?.effectivePermissionCodes ?? [],
   ),
 );

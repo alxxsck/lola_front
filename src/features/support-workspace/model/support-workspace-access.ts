@@ -67,6 +67,18 @@ export function canManagePersonalSupportNotifications(
   );
 }
 
+export function canAccessSupportNotificationSettings(
+  effectivePermissionCodes: readonly string[],
+): boolean {
+  return (
+    canManagePersonalSupportNotifications(effectivePermissionCodes) ||
+    hasProjectPermission(
+      effectivePermissionCodes,
+      "project.support.notification_policy.manage",
+    )
+  );
+}
+
 export function canReadSupportAvailability(
   effectivePermissionCodes: readonly string[],
 ): boolean {
