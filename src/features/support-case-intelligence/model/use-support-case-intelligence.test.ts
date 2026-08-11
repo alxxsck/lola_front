@@ -367,6 +367,32 @@ describe("useSupportCaseIntelligence", () => {
     );
   });
 
+  it("keeps an empty server model catalog as an explicit save blocker", async () => {
+    const projectId = crypto.randomUUID();
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      readModelProfiles: vi.fn().mockResolvedValue({
+        selectedRevisionId: null,
+        items: [],
+      }),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({ actorId: "actor-no-model", projectId, permissions }),
+      source,
+    });
+
+    await controller.load();
+
+    expect(controller.modelProfiles.value?.items).toEqual([]);
+    expect(controller.detectionIssues.value).toContainEqual(
+      expect.objectContaining({
+        path: "modelProfileRevisionId",
+        severity: "ERROR",
+      }),
+    );
+    expect(controller.hasDetectionErrors.value).toBe(true);
+  });
+
   it("maps server validation issues to the exact field and does not save", async () => {
     const projectId = crypto.randomUUID();
     const source: SupportCaseIntelligenceSource = {

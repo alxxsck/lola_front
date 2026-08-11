@@ -35,15 +35,14 @@ const router = useRouter();
 const accessDenied = ref(false);
 const publishKind = ref<"DETECTION" | "BUDGET" | null>(null);
 const discardVisible = ref(false);
+const detectionEditor = ref<"SCOPE" | "TOPIC" | "RULE" | "ADVANCED" | null>(
+  null,
+);
+const previewVisible = ref(false);
 const reason = ref("");
 const selectedTopicIndex = ref(0);
 const selectedRuleIndex = ref(0);
-const mobilePanel = computed<"MAP" | "EDITOR" | "PREVIEW">(() => {
-  const value = Array.isArray(route.query.panel)
-    ? route.query.panel[0]
-    : route.query.panel;
-  return value === "editor" ? "EDITOR" : value === "preview" ? "PREVIEW" : "MAP";
-});
+const mobilePanel = computed<"MAP" | "EDITOR" | "PREVIEW">(() => "MAP");
 
 const permissions = computed(
   () => auth.project?.effectivePermissionCodes ?? [],
@@ -166,6 +165,29 @@ const selectedModelProfile = computed(() =>
       controller.detection.value.modelProfileRevisionId,
   ),
 );
+const detectionEditorTitle = computed(() => {
+  if (detectionEditor.value === "SCOPE") return "Область применения";
+  if (detectionEditor.value === "TOPIC")
+    return selectedTopic.value?.label || "Новая категория";
+  if (detectionEditor.value === "RULE")
+    return selectedRule.value?.phrase ||
+      selectedRule.value?.statement ||
+      selectedRule.value?.attributeCode
+      ? "Точное правило"
+      : "Новое точное правило";
+  return "Дополнительные настройки";
+});
+const detectionErrors = computed(() =>
+  controller.detectionIssues.value.filter((item) => item.severity === "ERROR"),
+);
+const detectionWarnings = computed(() =>
+  controller.detectionIssues.value.filter((item) => item.severity === "WARNING"),
+);
+const modelSetupMissing = computed(
+  () =>
+    controller.modelProfiles.value !== null &&
+    modelProfileOptions.value.length === 0,
+);
 const safetyPresentation = computed(() => {
   const safety = controller.snapshot.value?.safety;
   if (safety?.state === "READY")
@@ -226,7 +248,7 @@ function addTopic() {
     createTopic(controller.detection.value.topics.length + 1),
   );
   selectedTopicIndex.value = controller.detection.value.topics.length - 1;
-  void showMobilePanel("EDITOR");
+  detectionEditor.value = "TOPIC";
 }
 
 function removeTopic(index: number) {
@@ -246,7 +268,7 @@ function addRule() {
     createRule(controller.detection.value.rules.length + 1),
   );
   selectedRuleIndex.value = controller.detection.value.rules.length - 1;
-  void showMobilePanel("EDITOR");
+  detectionEditor.value = "RULE";
 }
 
 function removeRule(index: number) {
@@ -304,6 +326,11 @@ function addAudiencePredicate(kind: "include" | "exclude") {
   });
 }
 
+function showMobilePanel(_panel: "MAP" | "EDITOR" | "PREVIEW") {
+  void _panel;
+  // The desktop and mobile flows now use the same explicit editor dialogs.
+}
+
 function audienceValueText(predicate: CaseIntelligenceAttributePredicateDto) {
   return Array.isArray(predicate.value)
     ? predicate.value.join(", ")
@@ -324,11 +351,36 @@ function updateAudienceValue(
       : normalized;
 }
 
-async function showMobilePanel(panel: "MAP" | "EDITOR" | "PREVIEW") {
-  const query = { ...route.query };
-  if (panel === "MAP") delete query.panel;
-  else query.panel = panel.toLowerCase();
-  await router.push({ query });
+function openTopic(index: number) {
+  selectedTopicIndex.value = index;
+  detectionEditor.value = "TOPIC";
+}
+
+function openRule(index: number) {
+  selectedRuleIndex.value = index;
+  detectionEditor.value = "RULE";
+}
+
+function closeDetectionEditor() {
+  detectionEditor.value = null;
+}
+
+function openIssue(path: string) {
+  const topic = /^topics\.(\d+)/u.exec(path);
+  if (topic) {
+    openTopic(Number(topic[1]));
+    return;
+  }
+  const rule = /^rules\.(\d+)/u.exec(path);
+  if (rule) {
+    openRule(Number(rule[1]));
+    return;
+  }
+  if (["scope", "locales", "fallbackLocale", "channels"].includes(path)) {
+    detectionEditor.value = "SCOPE";
+    return;
+  }
+  detectionEditor.value = "ADVANCED";
 }
 
 function decisionLabel(value: string) {
@@ -636,12 +688,340 @@ onBeforeUnmount(() => {
         </main>
 
         <div v-else-if="section === 'DETECTION'" class="detection-workbench">
-          <nav class="mobile-workflow" aria-label="Шаги настройки правил">
+          <main class="classification-map">
+            <section class="classification-brief">
+              <div>
+                <div class="card-kicker">Текущий черновик</div>
+                <h2>Карта классификации</h2>
+                <p>
+                  Сначала опишите категории обращений. Точные правила добавляйте
+                  только для фраз, которые всегда означают одно и то же.
+                </p>
+              </div>
+              <div class="brief-actions">
+                <Button
+                  label="Настроить область применения"
+                  icon="pi pi-sliders-h"
+                  severity="secondary"
+                  outlined
+                  @click="detectionEditor = 'SCOPE'"
+                />
+                <Button
+                  label="Открыть проверку"
+                  icon="pi pi-play"
+                  :disabled="controller.hasDetectionErrors.value"
+                  @click="previewVisible = true"
+                />
+              </div>
+              <div class="scope-facts">
+                <div>
+                  <span class="scope-facts__label">Сообщения</span>
+                  <strong>{{ controller.detection.value.locales.join(", ") }}</strong>
+                  <small>Языки, которые Lola должна распознавать.</small>
+                </div>
+                <div>
+                  <span class="scope-facts__label">Если язык не определён</span>
+                  <strong>{{ controller.detection.value.fallbackLocale }}</strong>
+                  <small>На этом языке сервер разберёт сообщение без метки языка.</small>
+                </div>
+                <div>
+                  <span class="scope-facts__label">Каналы</span>
+                  <strong>
+                    {{
+                      controller.detection.value.channels
+                        .map(
+                          (value) =>
+                            channelOptions.find((item) => item.value === value)
+                              ?.label ?? value,
+                        )
+                        .join(", ")
+                    }}
+                  </strong>
+                  <small>Только сообщения из этих каналов участвуют в проверке.</small>
+                </div>
+              </div>
+            </section>
+
+            <Message
+              v-if="modelSetupMissing"
+              severity="warn"
+              :closable="false"
+              class="model-empty-message"
+            >
+              <div>
+                <strong>Для проекта ещё не подготовлена модель классификации.</strong>
+                <span
+                  >Категории можно заполнить сейчас, но сохранить и проверить
+                  общий черновик получится после того, как администратор
+                  платформы опубликует модель для этого проекта.</span
+                >
+              </div>
+              <Button
+                label="Посмотреть модель и лимиты"
+                severity="secondary"
+                outlined
+                @click="
+                  router.push(
+                    '/support/settings/case-intelligence/models-budget',
+                  )
+                "
+              />
+            </Message>
+
+            <section class="catalog-section" aria-labelledby="topics-title">
+              <div class="catalog-heading">
+                <div>
+                  <span class="catalog-count"
+                    >{{ controller.detection.value.topics.length }}/50</span
+                  >
+                  <h2 id="topics-title">Категории</h2>
+                  <p>
+                    Понятные темы обращений: «Доставка», «Возврат», «Не проходит
+                    оплата».
+                  </p>
+                </div>
+                <Button
+                  v-if="controller.canManageDetection.value"
+                  label="Добавить категорию"
+                  icon="pi pi-plus"
+                  @click="addTopic"
+                />
+              </div>
+              <div
+                v-if="controller.detection.value.topics.length"
+                class="topic-grid"
+              >
+                <article
+                  v-for="(topic, index) in controller.detection.value.topics"
+                  :key="`${topic.code}-${index}`"
+                  class="topic-card"
+                >
+                  <div class="topic-card__topline">
+                    <Tag
+                      :value="
+                        issueFor(`topics.${index}.code`) ||
+                        issueFor(`topics.${index}.label`) ||
+                        issueFor(`topics.${index}.description`)
+                          ? 'Нужно заполнить'
+                          : 'Готово'
+                      "
+                      :severity="
+                        issueFor(`topics.${index}.code`) ||
+                        issueFor(`topics.${index}.label`) ||
+                        issueFor(`topics.${index}.description`)
+                          ? 'warn'
+                          : 'success'
+                      "
+                    />
+                    <span class="stable-code">{{
+                      topic.code || "КОД НЕ ЗАДАН"
+                    }}</span>
+                  </div>
+                  <h3>{{ topic.label || "Новая категория" }}</h3>
+                  <p>
+                    {{
+                      topic.description ||
+                      "Добавьте короткое объяснение, какие обращения относятся к этой категории."
+                    }}
+                  </p>
+                  <div class="topic-card__meta">
+                    <span
+                      ><i class="pi pi-check-circle" />
+                      {{ topic.positiveExamples.length }} подходящих</span
+                    >
+                    <span
+                      ><i class="pi pi-minus-circle" />
+                      {{ topic.negativeExamples.length }} исключений</span
+                    >
+                  </div>
+                  <Button
+                    label="Редактировать"
+                    icon="pi pi-pencil"
+                    severity="secondary"
+                    text
+                    @click="openTopic(index)"
+                  />
+                </article>
+              </div>
+              <div v-else class="catalog-empty">
+                <i class="pi pi-tags" aria-hidden="true" />
+                <div>
+                  <h3>Категорий пока нет</h3>
+                  <p>
+                    Добавьте первую тему и приведите несколько реальных
+                    примеров без личных данных.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section class="catalog-section" aria-labelledby="rules-title">
+              <div class="catalog-heading">
+                <div>
+                  <span class="catalog-count"
+                    >{{ controller.detection.value.rules.length }}/200</span
+                  >
+                  <h2 id="rules-title">Точные правила</h2>
+                  <p>
+                    Исключения для однозначных фраз. Они проверяются раньше
+                    смысловой модели.
+                  </p>
+                </div>
+                <Button
+                  v-if="controller.canManageDetection.value"
+                  label="Добавить правило"
+                  icon="pi pi-plus"
+                  severity="secondary"
+                  outlined
+                  @click="addRule"
+                />
+              </div>
+              <div
+                v-if="controller.detection.value.rules.length"
+                class="rule-list"
+              >
+                <button
+                  v-for="(rule, index) in controller.detection.value.rules"
+                  :key="`${rule.code}-${index}`"
+                  type="button"
+                  class="rule-row"
+                  @click="openRule(index)"
+                >
+                  <span class="rule-kind">{{
+                    ruleKindOptions.find((item) => item.value === rule.kind)
+                      ?.label
+                  }}</span>
+                  <span
+                    ><strong>{{
+                      rule.phrase ||
+                      rule.statement ||
+                      rule.attributeCode ||
+                      "Новое правило"
+                    }}</strong
+                    ><small
+                      >{{ rule.code }} · {{ decisionLabel(rule.action) }}</small
+                    ></span
+                  >
+                  <i class="pi pi-chevron-right" aria-hidden="true" />
+                </button>
+              </div>
+              <div v-else class="catalog-empty catalog-empty--compact">
+                <i class="pi pi-bolt" aria-hidden="true" />
+                <div>
+                  <h3>Точных правил нет</h3>
+                  <p>
+                    Это нормально: категории и примеры уже дают Lola основу
+                    для классификации.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <button
+              type="button"
+              class="advanced-summary"
+              @click="detectionEditor = 'ADVANCED'"
+            >
+              <span class="advanced-summary__icon"
+                ><i class="pi pi-sliders-h"
+              /></span>
+              <span
+                ><strong>Порог уверенности и ограничения</strong
+                ><small
+                  >Когда предложить категорию, когда применить её автоматически
+                  и сколько данных учитывать.</small
+                ></span
+              >
+              <span class="advanced-summary__value"
+                >{{
+                  Math.round(
+                    controller.detection.value.confidenceTiers.autoApply * 100,
+                  )
+                }}% для автоматики</span
+              >
+              <i class="pi pi-chevron-right" aria-hidden="true" />
+            </button>
+
+            <section class="save-panel" aria-label="Сохранение черновика">
+              <div class="save-panel__status">
+                <Tag
+                  v-if="detectionErrors.length"
+                  :value="`${detectionErrors.length} ошибок`"
+                  severity="danger"
+                />
+                <Tag v-else value="Можно сохранять" severity="success" />
+                <span v-if="detectionWarnings.length"
+                  >{{ detectionWarnings.length }} рекомендаций</span
+                >
+                <span
+                  v-if="controller.validatedPolicyHash.value"
+                  class="validation-confirmation"
+                  ><i class="pi pi-check-circle" /> Серверная проверка
+                  пройдена</span
+                >
+              </div>
+              <div v-if="detectionErrors.length" class="blocking-list">
+                <p>Чтобы сохранить общий черновик, исправьте:</p>
+                <button
+                  v-for="item in detectionErrors.slice(0, 6)"
+                  :key="`${item.path}-${item.message}`"
+                  type="button"
+                  @click="openIssue(item.path)"
+                >
+                  <i class="pi pi-arrow-right" /> {{ item.message }}
+                </button>
+              </div>
+              <div class="save-panel__actions">
+                <Button
+                  v-if="controller.canPreview.value"
+                  label="Проверить настройки"
+                  icon="pi pi-shield"
+                  severity="secondary"
+                  outlined
+                  :loading="controller.validating.value"
+                  :disabled="
+                    controller.hasDetectionErrors.value ||
+                    controller.hasPendingRecovery.value
+                  "
+                  @click="controller.validateDraft"
+                />
+                <Button
+                  v-if="controller.canManageDetection.value"
+                  label="Сохранить черновик"
+                  icon="pi pi-save"
+                  :loading="controller.mutating.value"
+                  :disabled="
+                    controller.hasDetectionErrors.value ||
+                    controller.hasPendingRecovery.value
+                  "
+                  @click="controller.saveDetection"
+                />
+                <Button
+                  v-if="draftDetection && controller.canPublishDetection.value"
+                  label="Опубликовать"
+                  icon="pi pi-check"
+                  severity="success"
+                  :disabled="isBusy || controller.hasPendingRecovery.value"
+                  @click="openPublish('DETECTION')"
+                />
+              </div>
+            </section>
+          </main>
+
+          <nav v-if="false" class="mobile-workflow" aria-label="Шаги настройки правил">
             <button type="button" class="mobile-step" :aria-current="mobilePanel === 'MAP' ? 'step' : undefined" @click="showMobilePanel('MAP')">Карта</button>
             <button type="button" class="mobile-step" :aria-current="mobilePanel === 'EDITOR' ? 'step' : undefined" @click="showMobilePanel('EDITOR')">Редактор</button>
             <button type="button" class="mobile-step" :aria-current="mobilePanel === 'PREVIEW' ? 'step' : undefined" @click="showMobilePanel('PREVIEW')">Проверка</button>
           </nav>
-          <main class="policy-layout" :data-mobile-panel="mobilePanel">
+          <Dialog
+            :visible="detectionEditor !== null"
+            modal
+            :header="detectionEditorTitle"
+            class="ci-editor-dialog"
+            :style="{ width: 'min(68rem, calc(100vw - 2rem))' }"
+            @update:visible="closeDetectionEditor"
+          >
+          <main class="policy-layout policy-layout--dialog" :data-mobile-panel="mobilePanel">
           <aside class="policy-map" aria-label="Карта категорий и правил">
             <div class="map-section">
               <div class="map-heading">
@@ -726,11 +1106,11 @@ onBeforeUnmount(() => {
           </aside>
 
           <div class="editor-column">
-            <section class="editor-card">
+            <section v-if="detectionEditor === 'SCOPE'" class="editor-card">
               <div class="editor-card__heading">
                 <div>
-                  <div class="card-kicker">Назначение</div>
-                  <h2>Где применять правила</h2>
+                  <div class="card-kicker">Область применения</div>
+                  <h2>Какие сообщения проверять</h2>
                 </div>
                 <Tag
                   :value="
@@ -742,7 +1122,7 @@ onBeforeUnmount(() => {
                 />
               </div>
               <div class="field">
-                <label for="policy-scope">Коротко о задаче</label
+                <label for="policy-scope">Для чего нужна классификация</label
                 ><Textarea
                   id="policy-scope"
                   v-model="controller.detection.value.scope"
@@ -752,34 +1132,32 @@ onBeforeUnmount(() => {
                   :aria-invalid="Boolean(issueFor('scope'))"
                   :disabled="!controller.canManageDetection.value"
                 /><small :class="{ 'field-error': issueFor('scope') }"
-                  >Это описание помогает команде понимать границы
-                  классификации. {{ issueFor("scope") }}</small
+                  >Коротко опишите задачу для других руководителей поддержки.
+                  Пользователи этот текст не увидят. {{ issueFor("scope") }}</small
                 >
               </div>
               <div class="field-grid field-grid--three">
                 <div class="field">
-                  <label for="policy-locales">Языки</label
+                  <label for="policy-locales">Языки сообщений</label
                   ><InputText
                     id="policy-locales"
                     :model-value="localeText()"
                     :disabled="!controller.canManageDetection.value"
                     @update:model-value="updateLocales"
-                  /><small>Через запятую, например ru-RU, en-US</small>
+                  /><small>Какие языки Lola должна распознавать. Через запятую: ru-RU, en-US.</small>
                   <small class="field-error">{{ issueFor("locales") }}</small>
                 </div>
                 <div class="field">
-                  <label for="policy-fallback">Основной язык</label
+                  <label for="policy-fallback">Язык без метки</label
                   ><InputText
                     id="policy-fallback"
                     v-model="controller.detection.value.fallbackLocale"
                     maxlength="35"
                     :disabled="!controller.canManageDetection.value"
-                  /><small class="field-error">{{
-                    issueFor("fallbackLocale")
-                  }}</small>
+                  /><small :class="{ 'field-error': issueFor('fallbackLocale') }">Используется, если канал не передал язык сообщения. {{ issueFor("fallbackLocale") }}</small>
                 </div>
                 <div class="field">
-                  <span class="field-label">Каналы</span>
+                  <span class="field-label">Каналы сообщений</span>
                   <div class="check-row">
                     <label
                       v-for="channel in channelOptions"
@@ -802,7 +1180,7 @@ onBeforeUnmount(() => {
             </section>
 
             <section
-              v-if="selectedTopic"
+              v-if="detectionEditor === 'TOPIC' && selectedTopic"
               class="editor-card editor-card--focus"
             >
               <div class="editor-card__heading">
@@ -813,7 +1191,7 @@ onBeforeUnmount(() => {
                   <h2>{{ selectedTopic.label || "Новая категория" }}</h2>
                 </div>
                 <Button
-                  v-if="controller.canManageDetection.value"
+                  v-if="false"
                   label="Удалить"
                   icon="pi pi-trash"
                   severity="danger"
@@ -823,7 +1201,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="field-grid">
                 <div class="field">
-                  <label for="topic-code">Постоянный код</label
+                  <label for="topic-code">Код категории</label
                   ><InputText
                     id="topic-code"
                     v-model="selectedTopic.code"
@@ -835,13 +1213,13 @@ onBeforeUnmount(() => {
                         `topics.${selectedTopicIndex}.code`,
                       ),
                     }"
-                    >Код используют отчёты и интеграции; после публикации не
-                    переименовывайте.
+                    >Короткий постоянный код для отчётов. Используйте заглавные
+                    латинские буквы, цифры и подчёркивание.
                     {{ issueFor(`topics.${selectedTopicIndex}.code`) }}</small
                   >
                 </div>
                 <div class="field">
-                  <label for="topic-label">Название для команды</label>
+                  <label for="topic-label">Название категории</label>
                   <InputText
                     id="topic-label"
                     v-model="selectedTopic.label"
@@ -857,7 +1235,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="field">
                   <label for="topic-description"
-                    >Что относится к категории</label
+                    >Какие обращения сюда относятся</label
                   ><Textarea
                     id="topic-description"
                     v-model="selectedTopic.description"
@@ -906,7 +1284,7 @@ onBeforeUnmount(() => {
               </div>
             </section>
 
-            <section v-else class="editor-card empty-card">
+            <section v-else-if="detectionEditor === 'TOPIC'" class="editor-card empty-card">
               <i class="pi pi-tags" />
               <h2>Добавьте категорию</h2>
               <p>
@@ -920,7 +1298,7 @@ onBeforeUnmount(() => {
               />
             </section>
 
-            <section v-if="selectedRule" class="editor-card">
+            <section v-if="detectionEditor === 'RULE' && selectedRule" class="editor-card">
               <div class="editor-card__heading">
                 <div>
                   <div class="card-kicker">
@@ -929,7 +1307,7 @@ onBeforeUnmount(() => {
                   <h2>{{ selectedRule.code || "Новое правило" }}</h2>
                 </div>
                 <Button
-                  v-if="controller.canManageDetection.value"
+                  v-if="false"
                   label="Удалить"
                   icon="pi pi-trash"
                   severity="danger"
@@ -939,7 +1317,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="field-grid field-grid--three">
                 <div class="field">
-                  <label for="rule-code">Постоянный код</label
+                  <label for="rule-code">Код правила</label
                   ><InputText
                     id="rule-code"
                     v-model="selectedRule.code"
@@ -1068,7 +1446,7 @@ onBeforeUnmount(() => {
               </div>
             </section>
 
-            <details class="editor-card advanced-card">
+            <details v-if="detectionEditor === 'ADVANCED'" class="editor-card advanced-card" open>
               <summary>
                 <span
                   ><span class="card-kicker">Дополнительно</span
@@ -1085,7 +1463,7 @@ onBeforeUnmount(() => {
                 </Message>
                 <div class="field-grid field-grid--three">
                   <div class="field">
-                    <label for="threshold-monitor">Наблюдение</label
+                    <label for="threshold-monitor">Начать учитывать категорию</label
                     ><InputNumber
                       input-id="threshold-monitor"
                       v-model="
@@ -1097,6 +1475,7 @@ onBeforeUnmount(() => {
                       :max-fraction-digits="2"
                       :disabled="!controller.canManageDetection.value"
                     />
+                    <small>Ниже этого значения категория отбрасывается.</small>
                   </div>
                   <div class="field">
                     <label for="threshold-suggest">Подсказка оператору</label
@@ -1111,9 +1490,10 @@ onBeforeUnmount(() => {
                       :max-fraction-digits="2"
                       :disabled="!controller.canManageDetection.value"
                     />
+                    <small>Категория появится как рекомендация, но решение останется за человеком.</small>
                   </div>
                   <div class="field">
-                    <label for="threshold-auto">Автоматическое действие</label
+                    <label for="threshold-auto">Применить без подтверждения</label
                     ><InputNumber
                       input-id="threshold-auto"
                       v-model="
@@ -1125,6 +1505,7 @@ onBeforeUnmount(() => {
                       :max-fraction-digits="2"
                       :disabled="!controller.canManageDetection.value"
                     />
+                    <small>Самый высокий и осторожный порог.</small>
                   </div>
                 </div>
                 <Message
@@ -1135,7 +1516,7 @@ onBeforeUnmount(() => {
                 >
                 <div class="field-grid field-grid--three">
                   <div class="field">
-                    <label for="candidate-limit">Кандидатов</label
+                    <label for="candidate-limit">Сколько обращений сравнить</label
                     ><InputNumber
                       input-id="candidate-limit"
                       v-model="controller.detection.value.candidateLimit"
@@ -1145,12 +1526,10 @@ onBeforeUnmount(() => {
                       aria-describedby="candidate-limit-error"
                       :disabled="!controller.canManageDetection.value"
                     />
-                    <small id="candidate-limit-error" class="field-error">{{
-                      issueFor("candidateLimit")
-                    }}</small>
+                    <small id="candidate-limit-error" :class="{ 'field-error': issueFor('candidateLimit') }">Последние открытые обращения, к которым можно привязать сообщение. {{ issueFor("candidateLimit") }}</small>
                   </div>
                   <div class="field">
-                    <label for="debounce">Пауза перед проверкой, мс</label
+                    <label for="debounce">Пауза после сообщения, мс</label
                     ><InputNumber
                       input-id="debounce"
                       v-model="controller.detection.value.debounceMs"
@@ -1160,9 +1539,7 @@ onBeforeUnmount(() => {
                       aria-describedby="debounce-error"
                       :disabled="!controller.canManageDetection.value"
                     />
-                    <small id="debounce-error" class="field-error">{{
-                      issueFor("debounceMs")
-                    }}</small>
+                    <small id="debounce-error" :class="{ 'field-error': issueFor('debounceMs') }">Сервер подождёт продолжение сообщения и только затем начнёт проверку. {{ issueFor("debounceMs") }}</small>
                   </div>
                   <div class="field model-profile-field">
                     <label for="model-revision">Модель классификации</label
@@ -1187,7 +1564,7 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="field-grid field-grid--three">
                   <div class="field">
-                    <label for="ambiguity-action">Если решение неоднозначно</label>
+                    <label for="ambiguity-action">Если уверенности недостаточно</label>
                     <Select
                       input-id="ambiguity-action"
                       v-model="controller.detection.value.ambiguityAction"
@@ -1196,9 +1573,10 @@ onBeforeUnmount(() => {
                       option-value="value"
                       :disabled="!controller.canManageDetection.value"
                     />
+                    <small>Без автоматического изменения обращения.</small>
                   </div>
                   <div class="field">
-                    <label for="attach-window">Привязывать к открытому, минут</label>
+                    <label for="attach-window">Продолжать открытое обращение, минут</label>
                     <InputNumber
                       input-id="attach-window"
                       :model-value="Math.round(controller.detection.value.attachWindowMs / 60000)"
@@ -1208,10 +1586,10 @@ onBeforeUnmount(() => {
                       :disabled="!controller.canManageDetection.value"
                       @update:model-value="controller.detection.value.attachWindowMs = Number($event ?? 1) * 60000"
                     />
-                    <small class="field-error">{{ issueFor("attachWindowMs") }}</small>
+                    <small :class="{ 'field-error': issueFor('attachWindowMs') }">В этот период новое сообщение продолжит уже открытое обращение. {{ issueFor("attachWindowMs") }}</small>
                   </div>
                   <div class="field">
-                    <label for="reopen-window">Открывать повторно, минут</label>
+                    <label for="reopen-window">Возвращать закрытое обращение, минут</label>
                     <InputNumber
                       input-id="reopen-window"
                       :model-value="Math.round(controller.detection.value.reopenWindowMs / 60000)"
@@ -1221,7 +1599,7 @@ onBeforeUnmount(() => {
                       :disabled="!controller.canManageDetection.value"
                       @update:model-value="controller.detection.value.reopenWindowMs = Number($event ?? 1) * 60000"
                     />
-                    <small class="field-error">{{ issueFor("reopenWindowMs") }}</small>
+                    <small :class="{ 'field-error': issueFor('reopenWindowMs') }">Позже этого срока будет создано новое обращение. {{ issueFor("reopenWindowMs") }}</small>
                   </div>
                 </div>
                 <div class="advanced-group">
@@ -1295,49 +1673,49 @@ onBeforeUnmount(() => {
                   </div>
                 </div>
                 <div class="advanced-group">
-                  <strong>Контекст решения</strong>
+                  <div class="advanced-group__heading"><div><strong>Данные для решения</strong><small>Сколько истории и фактов сервер может использовать для одной классификации.</small></div></div>
                   <div class="field-grid field-grid--three">
                     <div class="field">
-                      <label for="max-signals">Сигналов</label>
+                      <label for="max-signals">Сигналы о пользователе</label>
                       <InputNumber input-id="max-signals" v-model="controller.detection.value.routerContext.maxSignals" :min="1" :max="8" :aria-invalid="Boolean(issueFor('routerContext.maxSignals'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("routerContext.maxSignals") }}</small>
+                      <small :class="{ 'field-error': issueFor('routerContext.maxSignals') }">Структурированные факты профиля, полезные для решения. {{ issueFor("routerContext.maxSignals") }}</small>
                     </div>
                     <div class="field">
-                      <label for="max-context-messages">Сообщений из истории</label>
+                      <label for="max-context-messages">Последние сообщения</label>
                       <InputNumber input-id="max-context-messages" v-model="controller.detection.value.routerContext.maxContextMessages" :min="0" :max="50" :aria-invalid="Boolean(issueFor('routerContext.maxContextMessages'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("routerContext.maxContextMessages") }}</small>
+                      <small :class="{ 'field-error': issueFor('routerContext.maxContextMessages') }">Сколько сообщений взять, чтобы понять контекст диалога. {{ issueFor("routerContext.maxContextMessages") }}</small>
                     </div>
                     <div class="field">
-                      <label for="max-candidate-cases">Открытых обращений-кандидатов</label>
+                      <label for="max-candidate-cases">Открытые обращения</label>
                       <InputNumber input-id="max-candidate-cases" v-model="controller.detection.value.routerContext.maxCandidateCases" :min="0" :max="20" :aria-invalid="Boolean(issueFor('routerContext.maxCandidateCases'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("routerContext.maxCandidateCases") }}</small>
+                      <small :class="{ 'field-error': issueFor('routerContext.maxCandidateCases') }">Кандидаты на продолжение вместо создания нового обращения. {{ issueFor("routerContext.maxCandidateCases") }}</small>
                     </div>
                   </div>
                 </div>
                 <div class="advanced-group">
-                  <strong>Ограничения одной проверки</strong>
+                  <div class="advanced-group__heading"><div><strong>Ограничения одной проверки</strong><small>Защитные пределы на случай слишком сложной конфигурации.</small></div></div>
                   <div class="field-grid field-grid--three">
                     <div class="field">
-                      <label for="max-rules-evaluated">Правил</label>
+                      <label for="max-rules-evaluated">Точных правил за проверку</label>
                       <InputNumber input-id="max-rules-evaluated" v-model="controller.detection.value.runtimeLimits.maxRulesEvaluated" :min="1" :max="20" :aria-invalid="Boolean(issueFor('runtimeLimits.maxRulesEvaluated'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("runtimeLimits.maxRulesEvaluated") }}</small>
+                      <small :class="{ 'field-error': issueFor('runtimeLimits.maxRulesEvaluated') }">Это технический предел, а не требуемое количество созданных правил. {{ issueFor("runtimeLimits.maxRulesEvaluated") }}</small>
                     </div>
                     <div class="field">
                       <label for="max-semantic-statements">Смысловых признаков</label>
                       <InputNumber input-id="max-semantic-statements" v-model="controller.detection.value.runtimeLimits.maxSemanticStatements" :min="0" :max="50" :aria-invalid="Boolean(issueFor('runtimeLimits.maxSemanticStatements'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("runtimeLimits.maxSemanticStatements") }}</small>
+                      <small :class="{ 'field-error': issueFor('runtimeLimits.maxSemanticStatements') }">Сколько смысловых условий модель может оценить за раз. {{ issueFor("runtimeLimits.maxSemanticStatements") }}</small>
                     </div>
                     <div class="field">
-                      <label for="max-evaluation-ms">Время, мс</label>
+                      <label for="max-evaluation-ms">Максимальное время, мс</label>
                       <InputNumber input-id="max-evaluation-ms" v-model="controller.detection.value.runtimeLimits.maxEvaluationMs" :min="1" :max="5000" :aria-invalid="Boolean(issueFor('runtimeLimits.maxEvaluationMs'))" :disabled="!controller.canManageDetection.value" />
-                      <small class="field-error">{{ issueFor("runtimeLimits.maxEvaluationMs") }}</small>
+                      <small :class="{ 'field-error': issueFor('runtimeLimits.maxEvaluationMs') }">После этого срока сервер выберет безопасный результат. {{ issueFor("runtimeLimits.maxEvaluationMs") }}</small>
                     </div>
                   </div>
                 </div>
               </div>
             </details>
 
-            <div class="editor-actions">
+            <div v-if="false" class="editor-actions">
               <div>
                 <strong
                   >{{
@@ -1410,6 +1788,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <SupportDetectionPreviewConsole
+            v-if="false"
             :result="controller.dryRunResult.value"
             :locales="controller.detection.value.locales"
             :can-preview="controller.canPreview.value"
@@ -1418,6 +1797,50 @@ onBeforeUnmount(() => {
             @preview="controller.preview"
           />
         </main>
+          <template #footer>
+            <Button
+              v-if="detectionEditor === 'TOPIC' && controller.canManageDetection.value"
+              label="Удалить категорию"
+              icon="pi pi-trash"
+              severity="danger"
+              text
+              @click="removeTopic(selectedTopicIndex); closeDetectionEditor()"
+            />
+            <Button
+              v-if="detectionEditor === 'RULE' && controller.canManageDetection.value"
+              label="Удалить правило"
+              icon="pi pi-trash"
+              severity="danger"
+              text
+              @click="removeRule(selectedRuleIndex); closeDetectionEditor()"
+            />
+            <Button label="Готово" @click="closeDetectionEditor" />
+          </template>
+          </Dialog>
+
+          <Dialog
+            v-model:visible="previewVisible"
+            modal
+            header="Проверка на примере"
+            class="ci-preview-dialog"
+            :style="{ width: 'min(76rem, calc(100vw - 2rem))' }"
+          >
+            <SupportDetectionPreviewConsole
+              :result="controller.dryRunResult.value"
+              :locales="controller.detection.value.locales"
+              :can-preview="controller.canPreview.value"
+              :blocked="controller.hasDetectionErrors.value || controller.hasPendingRecovery.value"
+              :loading="controller.previewing.value || controller.validating.value"
+              @preview="controller.preview"
+            />
+            <template #footer>
+              <Button
+                label="Закрыть"
+                severity="secondary"
+                @click="previewVisible = false"
+              />
+            </template>
+          </Dialog>
         </div>
 
         <main v-else class="budget-layout">
@@ -1703,6 +2126,314 @@ onBeforeUnmount(() => {
 }
 .mobile-workflow {
   display: none;
+}
+.classification-map {
+  display: grid;
+  gap: 18px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.classification-brief,
+.catalog-section,
+.advanced-summary,
+.save-panel {
+  border: 1px solid var(--ci-line);
+  border-radius: 16px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-raised);
+}
+.classification-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 26px;
+}
+.classification-brief h2,
+.catalog-heading h2 {
+  margin: 5px 0 7px;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+.classification-brief p,
+.catalog-heading p,
+.topic-card p,
+.catalog-empty p {
+  margin: 0;
+  color: var(--ci-muted);
+  line-height: 1.5;
+}
+.brief-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.scope-facts {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 2px 0 0;
+  overflow: hidden;
+  border: 1px solid var(--ci-line);
+  border-radius: 12px;
+  background: var(--ci-line);
+}
+.scope-facts div {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--ci-soft);
+}
+.scope-facts__label {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.scope-facts strong {
+  font-weight: 800;
+}
+.scope-facts small {
+  color: var(--text-tertiary);
+  line-height: 1.35;
+}
+.model-empty-message :deep(.p-message-content) {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+}
+.model-empty-message :deep(.p-message-text) {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.model-empty-message :deep(.p-message-text > div) {
+  display: grid;
+  gap: 4px;
+}
+.catalog-section {
+  padding: 24px;
+}
+.catalog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.catalog-count {
+  float: right;
+  margin-left: 10px;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.topic-card {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--ci-line);
+  border-radius: 13px;
+  background: var(--ci-soft);
+  transition:
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.topic-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.topic-card__topline,
+.topic-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.stable-code,
+.rule-kind {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+.topic-card h3,
+.catalog-empty h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.topic-card__meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+.topic-card > :deep(.p-button) {
+  justify-self: start;
+  margin-left: -10px;
+}
+.rule-list {
+  display: grid;
+  gap: 8px;
+}
+.rule-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 1px solid var(--ci-line);
+  border-radius: 11px;
+  background: var(--surface-card);
+  color: var(--ci-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.rule-row:hover {
+  border-color: var(--border-strong);
+  background: var(--ci-soft);
+}
+.rule-row > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+}
+.rule-row small {
+  color: var(--text-secondary);
+}
+.catalog-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 28px;
+  border-radius: 13px;
+  background: var(--ci-soft);
+}
+.catalog-empty > i {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--status-accent-soft);
+  color: var(--status-accent-text);
+  font-size: 1.15rem;
+}
+.catalog-empty--compact {
+  padding-block: 20px;
+}
+.advanced-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  color: var(--ci-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.advanced-summary:hover {
+  border-color: var(--border-strong);
+}
+.advanced-summary__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--ci-soft);
+  color: var(--status-accent-text);
+}
+.advanced-summary > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+}
+.advanced-summary small,
+.advanced-summary__value {
+  color: var(--text-secondary);
+}
+.advanced-summary__value {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.save-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px 22px;
+  padding: 18px 20px;
+}
+.save-panel__status,
+.save-panel__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.save-panel__actions {
+  justify-content: flex-end;
+}
+.blocking-list {
+  display: grid;
+  gap: 4px;
+  grid-column: 1 / -1;
+  padding-top: 12px;
+  border-top: 1px solid var(--ci-line);
+}
+.blocking-list p {
+  margin: 0 0 4px;
+  font-weight: 750;
+}
+.blocking-list button {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--status-danger-text);
+  text-align: left;
+  cursor: pointer;
+}
+.policy-layout.policy-layout--dialog {
+  display: block;
+}
+.policy-layout--dialog .policy-map,
+.policy-layout--dialog > .test-console {
+  display: none;
+}
+.policy-layout--dialog .editor-column {
+  display: block;
+}
+.policy-layout--dialog .editor-card {
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.policy-layout--dialog .advanced-card summary {
+  display: none;
+}
+.policy-layout--dialog .advanced-content {
+  padding: 0;
+}
+.stable-fields > .field,
+.field-grid > .field {
+  align-content: start;
+}
+.field-grid > .field > small {
+  min-height: 2.5em;
 }
 .empty-state {
   display: grid;
@@ -2150,20 +2881,20 @@ onBeforeUnmount(() => {
 .test-console {
   position: sticky;
   top: 16px;
-  background: var(--surface-emphasis);
-  color: var(--text-on-emphasis);
-  border-color: var(--border-on-emphasis);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
 }
 .test-console .card-kicker,
 .test-console p,
 .test-console label {
-  color: var(--text-on-emphasis-muted);
+  color: var(--text-secondary);
 }
 .test-console :deep(.p-inputtext),
 .test-console :deep(.p-textarea) {
-  background: var(--surface-emphasis-raised);
-  border-color: var(--border-on-emphasis);
-  color: var(--text-on-emphasis);
+  background: var(--surface-card);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
 }
 .test-console__heading {
   margin-bottom: 14px;
@@ -2177,8 +2908,8 @@ onBeforeUnmount(() => {
   margin-top: 18px;
   padding: 16px;
   border-radius: 12px;
-  background: var(--surface-emphasis-raised);
-  border: 1px solid var(--border-on-emphasis);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
 }
 .test-result .result-label {
   display: block;
@@ -2271,6 +3002,15 @@ onBeforeUnmount(() => {
   }
 }
 @media (max-width: 1100px) {
+  .classification-brief {
+    grid-template-columns: 1fr;
+  }
+  .brief-actions {
+    grid-row: 3;
+  }
+  .scope-facts {
+    grid-row: 2;
+  }
   .policy-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2308,7 +3048,7 @@ onBeforeUnmount(() => {
     display: none;
   }
   .mobile-workflow {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     margin-bottom: 12px;
@@ -2335,6 +3075,48 @@ onBeforeUnmount(() => {
   .field-grid--three {
     grid-template-columns: 1fr;
   }
+  .classification-brief,
+  .catalog-section,
+  .save-panel {
+    padding: 18px;
+  }
+  .brief-actions,
+  .catalog-heading,
+  .save-panel {
+    align-items: stretch;
+  }
+  .brief-actions,
+  .catalog-heading {
+    display: grid;
+  }
+  .brief-actions :deep(.p-button),
+  .catalog-heading :deep(.p-button),
+  .save-panel__actions :deep(.p-button) {
+    width: 100%;
+  }
+  .scope-facts,
+  .topic-grid {
+    grid-template-columns: 1fr;
+  }
+  .rule-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .rule-kind {
+    grid-column: 1 / -1;
+  }
+  .advanced-summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .advanced-summary__value {
+    grid-column: 2;
+  }
+  .save-panel {
+    grid-template-columns: 1fr;
+  }
+  .save-panel__actions {
+    display: grid;
+    width: 100%;
+  }
   .policy-map {
     position: static;
     display: grid;
@@ -2347,6 +3129,11 @@ onBeforeUnmount(() => {
   .policy-layout[data-mobile-panel="PREVIEW"] .policy-map,
   .policy-layout[data-mobile-panel="PREVIEW"] .editor-column {
     display: none;
+  }
+  .policy-layout.policy-layout--dialog[data-mobile-panel="MAP"] .editor-column,
+  .policy-layout.policy-layout--dialog[data-mobile-panel="EDITOR"] .editor-column,
+  .policy-layout.policy-layout--dialog[data-mobile-panel="PREVIEW"] .editor-column {
+    display: block;
   }
   .predicate-row {
     grid-template-columns: 1fr;

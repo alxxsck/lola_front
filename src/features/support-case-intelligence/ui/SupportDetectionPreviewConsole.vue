@@ -118,7 +118,7 @@ function formatMicroUsd(value: string) {
     <div class="test-console__heading">
       <div>
         <div class="card-kicker">Безопасная проверка</div>
-        <h2 id="preview-title">Небольшой диалог</h2>
+        <h2 id="preview-title">Диалог для проверки</h2>
         <p>
           Сервер применит точные правила, но не вызовет модель и ничего не
           изменит в обращениях.
@@ -284,17 +284,14 @@ function formatMicroUsd(value: string) {
 
 <style scoped>
 .test-console {
-  position: sticky;
-  top: 16px;
   display: grid;
   gap: 14px;
   min-width: 0;
-  padding: 20px;
-  border: 1px solid var(--border-on-emphasis);
+  padding: 4px;
+  border: 0;
   border-radius: 14px;
-  background: var(--surface-emphasis);
-  color: var(--text-on-emphasis);
-  box-shadow: var(--shadow-raised);
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 .test-console__heading {
   display: flex;
@@ -308,12 +305,12 @@ function formatMicroUsd(value: string) {
 }
 .test-console p {
   margin: 0;
-  color: var(--text-on-emphasis-muted);
+  color: var(--text-secondary);
   line-height: 1.45;
 }
 .card-kicker,
 .result-label {
-  color: var(--text-on-emphasis-muted);
+  color: var(--text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -330,9 +327,9 @@ function formatMicroUsd(value: string) {
   display: grid;
   gap: 7px;
   padding: 10px;
-  border: 1px solid var(--border-on-emphasis);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  background: var(--surface-emphasis-raised);
+  background: var(--surface-subtle);
 }
 .dialog-message[data-role="USER"] {
   box-shadow: inset 3px 0 0 var(--action-primary);
@@ -346,17 +343,17 @@ function formatMicroUsd(value: string) {
 .test-console :deep(.p-select),
 .test-console :deep(.p-textarea) {
   width: 100%;
-  border-color: var(--border-on-emphasis);
-  background: var(--surface-emphasis-raised);
-  color: var(--text-on-emphasis);
+  border-color: var(--border-subtle);
+  background: var(--surface-card);
+  color: var(--text-primary);
 }
 .test-console :deep(.p-select-label),
 .test-console :deep(.p-select-dropdown) {
-  color: var(--text-on-emphasis);
+  color: var(--text-primary);
 }
 .dialog-actions :deep(.p-button-secondary) {
-  border-color: var(--border-on-emphasis);
-  color: var(--text-on-emphasis);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 .dialog-actions,
 .tag-row {
@@ -373,9 +370,9 @@ function formatMicroUsd(value: string) {
   display: grid;
   gap: 16px;
   padding: 16px;
-  border: 1px solid var(--border-on-emphasis);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--surface-emphasis-raised);
+  background: var(--surface-subtle);
 }
 .result-hero strong {
   display: block;
@@ -386,13 +383,13 @@ function formatMicroUsd(value: string) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin: 0;
-  border-block: 1px solid var(--border-on-emphasis);
+  border-block: 1px solid var(--border-subtle);
 }
 .result-facts div {
   padding: 10px 0;
 }
 .result-facts dt {
-  color: var(--text-on-emphasis-muted);
+  color: var(--text-secondary);
   font-size: 0.7rem;
 }
 .result-facts dd {
@@ -419,7 +416,7 @@ function formatMicroUsd(value: string) {
   gap: 8px;
   min-width: 0;
   padding: 8px 0;
-  border-bottom: 1px solid var(--border-on-emphasis);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .candidate-list li > span {
   display: grid;
@@ -429,7 +426,7 @@ function formatMicroUsd(value: string) {
 .candidate-list small,
 .stage-list small,
 .muted {
-  color: var(--text-on-emphasis-muted);
+  color: var(--text-secondary);
 }
 .candidate-list b {
   font-variant-numeric: tabular-nums;

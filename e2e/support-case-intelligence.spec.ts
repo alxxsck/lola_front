@@ -21,11 +21,26 @@ test.beforeEach(async ({ page }) => {
 test("edits, checks, saves and publishes classification rules", async ({
   page,
 }) => {
+  await expect(
+    page.getByRole("heading", { name: "Категории", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Настроить область применения" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Открыть проверку" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "Проверка на примере" }),
+  ).toBeHidden();
+
   await page.getByRole("button", { name: "Добавить категорию" }).click();
-  await page.getByLabel("Постоянный код").first().fill("DELIVERY");
-  await page.getByLabel("Название для команды").fill("Доставка");
+  const categoryDialog = page.getByRole("dialog", { name: "Новая категория" });
+  await expect(categoryDialog).toBeVisible();
+  await categoryDialog.getByLabel("Код категории").fill("DELIVERY");
+  await categoryDialog.getByLabel("Название категории").fill("Доставка");
   await page
-    .getByLabel("Что относится к категории")
+    .getByLabel("Какие обращения сюда относятся")
     .fill("Доставка и сроки получения заказа");
   await page
     .getByRole("textbox", { name: "Подходящие примеры", exact: true })
@@ -36,21 +51,23 @@ test("edits, checks, saves and publishes classification rules", async ({
       exact: true,
     })
     .fill("Как оформить заказ?");
+  await page.getByRole("button", { name: "Готово" }).click();
+  await expect(categoryDialog).toBeHidden();
+  await expect(
+    page.locator(".classification-map").getByRole("heading", { name: "Доставка" }),
+  ).toBeVisible();
 
-  const mobileWorkflow = page.getByRole("navigation", {
-    name: "Шаги настройки правил",
-  });
-  if (await mobileWorkflow.isVisible())
-    await mobileWorkflow.getByRole("button", { name: "Карта" }).click();
   await page.getByRole("button", { name: "Добавить правило" }).click();
-  await page.getByLabel("Постоянный код").last().fill("DELIVERY_PHRASE");
-  await page
+  const ruleDialog = page.getByRole("dialog", { name: "Новое точное правило" });
+  await ruleDialog.getByLabel("Код правила").fill("DELIVERY_PHRASE");
+  await ruleDialog
     .getByRole("textbox", { name: "Фраза в сообщении" })
     .fill("где мой заказ");
-  if (await mobileWorkflow.isVisible()) {
-    await mobileWorkflow.getByRole("button", { name: "Проверка" }).click();
-    await expect(page).toHaveURL(/panel=preview/);
-  }
+  await page.getByRole("button", { name: "Готово" }).click();
+
+  await page.getByRole("button", { name: "Открыть проверку" }).click();
+  const previewDialog = page.getByRole("dialog", { name: "Проверка на примере" });
+  await expect(previewDialog).toBeVisible();
   await page.getByLabel("Текст сообщения 1").fill("Где мой заказ?");
   await page.getByRole("button", { name: "Проверить диалог" }).click();
   await expect(
@@ -59,11 +76,10 @@ test("edits, checks, saves and publishes classification rules", async ({
   await expect(
     page.locator(".test-result").getByText("DELIVERY_PHRASE"),
   ).toBeVisible();
-
-  if (await mobileWorkflow.isVisible()) {
-    await mobileWorkflow.getByRole("button", { name: "Редактор" }).click();
-    await expect(page).toHaveURL(/panel=editor/);
-  }
+  await previewDialog
+    .getByRole("button", { name: "Закрыть" })
+    .filter({ hasText: "Закрыть" })
+    .click();
 
   await page.getByRole("button", { name: "Сохранить черновик" }).click();
   await expect(page.getByText("Черновик правил сохранён.")).toBeVisible();
@@ -103,20 +119,16 @@ test("keeps the permanent settings navigation responsive and accessible", async 
     .getByRole("link", { name: "Категории и правила" })
     .click();
 
-  const mobileWorkflow = page.getByRole("navigation", {
-    name: "Шаги настройки правил",
-  });
-  if (await mobileWorkflow.isVisible()) {
-    await mobileWorkflow.getByRole("button", { name: "Редактор" }).click();
-    await page.getByLabel("Коротко о задаче").fill("Черновик на телефоне");
-    await page.goBack();
-    await expect(page).not.toHaveURL(/panel=editor/);
-    await page.goForward();
-    await expect(page).toHaveURL(/panel=editor/);
-    await expect(page.getByLabel("Коротко о задаче")).toHaveValue(
-      "Черновик на телефоне",
-    );
-  }
+  await page.getByRole("button", { name: "Настроить область применения" }).click();
+  const scopeDialog = page.getByRole("dialog", { name: "Область применения" });
+  await scopeDialog
+    .getByLabel("Для чего нужна классификация")
+    .fill("Черновик на телефоне");
+  await scopeDialog.getByRole("button", { name: "Готово" }).click();
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Настроить область применения" }),
+  ).toBeVisible();
 
   const geometry = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
