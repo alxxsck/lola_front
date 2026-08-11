@@ -15,5 +15,7 @@ export type CaseIntelligenceDryRun400ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceDryRun400ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

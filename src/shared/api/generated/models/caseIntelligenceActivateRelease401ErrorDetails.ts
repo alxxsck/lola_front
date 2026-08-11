@@ -15,5 +15,7 @@ export type CaseIntelligenceActivateRelease401ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceActivateRelease401ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

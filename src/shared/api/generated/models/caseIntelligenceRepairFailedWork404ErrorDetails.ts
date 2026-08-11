@@ -15,5 +15,7 @@ export type CaseIntelligenceRepairFailedWork404ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceRepairFailedWork404ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

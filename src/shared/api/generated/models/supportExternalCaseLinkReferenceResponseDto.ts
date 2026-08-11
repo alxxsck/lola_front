@@ -8,8 +8,8 @@
 
 export interface SupportExternalCaseLinkReferenceResponseDto {
   caseId: string;
-  linkedAt: string;
   linkId: string;
+  linkedAt: string;
   /** @minimum 1 */
   version: number;
 }

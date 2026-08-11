@@ -15,5 +15,7 @@ export type CaseIntelligenceCompileDetection409ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceCompileDetection409ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

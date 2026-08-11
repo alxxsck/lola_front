@@ -15,5 +15,7 @@ export type CaseIntelligenceCompileEscalation503ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceCompileEscalation503ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

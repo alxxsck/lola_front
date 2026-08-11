@@ -17,10 +17,10 @@ export interface AttributeContractRevisionResponseDto {
   fields: AttributeContractRevisionFieldResponseDto[];
   id: string;
   projectId: string;
+  publishReason: string;
   publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
-  publishReason: string;
   schema: AttributeJsonSchemaResponseDto;
   validationHash: string;
   version: number;

@@ -569,6 +569,10 @@ onBeforeUnmount(() => {
           ><i class="pi pi-tags" /> Категории и правила</RouterLink
         >
         <RouterLink
+          to="/support/settings/case-intelligence/escalation"
+          ><i class="pi pi-users" /> Передача оператору</RouterLink
+        >
+        <RouterLink
           to="/support/settings/case-intelligence/models-budget"
           :aria-current="section === 'BUDGET' ? 'page' : undefined"
           ><i class="pi pi-gauge" /> Модель и лимиты</RouterLink

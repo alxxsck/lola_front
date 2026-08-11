@@ -15,5 +15,7 @@ export type CaseIntelligenceDiscardDetectionDraft400ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceDiscardDetectionDraft400ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

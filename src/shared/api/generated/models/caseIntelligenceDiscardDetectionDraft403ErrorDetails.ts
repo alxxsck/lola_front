@@ -15,5 +15,7 @@ export type CaseIntelligenceDiscardDetectionDraft403ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceDiscardDetectionDraft403ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

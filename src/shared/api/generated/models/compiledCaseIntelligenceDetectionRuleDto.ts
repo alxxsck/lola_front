@@ -30,7 +30,7 @@ export interface CompiledCaseIntelligenceDetectionRuleDto {
    */
   locale?: string;
   /** Locale-keyed, NFKC-normalized phrase forms emitted only for text rules. */
-  normalizedPhrases?: CompiledCaseIntelligenceDetectionRuleDtoNormalizedPhrases;
+  normalizedPhrases: CompiledCaseIntelligenceDetectionRuleDtoNormalizedPhrases;
   operator?: CompiledCaseIntelligenceDetectionRuleDtoOperator;
   /**
    * @minLength 1

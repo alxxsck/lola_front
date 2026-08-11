@@ -14,18 +14,18 @@ export interface AttributeConstraintsDto {
   allowedValues?: AttributeConstraintsDtoAllowedValuesItem[];
   /** @maxLength 64 */
   defaultLocale?: string;
-  maximum?: AttributeConstraintsDtoMaximum;
   /**
    * @minimum 0
    * @maximum 10000
    */
   maxLength?: number;
-  minimum?: AttributeConstraintsDtoMinimum;
+  maximum?: AttributeConstraintsDtoMaximum;
   /**
    * @minimum 0
    * @maximum 10000
    */
   minLength?: number;
+  minimum?: AttributeConstraintsDtoMinimum;
   /**
    * @minimum 1
    * @maximum 38

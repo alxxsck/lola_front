@@ -8,11 +8,11 @@
 
 export interface AiUsageTotalsResponseDto {
   billedCost: string;
+  cacheWriteInputTokens: number;
   cachedInputAudioTokens: number;
   cachedInputImageTokens: number;
   cachedInputTextTokens: number;
   cachedInputTokens: number;
-  cacheWriteInputTokens: number;
   durationSeconds: string;
   /** providerReportedCost plus estimatedFallbackCost. */
   effectiveCost: string;

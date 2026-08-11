@@ -529,6 +529,10 @@ describe("authentication routes", () => {
       router.resolve("/support/settings/case-intelligence/detection").meta
         .projectPermission,
     ).toBe("project.case_intelligence.read");
+    expect(
+      router.resolve("/support/settings/case-intelligence/escalation").meta
+        .projectPermission,
+    ).toBe("project.case_intelligence.read");
     expect(router.resolve("/cases/case-1").redirectedFrom).toBeUndefined();
     expect(router.resolve("/support/inbox/cases/case-1").name).toBe(
       "support-inbox-case",

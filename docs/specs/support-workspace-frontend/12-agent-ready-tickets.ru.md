@@ -71,8 +71,8 @@ backend 31–35; legacy Case policy и raw JSON editor эти gates не сни�
 | 33  | Support Quality и Analytics                               | 29 + backend/IAM full            | [Открыть](../../../.scratch/support-workspace/issues/33-add-support-quality-analytics.md)                |
 | 34  | Case Intelligence contracts и settings foundation         | backend 31                       | [Открыть](../../../.scratch/support-workspace/issues/34-sync-case-intelligence-contracts.md)             |
 | 35  | Detection Policy editor и test console                    | 34 + backend 31–32               | [Открыть](../../../.scratch/support-workspace/issues/35-build-case-detection-policy-editor.md)           |
-| 36  | Escalation/Safety editor и simulator                      | 34 + backend 31–33               | [Открыть](../../../.scratch/support-workspace/issues/36-build-human-escalation-policy-editor.md)         |
-| 37  | Проверка качества, журнал решений, расходы и публикация    | 34–36 + backend 34               | [Открыть](../../../.scratch/support-workspace/issues/37-add-case-intelligence-evaluation-publishing.md)  |
+| 36  | Передача оператору и безопасность — frontend complete     | backend `2996e7f3`               | [Открыть](../../../.scratch/support-workspace/issues/36-build-human-escalation-policy-editor.md)         |
+| 37  | Проверка качества, журнал решений, расходы и публикация   | 34–36 + backend 34               | [Открыть](../../../.scratch/support-workspace/issues/37-add-case-intelligence-evaluation-publishing.md)  |
 | 38  | Project notifications о новых Cases                       | 27, 34 + backend 35              | [Открыть](../../../.scratch/support-workspace/issues/38-add-new-case-notification-policy.md)             |
 
 Core cutover 28–29 намеренно не зависит от задач 21–27 и 30–38. Presence,

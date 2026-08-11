@@ -15,5 +15,7 @@ export type CaseIntelligenceSaveBudgetDraft503ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceSaveBudgetDraft503ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

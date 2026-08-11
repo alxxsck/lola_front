@@ -19,12 +19,12 @@ export interface AttributePublicationResponseDto {
   document: AttributeContractDocumentDto;
   id: string;
   projectId: string;
+  publishReason: string;
   publishedActorId: string;
   publishedActorType: AttributePublicationResponseDtoPublishedActorType;
   publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
-  publishReason: string;
   sequence: number;
   validationHash: string;
 }

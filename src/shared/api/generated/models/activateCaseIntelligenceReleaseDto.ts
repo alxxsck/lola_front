@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { ActivateCaseIntelligenceReleaseDtoTargetStatus } from "./activateCaseIntelligenceReleaseDtoTargetStatus";
 
 export interface ActivateCaseIntelligenceReleaseDto {
   /** @maxLength 128 */
@@ -24,5 +23,4 @@ export interface ActivateCaseIntelligenceReleaseDto {
   /** @maxLength 128 */
   routingOverlayRevisionId: string;
   safetyPolicyRevisionId: string;
-  targetStatus: ActivateCaseIntelligenceReleaseDtoTargetStatus;
 }

@@ -15,8 +15,8 @@ export interface TranslationUsageSeriesResponseDto {
   admitted: number;
   billableCharacters: number;
   billingCurrency: string;
-  cachedInputTokens: number;
   cacheHits: number;
+  cachedInputTokens: number;
   day: string;
   /** Terminal attempts that did not succeed. ADMITTED attempts are not errors. */
   errors: number;

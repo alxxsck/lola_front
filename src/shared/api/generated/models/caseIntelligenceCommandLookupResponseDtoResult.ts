@@ -10,10 +10,16 @@ import type { CaseIntelligenceEscalationRevisionResponseDto } from "./caseIntell
 import type { CaseIntelligenceBudgetRevisionResponseDto } from "./caseIntelligenceBudgetRevisionResponseDto";
 import type { CaseIntelligenceReleaseRevisionResponseDto } from "./caseIntelligenceReleaseRevisionResponseDto";
 import type { CaseIntelligenceCorrectionResponseDto } from "./caseIntelligenceCorrectionResponseDto";
+import type { CaseIntelligenceLabelledDatasetResponseDto } from "./caseIntelligenceLabelledDatasetResponseDto";
+import type { CaseIntelligenceEvaluationReportResponseDto } from "./caseIntelligenceEvaluationReportResponseDto";
+import type { CaseIntelligenceCommandLookupResponseDtoResultOneOf } from "./caseIntelligenceCommandLookupResponseDtoResultOneOf";
 
 export type CaseIntelligenceCommandLookupResponseDtoResult =
   | CaseIntelligenceDetectionRevisionResponseDto
   | CaseIntelligenceEscalationRevisionResponseDto
   | CaseIntelligenceBudgetRevisionResponseDto
   | CaseIntelligenceReleaseRevisionResponseDto
-  | CaseIntelligenceCorrectionResponseDto;
+  | CaseIntelligenceCorrectionResponseDto
+  | CaseIntelligenceLabelledDatasetResponseDto
+  | CaseIntelligenceEvaluationReportResponseDto
+  | CaseIntelligenceCommandLookupResponseDtoResultOneOf;

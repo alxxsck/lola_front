@@ -12,8 +12,8 @@ export interface SupportExternalLinkResponseDto {
   connectionId: string;
   item: SupportExternalProjectItemResponseDto;
   itemId: string;
-  linkedAt: string;
   linkId: string;
+  linkedAt: string;
   status: SupportExternalLinkResponseDtoStatus;
   /** @minimum 1 */
   version: number;

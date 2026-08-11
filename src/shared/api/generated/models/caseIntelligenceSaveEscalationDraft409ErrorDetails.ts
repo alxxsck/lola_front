@@ -15,5 +15,7 @@ export type CaseIntelligenceSaveEscalationDraft409ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceSaveEscalationDraft409ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

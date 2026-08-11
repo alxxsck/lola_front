@@ -11,8 +11,6 @@ export type CaseIntelligenceReleaseRevisionResponseDtoStatus =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CaseIntelligenceReleaseRevisionResponseDtoStatus = {
-  SHADOW: "SHADOW",
-  CANARY: "CANARY",
   LIVE: "LIVE",
   PAUSED: "PAUSED",
   ROLLED_BACK: "ROLLED_BACK",

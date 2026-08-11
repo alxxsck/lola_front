@@ -15,5 +15,7 @@ export type CaseIntelligenceDiscardEscalationDraft404ErrorDetails = {
   idempotencyKey?: string;
   /** @maxItems 200 */
   issues?: CaseIntelligenceDiscardEscalationDraft404ErrorDetailsIssuesItem[];
+  /** @maxLength 100 */
+  reasonCode?: string;
   [key: string]: unknown;
 };

@@ -26,6 +26,8 @@ const PROJECT_OPERATIONS = [
     "project.case_intelligence.release.manage",
   ],
   ["CaseIntelligence_compileEscalation", "project.case_intelligence.preview"],
+  ["CaseIntelligence_dryRunEscalation", "project.case_intelligence.preview"],
+  ["CaseIntelligence_projectSafetyPolicy", "project.case_intelligence.read"],
   [
     "CaseIntelligence_saveEscalationDraft",
     "project.case_intelligence.escalation.manage",
@@ -185,6 +187,73 @@ export function validateSupportCaseIntelligenceContract(document) {
     "autoApplyThreshold",
     "cells",
   ]);
+  requireSchemaFields(document, "CaseIntelligenceEscalationPolicyDto", [
+    "explicitHumanRequestRules",
+    "ambiguousHumanTermRules",
+    "trustedOutcomeLimits",
+    "scenarios",
+    "clarificationLimit",
+    "failedResolutionLimit",
+    "noMatchLimit",
+    "repeatLimit",
+    "offerCooldownSeconds",
+    "offerResponseTimeoutSeconds",
+    "routingPolicyRevisionId",
+  ]);
+  requireSchemaPropertyEnum(
+    document,
+    "CaseIntelligenceAmbiguousRuleDto",
+    "action",
+    ["OFFER", "ASK_REASON_ONCE", "ESCALATE"],
+  );
+  requireSchemaPropertyEnum(
+    document,
+    "CaseIntelligenceTrustedOutcomeLimitDto",
+    "outcome",
+    ["NO_ANSWER", "KNOWLEDGE_INSUFFICIENT", "TOOL_FAILED", "UNRESOLVED"],
+  );
+  requireSchemaPropertyEnum(
+    document,
+    "CaseIntelligenceEscalationSimulationStepDto",
+    "kind",
+    [
+      "EXPLICIT_HUMAN_REQUEST",
+      "AMBIGUOUS_HUMAN_TERM",
+      "SCENARIO",
+      "TRUSTED_OUTCOME",
+      "CLARIFICATION",
+      "NO_MATCH",
+      "REPEAT",
+      "OFFER_ACCEPTED",
+      "OFFER_DECLINED",
+      "OFFER_TIMEOUT",
+      "VERIFIED_RESOLUTION",
+      "NEW_CASE_OR_TOPIC",
+      "CASE_TERMINAL",
+      "ESCALATION_COMMITTED",
+      "POLICY_SWITCH",
+    ],
+  );
+  requireSchemaPropertyEnum(
+    document,
+    "CaseIntelligenceEscalationSimulationStepResponseDto",
+    "routingAdmission",
+    ["NOT_REQUIRED", "ROUTABLE", "OUT_OF_HOURS", "NO_ELIGIBLE_TEAM", "DELIVERY_DEGRADED"],
+  );
+  requireSchemaFields(document, "CaseIntelligenceProjectSafetyPolicyResponseDto", [
+    "revisionId",
+    "authority",
+    "projectOverrideAllowed",
+    "locales",
+    "channels",
+    "classes",
+  ]);
+  requireSchemaPropertyEnum(document, "CaseIntelligenceProjectSafetyClassDto", "code", [
+    "SELF_HARM_OR_SUICIDE",
+    "CREDIBLE_THREAT_OR_VIOLENCE",
+    "HARM_INVOLVING_MINORS",
+    "RESPONSIBLE_GAMING_CRISIS",
+  ]);
 
   const routerContext = contractSchema(
     document,
@@ -206,6 +275,8 @@ export function validateSupportCaseIntelligenceContract(document) {
     "CaseIntelligence_validateDetection",
     "CaseIntelligence_dryRun",
     "CaseIntelligence_calibration",
+    "CaseIntelligence_dryRunEscalation",
+    "CaseIntelligence_projectSafetyPolicy",
   ]) {
     const operation = contractOperation(document, operationId);
     for (const status of ["400", "401", "403", "404", "409", "428", "503"]) {

@@ -378,6 +378,16 @@ export const router = createRouter({
           },
         },
         {
+          path: "support/settings/case-intelligence/escalation",
+          name: "support-case-intelligence-escalation",
+          component: () =>
+            import("@/pages/SupportCaseEscalationSettingsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.case_intelligence.read",
+          },
+        },
+        {
           path: "support/settings/case-intelligence/models-budget",
           name: "support-case-intelligence-budget",
           component: () =>

@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { RollbackCaseIntelligenceReleaseDtoTargetStatus } from "./rollbackCaseIntelligenceReleaseDtoTargetStatus";
 
 export interface RollbackCaseIntelligenceReleaseDto {
   /** @minimum 1 */
@@ -17,5 +16,4 @@ export interface RollbackCaseIntelligenceReleaseDto {
    */
   reason: string;
   releaseRevisionId: string;
-  targetStatus: RollbackCaseIntelligenceReleaseDtoTargetStatus;
 }

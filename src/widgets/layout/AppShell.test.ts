@@ -152,9 +152,7 @@ describe("AppShell", () => {
     const supportLink = wrapper
       .findAll(".sidebar-scroll nav a")
       .find((link) => link.text().includes("Рабочее место"));
-    expect(supportLink?.attributes("href")).toBe(
-      "/support/inbox?mode=cases",
-    );
+    expect(supportLink?.attributes("href")).toBe("/support/inbox?mode=cases");
   });
 
   it("keeps a clicked Support destination active while its route guard resolves", async () => {
@@ -179,9 +177,7 @@ describe("AppShell", () => {
       releaseSupportNavigation = resolve;
     });
     router.beforeEach((to) =>
-      to.path === "/support/inbox"
-        ? supportNavigation.then(() => true)
-        : true,
+      to.path === "/support/inbox" ? supportNavigation.then(() => true) : true,
     );
     await router.push("/overview");
     await router.isReady();
@@ -260,9 +256,7 @@ describe("AppShell", () => {
     expect(wrapper.get(".shell").classes()).not.toContain(
       "shell--sidebar-collapsed",
     );
-    const collapse = wrapper.get(
-      'button[aria-label="Свернуть боковое меню"]',
-    );
+    const collapse = wrapper.get('button[aria-label="Свернуть боковое меню"]');
     await collapse.trigger("click");
 
     expect(wrapper.get(".shell").classes()).toContain(
@@ -577,6 +571,7 @@ describe("AppShell", () => {
       "Рабочее место",
       "Операционный обзор",
       "Категории и правила",
+      "Передача оператору",
       "Календарь и SLA",
       "Шаблоны ответов",
       "Уведомления",
@@ -584,9 +579,7 @@ describe("AppShell", () => {
       "Интеграции",
     ]);
     expect(
-      supportLinks.every((link) =>
-        link.classes().includes("nav-item--nested"),
-      ),
+      supportLinks.every((link) => link.classes().includes("nav-item--nested")),
     ).toBe(true);
 
     const toggle = supportGroup.get(
@@ -612,9 +605,7 @@ describe("AppShell", () => {
     setActivePinia(pinia);
     const auth = useAuthStore();
     authenticateWithProjects(auth, [
-      project("project-1", "Project One", [
-        "project.support.macros.manage",
-      ]),
+      project("project-1", "Project One", ["project.support.macros.manage"]),
     ]);
     const router = createRouter({
       history: createMemoryHistory(),
@@ -630,9 +621,9 @@ describe("AppShell", () => {
       wrapper.get('[role="heading"][aria-label="Поддержка"]').text(),
     ).toContain("Поддержка");
     expect(wrapper.find('a[href="/support/inbox"]').exists()).toBe(false);
-    expect(wrapper.get('a[href="/support/settings/macros"]').classes()).toContain(
-      "nav-item--nested",
-    );
+    expect(
+      wrapper.get('a[href="/support/settings/macros"]').classes(),
+    ).toContain("nav-item--nested");
   });
 
   it("shows Integrations to a product-integration reader without notification access", async () => {
@@ -760,7 +751,9 @@ describe("AppShell", () => {
 
     const projectGroup = wrapper.get('[data-navigation-group="project"]');
     expect(projectGroup.get('[role="heading"]').text()).toContain("Проект");
-    expect(projectGroup.find('a[href="/project-section"]').exists()).toBe(false);
+    expect(projectGroup.find('a[href="/project-section"]').exists()).toBe(
+      false,
+    );
     const toggle = projectGroup.get(
       'button[aria-label="Свернуть раздел «Проект»"]',
     );

@@ -327,7 +327,13 @@ function compileMockPolicy(
     ...clonePolicy(definition),
     compilerRevisionId: "case-intelligence-compiler-v1",
     schemaVersion: 1,
-    rules: clonePolicy(definition.rules),
+    rules: definition.rules.map((rule) => ({
+      ...clonePolicy(rule),
+      normalizedPhrases:
+        rule.kind === "EXACT" || rule.kind === "PHRASE"
+          ? { [rule.locale ?? definition.fallbackLocale]: rule.phrase ?? "" }
+          : {},
+    })),
   };
 }
 

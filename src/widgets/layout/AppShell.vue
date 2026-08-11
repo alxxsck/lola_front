@@ -261,6 +261,15 @@ const navigationItems = computed(() => [
       supportSection: true,
     },
     {
+      label: "Передача оператору",
+      icon: "pi pi-users",
+      to: "/support/settings/case-intelligence/escalation",
+      project: true,
+      projectPermission: "project.case_intelligence.read",
+      nested: true,
+      supportSection: true,
+    },
+    {
       label: "Календарь и SLA",
       icon: "pi pi-clock",
       to: "/support/settings/sla-calendars",

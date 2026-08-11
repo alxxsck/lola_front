@@ -10,9 +10,9 @@ import type { SupportExternalWorkOperationsImportsResponseDtoExecutionsByStatus 
 import type { SupportExternalWorkOperationsImportsResponseDtoPlansByStatus } from "./supportExternalWorkOperationsImportsResponseDtoPlansByStatus";
 
 export interface SupportExternalWorkOperationsImportsResponseDto {
-  checkpointStalled: boolean;
   /** @minimum 5 */
   checkpointStallThresholdSeconds: number;
+  checkpointStalled: boolean;
   checkpointSupported: boolean;
   diagnostics: SupportExternalWorkOperationsImportDiagnosticResponseDto[];
   diagnosticsTruncated: boolean;

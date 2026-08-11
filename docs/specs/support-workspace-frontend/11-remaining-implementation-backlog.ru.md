@@ -225,16 +225,18 @@ Analytics:
 backend contracts из
 [нормативной спецификации](./16-case-intelligence-detection-escalation.ru.md).
 
-- синхронизировать closed DTO для Detection, Escalation, Safety overlay,
-  model/budget profiles и Decision projection;
-- построить guided Detection editor: scope, categories, positive/negative
-  examples, typed rules, thresholds, ambiguity и test console;
-- построить Escalation editor: explicit human request, offer/ask/escalate,
-  trusted failure counters, urgency и routing policy reference;
-- показать platform safety floor как locked, разрешая только published Project
-  routing overlay;
-- добавить candidate evaluation, shadow/canary, quality/cost admission,
-  version diff, audit и rollback;
+- [x] синхронизировать закрытые DTO для Detection, Escalation, обязательной
+      безопасности, профилей модели/лимитов и Decision projection;
+- [x] построить понятный редактор распознавания: область применения, категории,
+      примеры, точные правила, пороги, неоднозначность и безопасная проверка;
+- [x] построить редактор передачи оператору: явная просьба, предложение,
+      уточнение, передача, проверенные счётчики неудач, срочность и ссылка на
+      правила распределения;
+- [x] показать обязательную безопасность платформы как неизменяемую и отдельно
+      показать текущее состояние сверки, резервный ответ и оповещение;
+- добавить оценку качества кандидата, допуск по качеству/стоимости, сравнение
+  версий, аудит и возврат к предыдущей опубликованной версии без временных
+  флагов, теневого режима или поэтапного включения;
 - дать permissioned Decision log и Case-scoped explain без raw prompt/PII;
 - добавить server-owned funnel от USER activity до Case, Escalation и outcome;
 - после backend Ticket 35 добавить отдельную New Case Notification Policy:

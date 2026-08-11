@@ -17,8 +17,8 @@ export interface AudienceCatalogResponseDto {
   attributes: AudienceAttributeResponseDto[];
   country: AudienceCountrySourceResponseDto;
   languageSource: AudienceTextSourceResponseDto;
-  locales: AudienceLocaleResponseDto[];
   localeSource: AudienceTextSourceResponseDto;
+  locales: AudienceLocaleResponseDto[];
   revision: string;
   segmentSource: AudienceSegmentSourceResponseDto;
   snapshotPolicy: AudienceSnapshotPolicyResponseDto;

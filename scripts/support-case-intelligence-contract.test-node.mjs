@@ -69,3 +69,23 @@ test("validator rejects untyped preview errors", () => {
     /validateDetection 503 must publish a typed error code/,
   );
 });
+
+test("validator rejects an incomplete Human Escalation simulator contract", () => {
+  const broken = cloneDocument();
+  broken.components.schemas.CaseIntelligenceEscalationSimulationStepDto.properties.kind.enum = [
+    "EXPLICIT_HUMAN_REQUEST",
+  ];
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /must retain AMBIGUOUS_HUMAN_TERM/,
+  );
+});
+
+test("validator rejects mutable or incomplete Project Safety projection", () => {
+  const broken = cloneDocument();
+  delete broken.components.schemas.CaseIntelligenceProjectSafetyPolicyResponseDto.properties.projectOverrideAllowed;
+  assert.throws(
+    () => validateSupportCaseIntelligenceContract(broken),
+    /must publish projectOverrideAllowed/,
+  );
+});

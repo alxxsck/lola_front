@@ -16,11 +16,11 @@ export interface AttributePublicationSummaryResponseDto {
   fieldCount: number;
   id: string;
   projectId: string;
+  publishReason: string;
   publishedActorId: string;
   publishedActorType: AttributePublicationSummaryResponseDtoPublishedActorType;
   publishedAt: string;
   /** @nullable */
   publishedById?: string | null;
-  publishReason: string;
   sequence: number;
 }

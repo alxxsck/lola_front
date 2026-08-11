@@ -11,12 +11,12 @@ import type { AudienceAttributeConstraintsV2ResponseDtoMinimum } from "./audienc
 
 export interface AudienceAttributeConstraintsV2ResponseDto {
   allowedValues?: AudienceAttributeConstraintsV2ResponseDtoAllowedValuesItem[];
-  maximum?: AudienceAttributeConstraintsV2ResponseDtoMaximum;
   /** @minimum 0 */
   maxLength?: number;
-  minimum?: AudienceAttributeConstraintsV2ResponseDtoMinimum;
+  maximum?: AudienceAttributeConstraintsV2ResponseDtoMaximum;
   /** @minimum 0 */
   minLength?: number;
+  minimum?: AudienceAttributeConstraintsV2ResponseDtoMinimum;
   /** @minimum 1 */
   precision?: number;
   /** @minimum 0 */
