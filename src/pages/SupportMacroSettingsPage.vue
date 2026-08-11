@@ -361,7 +361,6 @@ function setTranslation(locale: string, value: string): void {
 async function translateAll(): Promise<void> {
   const targets = supportedLocales.value.filter((locale) => locale !== "ru");
   if (!controller.form.value.body.trim() || !targets.length) return;
-  translationsExpanded.value = true;
   try {
     if (!controller.selected.value) {
       if (!(await controller.saveDraft())) return;
@@ -763,9 +762,9 @@ onBeforeUnmount(() => {
             <span>Текст ответа</span>
             <Textarea
               v-model="sourceBody"
-              rows="7"
+              class="source-body-textarea"
+              rows="2"
               maxlength="10240"
-              auto-resize
               placeholder="Текст, который оператор сможет отредактировать перед отправкой"
             />
             <small
@@ -887,27 +886,50 @@ onBeforeUnmount(() => {
             <div v-if="advancedExpanded" class="advanced-content">
               <div class="form-grid">
                 <label>
-                  <span>Быстрые вызовы</span>
+                  <span class="field-label">
+                    Быстрые вызовы
+                    <i
+                      class="pi pi-info-circle"
+                      aria-label="Что такое быстрые вызовы"
+                      title="Короткие команды поиска: оператор вводит /слово, чтобы быстро найти этот шаблон."
+                    />
+                  </span>
                   <Textarea
                     v-model="controller.form.value.shortcutsText"
                     rows="3"
                     placeholder="платёж&#10;deposit"
                   />
-                  <small>До 10 тегов, по одному на строку.</small>
+                  <small>До 10 команд поиска, по одной на строку.</small>
                 </label>
                 <label>
-                  <span>Темы обращения</span>
+                  <span class="field-label">
+                    Темы обращения
+                    <i
+                      class="pi pi-info-circle"
+                      aria-label="Что такое темы обращения"
+                      title="Ограничивают шаблон обращениями с указанными кодами тем. Без кодов шаблон доступен в любом обращении."
+                    />
+                  </span>
                   <Textarea
                     v-model="controller.form.value.topicCodesText"
                     rows="3"
                     placeholder="PAYMENTS"
                   />
-                  <small>Пусто — доступно для любой темы.</small>
+                  <small
+                    >Коды тем по одному на строку; пусто — любая тема.</small
+                  >
                 </label>
               </div>
               <div class="form-grid">
                 <label>
-                  <span>Область видимости</span>
+                  <span class="field-label">
+                    Область видимости
+                    <i
+                      class="pi pi-info-circle"
+                      aria-label="Что такое область видимости"
+                      title="Определяет, кто увидит шаблон: весь проект или только выбранные команды поддержки."
+                    />
+                  </span>
                   <Select
                     v-model="controller.form.value.visibility"
                     :options="visibilityOptions"
@@ -926,8 +948,18 @@ onBeforeUnmount(() => {
               <div class="variable-editor">
                 <header>
                   <div>
-                    <strong>Переменные</strong>
-                    <small>Только разрешённые сервером поля.</small>
+                    <strong class="field-label">
+                      Переменные
+                      <i
+                        class="pi pi-info-circle"
+                        aria-label="Что такое переменные"
+                        title="Безопасные поля контекста, которые сервер подставляет при вставке шаблона. Если значения нет, используется запасной текст."
+                      />
+                    </strong>
+                    <small
+                      >Сервер подставит разрешённые данные пользователя или
+                      обращения при вставке шаблона.</small
+                    >
                   </div>
                   <Button
                     type="button"
@@ -1354,9 +1386,6 @@ onBeforeUnmount(() => {
 }
 .coverage-rail > .ready,
 .coverage-rail > i.ready {
-  background: var(--brand);
-}
-.coverage-rail.complete > span {
   background: var(--status-success);
 }
 .library-loading {
@@ -1468,14 +1497,28 @@ onBeforeUnmount(() => {
 .rollback-dialog :deep(.p-select) {
   width: 100%;
 }
+.source-body-textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.field-label > .pi-info-circle {
+  color: var(--text-tertiary);
+  cursor: help;
+  font-size: 0.72rem;
+  font-weight: 400;
+}
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .section-disclosure {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(100px, 180px) auto;
+  display: flex;
   width: 100%;
   min-height: 64px;
   align-items: center;
@@ -1489,6 +1532,8 @@ onBeforeUnmount(() => {
 }
 .section-disclosure > span:nth-child(2) {
   display: grid;
+  min-width: 0;
+  flex: 1;
   gap: 2px;
 }
 .section-disclosure strong {
@@ -1515,7 +1560,8 @@ onBeforeUnmount(() => {
   transform: rotate(180deg);
 }
 .coverage-rail--editor {
-  width: 100%;
+  width: clamp(100px, 22%, 180px);
+  flex: 0 0 auto;
 }
 .translation-action {
   display: flex;
@@ -1758,7 +1804,7 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
   .section-disclosure {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    display: flex;
   }
   .section-disclosure .coverage-rail--editor {
     display: none;

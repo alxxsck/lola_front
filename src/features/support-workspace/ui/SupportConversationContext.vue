@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
 import Button from "primevue/button";
 import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
 import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
@@ -90,6 +91,9 @@ const caseDeskView = ref<InstanceType<typeof SupportCaseDesk> | null>(null);
 const inspectorTabList = ref<HTMLElement | null>(null);
 const activeTab = computed(() => props.inspector.activeTab.value);
 const inspectorTabs = computed(() => props.inspector.tabs.value);
+const canOpenFullProfile = computed(() =>
+  inspectorTabs.value.some((tab) => tab.id === "DATA"),
+);
 const profile = computed(() => props.inspector.profile.data.value);
 
 const userLabel = computed(() =>
@@ -509,6 +513,17 @@ defineExpose({ requestClassification });
               <h3>{{ userLabel }}</h3>
               <p>Активность {{ relativeTime(selection.endUser.lastSeenAt) }}</p>
             </div>
+            <RouterLink
+              v-if="canOpenFullProfile"
+              class="user-profile-link"
+              :to="{
+                name: 'users',
+                params: { endUserId: selection.endUser.id },
+              }"
+            >
+              Открыть профиль
+              <i class="pi pi-arrow-up-right" aria-hidden="true" />
+            </RouterLink>
           </header>
           <div class="section-heading user-context-heading">
             <div>
@@ -559,8 +574,7 @@ defineExpose({ requestClassification });
             </div>
           </dl>
           <p class="privacy-copy">
-            В рабочем месте используется внутренний идентификатор. Внешний
-            идентификатор продукта здесь не раскрывается.
+            Полный профиль и разрешённые идентификаторы доступны по ссылке выше.
           </p>
         </section>
 
@@ -920,6 +934,29 @@ defineExpose({ requestClassification });
   margin: 3px 0 0;
   color: var(--text-muted);
   font-size: 0.72rem;
+}
+.user-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--text-brand);
+  font-size: 0.7rem;
+  font-weight: 720;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.user-profile-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.user-profile-link:focus-visible {
+  border-radius: 6px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+.user-profile-link .pi {
+  font-size: 0.62rem;
 }
 .section-kicker {
   color: var(--text-muted);

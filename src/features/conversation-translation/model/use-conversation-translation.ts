@@ -200,6 +200,12 @@ export function createConversationTranslationController(
     }
     return current.language.needsConfirmation ? null : current.language.locale;
   });
+  const conversationLocale = computed(
+    () =>
+      state.value?.language.locale ??
+      state.value?.preference.endUserLocaleOverride ??
+      null,
+  );
 
   function requiredContext() {
     const projectId = context.projectId();
@@ -1032,6 +1038,7 @@ export function createConversationTranslationController(
     messageTranslations,
     draft,
     readyDraft,
+    conversationLocale,
     targetLocale,
     previewing,
     editingReply,

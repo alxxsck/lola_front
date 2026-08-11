@@ -60,8 +60,7 @@ const selection: SupportWorkspaceSelection = {
   case: {
     id: "case-1",
     title: "Проверить возврат бонусов",
-    summary:
-      "Возврат подтверждён, но баланс пользователя ещё не обновился.",
+    summary: "Возврат подтверждён, но баланс пользователя ещё не обновился.",
     goal: "Проверить начисление и сообщить следующий шаг",
     status: "OPEN",
     priority: "HIGH",
@@ -256,7 +255,7 @@ function render(
         SupportCaseExternalWorkPane: {
           template: '<div data-testid="external-work-pane">External Work</div>',
         },
-        RouterLink: { template: "<a><slot /></a>" },
+        RouterLink: { props: ["to"], template: "<a><slot /></a>" },
       },
     },
   });
@@ -320,6 +319,7 @@ describe("support conversation inspector", () => {
     expect(user.text()).toContain("Активный");
     expect(user.text()).toContain("RU-RU");
     expect(user.text()).toContain("В диалоге и проекте");
+    expect(user.get(".user-profile-link").text()).toContain("Открыть профиль");
     expect(user.text()).not.toContain("external");
 
     await user.get("button").trigger("click");

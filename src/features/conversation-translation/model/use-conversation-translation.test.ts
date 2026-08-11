@@ -191,6 +191,27 @@ describe("conversation translation controller", () => {
     expect(controller.previewStale.value).toBe(true);
   });
 
+  it("keeps the server-detected conversation locale visible while confirmation is pending", async () => {
+    const detected = preference("de");
+    detected.language.needsConfirmation = true;
+    detected.language.conflictingLocale = "en";
+    const controller = createConversationTranslationController(
+      {
+        projectId: () => "project-1",
+        endUserId: () => "user-1",
+        conversationId: () => "conversation-1",
+        selectedCaseId: () => undefined,
+        sourceText: () => "",
+      },
+      api({ getConversation: vi.fn().mockResolvedValue(detected) }),
+    );
+
+    await controller.load();
+
+    expect(controller.conversationLocale.value).toBe("de");
+    expect(controller.targetLocale.value).toBeNull();
+  });
+
   it("не переносит поздний edit preview в другой диалог", async () => {
     let resolveEdit!: (value: ReplyTranslationDraftResponseDto) => void;
     const edit = new Promise<ReplyTranslationDraftResponseDto>((resolve) => {
