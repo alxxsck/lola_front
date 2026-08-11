@@ -338,6 +338,7 @@ function unreadLabel(
     </header>
 
     <div
+      v-if="!canSearch"
       class="inbox-modes"
       :class="{
         'inbox-modes--single': visibleModeCount === 1,

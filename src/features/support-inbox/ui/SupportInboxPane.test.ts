@@ -107,6 +107,13 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SupportInboxPane", () => {
+  it("uses the unified view picker as the only mode control when it is available", () => {
+    const wrapper = render({ viewSystem: [systemView] });
+
+    expect(wrapper.find(".inbox-modes").exists()).toBe(false);
+    expect(wrapper.find(".inbox-tools__trigger").exists()).toBe(true);
+  });
+
   it("keeps search tools compact until the operator opens them", async () => {
     const wrapper = render({ viewSystem: [systemView] });
     const trigger = wrapper.get(".inbox-tools__trigger");
@@ -178,8 +185,6 @@ describe("SupportInboxPane", () => {
     const wrapper = render();
     const row = wrapper.get(".case-row");
 
-    expect(wrapper.text()).toContain("Обращения");
-    expect(wrapper.text()).toContain("Все чаты");
     expect(row.get(".case-row__sequence").text()).toBe("42");
     expect(row.get(".case-row__headline").text()).toContain(
       "Очень длинное название обращения о возврате платежа",
@@ -286,7 +291,7 @@ describe("SupportInboxPane", () => {
   });
 
   it("changes server-owned mode and selects the exact typed row", async () => {
-    const wrapper = render();
+    const wrapper = render({ canSearch: false });
 
     await wrapper.findAll(".inbox-modes button")[1]!.trigger("click");
     await wrapper.get(".inbox-row").trigger("click");
