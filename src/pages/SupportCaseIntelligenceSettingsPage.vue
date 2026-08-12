@@ -781,27 +781,29 @@ onBeforeUnmount(() => {
               </div>
             </section>
 
-            <Message
+            <div
               v-if="modelSetupNotice"
-              severity="warn"
-              :closable="false"
-              class="model-empty-message"
+              class="model-availability-note"
+              role="status"
+              aria-live="polite"
             >
-              <div>
+              <i class="pi pi-info-circle" aria-hidden="true" />
+              <div class="model-availability-copy">
                 <strong>{{ modelSetupNotice.title }}</strong>
                 <span>{{ modelSetupNotice.copy }}</span>
               </div>
               <Button
+                v-if="modelSetupNotice.action"
                 :label="modelSetupNotice.action"
                 severity="secondary"
-                outlined
+                text
                 @click="
                   router.push(
                     '/support/settings/case-intelligence/models-budget',
                   )
                 "
               />
-            </Message>
+            </div>
 
             <section class="catalog-section" aria-labelledby="topics-title">
               <div class="catalog-heading">
@@ -2742,22 +2744,39 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   font-weight: 400;
 }
-.model-empty-message :deep(.p-message-content) {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 16px;
-}
-.model-empty-message :deep(.p-message-text) {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.model-empty-message :deep(.p-message-text > div) {
+.model-availability-note {
   display: grid;
-  gap: 4px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: color-mix(
+    in srgb,
+    var(--surface-card) 82%,
+    var(--surface-ground)
+  );
+}
+.model-availability-note > i {
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+}
+.model-availability-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.model-availability-copy strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+.model-availability-copy span {
+  color: var(--text-secondary);
+  font-weight: 400;
 }
 .catalog-section {
   padding: 24px;
@@ -3759,6 +3778,13 @@ onBeforeUnmount(() => {
   .catalog-heading :deep(.p-button),
   .save-panel__actions :deep(.p-button) {
     width: 100%;
+  }
+  .model-availability-note {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .model-availability-note :deep(.p-button) {
+    grid-column: 2;
+    justify-self: start;
   }
   .topic-grid {
     grid-template-columns: 1fr;

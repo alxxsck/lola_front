@@ -210,12 +210,16 @@ describe("Case Intelligence policy form", () => {
 
   it("distinguishes an unprepared platform catalog from a project selection", () => {
     expect(presentCaseIntelligenceModelSetup(false, 0, null)).toBeNull();
-    expect(presentCaseIntelligenceModelSetup(true, 0, null)?.title).toContain(
-      "платформой",
-    );
-    expect(presentCaseIntelligenceModelSetup(true, 1, null)?.title).toContain(
-      "Для проекта",
-    );
+    expect(presentCaseIntelligenceModelSetup(true, 0, null)).toEqual({
+      title: "Проверка категорий пока недоступна",
+      copy: "Настройки можно продолжать. Проверку и публикацию включит администратор платформы.",
+      action: null,
+    });
+    expect(presentCaseIntelligenceModelSetup(true, 1, null)).toEqual({
+      title: "Выберите модель классификации",
+      copy: "После выбора станут доступны проверка и публикация.",
+      action: "Выбрать модель",
+    });
     expect(presentCaseIntelligenceModelSetup(true, 1, "model-v1")).toBeNull();
   });
 });

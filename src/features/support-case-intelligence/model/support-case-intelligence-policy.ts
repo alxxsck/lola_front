@@ -26,7 +26,7 @@ export type CaseIntelligenceRuntimePresentation = {
 export type CaseIntelligenceModelSetupNotice = {
   title: string;
   copy: string;
-  action: string;
+  action: string | null;
 };
 
 export function presentCaseIntelligenceModelSetup(
@@ -37,15 +37,15 @@ export function presentCaseIntelligenceModelSetup(
   if (!catalogLoaded) return null;
   if (profileCount === 0)
     return {
-      title: "Контур классификации ещё не подготовлен платформой.",
-      copy: "Модели помощника и перевода в настройках проекта не используются для классификации обращений. Платформе нужно отдельно опубликовать профиль Case Intelligence, калибратор и проверочный набор данных. Настройки проекта здесь ни при чём.",
-      action: "Открыть диагностику модели",
+      title: "Проверка категорий пока недоступна",
+      copy: "Настройки можно продолжать. Проверку и публикацию включит администратор платформы.",
+      action: null,
     };
   if (!assignedRevisionId)
     return {
-      title: "Для проекта не выбрана модель классификации.",
-      copy: "Платформенный каталог уже доступен. Выберите профиль для этого проекта и опубликуйте бюджет — после этого станут доступны проверка и публикация.",
-      action: "Выбрать модель и лимиты",
+      title: "Выберите модель классификации",
+      copy: "После выбора станут доступны проверка и публикация.",
+      action: "Выбрать модель",
     };
   return null;
 }
