@@ -14,6 +14,7 @@ const login = ref(defaults.login);
 const password = ref(defaults.password);
 const showPassword = ref(false);
 const loading = ref(false);
+const handoffPending = ref(false);
 const errorElement = ref<HTMLElement | null>(null);
 const {
   clear: clearError,
@@ -67,10 +68,12 @@ async function submit() {
       return;
     }
     if (auth.requiresProjectSelection) return;
+    handoffPending.value = true;
     await router.replace(
       auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
     );
   } catch (cause) {
+    handoffPending.value = false;
     presentError(cause, "Не удалось войти");
     await focusError();
   } finally {
@@ -85,9 +88,14 @@ async function focusError() {
 
 async function chooseProject(projectId: string) {
   auth.selectProject(projectId);
-  await router.replace(
-    auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
-  );
+  handoffPending.value = true;
+  try {
+    await router.replace(
+      auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
+    );
+  } finally {
+    handoffPending.value = false;
+  }
 }
 </script>
 
@@ -115,8 +123,10 @@ async function chooseProject(projectId: string) {
       <div class="orb orb-two" />
     </section>
     <section class="login-panel">
+      <Transition name="auth-swap" mode="out-in">
       <form
-        v-if="!auth.requiresProjectSelection"
+        v-if="!auth.requiresProjectSelection && !handoffPending"
+        key="credentials"
         class="login-form"
         :aria-busy="loading"
         @submit.prevent="submit"
@@ -139,6 +149,7 @@ async function chooseProject(projectId: string) {
             placeholder="name@company.com"
             :aria-invalid="Boolean(error)"
             :aria-describedby="error ? 'login-error' : undefined"
+            @keydown.enter.prevent="submit"
           />
         </div>
         <div class="field">
@@ -162,6 +173,7 @@ async function chooseProject(projectId: string) {
               placeholder="Введите пароль"
               :aria-invalid="Boolean(error)"
               :aria-describedby="error ? 'login-error' : undefined"
+              @keydown.enter.prevent="submit"
             /><button
               type="button"
               :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
@@ -212,7 +224,25 @@ async function chooseProject(projectId: string) {
           }}
         </p>
       </form>
-      <section v-else class="login-form project-choice">
+      <section
+        v-else-if="handoffPending"
+        key="handoff"
+        class="login-form auth-handoff"
+        data-testid="auth-handoff"
+        aria-live="polite"
+      >
+        <span class="auth-handoff__icon"><i class="pi pi-check" /></span>
+        <div>
+          <div class="eyebrow">Вход подтверждён</div>
+          <h2>Открываем рабочее пространство</h2>
+          <p>Проверяем доступ и готовим данные без повторного показа формы.</p>
+        </div>
+        <i
+          class="pi pi-spin pi-spinner auth-handoff__spinner"
+          aria-hidden="true"
+        />
+      </section>
+      <section v-else key="projects" class="login-form project-choice">
         <div>
           <div class="eyebrow">Рабочее пространство</div>
           <h2>Выберите проект</h2>
@@ -235,6 +265,7 @@ async function chooseProject(projectId: string) {
           <i class="pi pi-arrow-right" />
         </button>
       </section>
+      </Transition>
       <footer>© 2026 Retenive AI · Безопасность · Поддержка</footer>
     </section>
   </main>
@@ -378,6 +409,43 @@ async function chooseProject(projectId: string) {
   display: flex;
   flex-direction: column;
   gap: 22px;
+}
+.auth-handoff {
+  align-items: center;
+  text-align: center;
+}
+.auth-handoff__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+}
+.auth-handoff__spinner {
+  color: var(--text-tertiary);
+}
+.auth-swap-enter-active,
+.auth-swap-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.auth-swap-enter-from,
+.auth-swap-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-swap-enter-active,
+  .auth-swap-leave-active {
+    transition: opacity 120ms linear;
+  }
+  .auth-swap-enter-from,
+  .auth-swap-leave-to {
+    transform: none;
+  }
 }
 .login-form h2 {
   font-size: 2.1rem;

@@ -144,6 +144,30 @@ describe("CMS User login page", () => {
     expect(router.currentRoute.value.name).toBe("platform-cms-users");
   });
 
+  it("submits the primary login form when Enter is pressed in a field", async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: {
+          id: "operator-1",
+          email: "operator@example.com",
+          name: "Operator",
+          platformPermissionCodes: ["platform.cms_users.read"],
+        },
+        projects: [],
+        capabilities: { supportEnabled: true },
+      },
+    });
+    const { wrapper } = await mountPage();
+    await wrapper.get("#login").setValue("operator@example.com");
+    await wrapper.get("#password").setValue("permanent passphrase");
+
+    await wrapper.get("#password").trigger("keydown", { key: "Enter" });
+    await flushPromises();
+
+    expect(authApi.login).toHaveBeenCalledOnce();
+  });
+
   it("links to password recovery and announces a completed reset without logging in", async () => {
     const { router, wrapper } = await mountPage("/login?passwordReset=success");
 

@@ -211,8 +211,8 @@ describe("Case Intelligence policy form", () => {
   it("distinguishes an unprepared platform catalog from a project selection", () => {
     expect(presentCaseIntelligenceModelSetup(false, 0, null)).toBeNull();
     expect(presentCaseIntelligenceModelSetup(true, 0, null)).toEqual({
-      title: "Проверка категорий пока недоступна",
-      copy: "Настройки можно продолжать. Проверку и публикацию включит администратор платформы.",
+      title: "Настройки проекта готовы — не подключён сервис классификации",
+      copy: "Администратору платформы нужно подключить модель классификации и проверочный набор на сервере. В CMS такого раздела пока нет; настройки безопасности сообщений это не исправляют.",
       action: null,
     });
     expect(presentCaseIntelligenceModelSetup(true, 1, null)).toEqual({

@@ -17,6 +17,7 @@ import {
 } from "@/features/email-identity/email-action-capability";
 import AppShell from "@/widgets/layout/AppShell.vue";
 import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
+import { installAuthSessionNavigation } from "@/features/auth/auth-session-navigation";
 import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
 import {
   canReadSupportControl,
@@ -806,6 +807,8 @@ registerMfaRequirementHandler((code) => {
     },
   });
 });
+
+installAuthSessionNavigation(router);
 
 router.beforeEach(async (to) => {
   if (to.name === "support-notification-open" && to.hash) {

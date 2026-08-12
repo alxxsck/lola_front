@@ -113,6 +113,53 @@ describe("MFA page", () => {
     expect(replace).toHaveBeenCalledWith("/platform/cms-users");
   });
 
+  it("keeps a handoff state visible until the authenticated route is ready", async () => {
+    let finishNavigation!: () => void;
+    replace.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishNavigation = resolve;
+      }),
+    );
+    vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
+      kind: "AUTHENTICATED",
+      context: {
+        user: {
+          id: "operator-1",
+          email: "operator@example.com",
+          name: "Operator",
+          platformPermissionCodes: ["platform.cms_users.read"],
+        },
+        projects: [],
+        capabilities: { supportEnabled: true },
+      },
+    });
+    const auth = useAuthStore();
+    auth.$patch({
+      phase: "MFA_REQUIRED",
+      mfaChallenge: {
+        kind: "MFA_REQUIRED",
+        ceremonyToken: "lmf_memory-only",
+        expiresAt: "2026-07-21T21:10:00.000Z",
+        publicKey: { challenge: "challenge" },
+        recoveryAvailable: false,
+      },
+    });
+    const wrapper = shallowMount(MfaPage);
+
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger("click");
+    await vi.waitFor(() => expect(replace).toHaveBeenCalled());
+
+    expect(wrapper.get('[data-testid="auth-handoff"]').text()).toContain(
+      "Открываем рабочее пространство",
+    );
+    expect(wrapper.find('[data-testid="mfa-passkey-action"]').exists()).toBe(
+      false,
+    );
+
+    finishNavigation();
+    await flushPromises();
+  });
+
   it("opens Project selection instead of trapping a multi-Project user in security settings", async () => {
     vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
       kind: "AUTHENTICATED",

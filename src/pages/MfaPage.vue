@@ -18,7 +18,10 @@ const passkeyLabel = ref("");
 const useRecovery = ref(false);
 const codesSaved = ref(false);
 const copied = ref(false);
-const pending = computed(() => auth.phase === "MFA_PENDING");
+const handoffPending = ref(false);
+const pending = computed(
+  () => auth.phase === "MFA_PENDING" || handoffPending.value,
+);
 const enrollment = computed(
   () => auth.mfaChallenge?.kind === "MFA_ENROLLMENT_REQUIRED",
 );
@@ -36,6 +39,7 @@ async function usePasskey() {
       passkeyLabel.value.trim() || undefined,
     );
     if (result === "AUTHENTICATED") {
+      handoffPending.value = true;
       if (auth.requiresProjectSelection) {
         await router.replace({
           name: "login",
@@ -51,6 +55,7 @@ async function usePasskey() {
       }
     }
   } catch (cause) {
+    handoffPending.value = false;
     error.value = webAuthnError(cause);
   }
 }
@@ -105,7 +110,26 @@ function webAuthnError(cause: unknown): string {
     <section class="mfa-card">
       <div class="brand"><span>R</span><strong>Retenive</strong></div>
 
-      <template v-if="showingCodes">
+      <Transition name="auth-swap" mode="out-in">
+      <section
+        v-if="handoffPending"
+        key="handoff"
+        class="mfa-flow auth-handoff"
+        data-testid="auth-handoff"
+        aria-live="polite"
+      >
+        <span class="icon success"><i class="pi pi-check" /></span>
+        <div>
+          <span class="eyebrow">Вход подтверждён</span>
+          <h1>Открываем рабочее пространство</h1>
+          <p class="description">
+            Проверяем доступ и готовим данные без повторного показа формы.
+          </p>
+        </div>
+        <i class="pi pi-spin pi-spinner handoff-spinner" aria-hidden="true" />
+      </section>
+
+      <section v-else-if="showingCodes" key="codes" class="mfa-flow">
         <div class="heading">
           <span class="icon success"><i class="pi pi-shield" /></span>
           <div>
@@ -137,9 +161,9 @@ function webAuthnError(cause: unknown): string {
           :disabled="!codesSaved"
           @click="finish"
         />
-      </template>
+      </section>
 
-      <template v-else>
+      <section v-else key="challenge" class="mfa-flow">
         <div class="heading">
           <span class="icon"><i class="pi pi-key" /></span>
           <div>
@@ -217,7 +241,8 @@ function webAuthnError(cause: unknown): string {
           text
           @click="cancel"
         />
-      </template>
+      </section>
+      </Transition>
     </section>
   </main>
 </template>
@@ -240,6 +265,43 @@ function webAuthnError(cause: unknown): string {
   border-radius: 24px;
   background: var(--surface-card);
   box-shadow: var(--shadow-raised);
+}
+.mfa-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-handoff {
+  align-items: center;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+.auth-handoff h1 {
+  margin: 6px 0 0;
+}
+.handoff-spinner {
+  color: var(--text-tertiary);
+}
+.auth-swap-enter-active,
+.auth-swap-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.auth-swap-enter-from,
+.auth-swap-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-swap-enter-active,
+  .auth-swap-leave-active {
+    transition: opacity 120ms linear;
+  }
+  .auth-swap-enter-from,
+  .auth-swap-leave-to {
+    transform: none;
+  }
 }
 .brand {
   display: flex;

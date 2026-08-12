@@ -12,6 +12,7 @@ import {
   endAuthTeardown,
   registerUnauthorizedHandler,
 } from "@/shared/api/http/axios-instance";
+import { notifyAuthSessionEnded } from "./auth-session-navigation";
 import {
   clearAuthSession,
   getAccessToken,
@@ -125,6 +126,13 @@ export const useAuthStore = defineStore("auth", () => {
     clearLocalState();
     phase.value = "ANONYMOUS";
     restored.value = true;
+    notifyAuthSessionEnded("SESSION_EXPIRED");
+  }
+
+  function resetExpiredAuthentication() {
+    resetAuthentication();
+    restored.value = true;
+    notifyAuthSessionEnded("SESSION_EXPIRED");
   }
 
   function applyContext(context: AuthContext) {
@@ -395,6 +403,7 @@ export const useAuthStore = defineStore("auth", () => {
     beginAuthTeardown();
     const supportCleanup = runLogoutCleanups(actorId, accessToken);
     resetAuthentication();
+    notifyAuthSessionEnded("LOGOUT");
     try {
       await supportCleanup;
       if (allDevices) await authApi.logoutAll(accessToken);
@@ -404,7 +413,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  registerUnauthorizedHandler(resetAuthentication);
+  registerUnauthorizedHandler(resetExpiredAuthentication);
   registerRemoteAuthSessionClearHandler(resetRemoteAuthentication);
 
   return {
