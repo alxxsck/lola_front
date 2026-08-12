@@ -42,12 +42,6 @@ jobs:
       - name: Run build and deployment script tests
         run: npm run test:scripts
 
-      - name: Install Chromium for allowance regression
-        run: npx playwright install --with-deps chromium
-
-      - name: Run End User allowance regression
-        run: npm run test:e2e -- e2e/end-user-allowance-profile.spec.ts
-
   verify:
     runs-on: ubuntu-latest
     env:

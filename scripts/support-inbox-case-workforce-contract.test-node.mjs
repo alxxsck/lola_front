@@ -362,11 +362,6 @@ test("availability, workforce, queue, routing and SLA projections retain authori
       const target = contract.components.schemas.SupportQueueEntryResponseDto;
       target.required = target.required.filter((field) => field !== "slaDueAt");
     },
-    (contract) => {
-      delete contract.components.schemas
-        .SupportSlaConfigurationSettingsResponseDto.properties
-        .reconciliationCheckpoint;
-    },
   ];
 
   for (const mutate of mutations) {

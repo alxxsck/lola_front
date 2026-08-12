@@ -23,6 +23,7 @@ import {
   createRule,
   createTopic,
   normalizeStableCode,
+  presentCaseIntelligenceModelSetup,
   presentCaseIntelligenceRuntime,
   synchronizeProjectLocales,
 } from "@/features/support-case-intelligence/model/support-case-intelligence-policy";
@@ -207,11 +208,12 @@ const detectionWarnings = computed(() =>
     (item) => item.severity === "WARNING",
   ),
 );
-const modelSetupMissing = computed(
-  () =>
-    controller.modelProfiles.value !== null &&
-    !controller.assignedModelRevisionId.value &&
-    modelProfileOptions.value.length === 0,
+const modelSetupNotice = computed(() =>
+  presentCaseIntelligenceModelSetup(
+    controller.modelProfiles.value !== null,
+    modelProfileOptions.value.length,
+    controller.assignedModelRevisionId.value,
+  ),
 );
 const safetyPresentation = computed(() => {
   const safety = controller.snapshot.value?.safety;
@@ -780,22 +782,17 @@ onBeforeUnmount(() => {
             </section>
 
             <Message
-              v-if="modelSetupMissing"
+              v-if="modelSetupNotice"
               severity="warn"
               :closable="false"
               class="model-empty-message"
             >
               <div>
-                <strong>Проекту не назначена модель классификации.</strong>
-                <span
-                  >Публикация модели в платформе делает её доступной, но не
-                  выбирает её для проекта автоматически. Назначьте модель в
-                  настройках проекта — после этого проверка и публикация станут
-                  доступны.</span
-                >
+                <strong>{{ modelSetupNotice.title }}</strong>
+                <span>{{ modelSetupNotice.copy }}</span>
               </div>
               <Button
-                label="Посмотреть модель и лимиты"
+                :label="modelSetupNotice.action"
                 severity="secondary"
                 outlined
                 @click="

@@ -197,6 +197,7 @@ function mapQueue(value: Awaited<ReturnType<typeof supportQueueDetail>>): Routin
   return {
     id: value.queue.id,
     code: value.queue.stableCode,
+    kind: value.queue.kind,
     name: value.queue.displayName,
     description: value.queue.description ?? null,
     lifecycle: value.queue.lifecycle === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
@@ -293,6 +294,7 @@ const apiSource: RoutingControlPlaneSource = {
       return {
         id: queue.id,
         code: queue.stableCode,
+        kind: queue.kind,
         name: queue.displayName,
         description: queue.description ?? null,
         lifecycle: queue.lifecycle === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
@@ -360,7 +362,7 @@ const apiSource: RoutingControlPlaneSource = {
       const response = await supportQueueList(projectId, { limit: 100, cursor }, readOptions(signal));
       return {
         items: response.items.map((queue): RoutingQueue => ({
-          id: queue.id, code: queue.stableCode, name: queue.displayName,
+          id: queue.id, code: queue.stableCode, kind: queue.kind, name: queue.displayName,
           description: queue.description ?? null,
           lifecycle: queue.lifecycle === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
           version: queue.version, actionEtag: "", detailLoaded: false,

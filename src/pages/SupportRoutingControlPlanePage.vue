@@ -19,10 +19,12 @@ import {
   emptyPolicyDraft,
   emptyQueueDraft,
   labelUnknown,
+  routingPolicyLabel,
+  routingQueueLabel,
+  routingQueuePurpose,
   type PolicyDraft,
   type QueueDraft,
   type QueuePredicate,
-  type RoutingPolicy,
   type RoutingQueue,
   type RoutingSection,
   type WorkforceConfiguration,
@@ -214,6 +216,20 @@ const selectedSlot = computed(
       (item) => item.queueId === selectedQueueId.value,
     ) ?? null,
 );
+const selectedQueuePresentation = computed(() =>
+  selectedQueue.value
+    ? {
+        label: routingQueueLabel(selectedQueue.value),
+        purpose: routingQueuePurpose(selectedQueue.value),
+      }
+    : null,
+);
+const firstReadinessIssue = computed(
+  () => readiness.value?.checks.find((check) => check.status !== "PASS") ?? null,
+);
+const passedReadinessChecks = computed(
+  () => readiness.value?.checks.filter((check) => check.status === "PASS").length ?? 0,
+);
 const filteredOperators = computed(() => {
   const query = workforceSearch.value.trim().toLocaleLowerCase("ru");
   return (
@@ -241,7 +257,7 @@ const policyOptions = computed(
   () =>
     snapshot.value?.policies
       .filter((item) => item.lifecycle === "ACTIVE" && item.published)
-      .map((item) => ({ label: policyLabel(item), value: item.id })) ?? [],
+      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ?? [],
 );
 const activationModeOptions = computed(() =>
   [
@@ -434,10 +450,7 @@ onBeforeRouteLeave(
 );
 
 function queueLabel(queue: RoutingQueue): string {
-  return queue.name || queue.code;
-}
-function policyLabel(policy: RoutingPolicy): string {
-  return policy.code === "balanced" ? "Сбалансированная" : policy.code;
+  return routingQueueLabel(queue);
 }
 function teamName(id: string | null): string {
   return (
@@ -452,10 +465,8 @@ function operatorName(id: string | null): string {
   );
 }
 function queueName(id: string | null): string {
-  return (
-    snapshot.value?.queues.find((item) => item.id === id)?.name ??
-    (id ? "Неизвестная очередь" : "Без очереди")
-  );
+  const queue = snapshot.value?.queues.find((item) => item.id === id);
+  return queue ? routingQueueLabel(queue) : id ? "Неизвестная очередь" : "Без очереди";
 }
 function modeLabel(mode: string): string {
   return labelUnknown(mode, {
@@ -495,6 +506,30 @@ function checkLabel(code: string): string {
     WORKFORCE_TEAM_REFERENCE_MISSING: "Команда отсутствует в рабочей силе",
     CANDIDATE_SET_TOO_LARGE: "Слишком много кандидатов",
   });
+}
+function checkDescription(code: string, status: string): string {
+  if (status === "PASS") return "Готово";
+  return labelUnknown(code, {
+    SLOT_MISSING: "Свяжите очередь с опубликованной политикой распределения",
+    QUEUE_NOT_ACTIVE: "Верните очередь в активное состояние",
+    QUEUE_NOT_PUBLISHED: "Опубликуйте черновик очереди",
+    QUEUE_GENERATION_MISSING: "Сохраните и опубликуйте условия выборки",
+    QUEUE_GENERATION_BUILDING: "Сервер ещё строит выборку — обновите состояние позже",
+    QUEUE_GENERATION_DEGRADED: "Проверьте условия выборки и диагностику сервера",
+    POLICY_NOT_ACTIVE: "Верните связанную политику в активное состояние",
+    POLICY_NOT_PUBLISHED: "Опубликуйте политику распределения",
+    WORKFORCE_NOT_PUBLISHED: "Опубликуйте состав команд и доступность операторов",
+    QUEUE_MODE_INCOMPATIBLE: "Согласуйте режим очереди с режимом назначения",
+    ALGORITHM_REVISION_UNSUPPORTED: "Обновите политику до поддерживаемой версии",
+    WORKFORCE_TEAM_REFERENCE_MISSING: "Добавьте команду очереди в рабочую силу",
+    CANDIDATE_SET_TOO_LARGE: "Сузьте выборку операторов в политике",
+  });
+}
+function checkRoute(code: string): string {
+  if (code.includes("WORKFORCE")) return "/support/settings/workforce";
+  if (code.includes("POLICY") || code.includes("SLOT"))
+    return "/support/settings/routing/policies";
+  return "/support/settings/queues";
 }
 function readinessSeverity(
   value: string,
@@ -809,9 +844,16 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         <aside class="routing-catalog">
           <div class="panel-heading">
             <div>
-              <h2>Очереди</h2>
-              <p>Состояние каждой линии назначения</p>
+              <h2>Линии обращений</h2>
+              <p>Системные выборки, по которым работает распределение</p>
             </div>
+          </div>
+          <div class="catalog-explainer">
+            <i class="pi pi-info-circle" aria-hidden="true" />
+            <p>
+              Системные очереди создаёт платформа. Они собирают обращения по
+              состоянию и не удаляются как обычные очереди.
+            </p>
           </div>
           <button
             v-for="queue in snapshot.queues"
@@ -830,15 +872,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                   ?.status ?? 'UNKNOWN'
               "
             />
-            <span
-              ><strong>{{ queueLabel(queue) }}</strong
-              ><small>{{
-                modeLabel(
-                  snapshot.readiness.find((item) => item.queueId === queue.id)
-                    ?.activation?.mode ?? "UNKNOWN",
-                )
-              }}</small></span
-            >
+            <span>
+              <strong>{{ queueLabel(queue) }}</strong>
+              <small>
+                {{ queue.kind === "SYSTEM" ? "Системная" : "Проектная" }} ·
+                {{ queue.published ? "Опубликована" : "Черновик" }}
+              </small>
+            </span>
             <i class="pi pi-angle-right" aria-hidden="true" />
           </button>
           <Button
@@ -853,8 +893,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         <div class="routing-surface">
           <div class="surface-title">
             <div>
-              <span class="routing-eyebrow">Шкала готовности</span>
+              <span class="routing-eyebrow">Готовность маршрута</span>
               <h2>{{ queueName(readiness?.queueId ?? null) }}</h2>
+              <p>{{ selectedQueuePresentation?.purpose }}</p>
+              <code v-if="selectedQueue">{{ selectedQueue.code }}</code>
             </div>
             <Tag
               v-if="readiness"
@@ -869,68 +911,106 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             />
           </div>
 
-          <ol v-if="readiness" class="readiness-rail">
-            <li
-              v-for="check in readiness.checks"
-              :key="check.code"
-              :class="`readiness-step readiness-step--${check.status.toLowerCase()}`"
+          <div v-if="readiness" class="readiness-layout">
+            <section
+              :class="[
+                'next-action-card',
+                { 'next-action-card--ready': !firstReadinessIssue },
+              ]"
             >
-              <span class="readiness-step__mark"
-                ><i
+              <span class="next-action-card__icon">
+                <i
                   :class="
-                    check.status === 'PASS'
-                      ? 'pi pi-check'
-                      : check.status === 'DEGRADED'
-                        ? 'pi pi-exclamation-triangle'
-                        : 'pi pi-lock'
+                    firstReadinessIssue
+                      ? 'pi pi-arrow-right'
+                      : 'pi pi-check-circle'
                   "
-              /></span>
+                />
+              </span>
               <div>
-                <strong>{{ checkLabel(check.code) }}</strong
-                ><small>{{
-                  check.status === "PASS"
-                    ? "Проверено сервером"
-                    : "Откройте связанный раздел и устраните причину"
-                }}</small>
+                <span class="routing-eyebrow">Следующий шаг</span>
+                <h3>
+                  {{
+                    firstReadinessIssue
+                      ? checkLabel(firstReadinessIssue.code)
+                      : readiness.activation
+                        ? "Маршрут работает"
+                        : "Можно включать назначение"
+                  }}
+                </h3>
+                <p>
+                  {{
+                    firstReadinessIssue
+                      ? checkDescription(
+                          firstReadinessIssue.code,
+                          firstReadinessIssue.status,
+                        )
+                      : readiness.activation
+                        ? `${modeLabel(readiness.activation.mode)} · ${formatDate(readiness.activation.activatedAt)}`
+                        : "Все обязательные проверки пройдены. Выберите режим и включите распределение."
+                  }}
+                </p>
               </div>
               <Button
-                v-if="check.status !== 'PASS'"
-                label="Исправить"
-                size="small"
-                text
-                @click="
-                  router.push(
-                    check.code.includes('WORKFORCE')
-                      ? '/support/settings/workforce'
-                      : check.code.includes('POLICY')
-                        ? '/support/settings/routing/policies'
-                        : '/support/settings/queues',
-                  )
-                "
+                v-if="firstReadinessIssue"
+                label="Перейти к настройке"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                @click="router.push(checkRoute(firstReadinessIssue.code))"
               />
-            </li>
-            <li
-              class="readiness-step"
-              :class="
-                readiness.activation
-                  ? 'readiness-step--pass'
-                  : 'readiness-step--pending'
-              "
-            >
-              <span class="readiness-step__mark"
-                ><i
-                  :class="readiness.activation ? 'pi pi-bolt' : 'pi pi-circle'"
-              /></span>
-              <div>
-                <strong>Включение</strong
-                ><small>{{
-                  readiness.activation
-                    ? `${modeLabel(readiness.activation.mode)} · ${formatDate(readiness.activation.activatedAt)}`
-                    : "Режим назначения ещё не включён"
-                }}</small>
-              </div>
-            </li>
-          </ol>
+            </section>
+
+            <section class="readiness-checklist" aria-label="Проверки готовности">
+              <header>
+                <div>
+                  <h3>Что уже проверено</h3>
+                  <p>{{ passedReadinessChecks }} из {{ readiness.checks.length }} условий готовы</p>
+                </div>
+              </header>
+              <ol>
+                <li
+                  v-for="check in readiness.checks"
+                  :key="check.code"
+                  :data-status="check.status"
+                >
+                  <span class="readiness-check__mark">
+                    <i
+                      :class="
+                        check.status === 'PASS'
+                          ? 'pi pi-check'
+                          : check.status === 'DEGRADED'
+                            ? 'pi pi-exclamation-triangle'
+                            : 'pi pi-minus'
+                      "
+                    />
+                  </span>
+                  <span>
+                    <strong>{{ checkLabel(check.code) }}</strong>
+                    <small>{{ checkDescription(check.code, check.status) }}</small>
+                  </span>
+                  <span class="readiness-check__state">
+                    {{ check.status === "PASS" ? "Готово" : "Нужно действие" }}
+                  </span>
+                </li>
+                <li :data-status="readiness.activation ? 'PASS' : 'PENDING'">
+                  <span class="readiness-check__mark">
+                    <i :class="readiness.activation ? 'pi pi-check' : 'pi pi-circle'" />
+                  </span>
+                  <span>
+                    <strong>Режим назначения</strong>
+                    <small>{{
+                      readiness.activation
+                        ? modeLabel(readiness.activation.mode)
+                        : "Включается после обязательных проверок"
+                    }}</small>
+                  </span>
+                  <span class="readiness-check__state">
+                    {{ readiness.activation ? "Включён" : "Ожидает" }}
+                  </span>
+                </li>
+              </ol>
+            </section>
+          </div>
 
           <div class="routing-summary-strip">
             <div>
@@ -940,10 +1020,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <div>
               <span>Политика</span
               ><strong>{{
-                policyLabel(
+                routingPolicyLabel(
                   snapshot.policies.find(
                     (item) => item.id === selectedSlot?.policyId,
-                  ) ?? snapshot.policies[0]!,
+                  ) ?? snapshot.policies[0],
                 )
               }}</strong>
             </div>
@@ -953,7 +1033,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             </div>
           </div>
 
-          <div v-if="canManageRouting" class="surface-actions">
+          <div v-if="canManageRouting" class="surface-actions surface-actions--overview">
             <Button
               label="Проверочный запуск"
               icon="pi pi-play"
@@ -1691,7 +1771,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             @click="selectedPolicyId = policy.id"
           >
             <span
-              ><strong>{{ policyLabel(policy) }}</strong
+              ><strong>{{ routingPolicyLabel(policy) }}</strong
               ><small>{{
                 policy.draft
                   ? "Отдельный черновик"
@@ -1711,7 +1791,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div class="surface-title">
             <div>
               <span class="routing-eyebrow">Политика назначения</span>
-              <h2>{{ policyLabel(selectedPolicy) }}</h2>
+              <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
               <p>Числа сопровождаются объяснением влияния на выбор.</p>
             </div>
             <div class="surface-title__actions">
@@ -1900,7 +1980,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         </div>
         <div v-else-if="selectedPolicy" class="routing-surface">
           <span class="routing-eyebrow">Опубликованная политика</span>
-          <h2>{{ policyLabel(selectedPolicy) }}</h2>
+          <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
           <Message severity="info" :closable="false"
             >Черновик и команды изменения скрыты. Показана опубликованная версия
             {{ selectedPolicy.published?.revisionNumber ?? "—" }}.</Message
@@ -2213,10 +2293,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             ><small>Очередь</small></span
           ><span
             ><i class="pi pi-sliders-h" /><strong>{{
-              policyLabel(
+              routingPolicyLabel(
                 snapshot?.policies.find(
                   (item) => item.id === selectedSlot?.policyId,
-                ) ?? snapshot!.policies[0]!,
+                ) ?? snapshot?.policies[0],
               )
             }}</strong
             ><small>Политика</small></span
@@ -2645,84 +2725,148 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   margin-left: auto;
   justify-content: flex-end;
 }
-.readiness-rail {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  padding: 24px 0;
+.surface-title code {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  background: var(--surface-subtle);
+  font-size: 0.64rem;
+}
+.catalog-explainer {
+  display: flex;
+  gap: 9px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--surface-border);
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+}
+.catalog-explainer i {
+  margin-top: 2px;
+  color: var(--brand-primary);
+}
+.catalog-explainer p {
   margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
 }
-.readiness-step {
-  position: relative;
+.readiness-layout {
   display: grid;
-  justify-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  text-align: center;
+  grid-template-columns: minmax(230px, 0.72fr) minmax(360px, 1.28fr);
+  gap: 14px;
+  padding: 18px 0;
 }
-.readiness-step::before {
-  content: "";
-  position: absolute;
-  top: 15px;
-  left: -50%;
-  width: 100%;
-  height: 1px;
-  background: var(--surface-border);
+.next-action-card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 100%;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--status-warning) 28%, var(--surface-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--status-warning) 7%, var(--surface-card));
 }
-.readiness-step:first-child::before {
-  display: none;
+.next-action-card--ready {
+  border-color: color-mix(in srgb, var(--status-success) 28%, var(--surface-border));
+  background: color-mix(in srgb, var(--status-success) 7%, var(--surface-card));
 }
-.readiness-step__mark {
-  z-index: 1;
+.next-action-card__icon {
   display: grid;
   place-items: center;
-  width: 31px;
-  height: 31px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: var(--status-warning);
+  background: var(--surface-card);
+}
+.next-action-card--ready .next-action-card__icon {
+  color: var(--status-success);
+}
+.next-action-card h3,
+.readiness-checklist h3 {
+  margin: 4px 0 5px;
+  font-size: 0.96rem;
+}
+.next-action-card p,
+.readiness-checklist p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.next-action-card :deep(.p-button) {
+  justify-self: start;
+  margin-top: auto;
+}
+.readiness-checklist {
+  overflow: hidden;
   border: 1px solid var(--surface-border);
+  border-radius: 12px;
+}
+.readiness-checklist header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--surface-subtle);
+}
+.readiness-checklist ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.readiness-checklist li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--surface-border);
+}
+.readiness-checklist li:last-child {
+  border-bottom: 0;
+}
+.readiness-check__mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   color: var(--text-tertiary);
-  background: var(--surface-card);
-  transition:
-    transform 180ms ease,
-    background 180ms ease;
+  background: var(--surface-subtle);
+  font-size: 0.68rem;
 }
-.readiness-step--pass .readiness-step__mark {
+.readiness-checklist li[data-status="PASS"] .readiness-check__mark {
   color: var(--status-success);
-  border-color: color-mix(
-    in srgb,
-    var(--status-success) 36%,
-    var(--surface-border)
-  );
-  background: color-mix(
-    in srgb,
-    var(--status-success) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-success) 10%, var(--surface-card));
 }
-.readiness-step--blocking .readiness-step__mark {
+.readiness-checklist li[data-status="BLOCKING"] .readiness-check__mark {
   color: var(--status-danger);
-  border-color: color-mix(
-    in srgb,
-    var(--status-danger) 36%,
-    var(--surface-border)
-  );
+  background: color-mix(in srgb, var(--status-danger) 9%, var(--surface-card));
 }
-.readiness-step--degraded .readiness-step__mark {
+.readiness-checklist li[data-status="DEGRADED"] .readiness-check__mark {
   color: var(--status-warning);
 }
-.readiness-step strong,
-.readiness-step small {
+.readiness-checklist strong,
+.readiness-checklist small {
   display: block;
 }
-.readiness-step strong {
-  font-size: 0.73rem;
-  line-height: 1.3;
+.readiness-checklist strong {
+  font-size: 0.75rem;
 }
-.readiness-step small {
-  margin-top: 4px;
+.readiness-checklist small {
+  margin-top: 2px;
   color: var(--text-tertiary);
-  font-size: 0.63rem;
+  font-size: 0.65rem;
   line-height: 1.35;
+}
+.readiness-check__state {
+  color: var(--text-tertiary);
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+.surface-actions--overview {
+  padding-top: 2px;
 }
 .routing-summary-strip {
   display: grid;
@@ -3297,12 +3441,8 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   .binding-panel {
     grid-template-columns: 1fr 1fr;
   }
-  .readiness-rail {
-    grid-template-columns: repeat(3, 1fr);
-    row-gap: 22px;
-  }
-  .readiness-step::before {
-    display: none;
+  .readiness-layout {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 760px) {
@@ -3351,18 +3491,14 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   .field--wide {
     grid-column: auto;
   }
-  .readiness-rail {
-    grid-template-columns: 1fr;
+  .readiness-layout {
     padding: 14px 0;
   }
-  .readiness-step {
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    justify-items: start;
-    text-align: left;
-    padding: 7px 0;
+  .readiness-checklist li {
+    grid-template-columns: 26px minmax(0, 1fr);
   }
-  .readiness-step small {
-    margin-top: 2px;
+  .readiness-check__state {
+    grid-column: 2;
   }
   .routing-summary-strip {
     grid-template-columns: 1fr;

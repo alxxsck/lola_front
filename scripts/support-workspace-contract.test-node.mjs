@@ -251,71 +251,23 @@ test("workspace operations retain authority, pagination bounds and send idempote
   }
 });
 
-test("workspace shell cutover contract stays server-owned and reversible", async () => {
-  const { validateSupportWorkspaceMessagingContract } = await import(
-    "./support-workspace-contract.mjs"
-  );
-  const mutations = [
-    (contract) => {
-      for (const pathItem of Object.values(contract.paths)) {
-        for (const [method, candidate] of Object.entries(pathItem)) {
-          if (candidate?.operationId === "SupportWorkspace_readAdmission") {
-            delete pathItem[method];
-          }
-        }
-      }
-    },
-    (contract) => {
-      const schema = contract.components.schemas.SupportWorkspaceAdmissionResponseDto;
-      schema.required = schema.required.filter(
-        (field) => field !== "entryPointMode",
-      );
-    },
-    (contract) => {
-      const schema = contract.components.schemas.SupportWorkspaceRolloutResponseDto;
-      schema.required = schema.required.filter(
-        (field) => field !== "shellEnabled",
-      );
-    },
-    (contract) => {
-      operation(contract, "SupportWorkspace_updateRollout").parameters.find(
-        (parameter) => parameter.name === "If-Match",
-      ).required = false;
-    },
-    (contract) => {
-      operation(contract, "SupportWorkspace_updateRollout").parameters.find(
-        (parameter) => parameter.name === "Idempotency-Key",
-      ).required = false;
-    },
-    (contract) => {
-      contract.components.schemas.SupportWorkspaceRolloutResponseDto.properties.actionEtag.pattern =
-        "^[0-9]+$";
-    },
-    (contract) => {
-      contract.components.schemas.UpdateSupportWorkspaceRolloutDto.required =
-        contract.components.schemas.UpdateSupportWorkspaceRolloutDto.required.filter(
-          (field) => field !== "reason",
-        );
-    },
-    (contract) => {
-      contract.components.schemas.UpdateSupportWorkspaceRolloutDto.properties.reason.maxLength =
-        5_000;
-    },
-    (contract) => {
-      operation(contract, "SupportWorkspace_updateRollout").responses["409"] = {};
-    },
-    (contract) => {
-      contract.components.schemas.SupportWorkspaceErrorBodyDto.properties.code.enum =
-        contract.components.schemas.SupportWorkspaceErrorBodyDto.properties.code.enum.filter(
-          (value) => value !== "SUPPORT_WORKSPACE_REPLAY_OUTCOME_UNAVAILABLE",
-        );
-    },
-  ];
+test("workspace shell cutover keeps retired rollout contracts absent", async () => {
+  const contract = await pinnedContract();
 
-  for (const mutate of mutations) {
-    const contract = await pinnedContract();
-    mutate(contract);
-    assert.throws(() => validateSupportWorkspaceMessagingContract(contract));
+  for (const operationId of [
+    "SupportWorkspace_readAdmission",
+    "SupportWorkspace_updateRollout",
+  ]) {
+    assert.throws(() => operation(contract, operationId), /Fixture is missing/u);
+  }
+
+  for (const schemaName of [
+    "SupportWorkspaceAdmissionResponseDto",
+    "SupportWorkspaceRolloutResponseDto",
+    "UpdateSupportWorkspaceRolloutDto",
+    "SupportWorkspaceErrorBodyDto",
+  ]) {
+    assert.equal(contract.components.schemas[schemaName], undefined);
   }
 });
 
