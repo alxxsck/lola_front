@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  reportingQueryDrilldownRead,
   reportingQueryResultRead,
   reportingQueryRunCreate,
   reportingQueryValidate,
@@ -14,6 +15,7 @@ vi.mock("@/shared/api/generated/retenive-backend", async (importOriginal) => ({
   reportingQueryValidate: vi.fn(),
   reportingQueryRunCreate: vi.fn(),
   reportingQueryResultRead: vi.fn(),
+  reportingQueryDrilldownRead: vi.fn(),
 }));
 
 const query: ReportingQueryDefinitionDto = {
@@ -91,6 +93,41 @@ describe("supportAnalyticsApiSource", () => {
 
     expect(headersForRun(0)["Idempotency-Key"]).toBe(
       headersForRun(1)["Idempotency-Key"],
+    );
+  });
+
+  it("reads the bounded subject drilldown from the generated query-run contract", async () => {
+    vi.mocked(reportingQueryDrilldownRead).mockResolvedValue({
+      breadcrumb: {
+        metricCode: "quality_score_average",
+        subjectKind: "REVIEW",
+      },
+      items: [],
+      nextCursor: null,
+      reset: { runId: "run-1" },
+    } as never);
+
+    await supportAnalyticsApiSource.drilldown("project-1", "run-1", {
+      metricCode: "quality_score_average",
+      day: "2026-08-12",
+      dimensionCode: "TEAM",
+      dimensionValue: "team-1",
+      cursor: "cursor-1",
+      limit: 50,
+    });
+
+    expect(reportingQueryDrilldownRead).toHaveBeenCalledWith(
+      "project-1",
+      "run-1",
+      {
+        metricCode: "quality_score_average",
+        day: "2026-08-12",
+        dimensionCode: "TEAM",
+        dimensionValue: "team-1",
+        cursor: "cursor-1",
+        limit: 50,
+      },
+      undefined,
     );
   });
 });

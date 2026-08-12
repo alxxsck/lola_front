@@ -1,5 +1,6 @@
 import { enableAutoUnmount, shallowMount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@/shared/api/http/api-error';
 
 const state = vi.hoisted(() => ({
   route: {
@@ -10,6 +11,7 @@ const state = vi.hoisted(() => ({
   auth: null as {
     user: { id: string };
     project: { id: string; effectivePermissionCodes: string[] } | null;
+    refreshContext: ReturnType<typeof vi.fn>;
   } | null,
 }));
 const quality = vi.hoisted(() => ({
@@ -24,9 +26,12 @@ const artifacts = vi.hoisted(() => ({
   readDashboard: vi.fn(),
   readReport: vi.fn(),
   reportHistory: vi.fn(),
+  dashboardHistory: vi.fn(),
+  listDashboardShares: vi.fn(),
   runDashboard: vi.fn(),
+  drilldownDashboard: vi.fn(),
 }));
-const analytics = vi.hoisted(() => ({ run: vi.fn() }));
+const analytics = vi.hoisted(() => ({ run: vi.fn(), drilldown: vi.fn() }));
 
 vi.mock('vue-router', () => ({
   useRoute: () => state.route,
@@ -45,6 +50,7 @@ vi.mock('@/features/auth/auth.store', async () => {
         'project.reporting.aggregate.read',
       ],
     },
+    refreshContext: vi.fn(),
   });
   return { useAuthStore: () => state.auth };
 });
@@ -81,7 +87,11 @@ const buttonStub = {
 };
 const dialogStub = {
   props: ['visible'],
-  template: '<section v-if="visible"><slot /></section>',
+  template: '<section v-if="visible"><slot name="header" /><slot /></section>',
+};
+const loadingSwapStub = {
+  props: ['loading'],
+  template: '<div><slot v-if="!loading" /><slot v-else name="loading" /></div>',
 };
 
 function deferred<T>() {
@@ -102,11 +112,14 @@ describe('operator presentations in Ticket 33 pages', () => {
       id: 'project-1',
       effectivePermissionCodes: ['project.support.quality.read'],
     };
+    state.auth!.refreshContext.mockResolvedValue(undefined);
     quality.listTasks.mockResolvedValue({ items: [], nextCursor: null });
     quality.listReviews.mockResolvedValue({ items: [], nextCursor: null });
     presentations.resolve.mockResolvedValue({ items: [] });
     presentations.catalog.mockResolvedValue({ items: [], nextCursor: null });
     analytics.run.mockResolvedValue({ result: { rows: [] } });
+    artifacts.dashboardHistory.mockResolvedValue({ items: [] });
+    artifacts.listDashboardShares.mockResolvedValue({ items: [] });
   });
 
   it('shows resolved operator names in the quality queue without exposing UUIDs', async () => {
@@ -136,7 +149,9 @@ describe('operator presentations in Ticket 33 pages', () => {
     });
 
     const wrapper = shallowMount(SupportQualityPage, {
-      global: { stubs: { RouterLink: routerLinkStub, Select: selectStub } },
+      global: {
+        stubs: { RouterLink: routerLinkStub, Select: selectStub, PageLoadingSwap: loadingSwapStub },
+      },
     });
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Марина Соколова'));
@@ -179,6 +194,15 @@ describe('operator presentations in Ticket 33 pages', () => {
     artifacts.readReport.mockResolvedValue(report);
     artifacts.reportHistory.mockResolvedValue({ items: [] });
     artifacts.runDashboard.mockResolvedValue({ result: { rows: [] } });
+    artifacts.listDashboardShares.mockResolvedValue({
+      items: [
+        {
+          shareId: 'share-private-id',
+          target: { kind: 'CMS_USER', id: 'operator-private-id' },
+          createdAt: '2026-08-12T12:00:00.000Z',
+        },
+      ],
+    });
     presentations.catalog.mockResolvedValue({
       items: [
         {
@@ -194,12 +218,17 @@ describe('operator presentations in Ticket 33 pages', () => {
     });
 
     const wrapper = shallowMount(SupportAnalyticsArtifactPage, {
-      global: { stubs: { RouterLink: routerLinkStub, Select: selectStub } },
+      global: {
+        stubs: { RouterLink: routerLinkStub, Select: selectStub, PageLoadingSwap: loadingSwapStub },
+      },
     });
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Марина Соколова'));
+    expect(wrapper.get('[aria-label="Активные доступы"]').text()).toContain('Марина Соколова');
+    expect(artifacts.listDashboardShares).toHaveBeenCalledWith('project-1', 'dashboard-1');
     expect(wrapper.text()).not.toContain('operator-private-id');
     expect(wrapper.text()).not.toContain('aaaaaaaaaaaa');
+    expect(wrapper.text()).not.toContain('Технический идентификатор команды');
     expect(presentations.catalog).toHaveBeenCalledWith(
       'project-1',
       undefined,
@@ -257,7 +286,9 @@ describe('operator presentations in Ticket 33 pages', () => {
       });
 
     const wrapper = shallowMount(SupportAnalyticsArtifactPage, {
-      global: { stubs: { RouterLink: routerLinkStub, Select: selectStub } },
+      global: {
+        stubs: { RouterLink: routerLinkStub, Select: selectStub, PageLoadingSwap: loadingSwapStub },
+      },
     });
     await vi.waitFor(() => expect(presentations.catalog).toHaveBeenCalledTimes(1));
 
@@ -318,6 +349,8 @@ describe('operator presentations in Ticket 33 pages', () => {
           Select: selectStub,
           Button: buttonStub,
           Dialog: dialogStub,
+          Drawer: dialogStub,
+          PageLoadingSwap: loadingSwapStub,
         },
       },
     });
@@ -363,7 +396,14 @@ describe('operator presentations in Ticket 33 pages', () => {
       })
       .mockRejectedValueOnce(new Error('История временно недоступна'));
     const wrapper = shallowMount(SupportAnalyticsArtifactPage, {
-      global: { stubs: { RouterLink: routerLinkStub, Button: buttonStub, Dialog: dialogStub } },
+      global: {
+        stubs: {
+          RouterLink: routerLinkStub,
+          Button: buttonStub,
+          Dialog: dialogStub,
+          PageLoadingSwap: loadingSwapStub,
+        },
+      },
     });
     await vi.waitFor(() => expect(wrapper.text()).toContain('50 опубликованных снимков'));
 
@@ -373,5 +413,75 @@ describe('operator presentations in Ticket 33 pages', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('История временно недоступна'));
     expect(wrapper.text()).not.toContain('50 опубликованных снимков');
+  });
+
+  it('purges a previously opened drilldown when the server conceals it', async () => {
+    state.route.params = { dashboardId: 'dashboard-1' };
+    state.route.fullPath = '/support/analytics/dashboards/dashboard-1';
+    state.auth!.project = {
+      id: 'project-1',
+      effectivePermissionCodes: ['project.dashboards.read', 'project.reporting.aggregate.read'],
+    };
+    const report = {
+      savedReportId: 'report-1',
+      savedReportRevisionId: 'revision-1',
+      revision: 1,
+      queryDefinitionHash: 'a'.repeat(64),
+      name: 'Отчёт качества',
+      description: '',
+      query: { metrics: ['quality_score_average'] },
+    };
+    artifacts.readDashboard.mockResolvedValue({
+      dashboardId: 'dashboard-1',
+      dashboardRevisionId: 'dashboard-revision-1',
+      revision: 1,
+      name: 'Панель качества',
+      description: '',
+      report,
+    });
+    artifacts.readReport.mockResolvedValue(report);
+    artifacts.reportHistory.mockResolvedValue({ items: [] });
+    artifacts.runDashboard.mockResolvedValue({
+      runId: 'run-1',
+      result: {
+        rows: [
+          {
+            day: '2026-08-12',
+            dimensions: { CURRENCY: 'EUR' },
+            metrics: [{ code: 'quality_score_average', state: 'VALUE', value: '91' }],
+          },
+        ],
+      },
+    });
+    analytics.drilldown
+      .mockResolvedValueOnce({
+        items: [],
+        nextCursor: null,
+        breadcrumb: { metricCode: 'quality_score_average', subjectKind: 'REVIEW' },
+        reset: { metricCode: 'quality_score_average', runId: 'run-1' },
+      })
+      .mockRejectedValueOnce(new ApiError(404, 'NOT_FOUND', 'hidden-private-detail'));
+    const wrapper = shallowMount(SupportAnalyticsArtifactPage, {
+      global: {
+        stubs: {
+          RouterLink: routerLinkStub,
+          Button: buttonStub,
+          Dialog: dialogStub,
+          Drawer: dialogStub,
+          Select: selectStub,
+          PageLoadingSwap: loadingSwapStub,
+        },
+      },
+    });
+
+    await vi.waitFor(() => expect(wrapper.find('.drilldown-link').exists()).toBe(true));
+    await wrapper.get('.drilldown-link').trigger('click');
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Проверяемая детализация'));
+    await wrapper.get('.drilldown-link').trigger('click');
+    await vi.waitFor(() => expect(state.auth!.refreshContext).toHaveBeenCalledOnce());
+
+    expect(wrapper.text()).not.toContain('Проверяемая детализация');
+    expect(wrapper.text()).not.toContain('hidden-private-detail');
+    expect(wrapper.text()).toContain('Детализация недоступна');
   });
 });

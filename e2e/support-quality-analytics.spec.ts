@@ -8,6 +8,11 @@ async function signIn(page: Page) {
 }
 
 async function expectNoPageOverflow(page: Page) {
+  const loadingSwap = page.locator('.page-loading-swap').last();
+  if (await loadingSwap.count()) {
+    await expect(loadingSwap).toHaveAttribute('aria-busy', 'false');
+    await expect(loadingSwap.locator('.page-loading-swap__layer')).toHaveCount(1);
+  }
   expect(
     await page.evaluate(
       () =>
@@ -33,8 +38,12 @@ test("completes the Quality queue, review and feedback workflow", async ({
   await page.getByRole("button", { name: "Продолжить" }).click();
   await expect(page).toHaveURL(/\/support\/quality\/reviews\/review-001$/);
   await expect(
-    page.getByRole("heading", { name: "Кейс case-4790" }),
+    page.getByRole("heading", { name: "Проверка обращения" }),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Открыть кейс" })).toHaveAttribute(
+    "href",
+    "/support/inbox/cases/case-4790",
+  );
   await page.getByRole("button", { name: "Сохранить", exact: true }).click();
   await expect(page.getByText("Черновик сохранён")).toBeVisible();
   await page.getByRole("button", { name: "Отправить оператору" }).click();
@@ -49,7 +58,11 @@ test("completes the Quality queue, review and feedback workflow", async ({
     .getByRole("dialog")
     .getByRole("button", { name: "Открыть апелляцию" })
     .click();
-  await expect(page.getByText("Апелляция открыта")).toBeVisible();
+  await expect(
+    page.getByRole("article").filter({
+      hasText: "Проверить критерий ясности",
+    }),
+  ).toBeVisible();
   await expectNoPageOverflow(page);
 
   await page.goto("/support/quality");
@@ -97,31 +110,14 @@ test("creates, edits and submits an independent calibration review", async ({
   await page.goto("/support/quality/calibrations");
   await page.getByRole("button", { name: "Открыть сессию" }).click();
   await expect(page.getByText("Результат скрыт").first()).toBeVisible();
+  await page
+    .getByRole("checkbox", { name: "Приветствие и тон", exact: true })
+    .check();
+  await page.getByLabel("Баллы: Приветствие и тон").fill("4");
+  await page.getByLabel("Баллы: Ясность решения").fill("8");
+  await page.getByLabel("Баллы: Точность ответа").fill("9");
+  await page.getByText(/Оператор · сообщение 12/).click();
   await page.getByRole("button", { name: "Начать независимую оценку" }).click();
-  const calibrationDialog = page.getByRole("dialog", {
-    name: "Независимая оценка",
-  });
-  await calibrationDialog.getByLabel("Код критерия 1").fill("GREETING");
-  await calibrationDialog.getByLabel("Баллы по критерию 1").fill("4");
-  await calibrationDialog
-    .getByRole("button", { name: "Добавить критерий" })
-    .click();
-  await calibrationDialog.getByLabel("Код критерия 2").fill("CLARITY");
-  await calibrationDialog.getByLabel("Баллы по критерию 2").fill("8");
-  await calibrationDialog
-    .getByRole("button", { name: "Добавить критерий" })
-    .click();
-  await calibrationDialog.getByLabel("Код критерия 3").fill("ACCURACY");
-  await calibrationDialog.getByLabel("Баллы по критерию 3").fill("9");
-  await calibrationDialog
-    .getByLabel("Идентификатор сообщения 1")
-    .fill("message-calibration");
-  await calibrationDialog
-    .getByLabel("Обоснование доказательства 1")
-    .fill("Ответ для независимой оценки");
-  await calibrationDialog
-    .getByRole("button", { name: "Создать черновик" })
-    .click();
   await expect(page).toHaveURL(/\/support\/quality\/reviews\/review-cal-/);
   await expect(page.getByText("Черновик", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Сохранить", exact: true }).click();
@@ -154,16 +150,14 @@ test("renders curated analytics, fail-closed readiness and result receipt", asyn
   }
 
   await page.goto("/support/analytics/flow");
-  await expect(
-    page.getByRole("heading", { name: /где она ждёт/ }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Поток обращений" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Первый ответ/ }),
   ).toBeVisible();
 
   await page.goto("/support/analytics/quality");
   await expect(
-    page.getByRole("img", { name: /Проверенные диалоги/ }),
+    page.getByRole("group", { name: /Проверенные диалоги/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Таблица" }).focus();
   await page.keyboard.press("Enter");
@@ -179,8 +173,10 @@ test("renders curated analytics, fail-closed readiness and result receipt", asyn
   await expect(
     page.getByRole("dialog", { name: "Сохранить Support-отчёт" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Сохранить и опубликовать" }).click();
-  await expect(page.getByText("Отчёт сохранён и опубликован.")).toBeVisible();
+  await page.getByRole("button", { name: "Сохранить черновик" }).click();
+  await expect(page.getByText(/Черновик отчёта сохранён/)).toBeVisible();
+  await page.getByRole("button", { name: "Опубликовать отчёт" }).click();
+  await expect(page.getByText("Отчёт опубликован.")).toBeVisible();
   const reportHref = await page
     .getByRole("link", { name: "Открыть отчёт" })
     .getAttribute("href");
@@ -211,19 +207,16 @@ test("renders curated analytics, fail-closed readiness and result receipt", asyn
   await expect(page.getByText(/Расписание приостановлено/)).toBeVisible();
   await page.getByRole("button", { name: "Архивировать" }).click();
   await expect(page.getByText(/Расписание перенесено в архив/)).toBeVisible();
-  await page.getByRole("button", { name: "Панель" }).click();
+  await page.getByRole("button", { name: "Черновик панели" }).click();
+  await page.getByRole("button", { name: "Опубликовать панель" }).click();
   await expect(page).toHaveURL(/\/support\/analytics\/dashboards\//);
   await expect(page.getByText("Личная панель")).toBeVisible();
   await expect(page.getByRole("heading", { name: /Дашборд:/ })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
   await page.locator(".drilldown-link").first().click();
-  await expect(
-    page.getByRole("heading", { name: "Проверяемая детализация" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Сбросить" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Проверяемая детализация" }),
-  ).toHaveCount(0);
+  await expect(page.getByText("Проверки качества", { exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Путь детализации" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByLabel("Участник проекта").click();
   await page.getByRole("option", { name: "Марина Соколова" }).click();
   await page.getByRole("button", { name: "Выдать доступ" }).click();
@@ -259,6 +252,7 @@ test("has no serious accessibility violations on the primary Ticket 33 routes", 
   ]) {
     await page.goto(path);
     await page.locator("main").last().waitFor();
+    await expectNoPageOverflow(page);
     const results = await new AxeBuilder({ page }).analyze();
     expect(
       results.violations.filter(
@@ -285,7 +279,7 @@ test("keeps the operational hierarchy at 200% zoom and reduced motion", async ({
   await expect(
     page.getByRole("heading", { name: "Качество поддержки" }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Проверено\./ })).toBeVisible();
+  await expect(page.locator(".curated-widget").first()).toBeVisible();
   await expectNoPageOverflow(page);
 });
 

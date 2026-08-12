@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   auth: null as {
     user: { id: string };
     project: { id: string; effectivePermissionCodes: string[] } | null;
+    refreshContext: ReturnType<typeof vi.fn>;
   } | null,
 }));
 const quality = vi.hoisted(() => ({
@@ -29,6 +30,7 @@ vi.mock('@/features/auth/auth.store', async () => {
       id: 'project-1',
       effectivePermissionCodes: ['project.support.quality.review'],
     },
+    refreshContext: vi.fn(),
   });
   return { useAuthStore: () => state.auth };
 });
@@ -138,6 +140,10 @@ function deferred<T>() {
 }
 
 describe('SupportQualityReviewPage hardening', () => {
+  const pageLoadingSwap = {
+    props: ['loading'],
+    template: '<div><slot v-if="!loading" /><slot v-else name="loading" /></div>',
+  };
   beforeEach(() => {
     vi.clearAllMocks();
     state.route.params.reviewId = 'review-private-id';
@@ -147,6 +153,7 @@ describe('SupportQualityReviewPage hardening', () => {
       effectivePermissionCodes: ['project.support.quality.review'],
     };
     quality.readReviewBootstrap.mockResolvedValue(bootstrap());
+    state.auth!.refreshContext.mockResolvedValue(undefined);
     presentations.resolve.mockResolvedValue({
       items: [
         {
@@ -162,7 +169,9 @@ describe('SupportQualityReviewPage hardening', () => {
   });
 
   it('shows a presentation name and hides review, operator and OCC identifiers by default', async () => {
-    const wrapper = shallowMount(SupportQualityReviewPage);
+    const wrapper = shallowMount(SupportQualityReviewPage, {
+      global: { stubs: { PageLoadingSwap: pageLoadingSwap } },
+    });
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Марина Соколова'));
     expect(wrapper.text()).not.toContain('operator-private-id');
@@ -199,6 +208,7 @@ describe('SupportQualityReviewPage hardening', () => {
           InputNumber: true,
           InputText: true,
           Tag: true,
+          PageLoadingSwap: pageLoadingSwap,
         },
       },
     });
@@ -246,6 +256,7 @@ describe('SupportQualityReviewPage hardening', () => {
           Select: true,
           Tag: true,
           RouterLink: { template: '<a><slot /></a>' },
+          PageLoadingSwap: pageLoadingSwap,
         },
       },
     });
@@ -268,5 +279,40 @@ describe('SupportQualityReviewPage hardening', () => {
       'message-1',
       expect.any(AbortSignal),
     );
+  });
+
+  it('purges the protected review immediately when a mutation is forbidden', async () => {
+    quality.saveDraft.mockRejectedValue(new ApiError(403, 'FORBIDDEN', 'forbidden-private-copy'));
+    const wrapper = shallowMount(SupportQualityReviewPage, {
+      global: {
+        stubs: {
+          Button: {
+            props: ['label', 'disabled'],
+            emits: ['click'],
+            template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
+          },
+          Dialog: true,
+          InputNumber: true,
+          InputText: true,
+          Select: true,
+          Tag: true,
+          Textarea: true,
+          RouterLink: { template: '<a><slot /></a>' },
+          PageLoadingSwap: pageLoadingSwap,
+        },
+      },
+    });
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Марина Соколова'));
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Сохранить')!
+      .trigger('click');
+    await vi.waitFor(() => expect(state.auth!.refreshContext).toHaveBeenCalledOnce());
+
+    expect(wrapper.text()).toContain('Оценка недоступна');
+    expect(wrapper.text()).not.toContain('Марина Соколова');
+    expect(wrapper.text()).not.toContain('Серверный черновик');
+    expect(wrapper.text()).not.toContain('forbidden-private-copy');
   });
 });

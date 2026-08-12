@@ -20,6 +20,8 @@ export interface SupportQualityTaskResponseDto {
    */
   defaultScores: SupportQualityScoreInputDto[];
   /** @nullable */
+  draftReviewId?: string | null;
+  /** @nullable */
   dueAt?: string | null;
   id: string;
   operatorCmsUserId: string;

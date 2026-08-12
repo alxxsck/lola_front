@@ -1,5 +1,7 @@
 import {
   supportQualityCalibrationRead,
+  supportQualityCalibrationBootstrap,
+  supportQualityCalibrationCandidateList,
   supportQualityCalibrationBaselineSet,
   supportQualityCalibrationParticipantAdd,
   supportQualityCalibrations,
@@ -38,6 +40,8 @@ import type {
   RunSupportQualitySamplingDto,
   ReplaceSupportQualityReviewDraftDto,
   SupportQualityCalibrationDetailResponseDto,
+  SupportQualityCalibrationBootstrapResponseDto,
+  SupportQualityCalibrationCandidatePageDto,
   SupportQualityCalibrationPageResponseDto,
   SupportQualityCalibrationResponseDto,
   SupportQualityDisputeResponseDto,
@@ -152,6 +156,17 @@ export interface SupportQualitySource {
     cursor?: string,
     signal?: AbortSignal,
   ): Promise<SupportQualityCalibrationPageResponseDto>;
+  listCalibrationCandidates(
+    projectId: string,
+    search?: string,
+    cursor?: string,
+    signal?: AbortSignal,
+  ): Promise<SupportQualityCalibrationCandidatePageDto>;
+  readCalibrationBootstrap(
+    projectId: string,
+    calibrationId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportQualityCalibrationBootstrapResponseDto>;
   createCalibration(
     projectId: string,
     input: CreateSupportQualityCalibrationDto,
@@ -396,6 +411,28 @@ export const supportQualityApiSource: SupportQualitySource = {
       return await supportQualityCalibrations(
         projectId,
         { limit: 50, ...(cursor ? { cursor } : {}) },
+        signal ? { signal } : undefined,
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async listCalibrationCandidates(projectId, search, cursor, signal) {
+    try {
+      return await supportQualityCalibrationCandidateList(
+        projectId,
+        { limit: 100, ...(search ? { search } : {}), ...(cursor ? { cursor } : {}) },
+        signal ? { signal } : undefined,
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async readCalibrationBootstrap(projectId, calibrationId, signal) {
+    try {
+      return await supportQualityCalibrationBootstrap(
+        projectId,
+        calibrationId,
         signal ? { signal } : undefined,
       );
     } catch (cause) {
@@ -1020,6 +1057,71 @@ const mockSource: SupportQualitySource = {
         },
       ],
       nextCursor: null,
+    };
+  },
+  async listCalibrationCandidates() {
+    return {
+      items: [
+        {
+          caseId: 'case-calibration-01',
+          caseTitle: 'Задержка ответа по доставке',
+          conversationId: 'conversation-calibration-01',
+          conversationTitle: 'Доставка заказа',
+          operatorCmsUserId: 'operator-anna',
+          resolvedAt: new Date(now.getTime() - 86_400_000).toISOString(),
+        },
+      ],
+      nextCursor: null,
+    };
+  },
+  async readCalibrationBootstrap(_projectId, id) {
+    if (id !== mockCalibrationDetail.id) throw new Error('Калибровочная сессия не найдена');
+    return {
+      calibration: structuredClone(mockCalibrationDetail),
+      scorecard: {
+        scorecardId: scorecard.id,
+        scorecardCode: scorecard.code,
+        scorecardName: scorecard.name,
+        revisionId: scorecard.currentRevisionId,
+        revisionNumber: scorecard.currentRevisionNumber,
+        criticalFailureOutcome: scorecard.criticalFailureOutcome,
+        sections: scorecard.sections.map((section) => ({
+          code: section.code,
+          name: section.name,
+          description: section.description,
+          sectionWeightBasisPoints: section.weightBasisPoints,
+          criteria: section.items.map((item) => ({
+            code: item.code,
+            label: item.name,
+            guidance: item.guidance,
+            ratingScale: item.ratingScale,
+            criticalFailure: item.criticalFailure,
+            applicability: item.applicability,
+            allowNotApplicable: item.applicability === 'REVIEWER_DECIDES',
+            maximumScore: item.maximumScore,
+          })),
+        })),
+      },
+      initialScores: scorecard.sections.flatMap((section) =>
+        section.items.map((item) => ({
+          itemCode: item.code,
+          applicable: item.applicability === 'ALWAYS',
+        })),
+      ),
+      evidenceOptions: [
+        {
+          messageId: 'message-calibration-01',
+          ordinal: 12,
+          role: 'ADMIN',
+          createdAt: now.toISOString(),
+          messageContentVersion: 1,
+          messageRevisionNumber: 1,
+          selected: false,
+        },
+      ],
+      evidenceWindowTruncated: false,
+      coachingThemeOptions: [],
+      rootCauseOptions: [],
     };
   },
   async createCalibration(_projectId, input) {

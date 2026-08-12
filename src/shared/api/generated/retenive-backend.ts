@@ -295,7 +295,11 @@ import type {
   DashboardPublishDto,
   DashboardRevisionPageResponseDto,
   DashboardRevisionQueryDto,
+  DashboardShareCatalogPageDto,
   DashboardShareDto,
+  DashboardShareListParams,
+  DashboardShareTeamOptionListParams,
+  DashboardShareTeamOptionPageDto,
   DashboardShellResponseDto,
   DashboardTransferDto,
   DashboardWidgetDrilldownReadParams,
@@ -826,6 +830,9 @@ import type {
   SupportPresentationResponseDto,
   SupportPresentationsCatalogOperatorsParams,
   SupportQualityCalibrationBaselineDto,
+  SupportQualityCalibrationBootstrapResponseDto,
+  SupportQualityCalibrationCandidateListParams,
+  SupportQualityCalibrationCandidatePageDto,
   SupportQualityCalibrationDetailResponseDto,
   SupportQualityCalibrationPageResponseDto,
   SupportQualityCalibrationParticipantsDto,
@@ -3482,6 +3489,21 @@ export const dashboardCollectionCreate = (
   );
 };
 
+export const dashboardShareTeamOptionList = (
+  projectId: string,
+  params?: DashboardShareTeamOptionListParams,
+  options?: SecondParameter<typeof request<DashboardShareTeamOptionPageDto>>,
+) => {
+  return request<DashboardShareTeamOptionPageDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboard-share-team-options`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const dashboardList = (
   projectId: string,
   params?: DashboardListParams,
@@ -3755,6 +3777,22 @@ export const dashboardShareRevoke = (
     {
       url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/share/${shareId}`,
       method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const dashboardShareList = (
+  projectId: string,
+  id: string,
+  params?: DashboardShareListParams,
+  options?: SecondParameter<typeof request<DashboardShareCatalogPageDto>>,
+) => {
+  return request<DashboardShareCatalogPageDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/shares`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -10090,6 +10128,23 @@ export const supportPresentationsResolveOperators = (
   );
 };
 
+export const supportQualityCalibrationCandidateList = (
+  projectId: string,
+  params?: SupportQualityCalibrationCandidateListParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationCandidatePageDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationCandidatePageDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/calibration-candidates`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const supportQualityCalibrations = (
   projectId: string,
   params?: SupportQualityCalibrationsParams,
@@ -10155,6 +10210,22 @@ export const supportQualityCalibrationBaselineSet = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: supportQualityCalibrationBaselineDto,
+    },
+    options,
+  );
+};
+
+export const supportQualityCalibrationBootstrap = (
+  projectId: string,
+  calibrationId: string,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationBootstrapResponseDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationBootstrapResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/calibrations/${calibrationId}/bootstrap`,
+      method: "GET",
     },
     options,
   );
@@ -15099,6 +15170,9 @@ export type DashboardCollectionListResult = NonNullable<
 export type DashboardCollectionCreateResult = NonNullable<
   Awaited<ReturnType<typeof dashboardCollectionCreate>>
 >;
+export type DashboardShareTeamOptionListResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardShareTeamOptionList>>
+>;
 export type DashboardListResult = NonNullable<
   Awaited<ReturnType<typeof dashboardList>>
 >;
@@ -15149,6 +15223,9 @@ export type DashboardShareCreateResult = NonNullable<
 >;
 export type DashboardShareRevokeResult = NonNullable<
   Awaited<ReturnType<typeof dashboardShareRevoke>>
+>;
+export type DashboardShareListResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardShareList>>
 >;
 export type DashboardTransferResult = NonNullable<
   Awaited<ReturnType<typeof dashboardTransfer>>
@@ -16288,6 +16365,9 @@ export type SupportPresentationsSetOperatorResult = NonNullable<
 export type SupportPresentationsResolveOperatorsResult = NonNullable<
   Awaited<ReturnType<typeof supportPresentationsResolveOperators>>
 >;
+export type SupportQualityCalibrationCandidateListResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityCalibrationCandidateList>>
+>;
 export type SupportQualityCalibrationsResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCalibrations>>
 >;
@@ -16299,6 +16379,9 @@ export type SupportQualityCalibrationReadResult = NonNullable<
 >;
 export type SupportQualityCalibrationBaselineSetResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCalibrationBaselineSet>>
+>;
+export type SupportQualityCalibrationBootstrapResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityCalibrationBootstrap>>
 >;
 export type SupportQualityCloseCalibrationResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCloseCalibration>>

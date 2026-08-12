@@ -12,9 +12,10 @@ const state = vi.hoisted(() => ({
     project: { id: string; effectivePermissionCodes: string[] } | null;
   } | null,
 }));
-const analytics = vi.hoisted(() => ({ catalog: vi.fn(), run: vi.fn() }));
+const analytics = vi.hoisted(() => ({ catalog: vi.fn(), run: vi.fn(), drilldown: vi.fn() }));
 const artifacts = vi.hoisted(() => ({
-  saveAndPublishReport: vi.fn(),
+  createReportDraft: vi.fn(),
+  publishReport: vi.fn(),
   exportReport: vi.fn(),
   readExport: vi.fn(),
 }));
@@ -86,11 +87,22 @@ const catalog = {
           compatibleDimensions: ['OCCURRED_DAY', 'SCORECARD_REVISION'],
           valueKind: 'DECIMAL',
         },
+        {
+          code: 'quality_review_count',
+          operation: 'COUNT',
+          classification: 'AGGREGATE',
+          exactness: 'EXACT',
+          minimumSample: 1,
+          requiredPermissionCodes: [],
+          compatibleDimensions: ['OCCURRED_DAY', 'SCORECARD_REVISION'],
+          valueKind: 'INTEGER',
+        },
       ],
     },
   ],
 };
 const queryResult = {
+  runId: 'run-1',
   status: 'READY',
   result: {
     rows: [
@@ -147,6 +159,10 @@ function mountPage() {
         Select: true,
         Tag: true,
         RouterLink: { template: '<a><slot /></a>' },
+        PageLoadingSwap: {
+          props: ['loading'],
+          template: '<div><slot v-if="!loading" /><slot v-else name="loading" /></div>',
+        },
       },
     },
   });
@@ -175,7 +191,14 @@ describe('SupportAnalyticsPage permission fencing', () => {
     };
     analytics.catalog.mockResolvedValue(catalog);
     analytics.run.mockResolvedValue(queryResult);
-    artifacts.saveAndPublishReport.mockResolvedValue({
+    artifacts.createReportDraft.mockResolvedValue({
+      savedReportId: 'report-private-id',
+      draftVersion: 1,
+      name: 'Отчёт по качеству поддержки',
+      description: '',
+      query: {},
+    });
+    artifacts.publishReport.mockResolvedValue({
       savedReportId: 'report-private-id',
       savedReportRevisionId: 'revision-private-id',
       revision: 1,
@@ -198,12 +221,24 @@ describe('SupportAnalyticsPage permission fencing', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Версия карты оценки'));
   });
 
+  it('keeps a definition, coverage receipt and comparison state on every curated card', async () => {
+    const wrapper = mountPage();
+
+    await vi.waitFor(() => expect(wrapper.find('.curated-widget').exists()).toBe(true));
+    expect(wrapper.find('.curated-widget').text()).toContain('Количество');
+    expect(wrapper.find('.curated-widget').text()).toContain('Точный расчёт');
+    expect(wrapper.find('.curated-widget').text()).toContain('Полные данны');
+    expect(wrapper.find('.curated-widget').text()).toContain('n=10');
+    expect(wrapper.find('.curated-widget').text()).toContain('Без сравнения');
+  });
+
   it('scrubs an export when export authority is removed but aggregate read remains', async () => {
     const wrapper = mountPage();
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Сохранить отчёт'));
     await clickButton(wrapper, 'Сохранить отчёт');
-    await clickButton(wrapper, 'Сохранить и опубликовать');
+    await clickButton(wrapper, 'Сохранить черновик');
+    await clickButton(wrapper, 'Опубликовать отчёт');
     await clickButton(wrapper, 'CSV');
     await vi.waitFor(() => expect(wrapper.find('.delivery-lifecycle').exists()).toBe(true));
     expect(wrapper.text()).toContain('В очереди');
@@ -229,7 +264,8 @@ describe('SupportAnalyticsPage permission fencing', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Сохранить отчёт'));
     await clickButton(wrapper, 'Сохранить отчёт');
-    await clickButton(wrapper, 'Сохранить и опубликовать');
+    await clickButton(wrapper, 'Сохранить черновик');
+    await clickButton(wrapper, 'Опубликовать отчёт');
     void clickButton(wrapper, 'CSV');
     await vi.waitFor(() => expect(artifacts.exportReport).toHaveBeenCalledTimes(1));
 
@@ -258,7 +294,8 @@ describe('SupportAnalyticsPage permission fencing', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Сохранить отчёт'));
     await clickButton(wrapper, 'Сохранить отчёт');
-    await clickButton(wrapper, 'Сохранить и опубликовать');
+    await clickButton(wrapper, 'Сохранить черновик');
+    await clickButton(wrapper, 'Опубликовать отчёт');
     void clickButton(wrapper, 'CSV');
     await vi.waitFor(() => expect(artifacts.exportReport).toHaveBeenCalledTimes(1));
 

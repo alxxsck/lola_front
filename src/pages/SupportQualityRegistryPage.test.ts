@@ -13,6 +13,8 @@ const state = vi.hoisted(() => ({
 const quality = vi.hoisted(() => ({
   listScorecards: vi.fn(),
   listCalibrations: vi.fn(),
+  listCalibrationCandidates: vi.fn(),
+  readCalibrationBootstrap: vi.fn(),
   readCalibration: vi.fn(),
   listDisputes: vi.fn(),
   createSamplingPolicy: vi.fn(),
@@ -33,10 +35,7 @@ vi.mock('@/features/auth/auth.store', async () => {
     user: { id: 'lead-1' },
     project: {
       id: 'project-1',
-      effectivePermissionCodes: [
-        'project.support.quality.read',
-        'project.support.quality.manage',
-      ],
+      effectivePermissionCodes: ['project.support.quality.read', 'project.support.quality.manage'],
     },
   });
   return { useAuthStore: () => state.auth };
@@ -47,7 +46,6 @@ vi.mock('@/features/support-quality/api/support-quality-source', () => ({
 vi.mock('@/features/support-quality/api/support-operator-presentation-source', () => ({
   supportOperatorPresentationSource: presentations,
 }));
-
 import SupportQualityRegistryPage from './SupportQualityRegistryPage.vue';
 
 enableAutoUnmount(afterEach);
@@ -114,17 +112,42 @@ describe('SupportQualityRegistryPage hardening', () => {
     state.auth!.user.id = 'lead-1';
     state.auth!.project = {
       id: 'project-1',
-      effectivePermissionCodes: [
-        'project.support.quality.read',
-        'project.support.quality.manage',
-      ],
+      effectivePermissionCodes: ['project.support.quality.read', 'project.support.quality.manage'],
     };
     quality.listScorecards.mockResolvedValue([scorecard()]);
     quality.listCalibrations.mockResolvedValue({ items: [], nextCursor: null });
+    quality.listCalibrationCandidates.mockResolvedValue({ items: [], nextCursor: null });
     quality.listDisputes.mockResolvedValue({ items: [], nextCursor: null });
     quality.createScorecardRevision.mockResolvedValue(scorecard());
     presentations.catalog.mockResolvedValue({ items: [], nextCursor: null });
     presentations.resolve.mockResolvedValue({ items: [] });
+  });
+
+  it('gates the first paint with geometry and keeps the loaded snapshot during refresh', async () => {
+    const firstLoad = deferred<ReturnType<typeof scorecard>[]>();
+    quality.listScorecards.mockReturnValueOnce(firstLoad.promise);
+    const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
+
+    expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('true');
+    expect(wrapper.find('[data-kind="registry"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('Создать новую ревизию');
+
+    firstLoad.resolve([scorecard()]);
+    await vi.waitFor(() =>
+      expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('false'),
+    );
+
+    const refresh = deferred<ReturnType<typeof scorecard>[]>();
+    quality.listScorecards.mockReturnValueOnce(refresh.promise);
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Создать новую ревизию')!
+      .trigger('click');
+    await vi.waitFor(() => expect(quality.listScorecards).toHaveBeenCalledTimes(2));
+
+    expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('false');
+    expect(wrapper.text()).toContain('Карта качества');
+    refresh.resolve([scorecard()]);
   });
 
   it('discards a late sampling policy after the project changes', async () => {
@@ -146,13 +169,12 @@ describe('SupportQualityRegistryPage hardening', () => {
 
     state.auth!.project = {
       id: 'project-2',
-      effectivePermissionCodes: [
-        'project.support.quality.read',
-        'project.support.quality.manage',
-      ],
+      effectivePermissionCodes: ['project.support.quality.read', 'project.support.quality.manage'],
     };
     pending.resolve({ id: 'policy-project-1' });
-    await vi.waitFor(() => expect(quality.listScorecards).toHaveBeenCalledWith('project-2', expect.any(AbortSignal)));
+    await vi.waitFor(() =>
+      expect(quality.listScorecards).toHaveBeenCalledWith('project-2', expect.any(AbortSignal)),
+    );
 
     expect(wrapper.text()).not.toContain('Политика выборки создана');
     expect(wrapper.text()).not.toContain('policy-project-1');
@@ -191,12 +213,18 @@ describe('SupportQualityRegistryPage hardening', () => {
     });
 
     const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
-    await vi.waitFor(() => expect(wrapper.find('.loading').exists()).toBe(false));
+    await vi.waitFor(() =>
+      expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('false'),
+    );
     expect(wrapper.text()).toContain('Марина Соколова');
     expect(wrapper.text()).toContain('Технические сведения');
     expect(wrapper.text()).not.toContain('calibration-1');
     expect(wrapper.text()).not.toContain('v3');
-    await wrapper.get('input[placeholder="Технический идентификатор проверки"]').setValue('review-1');
+    wrapper
+      .findAllComponents({ name: 'Select' })
+      .find((component) => component.attributes('aria-label') === 'Эталонная проверка')!
+      .vm.$emit('update:modelValue', 'review-1');
+    await wrapper.vm.$nextTick();
     await wrapper
       .findAll('button')
       .find((button) => button.text() === 'Закрепить эталон')!
@@ -211,9 +239,7 @@ describe('SupportQualityRegistryPage hardening', () => {
     const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
     await vi.waitFor(() => expect(wrapper.text()).toContain('Карта качества'));
     const action = () =>
-      wrapper
-        .findAll('button')
-        .find((button) => button.text() === 'Создать новую ревизию')!;
+      wrapper.findAll('button').find((button) => button.text() === 'Создать новую ревизию')!;
 
     await action().trigger('click');
 
@@ -254,10 +280,45 @@ describe('SupportQualityRegistryPage hardening', () => {
     quality.listCalibrations.mockResolvedValue({ items: [], nextCursor: null });
 
     const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
-    await vi.waitFor(() => expect(wrapper.find('.loading').exists()).toBe(false));
+    await vi.waitFor(() =>
+      expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('false'),
+    );
 
     expect(wrapper.get('#calibrations-empty-title').text()).toBe('Калибровок пока нет');
     expect(wrapper.text()).toContain('Контроль качества работает');
     expect(wrapper.get('.calibration-empty__link').text()).toBe('Открыть очередь проверок');
+  });
+
+  it('does not expose raw case and conversation inputs without a safe selector contract', async () => {
+    state.route.name = 'support-quality-calibrations';
+    quality.listCalibrations.mockResolvedValue({
+      items: [
+        {
+          id: 'calibration-1',
+          state: 'OPEN',
+          version: 1,
+          operatorCmsUserId: 'operator-1',
+          minimumReviews: 2,
+          peerVisibility: 'AFTER_CLOSE',
+        },
+      ],
+      nextCursor: null,
+    });
+
+    const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
+    await vi.waitFor(() =>
+      expect(wrapper.get('.page-loading-swap').attributes('aria-busy')).toBe('false'),
+    );
+
+    expect(wrapper.text()).toContain('Новая калибровка');
+    expect(wrapper.text()).toContain('Создать');
+    expect(quality.listCalibrationCandidates).toHaveBeenCalledWith(
+      'project-1',
+      undefined,
+      undefined,
+      expect.any(AbortSignal),
+    );
+    expect(wrapper.text()).not.toContain('Идентификатор кейса');
+    expect(wrapper.text()).not.toContain('Идентификатор диалога');
   });
 });

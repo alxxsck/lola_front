@@ -1,5 +1,6 @@
 import {
   reportingCatalogRead,
+  reportingQueryDrilldownRead,
   reportingQueryResultRead,
   reportingQueryRunCreate,
   reportingQueryValidate,
@@ -8,6 +9,8 @@ import type {
   ReportingCatalogDatasetDto,
   ReportingCatalogResponseDto,
   ReportingMetricCellDto,
+  ReportingDrilldownPageResponseDto,
+  ReportingQueryDrilldownReadParams,
   ReportingQueryDefinitionDto,
   ReportingQueryEstimateResponseDto,
   ReportingQueryResultResponseDto,
@@ -30,6 +33,12 @@ export interface SupportAnalyticsSource {
     signal?: AbortSignal,
     highCostConfirmed?: boolean,
   ): Promise<ReportingQueryResultResponseDto>;
+  drilldown(
+    projectId: string,
+    runId: string,
+    params: ReportingQueryDrilldownReadParams,
+    signal?: AbortSignal,
+  ): Promise<ReportingDrilldownPageResponseDto>;
 }
 
 export class HighCostConfirmationRequiredError extends Error {
@@ -149,6 +158,18 @@ export const supportAnalyticsApiSource: SupportAnalyticsSource = {
       throw new Error('Расчёт продолжается дольше минуты. Повторите чтение результата позже.');
     } catch (cause) {
       if (cause instanceof HighCostConfirmationRequiredError) throw cause;
+      throw normalizeApiError(cause);
+    }
+  },
+  async drilldown(projectId, runId, params, signal) {
+    try {
+      return await reportingQueryDrilldownRead(
+        projectId,
+        runId,
+        params,
+        signal ? { signal } : undefined,
+      );
+    } catch (cause) {
       throw normalizeApiError(cause);
     }
   },
@@ -360,6 +381,19 @@ const mockSource: SupportAnalyticsSource = {
         suppressedCellCount: 0,
         excludedCellCount: 0,
       },
+    };
+  },
+  async drilldown(_projectId, runId, params) {
+    return {
+      breadcrumb: {
+        metricCode: params.metricCode,
+        subjectKind: params.metricCode.startsWith('quality_') ? 'REVIEW' : 'CASE',
+        dimensionCode: params.dimensionCode ?? null,
+        dimensionValue: params.dimensionValue ?? null,
+      },
+      items: [],
+      nextCursor: null,
+      reset: { runId, metricCode: params.metricCode },
     };
   },
 };

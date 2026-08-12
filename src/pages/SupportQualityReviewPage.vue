@@ -12,6 +12,8 @@ import { useAuthStore } from '@/features/auth/auth.store';
 import { supportOperatorPresentationSource } from '@/features/support-quality/api/support-operator-presentation-source';
 import { supportQualitySource } from '@/features/support-quality/api/support-quality-source';
 import { ApiError } from '@/shared/api/http/api-error';
+import PageLoadingSwap from '@/shared/ui/PageLoadingSwap.vue';
+import SupportDataWorkbenchSkeleton from '@/features/support-quality/ui/SupportDataWorkbenchSkeleton.vue';
 import type {
   SupportQualityEvidenceExcerptResponseDto,
   SupportQualityReviewBootstrapResponseDto,
@@ -25,6 +27,7 @@ const router = useRouter();
 const review = ref<SupportQualityReviewDetailResponseDto | null>(null);
 const bootstrap = ref<SupportQualityReviewBootstrapResponseDto | null>(null);
 const loading = ref(true);
+const initialLoading = ref(true);
 const saving = ref(false);
 const error = ref('');
 const success = ref('');
@@ -40,6 +43,7 @@ const fieldErrors = reactive<
 >({});
 let controller: AbortController | null = null;
 let scopeGeneration = 0;
+let reviewUiScope = '';
 function mutationScope() {
   return {
     projectId: projectId.value,
@@ -111,6 +115,26 @@ async function handleMutationFailure(
   preserveDraft = false,
 ): Promise<void> {
   if (!scopeIsCurrent(scope)) return;
+  if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+    controller?.abort();
+    scopeGeneration += 1;
+    clearProtectedState();
+    draft.summary = '';
+    draft.scores = [];
+    draft.evidence = [];
+    operatorName.value = 'Участник проекта';
+    evidenceChoice.value = '';
+    excerptLoading.value = '';
+    dialog.value = null;
+    dialogText.value = '';
+    diagnosticsOpen.value = false;
+    saving.value = false;
+    success.value = '';
+    loading.value = false;
+    error.value = 'Оценка недоступна. Полномочия и состояние проекта обновляются.';
+    void auth.refreshContext().catch(() => undefined);
+    return;
+  }
   if (cause instanceof ApiError && cause.status === 409) {
     if (captureFieldErrors(cause)) {
       error.value = 'Проверьте отмеченные поля перед продолжением.';
@@ -250,14 +274,22 @@ async function load(): Promise<void> {
   const scopeProjectId = projectId.value;
   const scopeActorId = auth.user?.id ?? '';
   const scopePermissions = permissions.value.join(',');
-  clearProtectedState();
-  operatorName.value = 'Участник проекта';
-  diagnosticsOpen.value = false;
-  saving.value = false;
-  dialog.value = null;
-  dialogText.value = '';
+  const nextUiScope = `${scopeProjectId}\u0000${scopeActorId}\u0000${scopePermissions}\u0000${id}`;
+  const uiScopeChanged = reviewUiScope !== nextUiScope;
+  reviewUiScope = nextUiScope;
+  if (uiScopeChanged) {
+    initialLoading.value = true;
+    clearProtectedState();
+    operatorName.value = 'Участник проекта';
+    diagnosticsOpen.value = false;
+    saving.value = false;
+    dialog.value = null;
+    dialogText.value = '';
+  }
   if (!scopeProjectId || !id || !canAccess.value) {
     review.value = null;
+    loading.value = false;
+    initialLoading.value = false;
     return;
   }
   loading.value = true;
@@ -290,7 +322,10 @@ async function load(): Promise<void> {
     if (!signal.aborted && generation === scopeGeneration)
       error.value = cause instanceof Error ? cause.message : 'Оценка не найдена';
   } finally {
-    if (!signal.aborted && generation === scopeGeneration) loading.value = false;
+    if (!signal.aborted && generation === scopeGeneration) {
+      loading.value = false;
+      initialLoading.value = false;
+    }
   }
 }
 
@@ -490,454 +525,460 @@ onBeforeUnmount(() => controller?.abort());
 </script>
 
 <template>
-  <main class="review-page" aria-labelledby="review-title">
-    <header class="review-header">
-      <Button
-        label="К очереди"
-        icon="pi pi-arrow-left"
-        text
-        severity="secondary"
-        @click="router.push('/support/quality')"
-      />
-      <div v-if="review" class="review-heading">
-        <div>
-          <span class="eyebrow">Оценка качества</span>
-          <h1 id="review-title">Кейс {{ review.caseId }}</h1>
-          <p>{{ operatorName }} · {{ selectionReasonLabel(review.selectionReasonCode) }}</p>
-        </div>
-        <div class="review-heading-actions">
-          <Tag
-            :value="
-              review.state === 'DRAFT'
-                ? 'Черновик'
-                : review.state === 'SUBMITTED'
-                  ? 'Отправлена'
-                  : 'Аннулирована'
-            "
-            :severity="
-              review.state === 'DRAFT'
-                ? 'secondary'
-                : review.state === 'SUBMITTED'
-                  ? 'success'
-                  : 'danger'
-            "
-          />
-          <Button
-            label="Технические сведения"
-            icon="pi pi-info-circle"
-            text
-            severity="secondary"
-            @click="diagnosticsOpen = true"
-          />
-        </div>
-      </div>
-    </header>
-    <div v-if="error" class="notice error" role="alert">{{ error }}</div>
-    <div v-if="success" class="notice success" role="status">{{ success }}</div>
-    <div v-if="loading" class="loading-state">
-      <i class="pi pi-spin pi-spinner" /> Загружаем оценку…
-    </div>
-    <template v-else-if="review">
-      <section class="review-spine" aria-label="Итог оценки">
-        <div>
-          <span>Результат сервера</span
-          ><strong>{{ publishedPercent === null ? '—' : `${publishedPercent}%` }}</strong
-          ><small>{{
-            publishedPercent === null
-              ? 'появится после отправки'
-              : `${review.totalScore} из ${review.maximumScore}`
-          }}</small>
-        </div>
-        <div>
-          <span>Критический итог</span
-          ><strong class="compact">{{
-            review.criticalFailureOutcome === 'NONE' ? 'Нет' : review.criticalFailureOutcome
-          }}</strong
-          ><small>согласно ревизии карты</small>
-        </div>
-        <div>
-          <span>Доказательства</span><strong>{{ draft.evidence.length }}</strong
-          ><small>закреплённых сообщений</small>
-        </div>
-        <div>
-          <span>Состояние данных</span><strong class="compact">Актуально</strong
-          ><small>сверено с сервером</small>
-        </div>
-      </section>
-      <div class="review-layout">
-        <section class="surface score-editor" aria-labelledby="criteria-title">
-          <div class="surface-title">
-            <div>
-              <h2 id="criteria-title">Критерии оценки</h2>
-              <p>Неприменимые пункты исключаются из знаменателя.</p>
-            </div>
+  <PageLoadingSwap :loading="initialLoading">
+    <template #loading><SupportDataWorkbenchSkeleton kind="review" /></template>
+    <main class="review-page" aria-labelledby="review-title">
+      <header class="review-header">
+        <Button
+          label="К очереди"
+          icon="pi pi-arrow-left"
+          text
+          severity="secondary"
+          @click="router.push('/support/quality')"
+        />
+        <div v-if="review" class="review-heading">
+          <div>
+            <span class="eyebrow">Оценка качества</span>
+            <h1 id="review-title">Проверка обращения</h1>
+            <p>{{ operatorName }} · {{ selectionReasonLabel(review.selectionReasonCode) }}</p>
           </div>
-          <section
-            v-for="section in bootstrap?.scorecard.sections ?? []"
-            :key="section.code"
-            class="score-section"
-          >
-            <header class="score-section-heading">
+          <div class="review-heading-actions">
+            <Tag
+              :value="
+                review.state === 'DRAFT'
+                  ? 'Черновик'
+                  : review.state === 'SUBMITTED'
+                    ? 'Отправлена'
+                    : 'Аннулирована'
+              "
+              :severity="
+                review.state === 'DRAFT'
+                  ? 'secondary'
+                  : review.state === 'SUBMITTED'
+                    ? 'success'
+                    : 'danger'
+              "
+            />
+            <Button
+              label="Технические сведения"
+              icon="pi pi-info-circle"
+              text
+              severity="secondary"
+              @click="diagnosticsOpen = true"
+            />
+          </div>
+        </div>
+      </header>
+      <div v-if="error" class="notice error" role="alert">{{ error }}</div>
+      <div v-if="success" class="notice success" role="status">{{ success }}</div>
+      <div v-if="initialLoading" class="loading-state">
+        <i class="pi pi-spin pi-spinner" /> Загружаем оценку…
+      </div>
+      <template v-else-if="review">
+        <section class="review-spine" aria-label="Итог оценки">
+          <div>
+            <span>Результат сервера</span
+            ><strong>{{ publishedPercent === null ? '—' : `${publishedPercent}%` }}</strong
+            ><small>{{
+              publishedPercent === null
+                ? 'появится после отправки'
+                : `${review.totalScore} из ${review.maximumScore}`
+            }}</small>
+          </div>
+          <div>
+            <span>Критический итог</span
+            ><strong class="compact">{{
+              review.criticalFailureOutcome === 'NONE' ? 'Нет' : review.criticalFailureOutcome
+            }}</strong
+            ><small>согласно ревизии карты</small>
+          </div>
+          <div>
+            <span>Доказательства</span><strong>{{ draft.evidence.length }}</strong
+            ><small>закреплённых сообщений</small>
+          </div>
+          <div>
+            <span>Состояние данных</span><strong class="compact">Актуально</strong
+            ><small>сверено с сервером</small>
+          </div>
+        </section>
+        <div class="review-layout">
+          <section class="surface score-editor" aria-labelledby="criteria-title">
+            <div class="surface-title">
               <div>
-                <h3>{{ section.name }}</h3>
-                <p>{{ section.description }}</p>
+                <h2 id="criteria-title">Критерии оценки</h2>
+                <p>Неприменимые пункты исключаются из знаменателя.</p>
               </div>
-              <Tag :value="`${section.sectionWeightBasisPoints / 100}%`" severity="secondary" />
-              <span class="semantic-label">{{ section.sectionWeightBasisPoints / 100 }}%</span>
-            </header>
-            <article
-              v-for="(criterion, index) in section.criteria"
-              :key="criterion.code"
-              class="criterion"
-              :class="{ disabled: draftScore(criterion.code)?.applicable === false }"
+            </div>
+            <section
+              v-for="section in bootstrap?.scorecard.sections ?? []"
+              :key="section.code"
+              class="score-section"
             >
-              <template
-                v-for="item in [draftScore(criterion.code)]"
-                :key="`${section.code}:${item?.itemCode ?? criterion.code}`"
+              <header class="score-section-heading">
+                <div>
+                  <h3>{{ section.name }}</h3>
+                  <p>{{ section.description }}</p>
+                </div>
+                <Tag :value="`${section.sectionWeightBasisPoints / 100}%`" severity="secondary" />
+                <span class="semantic-label">{{ section.sectionWeightBasisPoints / 100 }}%</span>
+              </header>
+              <article
+                v-for="(criterion, index) in section.criteria"
+                :key="criterion.code"
+                class="criterion"
+                :class="{ disabled: draftScore(criterion.code)?.applicable === false }"
               >
-                <template v-if="item">
-                  <div class="criterion-heading">
-                    <div>
-                      <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                <template
+                  v-for="item in [draftScore(criterion.code)]"
+                  :key="`${section.code}:${item?.itemCode ?? criterion.code}`"
+                >
+                  <template v-if="item">
+                    <div class="criterion-heading">
                       <div>
-                        <h3>{{ criterion.label }}</h3>
-                        <div class="criterion-tags">
-                          <Tag :value="scaleLabel(criterion.ratingScale)" severity="secondary" />
-                          <span class="semantic-label">{{
-                            scaleLabel(criterion.ratingScale)
-                          }}</span>
-                          <Tag
-                            v-if="criterion.criticalFailure"
-                            value="Критический критерий"
-                            severity="danger"
-                          />
-                          <span v-if="criterion.criticalFailure" class="semantic-label">
-                            Критический критерий
-                          </span>
+                        <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                        <div>
+                          <h3>{{ criterion.label }}</h3>
+                          <div class="criterion-tags">
+                            <Tag :value="scaleLabel(criterion.ratingScale)" severity="secondary" />
+                            <span class="semantic-label">{{
+                              scaleLabel(criterion.ratingScale)
+                            }}</span>
+                            <Tag
+                              v-if="criterion.criticalFailure"
+                              value="Критический критерий"
+                              severity="danger"
+                            />
+                            <span v-if="criterion.criticalFailure" class="semantic-label">
+                              Критический критерий
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <label
+                        ><input
+                          v-model="item.applicable"
+                          type="checkbox"
+                          :disabled="!isDraft || !canReview || !criterion.allowNotApplicable"
+                        />
+                        Применим</label
+                      >
                     </div>
-                    <label
-                      ><input
-                        v-model="item.applicable"
-                        type="checkbox"
-                        :disabled="!isDraft || !canReview || !criterion.allowNotApplicable"
-                      />
-                      Применим</label
-                    >
-                  </div>
-                  <p class="criterion-guidance">{{ criterion.guidance }}</p>
-                  <div class="criterion-fields">
-                    <label
-                      >Баллы
-                      <InputNumber
-                        v-model="item.score"
-                        :min="0"
-                        :max="item.maximumScore"
-                        :disabled="!isDraft || !item.applicable || !canReview"
-                        :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.score`))"
-                        show-buttons
-                      />
-                      <small
-                        v-if="fieldMessage(`scores.${item.itemCode}.score`)"
-                        class="field-error"
+                    <p class="criterion-guidance">{{ criterion.guidance }}</p>
+                    <div class="criterion-fields">
+                      <label
+                        >Баллы
+                        <InputNumber
+                          v-model="item.score"
+                          :min="0"
+                          :max="item.maximumScore"
+                          :disabled="!isDraft || !item.applicable || !canReview"
+                          :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.score`))"
+                          show-buttons
+                        />
+                        <small
+                          v-if="fieldMessage(`scores.${item.itemCode}.score`)"
+                          class="field-error"
+                        >
+                          {{ fieldMessage(`scores.${item.itemCode}.score`) }}
+                        </small></label
+                      ><span class="maximum">из {{ item.maximumScore }}</span
+                      ><label class="feedback"
+                        >Комментарий
+                        <InputText
+                          v-model="item.feedback"
+                          :disabled="!isDraft || !canReview"
+                          placeholder="Что было хорошо и что улучшить"
+                      /></label>
+                      <label
+                        >Причина
+                        <Select
+                          v-model="item.rootCause"
+                          :options="bootstrap?.rootCauseOptions ?? []"
+                          option-label="label"
+                          option-value="code"
+                          show-clear
+                          :disabled="!isDraft || !canReview"
+                          :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.rootCause`))"
+                          placeholder="Выберите причину"
+                        />
+                        <small
+                          v-if="fieldMessage(`scores.${item.itemCode}.rootCause`)"
+                          class="field-error"
+                        >
+                          {{ fieldMessage(`scores.${item.itemCode}.rootCause`) }}
+                        </small></label
                       >
-                        {{ fieldMessage(`scores.${item.itemCode}.score`) }}
-                      </small></label
-                    ><span class="maximum">из {{ item.maximumScore }}</span
-                    ><label class="feedback"
-                      >Комментарий
-                      <InputText
-                        v-model="item.feedback"
-                        :disabled="!isDraft || !canReview"
-                        placeholder="Что было хорошо и что улучшить"
-                    /></label>
-                    <label
-                      >Причина
-                      <Select
-                        v-model="item.rootCause"
-                        :options="bootstrap?.rootCauseOptions ?? []"
-                        option-label="label"
-                        option-value="code"
-                        show-clear
-                        :disabled="!isDraft || !canReview"
-                        :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.rootCause`))"
-                        placeholder="Выберите причину"
-                      />
-                      <small
-                        v-if="fieldMessage(`scores.${item.itemCode}.rootCause`)"
-                        class="field-error"
+                      <label
+                        >Тема развития
+                        <Select
+                          v-model="item.coachingTheme"
+                          :options="bootstrap?.coachingThemeOptions ?? []"
+                          option-label="label"
+                          option-value="code"
+                          show-clear
+                          :disabled="!isDraft || !canReview"
+                          :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.coachingTheme`))"
+                          placeholder="Выберите тему"
+                        />
+                        <small
+                          v-if="fieldMessage(`scores.${item.itemCode}.coachingTheme`)"
+                          class="field-error"
+                        >
+                          {{ fieldMessage(`scores.${item.itemCode}.coachingTheme`) }}
+                        </small></label
                       >
-                        {{ fieldMessage(`scores.${item.itemCode}.rootCause`) }}
-                      </small></label
-                    >
-                    <label
-                      >Тема развития
-                      <Select
-                        v-model="item.coachingTheme"
-                        :options="bootstrap?.coachingThemeOptions ?? []"
-                        option-label="label"
-                        option-value="code"
-                        show-clear
-                        :disabled="!isDraft || !canReview"
-                        :invalid="Boolean(fieldMessage(`scores.${item.itemCode}.coachingTheme`))"
-                        placeholder="Выберите тему"
-                      />
-                      <small
-                        v-if="fieldMessage(`scores.${item.itemCode}.coachingTheme`)"
-                        class="field-error"
-                      >
-                        {{ fieldMessage(`scores.${item.itemCode}.coachingTheme`) }}
-                      </small></label
-                    >
-                  </div>
+                    </div>
+                  </template>
                 </template>
-              </template>
-            </article>
+              </article>
+            </section>
           </section>
-        </section>
-        <aside class="review-aside">
-          <section class="surface">
-            <div class="surface-title">
-              <div>
-                <h2>Доказательства</h2>
-                <p>Сообщения закрепляются по ревизии.</p>
+          <aside class="review-aside">
+            <section class="surface">
+              <div class="surface-title">
+                <div>
+                  <h2>Доказательства</h2>
+                  <p>Сообщения закрепляются по ревизии.</p>
+                </div>
+                <RouterLink
+                  :to="{ name: 'support-inbox-case', params: { caseId: review.caseId } }"
+                  class="case-link"
+                  >Открыть кейс</RouterLink
+                >
               </div>
-              <RouterLink
-                :to="{ name: 'support-inbox-case', params: { caseId: review.caseId } }"
-                class="case-link"
-                >Открыть кейс</RouterLink
-              >
-            </div>
-            <div v-if="isDraft && canReview" class="evidence-picker">
-              <Select
-                v-model="evidenceChoice"
-                :options="
-                  (bootstrap?.evidenceOptions ?? []).filter(
-                    (option) => !draft.evidence.some((item) => item.messageId === option.messageId),
-                  )
-                "
-                option-label="ordinal"
-                option-value="messageId"
-                placeholder="Выберите сообщение"
-                aria-label="Сообщение для доказательства"
-              >
-                <template #option="slotProps">{{
-                  evidenceOptionLabel(slotProps.option.messageId)
-                }}</template>
-              </Select>
-              <Button
-                label="Добавить"
-                icon="pi pi-plus"
-                :disabled="!evidenceChoice"
-                @click="addEvidence(evidenceChoice)"
+              <div v-if="isDraft && canReview" class="evidence-picker">
+                <Select
+                  v-model="evidenceChoice"
+                  :options="
+                    (bootstrap?.evidenceOptions ?? []).filter(
+                      (option) =>
+                        !draft.evidence.some((item) => item.messageId === option.messageId),
+                    )
+                  "
+                  option-label="ordinal"
+                  option-value="messageId"
+                  placeholder="Выберите сообщение"
+                  aria-label="Сообщение для доказательства"
+                >
+                  <template #option="slotProps">{{
+                    evidenceOptionLabel(slotProps.option.messageId)
+                  }}</template>
+                </Select>
+                <Button
+                  label="Добавить"
+                  icon="pi pi-plus"
+                  :disabled="!evidenceChoice"
+                  @click="addEvidence(evidenceChoice)"
+                />
+              </div>
+              <div class="evidence-list">
+                <div v-for="(item, index) in draft.evidence" :key="index" class="evidence">
+                  <div class="evidence-heading">
+                    <strong>{{ evidenceOptionLabel(item.messageId) }}</strong>
+                    <small>Закреплённая ревизия</small>
+                  </div>
+                  <label
+                    >Почему важно<Textarea
+                      v-model="item.rationale"
+                      :disabled="!isDraft || !canReview"
+                      rows="2"
+                  /></label>
+                  <div v-if="excerpts[item.messageId]" class="evidence-excerpt">
+                    {{ excerpts[item.messageId]?.excerpt }}
+                    <small v-if="excerpts[item.messageId]?.truncated">Фрагмент сокращён</small>
+                  </div>
+                  <Button
+                    v-else
+                    label="Показать фрагмент"
+                    icon="pi pi-eye"
+                    text
+                    :loading="excerptLoading === item.messageId"
+                    @click="loadExcerpt(item.messageId)"
+                  />
+                  <Button
+                    v-if="isDraft && canReview"
+                    icon="pi pi-trash"
+                    text
+                    severity="danger"
+                    size="small"
+                    label="Убрать"
+                    class="evidence-remove"
+                    @click="removeEvidence(index)"
+                  />
+                </div>
+                <p v-if="!draft.evidence.length" class="empty-copy">
+                  Добавьте хотя бы одно сообщение перед отправкой.
+                </p>
+                <small v-if="fieldMessage('evidence')" class="field-error">
+                  {{ fieldMessage('evidence') }}
+                </small>
+              </div>
+            </section>
+            <section class="surface summary">
+              <div class="surface-title">
+                <div>
+                  <h2>Итоговая обратная связь</h2>
+                  <p>Коротко, конкретно и по действиям.</p>
+                </div>
+              </div>
+              <Textarea
+                v-model="draft.summary"
+                rows="5"
+                :disabled="!isDraft || !canReview"
+                placeholder="Итог оценки и следующий шаг"
               />
-            </div>
-            <div class="evidence-list">
-              <div v-for="(item, index) in draft.evidence" :key="index" class="evidence">
-                <div class="evidence-heading">
-                  <strong>{{ evidenceOptionLabel(item.messageId) }}</strong>
-                  <small>Закреплённая ревизия</small>
+            </section>
+            <section
+              v-if="review.state === 'SUBMITTED' && canSelfRead"
+              class="surface feedback-actions"
+            >
+              <div class="surface-title">
+                <div>
+                  <h2>Ответ оператора</h2>
+                  <p>Подтвердите получение или откройте апелляцию.</p>
                 </div>
-                <label
-                  >Почему важно<Textarea
-                    v-model="item.rationale"
-                    :disabled="!isDraft || !canReview"
-                    rows="2"
-                /></label>
-                <div v-if="excerpts[item.messageId]" class="evidence-excerpt">
-                  {{ excerpts[item.messageId]?.excerpt }}
-                  <small v-if="excerpts[item.messageId]?.truncated">Фрагмент сокращён</small>
+              </div>
+              <Button
+                v-if="review.acknowledgmentState === 'PENDING'"
+                label="Подтвердить"
+                icon="pi pi-check"
+                @click="acknowledge"
+              /><Button
+                label="Ответить"
+                severity="secondary"
+                outlined
+                @click="dialog = 'reply'"
+              /><Button
+                v-if="canDispute"
+                label="Открыть апелляцию"
+                severity="danger"
+                text
+                @click="dialog = 'dispute'"
+              />
+            </section>
+            <section v-if="review.disputes.length" class="surface dispute-history">
+              <div class="surface-title">
+                <div>
+                  <h2>История апелляций</h2>
+                  <p>Решение не переписывает оценку.</p>
                 </div>
-                <Button
-                  v-else
-                  label="Показать фрагмент"
-                  icon="pi pi-eye"
-                  text
-                  :loading="excerptLoading === item.messageId"
-                  @click="loadExcerpt(item.messageId)"
-                />
-                <Button
-                  v-if="isDraft && canReview"
-                  icon="pi pi-trash"
-                  text
-                  severity="danger"
-                  size="small"
-                  label="Убрать"
-                  class="evidence-remove"
-                  @click="removeEvidence(index)"
-                />
               </div>
-              <p v-if="!draft.evidence.length" class="empty-copy">
-                Добавьте хотя бы одно сообщение перед отправкой.
-              </p>
-              <small v-if="fieldMessage('evidence')" class="field-error">
-                {{ fieldMessage('evidence') }}
-              </small>
-            </div>
-          </section>
-          <section class="surface summary">
-            <div class="surface-title">
-              <div>
-                <h2>Итоговая обратная связь</h2>
-                <p>Коротко, конкретно и по действиям.</p>
+              <article v-for="item in review.disputes" :key="item.id">
+                <span
+                  ><Tag
+                    :value="disputeStateLabel(item.state)"
+                    :severity="item.state === 'OPEN' ? 'warn' : 'secondary'"
+                  />{{ item.reason }}</span
+                >
+                <Button
+                  v-if="item.state === 'OPEN' && item.openedByCmsUserId === auth.user?.id"
+                  label="Отозвать"
+                  text
+                  severity="secondary"
+                  :loading="saving"
+                  @click="withdrawDispute(item)"
+                />
+              </article>
+            </section>
+            <section v-if="canManage && review.state !== 'VOID'" class="surface feedback-actions">
+              <div class="surface-title">
+                <div>
+                  <h2>Административное действие</h2>
+                  <p>Аннулирование сохраняет историю и требует причины.</p>
+                </div>
               </div>
-            </div>
-            <Textarea
-              v-model="draft.summary"
-              rows="5"
-              :disabled="!isDraft || !canReview"
-              placeholder="Итог оценки и следующий шаг"
-            />
-          </section>
-          <section
-            v-if="review.state === 'SUBMITTED' && canSelfRead"
-            class="surface feedback-actions"
+              <Button label="Аннулировать оценку" severity="danger" text @click="dialog = 'void'" />
+            </section>
+          </aside>
+        </div>
+        <footer v-if="isDraft && canReview" class="sticky-actions">
+          <span
+            ><strong>{{ completedCriteria }} / {{ draft.scores.length }}</strong> критериев ·
+            {{ draft.evidence.length }} доказательств · итог рассчитает сервер</span
           >
-            <div class="surface-title">
-              <div>
-                <h2>Ответ оператора</h2>
-                <p>Подтвердите получение или откройте апелляцию.</p>
-              </div>
-            </div>
+          <div>
             <Button
-              v-if="review.acknowledgmentState === 'PENDING'"
-              label="Подтвердить"
-              icon="pi pi-check"
-              @click="acknowledge"
-            /><Button
-              label="Ответить"
+              label="Сохранить"
               severity="secondary"
               outlined
-              @click="dialog = 'reply'"
+              :loading="saving"
+              @click="save"
             /><Button
-              v-if="canDispute"
-              label="Открыть апелляцию"
-              severity="danger"
-              text
-              @click="dialog = 'dispute'"
+              label="Отправить оператору"
+              icon="pi pi-send"
+              :disabled="!canSubmit"
+              :loading="saving"
+              @click="submit"
             />
-          </section>
-          <section v-if="review.disputes.length" class="surface dispute-history">
-            <div class="surface-title">
-              <div>
-                <h2>История апелляций</h2>
-                <p>Решение не переписывает оценку.</p>
-              </div>
-            </div>
-            <article v-for="item in review.disputes" :key="item.id">
-              <span
-                ><Tag
-                  :value="disputeStateLabel(item.state)"
-                  :severity="item.state === 'OPEN' ? 'warn' : 'secondary'"
-                />{{ item.reason }}</span
-              >
-              <Button
-                v-if="item.state === 'OPEN' && item.openedByCmsUserId === auth.user?.id"
-                label="Отозвать"
-                text
-                severity="secondary"
-                :loading="saving"
-                @click="withdrawDispute(item)"
-              />
-            </article>
-          </section>
-          <section v-if="canManage && review.state !== 'VOID'" class="surface feedback-actions">
-            <div class="surface-title">
-              <div>
-                <h2>Административное действие</h2>
-                <p>Аннулирование сохраняет историю и требует причины.</p>
-              </div>
-            </div>
-            <Button label="Аннулировать оценку" severity="danger" text @click="dialog = 'void'" />
-          </section>
-        </aside>
-      </div>
-      <footer v-if="isDraft && canReview" class="sticky-actions">
-        <span
-          ><strong>{{ completedCriteria }} / {{ draft.scores.length }}</strong> критериев ·
-          {{ draft.evidence.length }} доказательств · итог рассчитает сервер</span
-        >
-        <div>
-          <Button
-            label="Сохранить"
-            severity="secondary"
-            outlined
-            :loading="saving"
-            @click="save"
-          /><Button
-            label="Отправить оператору"
-            icon="pi pi-send"
-            :disabled="!canSubmit"
-            :loading="saving"
-            @click="submit"
-          />
-        </div>
-      </footer>
-    </template>
-    <Dialog
-      :visible="dialog !== null"
-      modal
-      :header="
-        dialog === 'reply'
-          ? 'Ответить на оценку'
-          : dialog === 'void'
-            ? 'Аннулировать оценку'
-            : 'Открыть апелляцию'
-      "
-      :style="{ width: 'min(32rem, calc(100vw - 2rem))' }"
-      @update:visible="dialog = null"
-      ><Textarea
-        v-model="dialogText"
-        rows="5"
-        class="dialog-text"
-        :placeholder="
+          </div>
+        </footer>
+      </template>
+      <Dialog
+        :visible="dialog !== null"
+        modal
+        :header="
           dialog === 'reply'
-            ? 'Комментарий к обратной связи'
+            ? 'Ответить на оценку'
             : dialog === 'void'
-              ? 'Причина аннулирования'
-              : 'Что необходимо пересмотреть'
-        " /><template #footer
-        ><Button label="Отмена" text severity="secondary" @click="dialog = null" /><Button
-          :label="
+              ? 'Аннулировать оценку'
+              : 'Открыть апелляцию'
+        "
+        :style="{ width: 'min(32rem, calc(100vw - 2rem))' }"
+        @update:visible="dialog = null"
+        ><Textarea
+          v-model="dialogText"
+          rows="5"
+          class="dialog-text"
+          :placeholder="
             dialog === 'reply'
-              ? 'Отправить'
+              ? 'Комментарий к обратной связи'
               : dialog === 'void'
-                ? 'Аннулировать'
-                : 'Открыть апелляцию'
-          "
-          :severity="dialog === 'reply' ? undefined : 'danger'"
-          :disabled="!dialogText.trim()"
-          :loading="saving"
-          @click="sendDialog" /></template
-    ></Dialog>
-    <Dialog
-      v-if="review && diagnosticsOpen"
-      v-model:visible="diagnosticsOpen"
-      modal
-      header="Технические сведения"
-      :style="{ width: 'min(34rem, calc(100vw - 2rem))' }"
-    >
-      <dl class="diagnostics-list">
-        <div>
-          <dt>Оценка</dt>
-          <dd>{{ review.id }}</dd>
-        </div>
-        <div>
-          <dt>Оператор</dt>
-          <dd>{{ review.operatorCmsUserId }}</dd>
-        </div>
-        <div>
-          <dt>Версия данных</dt>
-          <dd>{{ review.version }}</dd>
-        </div>
-      </dl>
-    </Dialog>
-  </main>
+                ? 'Причина аннулирования'
+                : 'Что необходимо пересмотреть'
+          " /><template #footer
+          ><Button label="Отмена" text severity="secondary" @click="dialog = null" /><Button
+            :label="
+              dialog === 'reply'
+                ? 'Отправить'
+                : dialog === 'void'
+                  ? 'Аннулировать'
+                  : 'Открыть апелляцию'
+            "
+            :severity="dialog === 'reply' ? undefined : 'danger'"
+            :disabled="!dialogText.trim()"
+            :loading="saving"
+            @click="sendDialog" /></template
+      ></Dialog>
+      <Dialog
+        v-if="review && diagnosticsOpen"
+        v-model:visible="diagnosticsOpen"
+        modal
+        header="Технические сведения"
+        :style="{ width: 'min(34rem, calc(100vw - 2rem))' }"
+      >
+        <dl class="diagnostics-list">
+          <div>
+            <dt>Оценка</dt>
+            <dd>{{ review.id }}</dd>
+          </div>
+          <div>
+            <dt>Оператор</dt>
+            <dd>{{ review.operatorCmsUserId }}</dd>
+          </div>
+          <div>
+            <dt>Версия данных</dt>
+            <dd>{{ review.version }}</dd>
+          </div>
+        </dl>
+      </Dialog>
+    </main>
+  </PageLoadingSwap>
 </template>
 
 <style scoped>
 .review-page {
+  --p-text-muted-color: var(--p-slate-700);
+  --p-form-field-placeholder-color: var(--p-text-muted-color);
   max-width: 1500px;
   margin: 0 auto;
   padding: 20px 24px 96px;
@@ -950,6 +991,26 @@ onBeforeUnmount(() => controller?.abort());
 }
 .review-header :deep(.p-button) {
   justify-self: start;
+}
+.review-page :deep(.p-button-secondary.p-button-text) {
+  color: var(--p-text-muted-color);
+}
+.review-page :deep(.p-button:not(.p-button-secondary, .p-button-danger).p-button-text),
+.case-link {
+  color: color-mix(in srgb, var(--p-primary-color) 64%, var(--p-slate-950));
+}
+.review-page :deep(.p-button-danger),
+.review-page :deep(.p-button-danger.p-button-text) {
+  color: var(--p-red-800);
+}
+.review-page :deep(.p-tag-secondary) {
+  color: var(--p-text-muted-color);
+}
+.review-page :deep(.p-select-label.p-placeholder) {
+  color: var(--p-text-muted-color);
+}
+:global(.retenive-dark) .review-page {
+  --p-text-muted-color: var(--p-slate-300);
 }
 .review-heading {
   display: flex;
@@ -1088,7 +1149,7 @@ onBeforeUnmount(() => controller?.abort());
   border: 0;
 }
 .criterion.disabled {
-  opacity: 0.56;
+  opacity: 0.78;
 }
 .criterion-heading,
 .criterion-heading > div {

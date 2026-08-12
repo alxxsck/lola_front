@@ -9,6 +9,8 @@ import { useAuthStore } from '@/features/auth/auth.store';
 import { supportOperatorPresentationSource } from '@/features/support-quality/api/support-operator-presentation-source';
 import { supportQualitySource } from '@/features/support-quality/api/support-quality-source';
 import { qualityQueueAccess } from '@/features/support-quality/model/support-quality-permissions';
+import PageLoadingSwap from '@/shared/ui/PageLoadingSwap.vue';
+import SupportDataWorkbenchSkeleton from '@/features/support-quality/ui/SupportDataWorkbenchSkeleton.vue';
 import type {
   SupportQualityReviewResponseDto,
   SupportQualityTaskResponseDto,
@@ -190,6 +192,10 @@ async function claim(task: SupportQualityTaskResponseDto): Promise<void> {
   actingId.value = task.id;
   error.value = '';
   try {
+    if (task.draftReviewId) {
+      await router.push(`/support/quality/reviews/${task.draftReviewId}`);
+      return;
+    }
     const next = await supportQualitySource.claimTask(scopeProjectId, task);
     if (!inScope()) return;
     tasks.value = tasks.value.map((item) => (item.id === next.id ? next : item));
@@ -254,12 +260,14 @@ function dueLabel(value?: string | null): string {
   return `Осталось ${Math.max(1, Math.round(diff / 60_000))} мин`;
 }
 function taskStateLabel(state: string): string {
-  return {
-    READY: 'Готово к проверке',
-    CLAIMED: 'В работе',
-    COMPLETED: 'Завершено',
-    CANCELLED: 'Отменено',
-  }[state] ?? 'Неизвестно';
+  return (
+    {
+      READY: 'Готово к проверке',
+      CLAIMED: 'В работе',
+      COMPLETED: 'Завершено',
+      CANCELLED: 'Отменено',
+    }[state] ?? 'Неизвестно'
+  );
 }
 
 function score(review: SupportQualityReviewResponseDto): string {
@@ -277,194 +285,214 @@ onBeforeUnmount(() => controller?.abort());
 </script>
 
 <template>
-  <main class="quality-page" aria-labelledby="quality-title">
-    <header class="page-heading">
-      <div>
-        <span class="eyebrow">Качество поддержки</span>
-        <h1 id="quality-title">Контроль качества</h1>
-        <p>Очередь проверок, обратная связь операторам и единый след доказательств.</p>
+  <PageLoadingSwap :loading="loading">
+    <template #loading><SupportDataWorkbenchSkeleton kind="quality" /></template>
+    <main class="quality-page" aria-labelledby="quality-title">
+      <header class="page-heading">
+        <div>
+          <span class="eyebrow">Качество поддержки</span>
+          <h1 id="quality-title">Контроль качества</h1>
+          <p>Очередь проверок, обратная связь операторам и единый след доказательств.</p>
+        </div>
+        <nav class="section-nav" aria-label="Разделы контроля качества">
+          <RouterLink to="/support/quality" aria-current="page">Очередь</RouterLink>
+          <RouterLink to="/support/quality/scorecards">Карты оценки</RouterLink>
+          <RouterLink to="/support/quality/calibrations">Калибровки</RouterLink>
+          <RouterLink to="/support/quality/disputes">Апелляции</RouterLink>
+        </nav>
+      </header>
+
+      <div v-if="error" class="inline-alert" role="alert">
+        <i class="pi pi-exclamation-circle" />{{ error
+        }}<Button label="Повторить" text size="small" @click="load" />
       </div>
-      <nav class="section-nav" aria-label="Разделы контроля качества">
-        <RouterLink to="/support/quality" aria-current="page">Очередь</RouterLink>
-        <RouterLink to="/support/quality/scorecards">Карты оценки</RouterLink>
-        <RouterLink to="/support/quality/calibrations">Калибровки</RouterLink>
-        <RouterLink to="/support/quality/disputes">Апелляции</RouterLink>
-      </nav>
-    </header>
 
-    <div v-if="error" class="inline-alert" role="alert">
-      <i class="pi pi-exclamation-circle" />{{ error
-      }}<Button label="Повторить" text size="small" @click="load" />
-    </div>
+      <section class="health-spine" aria-label="Сводка качества">
+        <article>
+          <span>Готовы к проверке</span
+          ><strong>{{ tasks.filter(({ state }) => state === 'READY').length }}</strong
+          ><small>на загруженной странице</small>
+        </article>
+        <article :class="{ danger: overdueCount > 0 }">
+          <span>Требуют внимания</span><strong>{{ overdueCount }}</strong
+          ><small>на загруженной странице</small>
+        </article>
+        <article>
+          <span>Завершено</span><strong>{{ submittedCount }}</strong
+          ><small>на загруженной странице</small>
+        </article>
+        <article class="coverage-link">
+          <span>Покрытие выборки</span><strong class="compact">В аналитике</strong
+          ><small>Только по серверной метрике и её квитанции</small>
+          <RouterLink to="/support/analytics/quality">Открыть качество</RouterLink>
+        </article>
+      </section>
 
-    <section class="health-spine" aria-label="Сводка качества">
-      <article>
-        <span>Готовы к проверке</span
-        ><strong>{{ tasks.filter(({ state }) => state === 'READY').length }}</strong
-        ><small>на загруженной странице</small>
-      </article>
-      <article :class="{ danger: overdueCount > 0 }">
-        <span>Требуют внимания</span><strong>{{ overdueCount }}</strong
-        ><small>на загруженной странице</small>
-      </article>
-      <article>
-        <span>Завершено</span><strong>{{ submittedCount }}</strong
-        ><small>на загруженной странице</small>
-      </article>
-      <article class="coverage-link">
-        <span>Покрытие выборки</span><strong class="compact">В аналитике</strong
-        ><small>Только по серверной метрике и её квитанции</small>
-        <RouterLink to="/support/analytics/quality">Открыть качество</RouterLink>
-      </article>
-    </section>
-
-    <section class="workbench-grid">
-      <article class="surface queue-surface">
-        <div class="surface-header">
-          <div>
-            <h2>Очередь проверок</h2>
-            <p>Сначала просроченные и риск-выборка.</p>
-          </div>
-          <Select
-            v-model="taskState"
-            :options="[
-              { label: 'Все состояния', value: 'ALL' },
-              { label: 'Готовы', value: 'READY' },
-              { label: 'В работе', value: 'CLAIMED' },
-            ]"
-            option-label="label"
-            option-value="value"
-            aria-label="Состояние задания"
-          />
-        </div>
-        <div v-if="loading" class="skeleton-list">
-          <Skeleton v-for="n in 3" :key="n" height="5rem" />
-        </div>
-        <div v-else-if="!filteredTasks.length" class="empty-state">
-          <i class="pi pi-check-circle" />
-          <h3>Очередь разобрана</h3>
-          <p>Новых заданий по выбранному фильтру нет.</p>
-        </div>
-        <ul v-else class="record-list" aria-label="Задания контроля качества">
-          <li v-for="task in filteredTasks" :key="task.id" :data-state="task.state">
-            <div class="record-main">
-              <div>
-                <Tag
-                  :value="
-                    task.selectionReasonCode === 'RANDOM_SAMPLE'
-                      ? 'Случайная выборка'
-                      : 'Риск-выборка'
-                  "
-                  :severity="task.selectionReasonCode === 'RANDOM_SAMPLE' ? 'secondary' : 'warn'"
-                />
-                <h3>Кейс {{ task.caseId }}</h3>
-              </div>
-              <span
-                class="due"
-                :class="{
-                  overdue: task.dueAt && new Date(task.dueAt) < new Date(),
-                }"
-                >{{ dueLabel(task.dueAt) }}</span
-              >
+      <section class="workbench-grid">
+        <article class="surface queue-surface">
+          <div class="surface-header">
+            <div>
+              <h2>Очередь проверок</h2>
+              <p>Сначала просроченные и риск-выборка.</p>
             </div>
-            <dl>
-              <div>
-                <dt>Оператор</dt>
-                <dd>{{ operatorName(task.operatorCmsUserId) }}</dd>
-              </div>
-              <div>
-                <dt>Состояние</dt>
-                <dd>{{ taskStateLabel(task.state) }}</dd>
-              </div>
-            </dl>
-            <Button
-              v-if="task.state === 'READY' && canReview"
-              :loading="actingId === task.id"
-              label="Взять проверку"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
-              @click="claim(task)"
+            <Select
+              v-model="taskState"
+              :options="[
+                { label: 'Все состояния', value: 'ALL' },
+                { label: 'Готовы', value: 'READY' },
+                { label: 'В работе', value: 'CLAIMED' },
+              ]"
+              option-label="label"
+              option-value="value"
+              aria-label="Состояние задания"
             />
-            <Button
-              v-if="
-                task.state === 'CLAIMED' &&
-                task.assignedReviewerCmsUserId === auth.user?.id &&
-                canReview
-              "
-              label="Вернуть в очередь"
-              severity="secondary"
-              text
-              :loading="actingId === task.id"
-              @click="changeTask(task, 'release')"
-            />
-            <Button
-              v-if="canManage && !['COMPLETED', 'CANCELLED'].includes(task.state)"
-              label="Отменить задание"
-              class="queue-cancel"
-              severity="danger"
-              text
-              :loading="actingId === task.id"
-              @click="changeTask(task, 'cancel')"
-            />
-            <Button
-              v-if="reviews.some(({ taskId }) => taskId === task.id)"
-              label="Продолжить"
-              severity="secondary"
-              outlined
-              @click="
-                router.push(
-                  `/support/quality/reviews/${reviews.find(({ taskId }) => taskId === task.id)?.id}`,
-                )
-              "
-            />
-          </li>
-        </ul>
-        <Button
-          v-if="taskCursor"
-          label="Загрузить ещё"
-          severity="secondary"
-          text
-          @click="loadMore('tasks')"
-        />
-      </article>
-
-      <aside class="surface recent-surface">
-        <div class="surface-header">
-          <div>
-            <h2>Последние оценки</h2>
-            <p>Свежая обратная связь и ответы.</p>
           </div>
-        </div>
-        <ul class="review-list">
-          <li v-for="review in reviews.slice(0, 6)" :key="review.id">
-            <button type="button" @click="router.push(`/support/quality/reviews/${review.id}`)">
-              <span
-                ><strong>{{ score(review) }}</strong
-                ><small>{{ operatorName(review.operatorCmsUserId) }}</small></span
-              >
-              <span
-                ><Tag
-                  :value="review.state === 'DRAFT' ? 'Черновик' : 'Отправлена'"
-                  :severity="review.state === 'DRAFT' ? 'secondary' : 'success'" /><i
-                  class="pi pi-chevron-right"
-              /></span>
-            </button>
-          </li>
-        </ul>
-        <Button
-          v-if="reviewCursor"
-          label="Загрузить ещё"
-          severity="secondary"
-          text
-          @click="loadMore('reviews')"
-        />
-      </aside>
-    </section>
-  </main>
+          <div v-if="loading" class="skeleton-list">
+            <Skeleton v-for="n in 3" :key="n" height="5rem" />
+          </div>
+          <div v-else-if="!filteredTasks.length" class="empty-state">
+            <i class="pi pi-check-circle" />
+            <h3>Очередь разобрана</h3>
+            <p>Новых заданий по выбранному фильтру нет.</p>
+          </div>
+          <ul v-else class="record-list" aria-label="Задания контроля качества">
+            <li v-for="task in filteredTasks" :key="task.id" :data-state="task.state">
+              <div class="record-main">
+                <div>
+                  <Tag
+                    :value="
+                      task.selectionReasonCode === 'RANDOM_SAMPLE'
+                        ? 'Случайная выборка'
+                        : 'Риск-выборка'
+                    "
+                    :severity="task.selectionReasonCode === 'RANDOM_SAMPLE' ? 'secondary' : 'warn'"
+                  />
+                  <h3>Проверка обращения</h3>
+                </div>
+                <span
+                  class="due"
+                  :class="{
+                    overdue: task.dueAt && new Date(task.dueAt) < new Date(),
+                  }"
+                  >{{ dueLabel(task.dueAt) }}</span
+                >
+              </div>
+              <dl>
+                <div>
+                  <dt>Оператор</dt>
+                  <dd>{{ operatorName(task.operatorCmsUserId) }}</dd>
+                </div>
+                <div>
+                  <dt>Состояние</dt>
+                  <dd>{{ taskStateLabel(task.state) }}</dd>
+                </div>
+              </dl>
+              <Button
+                v-if="task.state === 'READY' && canReview"
+                :loading="actingId === task.id"
+                label="Взять проверку"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                @click="claim(task)"
+              />
+              <Button
+                v-if="
+                  task.state === 'CLAIMED' &&
+                  task.assignedReviewerCmsUserId === auth.user?.id &&
+                  task.draftReviewId &&
+                  canReview
+                "
+                label="Продолжить оценку"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                @click="router.push(`/support/quality/reviews/${task.draftReviewId}`)"
+              />
+              <Button
+                v-if="
+                  task.state === 'CLAIMED' &&
+                  task.assignedReviewerCmsUserId === auth.user?.id &&
+                  canReview
+                "
+                label="Вернуть в очередь"
+                severity="secondary"
+                text
+                :loading="actingId === task.id"
+                @click="changeTask(task, 'release')"
+              />
+              <Button
+                v-if="canManage && !['COMPLETED', 'CANCELLED'].includes(task.state)"
+                label="Отменить задание"
+                class="queue-cancel"
+                severity="danger"
+                text
+                :loading="actingId === task.id"
+                @click="changeTask(task, 'cancel')"
+              />
+              <Button
+                v-if="!task.draftReviewId && reviews.some(({ taskId }) => taskId === task.id)"
+                label="Продолжить"
+                severity="secondary"
+                outlined
+                @click="
+                  router.push(
+                    `/support/quality/reviews/${reviews.find(({ taskId }) => taskId === task.id)?.id}`,
+                  )
+                "
+              />
+            </li>
+          </ul>
+          <Button
+            v-if="taskCursor"
+            label="Загрузить ещё"
+            severity="secondary"
+            text
+            @click="loadMore('tasks')"
+          />
+        </article>
+
+        <aside class="surface recent-surface">
+          <div class="surface-header">
+            <div>
+              <h2>Последние оценки</h2>
+              <p>Свежая обратная связь и ответы.</p>
+            </div>
+          </div>
+          <ul class="review-list">
+            <li v-for="review in reviews.slice(0, 6)" :key="review.id">
+              <button type="button" @click="router.push(`/support/quality/reviews/${review.id}`)">
+                <span
+                  ><strong>{{ score(review) }}</strong
+                  ><small>{{ operatorName(review.operatorCmsUserId) }}</small></span
+                >
+                <span
+                  ><Tag
+                    :value="review.state === 'DRAFT' ? 'Черновик' : 'Отправлена'"
+                    :severity="review.state === 'DRAFT' ? 'secondary' : 'success'" /><i
+                    class="pi pi-chevron-right"
+                /></span>
+              </button>
+            </li>
+          </ul>
+          <Button
+            v-if="reviewCursor"
+            label="Загрузить ещё"
+            severity="secondary"
+            text
+            @click="loadMore('reviews')"
+          />
+        </aside>
+      </section>
+    </main>
+  </PageLoadingSwap>
 </template>
 
 <style scoped>
 .quality-page {
+  --quality-secondary-text: color-mix(
+    in srgb,
+    var(--p-text-color) 88%,
+    var(--p-text-muted-color)
+  );
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -500,7 +528,7 @@ onBeforeUnmount(() => controller?.abort());
 .page-heading p,
 .surface-header p {
   margin: 0;
-  color: var(--p-text-muted-color);
+  color: var(--quality-secondary-text);
 }
 .section-nav {
   box-sizing: border-box;
@@ -563,7 +591,7 @@ onBeforeUnmount(() => controller?.abort());
 }
 .health-spine span,
 .health-spine small {
-  color: var(--p-text-muted-color);
+  color: var(--quality-secondary-text);
 }
 .health-spine strong {
   font-size: 1.75rem;
@@ -626,7 +654,7 @@ onBeforeUnmount(() => controller?.abort());
 }
 .due {
   font-size: 0.8rem;
-  color: var(--p-text-muted-color);
+  color: var(--quality-secondary-text);
 }
 .due.overdue {
   color: var(--p-red-700);
@@ -643,7 +671,7 @@ onBeforeUnmount(() => controller?.abort());
 }
 .record-list dt {
   font-size: 0.7rem;
-  color: var(--p-text-muted-color);
+  color: var(--quality-secondary-text);
   text-transform: uppercase;
 }
 .record-list dd {
@@ -652,6 +680,19 @@ onBeforeUnmount(() => controller?.abort());
 }
 .record-list :deep(.p-button) {
   justify-self: start;
+}
+.record-list :deep(.p-button:not(.p-button-secondary, .p-button-text)) {
+  background: color-mix(in srgb, var(--p-primary-color) 84%, var(--p-slate-950));
+  border-color: color-mix(in srgb, var(--p-primary-color) 84%, var(--p-slate-950));
+}
+.record-list :deep(.p-button-secondary) {
+  color: var(--quality-secondary-text);
+}
+.quality-page :deep(.p-tag-warn) {
+  color: color-mix(in srgb, var(--p-orange-700) 82%, var(--p-slate-950));
+}
+.quality-page :deep(.p-tag-success) {
+  color: color-mix(in srgb, var(--p-green-700) 82%, var(--p-slate-950));
 }
 .review-list button {
   width: 100%;

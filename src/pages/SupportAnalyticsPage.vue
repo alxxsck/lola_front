@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import Drawer from 'primevue/drawer';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Tag from 'primevue/tag';
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/features/auth/auth.store';
 import {
   supportAnalyticsArtifactSource,
   type SupportSavedArtifact,
+  type SupportSavedReportDraft,
   type SupportScheduleInput,
 } from '@/features/support-analytics/api/support-analytics-artifact-source';
 import {
@@ -19,6 +21,7 @@ import {
   supportAnalyticsSource,
 } from '@/features/support-analytics/api/support-analytics-source';
 import { parseSupportAnalyticsGeneration } from '@/features/support-analytics/model/support-analytics-generation';
+import { supportAnalyticsDrilldownTarget } from '@/features/support-analytics/model/support-analytics-drilldown';
 import {
   compatibleSupportAnalyticsFilters,
   parseSupportAnalyticsFilterValue,
@@ -38,6 +41,7 @@ import type {
   ReportingMetricCellDto,
   ReportingQueryDefinitionDto,
   ReportingQueryResultResponseDto,
+  ReportingDrilldownPageResponseDto,
   ReportingResultRowDto,
   ReportExportRequestedResponseDto,
   ReportExportStatusResponseDto,
@@ -47,12 +51,16 @@ import type {
   ReportDeliveryInboxItemResponseDto,
 } from '@/shared/api/generated/models';
 import { cmsRealtimeClient } from '@/shared/realtime/cms-realtime-client';
+import PageLoadingSwap from '@/shared/ui/PageLoadingSwap.vue';
+import SupportDataWorkbenchSkeleton from '@/features/support-quality/ui/SupportDataWorkbenchSkeleton.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const catalog = ref<ReportingCatalogDatasetDto[]>([]);
 const result = ref<ReportingQueryResultResponseDto | null>(null);
+const drilldown = ref<ReportingDrilldownPageResponseDto | null>(null);
+const drilldownLoading = ref(false);
 const loading = ref(true);
 const running = ref(false);
 const error = ref('');
@@ -62,6 +70,8 @@ const showTable = ref(false);
 const saveDialog = ref(false);
 const saveName = ref('Отчёт по качеству поддержки');
 const artifact = ref<SupportSavedArtifact | null>(null);
+const artifactDraft = ref<SupportSavedReportDraft | null>(null);
+const dashboardDraftId = ref('');
 const artifactBusy = ref(false);
 const artifactNotice = ref('');
 const lastExport = ref<ReportExportRequestedResponseDto | null>(null);
@@ -103,6 +113,7 @@ type CuratedResult = Readonly<{
   result?: ReportingQueryResultResponseDto;
 }>;
 const curatedResults = ref<Record<string, CuratedResult>>({});
+const curatedRefreshing = ref(false);
 const pageMode = computed(
   () => String(route.name ?? '').replace('support-analytics-', '') || 'overview',
 );
@@ -432,8 +443,13 @@ async function runCurated(): Promise<void> {
       Required<Pick<ResolvedCuratedWidget, 'dataset' | 'metric'>> =>
       item.state === 'READY' && Boolean(item.dataset && item.metric),
   );
+  const previous = curatedResults.value;
+  curatedRefreshing.value = true;
   curatedResults.value = Object.fromEntries(
-    ready.map(({ id }) => [id, { state: 'LOADING' as const }]),
+    ready.map(({ id }) => [
+      id,
+      previous[id]?.result ? previous[id] : { state: 'LOADING' as const },
+    ]),
   );
   let cursor = 0;
   const worker = async () => {
@@ -463,12 +479,16 @@ async function runCurated(): Promise<void> {
         if (signal.aborted || epoch !== curatedEpoch) return;
         curatedResults.value = {
           ...curatedResults.value,
-          [item.id]: { state: 'ERROR' },
+          [item.id]: previous[item.id]?.result ? previous[item.id] : { state: 'ERROR' },
         };
       }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(3, ready.length) }, worker));
+  try {
+    await Promise.all(Array.from({ length: Math.min(3, ready.length) }, worker));
+  } finally {
+    if (epoch === curatedEpoch) curatedRefreshing.value = false;
+  }
 }
 
 function curatedCell(item: ResolvedCuratedWidget): ReportingMetricCellDto | undefined {
@@ -483,12 +503,141 @@ function curatedDataTime(item: ResolvedCuratedWidget): string {
       })
     : '—';
 }
+function curatedTrend(item: ResolvedCuratedWidget): string {
+  const document = curatedResults.value[item.id]?.result?.result;
+  const current = Number(document?.rows[0]?.metrics[0]?.value);
+  const previous = Number(document?.comparison?.rows[0]?.metrics[0]?.value);
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return 'Без сравнения';
+  const delta = current - previous;
+  const formatted = new Intl.NumberFormat('ru', {
+    maximumFractionDigits: 1,
+    signDisplay: 'always',
+  }).format(
+    item.metric && metricUnit(item.metric) === 'PERCENTAGE'
+      ? delta
+      : (delta / Math.max(Math.abs(previous), 1)) * 100,
+  );
+  return `${formatted}${item.metric && metricUnit(item.metric) === 'PERCENTAGE' ? ' п. п.' : '%'} к опорному периоду`;
+}
+function curatedCoverage(item: ResolvedCuratedWidget): string {
+  const current = curatedResults.value[item.id]?.result;
+  const cell = current?.result?.rows[0]?.metrics[0];
+  const receipt = current?.receipt;
+  if (!receipt) return 'Квитанция ещё не получена';
+  return [
+    completenessLabel(receipt.completeness),
+    cell?.sampleSize === undefined ? null : `n=${cell.sampleSize}`,
+    `${receipt.rows} ${observationLabel(receipt.rows)}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+function drilldownSubjectLabel(kind: string): string {
+  return kind === 'CASE' ? 'Обращения' : 'Проверки качества';
+}
+function drilldownGroupLabel(value: string | null | undefined): string {
+  if (!value || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value)) return 'Выбранная группа';
+  return value;
+}
 function openCuratedWidget(item: ResolvedCuratedWidget): void {
   if (item.state !== 'READY' || !item.dataset || !item.metric) return;
+  const curatedResult = curatedResults.value[item.id]?.result;
+  const row = curatedResult?.result?.rows[0];
+  const cell = row?.metrics[0];
+  if (curatedResult && row && cell?.state === 'VALUE') {
+    void openResultDrilldown(curatedResult, row, cell);
+    return;
+  }
   selectedFamily.value = item.dataset.datasetCode;
   selectedMetric.value = item.metric.code;
   groupBy.value = '';
   void run();
+}
+
+function reportingDrilldownParams(row: ReportingResultRowDto, cell: ReportingMetricCellDto) {
+  const dimension = Object.entries(row.dimensions ?? {}).find(
+    (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0,
+  );
+  return {
+    metricCode: cell.code,
+    ...(row.day ? { day: row.day } : {}),
+    ...(dimension ? { dimensionCode: dimension[0], dimensionValue: dimension[1] } : {}),
+    limit: 50 as const,
+  };
+}
+async function openResultDrilldown(
+  sourceResult: ReportingQueryResultResponseDto,
+  row: ReportingResultRowDto,
+  cell: ReportingMetricCellDto,
+): Promise<void> {
+  const scope = captureActionScope();
+  if (!scope || cell.state !== 'VALUE') return;
+  drilldownLoading.value = true;
+  try {
+    const next = await supportAnalyticsSource.drilldown(
+      scope.projectId,
+      sourceResult.runId,
+      reportingDrilldownParams(row, cell),
+      queryController?.signal,
+    );
+    if (actionScopeCurrent(scope)) drilldown.value = next;
+  } catch (cause) {
+    if (actionScopeCurrent(scope))
+      error.value = cause instanceof Error ? cause.message : 'Детализация недоступна';
+  } finally {
+    if (actionScopeCurrent(scope)) drilldownLoading.value = false;
+  }
+}
+async function loadMoreDrilldown(): Promise<void> {
+  const scope = captureActionScope();
+  const current = drilldown.value;
+  if (!scope || !current?.nextCursor || drilldownLoading.value) return;
+  drilldownLoading.value = true;
+  try {
+    const next = await supportAnalyticsSource.drilldown(
+      scope.projectId,
+      current.reset.runId,
+      {
+        metricCode: current.breadcrumb.metricCode,
+        ...(current.breadcrumb.dimensionCode && current.breadcrumb.dimensionValue
+          ? {
+              dimensionCode: current.breadcrumb.dimensionCode,
+              dimensionValue: current.breadcrumb.dimensionValue,
+            }
+          : {}),
+        cursor: current.nextCursor,
+        limit: 50,
+      },
+      queryController?.signal,
+    );
+    if (actionScopeCurrent(scope))
+      drilldown.value = { ...next, items: [...current.items, ...next.items] };
+  } finally {
+    if (actionScopeCurrent(scope)) drilldownLoading.value = false;
+  }
+}
+async function resetDrilldown(): Promise<void> {
+  const scope = captureActionScope();
+  const current = drilldown.value;
+  if (!scope || !current || drilldownLoading.value) return;
+  drilldownLoading.value = true;
+  try {
+    const next = await supportAnalyticsSource.drilldown(
+      scope.projectId,
+      current.reset.runId,
+      { metricCode: current.reset.metricCode, limit: 50 },
+      queryController?.signal,
+    );
+    if (actionScopeCurrent(scope)) drilldown.value = next;
+  } finally {
+    if (actionScopeCurrent(scope)) drilldownLoading.value = false;
+  }
+}
+function openDrilldownSubject(index: number): void {
+  const subject = drilldown.value?.items[index];
+  if (!subject) return;
+  const target = supportAnalyticsDrilldownTarget(subject);
+  if (target) void router.push(target);
 }
 
 async function loadCatalog(): Promise<void> {
@@ -669,19 +818,37 @@ async function saveReport(): Promise<void> {
   artifactBusy.value = true;
   artifactNotice.value = '';
   try {
-    const nextArtifact = await supportAnalyticsArtifactSource.saveAndPublishReport(
+    const nextDraft = await supportAnalyticsArtifactSource.createReportDraft(
       scope.projectId,
       saveName.value.trim(),
-      `Опубликованный Support-отчёт: ${metric.value ? metricLabel(metric.value) : selectedMetric.value}`,
+      `Support-отчёт: ${metric.value ? metricLabel(metric.value) : selectedMetric.value}`,
       query(),
     );
     if (!actionScopeCurrent(scope) || !canAuthor.value) return;
-    artifact.value = nextArtifact;
-    saveDialog.value = false;
-    artifactNotice.value = 'Отчёт сохранён и опубликован.';
+    artifactDraft.value = nextDraft;
+    artifactNotice.value = 'Черновик отчёта сохранён. Проверьте название и опубликуйте его.';
   } catch (cause) {
     if (actionScopeCurrent(scope))
       error.value = cause instanceof Error ? cause.message : 'Не удалось сохранить отчёт';
+  } finally {
+    if (actionScopeCurrent(scope)) artifactBusy.value = false;
+  }
+}
+async function publishSavedReport(): Promise<void> {
+  const scope = captureActionScope();
+  const draft = artifactDraft.value;
+  if (!scope || !draft || !canAuthor.value) return;
+  artifactBusy.value = true;
+  try {
+    const nextArtifact = await supportAnalyticsArtifactSource.publishReport(scope.projectId, draft);
+    if (!actionScopeCurrent(scope) || !canAuthor.value || artifactDraft.value !== draft) return;
+    artifact.value = nextArtifact;
+    artifactDraft.value = null;
+    saveDialog.value = false;
+    artifactNotice.value = 'Отчёт опубликован.';
+  } catch (cause) {
+    if (actionScopeCurrent(scope))
+      error.value = cause instanceof Error ? cause.message : 'Не удалось опубликовать отчёт';
   } finally {
     if (actionScopeCurrent(scope)) artifactBusy.value = false;
   }
@@ -692,17 +859,38 @@ async function createDashboard(): Promise<void> {
   if (!scope || !report || !canCreateDashboard.value) return;
   artifactBusy.value = true;
   try {
-    const created = await supportAnalyticsArtifactSource.createDashboard(
+    const created = await supportAnalyticsArtifactSource.createDashboardDraft(
       scope.projectId,
       scope.actorId,
       report,
     );
     if (!actionScopeCurrent(scope) || !canCreateDashboard.value) return;
-    artifactNotice.value = 'Личная панель опубликована.';
-    await router.push(`/support/analytics/dashboards/${created.dashboardId}`);
+    dashboardDraftId.value = created.dashboardId;
+    artifactNotice.value = 'Черновик личной панели создан. Опубликуйте его, когда всё готово.';
   } catch (cause) {
     if (actionScopeCurrent(scope))
       error.value = cause instanceof Error ? cause.message : 'Не удалось создать панель';
+  } finally {
+    if (actionScopeCurrent(scope)) artifactBusy.value = false;
+  }
+}
+async function publishDashboard(): Promise<void> {
+  const scope = captureActionScope();
+  const dashboardId = dashboardDraftId.value;
+  if (!scope || !dashboardId || !canCreateDashboard.value) return;
+  artifactBusy.value = true;
+  try {
+    const published = await supportAnalyticsArtifactSource.publishDashboard(
+      scope.projectId,
+      dashboardId,
+    );
+    if (!actionScopeCurrent(scope) || dashboardDraftId.value !== dashboardId) return;
+    dashboardDraftId.value = '';
+    artifactNotice.value = 'Личная панель опубликована.';
+    await router.push(`/support/analytics/dashboards/${published.dashboardId}`);
+  } catch (cause) {
+    if (actionScopeCurrent(scope))
+      error.value = cause instanceof Error ? cause.message : 'Не удалось опубликовать панель';
   } finally {
     if (actionScopeCurrent(scope)) artifactBusy.value = false;
   }
@@ -1041,785 +1229,879 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="analytics-page" aria-labelledby="analytics-title">
-    <header class="page-heading">
-      <div>
-        <span class="eyebrow">Аналитика поддержки</span>
-        <h1 id="analytics-title">
-          {{
-            pageMode === 'quality'
-              ? 'Качество поддержки'
-              : pageMode === 'flow'
-                ? 'Поток обращений'
-                : pageMode === 'team'
-                  ? 'Команда и нагрузка'
-                  : pageMode === 'automation'
-                    ? 'Автоматизация'
-                    : 'Аналитика поддержки'
-          }}
-        </h1>
-        <p>Проверяемые метрики с определениями, покрытием и квитанцией результата.</p>
-      </div>
-      <nav aria-label="Представления аналитики">
-        <RouterLink
-          to="/support/analytics"
-          :aria-current="pageMode === 'overview' ? 'page' : undefined"
-          >Обзор</RouterLink
-        ><RouterLink
-          to="/support/analytics/flow"
-          :aria-current="pageMode === 'flow' ? 'page' : undefined"
-          >Поток</RouterLink
-        ><RouterLink
-          to="/support/analytics/quality"
-          :aria-current="pageMode === 'quality' ? 'page' : undefined"
-          >Качество</RouterLink
-        ><RouterLink
-          to="/support/analytics/team"
-          :aria-current="pageMode === 'team' ? 'page' : undefined"
-          >Команда</RouterLink
-        ><RouterLink
-          to="/support/analytics/automation"
-          :aria-current="pageMode === 'automation' ? 'page' : undefined"
-          >Автоматизация</RouterLink
-        >
-      </nav>
-    </header>
-    <div v-if="error" class="notice" role="alert">
-      <i class="pi pi-exclamation-circle" />{{ error
-      }}<Button label="Повторить" text size="small" @click="run" />
-    </div>
-    <div v-if="artifactNotice" class="artifact-notice" role="status">
-      <i class="pi pi-check-circle" />
-      <span>{{ artifactNotice }}</span>
-      <RouterLink v-if="artifact" :to="`/support/analytics/reports/${artifact.savedReportId}`"
-        >Открыть отчёт</RouterLink
-      >
-    </div>
-    <div v-if="updateAvailable" class="update-hint" role="status">
-      <i class="pi pi-refresh" /><span
-        >Появились более свежие данные. Текущий результат остаётся закреплённым за своей
-        квитанцией.</span
-      ><Button label="Обновить" size="small" @click="refreshAnalytics" />
-    </div>
-    <section class="readiness-strip" aria-label="Готовность источников">
-      <div>
-        <span>Доступно сейчас</span><strong>{{ availableCount }} / {{ catalog.length }}</strong
-        ><small>семейств данных</small>
-      </div>
-      <div>
-        <span>Свежесть качества</span
-        ><strong>{{
-          dataset?.readiness.projectionLagMs
-            ? Math.round(dataset.readiness.projectionLagMs / 1000) + ' сек'
-            : '—'
-        }}</strong
-        ><small>лаг проекции</small>
-      </div>
-      <div>
-        <span>Физический предел</span><strong>117 120</strong><small>строк на запрос</small>
-      </div>
-      <div>
-        <span>Режим</span><strong class="compact">Точный</strong><small>ограниченный расчёт</small>
-      </div>
-    </section>
-    <section class="filter-bar" aria-label="Фильтры аналитики">
-      <label
-        >Источник<Select
-          v-model="selectedFamily"
-          :options="
-            catalog.map((item) => ({
-              label: item.name,
-              value: item.datasetCode,
-              disabled: item.readiness.status !== 'READY',
-            }))
-          "
-          option-label="label"
-          option-value="value"
-          option-disabled="disabled"
-          aria-label="Источник данных"
-          @change="changeFamily" /></label
-      ><label
-        >Метрика<Select
-          v-model="selectedMetric"
-          :options="metricOptions"
-          option-label="label"
-          option-value="value"
-          aria-label="Метрика" /></label
-      ><label
-        >Период<Select
-          v-model="rangeDays"
-          :options="[
-            { label: '7 дней', value: 7 },
-            { label: '30 дней', value: 30 },
-            { label: '90 дней', value: 90 },
-          ]"
-          option-label="label"
-          option-value="value"
-          aria-label="Период" /></label
-      ><label
-        >Разбивка<Select
-          v-model="groupBy"
-          :options="dimensionOptions"
-          option-label="label"
-          option-value="value"
-          aria-label="Разбивка" /></label
-      ><label
-        >Сравнение<Select
-          v-model="comparison"
-          :options="[
-            { label: 'Предыдущий период', value: 'PREVIOUS_PERIOD' },
-            { label: 'Без сравнения', value: '' },
-          ]"
-          option-label="label"
-          option-value="value"
-          aria-label="Сравнение" /></label
-      ><Button
-        label="Применить"
-        icon="pi pi-play"
-        :loading="running"
-        :disabled="!canRun || dataset?.readiness.status !== 'READY'"
-        @click="applyAnalytics"
-      />
-      <label v-if="isOperationalSupportAnalyticsView(curatedMode)" class="auto-refresh-control">
-        <input v-model="autoRefresh" type="checkbox" />
-        Обновлять автоматически
-      </label>
-    </section>
-    <details v-if="filterOptions.length" class="dimension-filters">
-      <summary>
-        <span>
-          <strong>Уточнить выборку</strong>
-          <small>Команда, очередь, канал и другие серверные разрезы</small>
-        </span>
-        <Tag
-          v-if="Object.keys(appliedFilters).length"
-          :value="`${Object.keys(appliedFilters).length} применено`"
-          severity="info"
-        />
-        <i class="pi pi-chevron-down" aria-hidden="true" />
-      </summary>
-      <div class="dimension-filter-grid">
-        <label v-for="item in filterOptions" :key="item.code">
-          {{ item.label }}
-          <InputText
-            v-model="filterDraft[item.code]"
-            :placeholder="item.placeholder"
-            maxlength="500"
-            :aria-label="`Фильтр: ${item.label}`"
-          />
-        </label>
-      </div>
-      <p>
-        Несколько точных значений можно перечислить через запятую. Фильтр применяется только к тем
-        показателям, для которых источник объявил совместимый разрез.
-      </p>
-    </details>
-    <section class="curated-section" aria-labelledby="curated-title">
-      <div class="curated-heading">
+  <PageLoadingSwap :loading="loading">
+    <template #loading><SupportDataWorkbenchSkeleton kind="analytics" /></template>
+    <main class="analytics-page" aria-labelledby="analytics-title">
+      <header class="page-heading">
         <div>
-          <span class="eyebrow">{{ curatedView.title }}</span>
-          <h2 id="curated-title">{{ curatedView.question }}</h2>
+          <span class="eyebrow">Аналитика поддержки</span>
+          <h1 id="analytics-title">
+            {{
+              pageMode === 'quality'
+                ? 'Качество поддержки'
+                : pageMode === 'flow'
+                  ? 'Поток обращений'
+                  : pageMode === 'team'
+                    ? 'Команда и нагрузка'
+                    : pageMode === 'automation'
+                      ? 'Автоматизация'
+                      : 'Аналитика поддержки'
+            }}
+          </h1>
+          <p>Проверяемые метрики с определениями, покрытием и квитанцией результата.</p>
         </div>
-        <span class="query-bound"
-          >{{ curatedWidgets.length }} показателей · не больше 3 запросов одновременно</span
-        >
-      </div>
-      <div
-        :class="['curated-grid', { 'health-spine': pageMode === 'overview' }]"
-        aria-live="polite"
-      >
-        <button
-          v-for="item in curatedWidgets"
-          :key="item.id"
-          type="button"
-          class="curated-widget"
-          :class="[`tone-${item.tone}`, `state-${item.state.toLowerCase()}`]"
-          :disabled="item.state !== 'READY'"
-          :aria-label="`${item.title}. ${item.context}. ${item.state === 'READY' ? 'Открыть подробный график' : 'Данные недоступны'}`"
-          @click="openCuratedWidget(item)"
-        >
-          <span class="widget-label">{{ item.title }}</span>
-          <span
-            v-if="curatedResults[item.id]?.state === 'LOADING'"
-            class="widget-skeleton"
-            aria-label="Загрузка"
-          />
-          <strong v-else-if="item.state === 'READY' && item.metric" class="widget-value">
-            {{ formatCell(curatedCell(item), metricUnit(item.metric)) }}
-          </strong>
-          <strong v-else class="widget-value muted">
-            {{ item.state === 'FORBIDDEN' ? 'Нет доступа' : 'Нет источника' }}
-          </strong>
-          <span class="widget-context">{{ item.context }}</span>
-          <span class="widget-meta">
-            <template v-if="curatedResults[item.id]?.result?.receipt">
-              Данные по {{ curatedDataTime(item) }}
-            </template>
-            <template
-              v-else-if="item.state === 'READY' && curatedResults[item.id]?.state === 'ERROR'"
-            >
-              Не удалось обновить
-            </template>
-            <template v-else>{{ item.dataset?.name ?? item.datasetCode }}</template>
-          </span>
-        </button>
-      </div>
-    </section>
-    <details v-if="pageMode === 'overview'" class="source-matrix">
-      <summary>
-        <span
-          ><strong>Состояние источников</strong
-          ><small>Проверить все {{ catalog.length }} семейств данных</small></span
-        >
-        <i class="pi pi-chevron-down" aria-hidden="true" />
-      </summary>
-      <div class="source-matrix-grid">
-        <button
-          v-for="item in catalog"
-          :key="item.datasetCode"
-          type="button"
-          :disabled="item.readiness.status !== 'READY'"
-          @click="
-            selectedFamily = item.datasetCode;
-            changeFamily();
-          "
-        >
-          <span
-            ><i
-              :class="
-                item.readiness.status === 'READY' ? 'pi pi-check-circle' : 'pi pi-minus-circle'
-              "
-            /><strong>{{ item.name }}</strong></span
-          ><Tag
-            :value="readinessLabel(item.readiness.status)"
-            :severity="item.readiness.status === 'READY' ? 'success' : 'secondary'"
-          />
-        </button>
-      </div>
-    </details>
-    <section v-if="dataset?.readiness.status !== 'READY' && !loading" class="unavailable">
-      <i class="pi pi-database" />
-      <h2>{{ dataset?.name }}: источник ещё не готов</h2>
-      <p>
-        Сервер ещё не получил подтверждённый источник для
-        {{ dataset?.readiness.missingSourceFamilies.join(', ') }}. Мы не показываем искусственные
-        нули.
-      </p>
-      <Button
-        label="Открыть доступную аналитику качества"
-        severity="secondary"
-        outlined
-        @click="
-          selectedFamily = 'SUPPORT_QUALITY';
-          changeFamily();
-        "
-      />
-    </section>
-    <section v-else class="analysis-layout">
-      <article class="surface chart-surface">
-        <div class="section-title">
-          <div>
-            <span class="eyebrow">{{ dataset?.name }}</span>
-            <h2>{{ metric ? metricLabel(metric) : 'Результат' }}</h2>
-            <p>
-              {{ operationLabel(metric?.operation) }} · минимум
-              {{ metric?.minimumSample }}
-              {{ observationLabel(metric?.minimumSample) }} ·
-              {{
-                dataset?.readiness.coverageFrom
-                  ? 'покрытие с ' +
-                    new Date(dataset.readiness.coverageFrom).toLocaleDateString('ru')
-                  : 'покрытие уточняется'
-              }}
-            </p>
-          </div>
-          <div class="chart-actions">
-            <Button
-              v-if="result?.receipt && canAuthor"
-              label="Сохранить отчёт"
-              icon="pi pi-bookmark"
-              severity="secondary"
-              outlined
-              :disabled="artifactBusy"
-              @click="saveDialog = true"
-            />
-            <Button
-              v-if="rows.length"
-              :label="showTable ? 'График' : 'Таблица'"
-              :icon="showTable ? 'pi pi-chart-bar' : 'pi pi-table'"
-              text
-              severity="secondary"
-              @click="showTable = !showTable"
-            />
-            <Button
-              v-if="result?.receipt"
-              label="Квитанция"
-              icon="pi pi-receipt"
-              text
-              severity="secondary"
-              @click="showReceipt = !showReceipt"
-            />
-          </div>
-        </div>
-        <div v-if="(running || loading) && !result" class="chart-loading">
-          <i class="pi pi-spin pi-spinner" /> Строим проверяемый результат…
-        </div>
-        <div v-else-if="rows.length && showTable" class="analytics-table-scroll" tabindex="0">
-          <table>
-            <thead>
-              <tr>
-                <th>Период / группа</th>
-                <th>{{ metric ? metricLabel(metric) : selectedMetric }}</th>
-                <th>Состояние</th>
-                <th>Выборка</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, index) in rows" :key="index">
-                <td>{{ rowLabel(row, index) }}</td>
-                <td>
-                  {{ formatCell(row.metrics[0], metric ? metricUnit(metric) : 'DECIMAL') }}
-                </td>
-                <td>{{ cellStateLabel(row.metrics[0]?.state) }}</td>
-                <td>{{ row.metrics[0]?.sampleSize ?? '—' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div
-          v-else-if="rows.length"
-          class="chart"
-          role="img"
-          tabindex="0"
-          :aria-label="`${metric ? metricLabel(metric) : 'Метрика'}: ${rows.map((row, index) => `${rowLabel(row, index)} ${row.metrics[0]?.value}`).join(', ')}`"
-        >
-          <div v-for="(row, index) in rows" :key="index" class="bar-column">
-            <div class="bar-value">
-              {{ formatCell(row.metrics[0], metric ? metricUnit(metric) : 'DECIMAL') }}
-            </div>
-            <div class="bar-track">
-              <span
-                v-if="row.metrics[0]?.state === 'VALUE'"
-                :style="{
-                  height: `${Math.max(2, (Number(row.metrics[0]?.value ?? 0) / maxValue) * 100)}%`,
-                }"
-              />
-            </div>
-            <small>{{ rowLabel(row, index) }}</small>
-            <span v-if="row.metrics[0]?.sampleSize" class="sample-size"
-              >n={{ row.metrics[0]?.sampleSize }}</span
-            >
-          </div>
-        </div>
-        <div v-if="running && result" class="comparison-note" role="status">
-          <i class="pi pi-spin pi-spinner" /><span
-            >Обновляем снимок; текущие данные остаются доступны.</span
+        <nav aria-label="Представления аналитики">
+          <RouterLink
+            to="/support/analytics"
+            :aria-current="pageMode === 'overview' ? 'page' : undefined"
+            >Обзор</RouterLink
+          ><RouterLink
+            to="/support/analytics/flow"
+            :aria-current="pageMode === 'flow' ? 'page' : undefined"
+            >Поток</RouterLink
+          ><RouterLink
+            to="/support/analytics/quality"
+            :aria-current="pageMode === 'quality' ? 'page' : undefined"
+            >Качество</RouterLink
+          ><RouterLink
+            to="/support/analytics/team"
+            :aria-current="pageMode === 'team' ? 'page' : undefined"
+            >Команда</RouterLink
+          ><RouterLink
+            to="/support/analytics/automation"
+            :aria-current="pageMode === 'automation' ? 'page' : undefined"
+            >Автоматизация</RouterLink
           >
-        </div>
-        <div v-else-if="!rows.length" class="empty">
-          <i class="pi pi-chart-bar" />
-          <p>Выберите готовый источник и запустите запрос.</p>
-        </div>
-        <div v-if="result?.result?.comparison" class="comparison-note">
-          <i class="pi pi-arrow-right-arrow-left" /><span
-            >Сравнение с предыдущим периодом рассчитано по той же ревизии набора данных.</span
-          >
-        </div>
-        <div v-if="result?.result?.comparison" class="comparison-table-link">
-          <span>Предыдущий период: {{ result.result.comparison.rows.length }} строк</span>
-          <Button
-            v-if="selectedFamily === 'SUPPORT_QUALITY'"
-            label="Открыть проверки качества"
-            text
-            icon="pi pi-external-link"
-            @click="router.push('/support/quality')"
-          />
-        </div>
-        <div v-if="artifact" class="artifact-actions" aria-label="Действия с отчётом">
-          <div>
-            <strong>{{ artifact.name }}</strong>
-            <small>Опубликованный отчёт</small>
-          </div>
-          <Button
-            v-if="canCreateDashboard"
-            label="Панель"
-            icon="pi pi-th-large"
-            text
-            :loading="artifactBusy"
-            @click="createDashboard"
-          />
-          <Button
-            v-if="canExport"
-            label="CSV"
-            icon="pi pi-download"
-            text
-            @click="requestExport('CSV')"
-          />
-          <Button
-            v-if="canExport"
-            label="XLSX"
-            icon="pi pi-file-excel"
-            text
-            @click="requestExport('XLSX')"
-          />
-          <Button
-            v-if="canExport"
-            label="PDF"
-            icon="pi pi-file-pdf"
-            text
-            @click="requestExport('PDF')"
-          />
-          <Button
-            v-if="canExport"
-            label="PNG"
-            icon="pi pi-image"
-            text
-            @click="requestExport('PNG')"
-          />
-          <Button
-            v-if="canSchedule"
-            label="Расписание"
-            icon="pi pi-calendar-clock"
-            text
-            @click="scheduleDialog = true"
-          />
-          <Button
-            v-if="canSchedule"
-            label="Доставки"
-            icon="pi pi-inbox"
-            text
-            @click="openDeliveryCenter"
-          />
-        </div>
-        <div v-if="lastExport || lastSchedule" class="delivery-lifecycle">
-          <span v-if="lastExport"
-            ><strong
-              >Экспорт:
-              {{ deliveryStatusLabel(lastExportStatus?.status ?? lastExport.status) }}</strong
-            ><small>
-              {{
-                lastExportStatus?.rows == null
-                  ? 'Ожидает обработки'
-                  : `${lastExportStatus.rows} строк · ${lastExportStatus.bytes ?? 0} байт`
-              }}
-            </small>
-            <Button
-              v-if="lastExportStatus?.status === 'READY'"
-              label="Скачать"
-              icon="pi pi-download"
-              text
-              @click="downloadExport"
-            />
-            <Button
-              v-else-if="
-                !lastExportStatus || ['QUEUED', 'RUNNING'].includes(lastExportStatus.status)
-              "
-              label="Отменить"
-              text
-              severity="secondary"
-              @click="cancelExport"
-            />
-            <Button
-              v-if="lastExportStatus && !['QUEUED', 'RUNNING'].includes(lastExportStatus.status)"
-              label="Отозвать"
-              text
-              severity="secondary"
-              @click="revokeExport"
-            />
-          </span>
-          <span v-if="lastSchedule"
-            ><strong>Расписание: {{ deliveryStatusLabel(lastSchedule.status) }}</strong
-            ><small>{{ scheduleDraft.localTime }} · {{ scheduleDraft.timezone }}</small>
-            <Button
-              v-if="lastSchedule.status === 'ACTIVE'"
-              label="Пауза"
-              text
-              severity="secondary"
-              @click="pauseSchedule"
-            />
-            <Button
-              v-if="lastSchedule.status === 'PAUSED'"
-              label="Возобновить"
-              text
-              severity="secondary"
-              @click="resumeSchedule"
-            />
-            <Button label="Архивировать" text severity="secondary" @click="archiveSchedule" />
-          </span>
-          <Button
-            label="Технические сведения"
-            icon="pi pi-info-circle"
-            text
-            severity="secondary"
-            @click="lifecycleDiagnosticsOpen = true"
-          />
-        </div>
-      </article>
-      <aside class="evidence-rail">
-        <section class="surface definition">
-          <div class="section-title">
-            <div>
-              <h2>Определение</h2>
-              <p>Почему это число можно сравнивать.</p>
-            </div>
-          </div>
-          <dl>
-            <div>
-              <dt>Код</dt>
-              <dd>{{ metric?.code }}</dd>
-            </div>
-            <div>
-              <dt>Операция</dt>
-              <dd>{{ operationLabel(metric?.operation) }}</dd>
-            </div>
-            <div>
-              <dt>Точность</dt>
-              <dd>{{ exactnessLabel(metric?.exactness) }}</dd>
-            </div>
-            <div>
-              <dt>Классификация</dt>
-              <dd>{{ classificationLabel(metric?.classification) }}</dd>
-            </div>
-            <div>
-              <dt>Совместимые разрезы</dt>
-              <dd>
-                {{ metric?.compatibleDimensions.map(dimensionLabel).join(', ') }}
-              </dd>
-            </div>
-          </dl>
-        </section>
-        <section v-if="showReceipt && result?.receipt" class="surface receipt">
-          <div class="section-title">
-            <div>
-              <h2>Квитанция результата</h2>
-              <p>Закреплённый снимок и эпоха приватности.</p>
-            </div>
-          </div>
-          <dl>
-            <div>
-              <dt>Данные на</dt>
-              <dd>
-                {{ new Date(result.receipt.dataAsOf).toLocaleString('ru') }}
-              </dd>
-            </div>
-            <div>
-              <dt>Полнота</dt>
-              <dd>{{ completenessLabel(result.receipt.completeness) }}</dd>
-            </div>
-            <div>
-              <dt>Строк / байт</dt>
-              <dd>{{ result.receipt.rows }} / {{ result.receipt.bytes }}</dd>
-            </div>
-            <div>
-              <dt>Скрыто ячеек</dt>
-              <dd>{{ result.receipt.suppressedCellCount }}</dd>
-            </div>
-            <div>
-              <dt>Истекает</dt>
-              <dd>
-                {{ new Date(result.receipt.expiresAt).toLocaleTimeString('ru') }}
-              </dd>
-            </div>
-            <div>
-              <dt>Ревизия набора данных</dt>
-              <dd class="mono">{{ result.receipt.datasetRevisionId }}</dd>
-            </div>
-          </dl>
-        </section>
-      </aside>
-    </section>
-    <Dialog
-      v-model:visible="saveDialog"
-      modal
-      header="Сохранить Support-отчёт"
-      :style="{ width: 'min(460px, calc(100vw - 24px))' }"
-    >
-      <div class="save-dialog">
-        <p>
-          Запрос будет опубликован как неизменяемая ревизия. Панель и доставки закрепятся за этим
-          снимком.
-        </p>
-        <label>
-          Название
-          <InputText v-model="saveName" autofocus maxlength="120" />
-        </label>
+        </nav>
+      </header>
+      <div v-if="error" class="notice" role="alert">
+        <i class="pi pi-exclamation-circle" />{{ error
+        }}<Button label="Повторить" text size="small" @click="run" />
       </div>
-      <template #footer>
-        <Button label="Отмена" text severity="secondary" @click="saveDialog = false" />
-        <Button
-          label="Сохранить и опубликовать"
-          icon="pi pi-check"
-          :loading="artifactBusy"
-          :disabled="!saveName.trim()"
-          @click="saveReport"
-        />
-      </template>
-    </Dialog>
-    <Dialog
-      v-model:visible="scheduleDialog"
-      modal
-      header="Настроить ежедневную доставку"
-      :style="{ width: 'min(520px, calc(100vw - 24px))' }"
-    >
-      <div class="schedule-form">
-        <p>Отчёт будет рассчитан по закреплённой ревизии и появится во входящих доставках.</p>
-        <label>Время<input v-model="scheduleDraft.localTime" type="time" /></label>
-        <label>Часовой пояс<InputText v-model="scheduleDraft.timezone" maxlength="100" /></label>
+      <div v-if="artifactNotice" class="artifact-notice" role="status">
+        <i class="pi pi-check-circle" />
+        <span>{{ artifactNotice }}</span>
+        <RouterLink v-if="artifact" :to="`/support/analytics/reports/${artifact.savedReportId}`"
+          >Открыть отчёт</RouterLink
+        >
+      </div>
+      <div v-if="updateAvailable" class="update-hint" role="status">
+        <i class="pi pi-refresh" /><span
+          >Появились более свежие данные. Текущий результат остаётся закреплённым за своей
+          квитанцией.</span
+        ><Button label="Обновить" size="small" @click="refreshAnalytics" />
+      </div>
+      <section class="readiness-strip" aria-label="Готовность источников">
+        <div>
+          <span>Доступно сейчас</span><strong>{{ availableCount }} / {{ catalog.length }}</strong
+          ><small>семейств данных</small>
+        </div>
+        <div>
+          <span>Свежесть качества</span
+          ><strong>{{
+            dataset?.readiness.projectionLagMs
+              ? Math.round(dataset.readiness.projectionLagMs / 1000) + ' сек'
+              : '—'
+          }}</strong
+          ><small>лаг проекции</small>
+        </div>
+        <div>
+          <span>Физический предел</span><strong>117 120</strong><small>строк на запрос</small>
+        </div>
+        <div>
+          <span>Режим</span><strong class="compact">Точный</strong
+          ><small>ограниченный расчёт</small>
+        </div>
+      </section>
+      <section class="filter-bar" aria-label="Фильтры аналитики">
         <label
-          >Формат<Select v-model="scheduleDraft.format" :options="['PDF', 'XLSX', 'CSV', 'PNG']"
-        /></label>
-      </div>
-      <template #footer>
-        <Button label="Отмена" text severity="secondary" @click="scheduleDialog = false" />
-        <Button
-          label="Создать расписание"
-          icon="pi pi-check"
-          :loading="artifactBusy"
-          @click="scheduleReport"
+          >Источник<Select
+            v-model="selectedFamily"
+            :options="
+              catalog.map((item) => ({
+                label: item.name,
+                value: item.datasetCode,
+                disabled: item.readiness.status !== 'READY',
+              }))
+            "
+            option-label="label"
+            option-value="value"
+            option-disabled="disabled"
+            aria-label="Источник данных"
+            @change="changeFamily" /></label
+        ><label
+          >Метрика<Select
+            v-model="selectedMetric"
+            :options="metricOptions"
+            option-label="label"
+            option-value="value"
+            aria-label="Метрика" /></label
+        ><label
+          >Период<Select
+            v-model="rangeDays"
+            :options="[
+              { label: '7 дней', value: 7 },
+              { label: '30 дней', value: 30 },
+              { label: '90 дней', value: 90 },
+            ]"
+            option-label="label"
+            option-value="value"
+            aria-label="Период" /></label
+        ><label
+          >Разбивка<Select
+            v-model="groupBy"
+            :options="dimensionOptions"
+            option-label="label"
+            option-value="value"
+            aria-label="Разбивка" /></label
+        ><label
+          >Сравнение<Select
+            v-model="comparison"
+            :options="[
+              { label: 'Предыдущий период', value: 'PREVIOUS_PERIOD' },
+              { label: 'Без сравнения', value: '' },
+            ]"
+            option-label="label"
+            option-value="value"
+            aria-label="Сравнение" /></label
+        ><Button
+          label="Применить"
+          icon="pi pi-play"
+          :loading="running"
+          :disabled="!canRun || dataset?.readiness.status !== 'READY'"
+          @click="applyAnalytics"
         />
-      </template>
-    </Dialog>
-    <Dialog
-      v-model:visible="deliveryDialog"
-      modal
-      header="Расписания и доставки"
-      :style="{ width: 'min(900px, calc(100vw - 24px))' }"
-    >
-      <div v-if="deliveryBusy" class="dialog-loading">
-        <i class="pi pi-spin pi-spinner" /> Загружаем историю…
-      </div>
-      <div v-else class="delivery-center">
-        <section>
-          <h3>Расписания</h3>
+        <label v-if="isOperationalSupportAnalyticsView(curatedMode)" class="auto-refresh-control">
+          <input v-model="autoRefresh" type="checkbox" />
+          Обновлять автоматически
+        </label>
+      </section>
+      <details v-if="filterOptions.length" class="dimension-filters">
+        <summary>
+          <span>
+            <strong>Уточнить выборку</strong>
+            <small>Команда, очередь, канал и другие серверные разрезы</small>
+          </span>
+          <Tag
+            v-if="Object.keys(appliedFilters).length"
+            :value="`${Object.keys(appliedFilters).length} применено`"
+            severity="info"
+          />
+          <i class="pi pi-chevron-down" aria-hidden="true" />
+        </summary>
+        <div class="dimension-filter-grid">
+          <label v-for="item in filterOptions" :key="item.code">
+            {{ item.label }}
+            <InputText
+              v-model="filterDraft[item.code]"
+              :placeholder="item.placeholder"
+              maxlength="500"
+              :aria-label="`Фильтр: ${item.label}`"
+            />
+          </label>
+        </div>
+        <p>
+          Несколько точных значений можно перечислить через запятую. Фильтр применяется только к тем
+          показателям, для которых источник объявил совместимый разрез.
+        </p>
+      </details>
+      <section class="curated-section" aria-labelledby="curated-title">
+        <div class="curated-heading">
+          <div>
+            <span class="eyebrow">{{ curatedView.title }}</span>
+            <h2 id="curated-title">{{ curatedView.question }}</h2>
+          </div>
+          <span class="query-bound"
+            >{{ curatedWidgets.length }} показателей · не больше 3 запросов одновременно</span
+          >
+        </div>
+        <div :class="['curated-grid', { 'health-spine': pageMode === 'overview' }]">
           <button
-            v-for="item in schedules"
-            :key="item.scheduleId"
+            v-for="item in curatedWidgets"
+            :key="item.id"
             type="button"
-            :class="{ active: selectedScheduleId === item.scheduleId }"
-            @click="selectSchedule(item.scheduleId)"
+            class="curated-widget"
+            :class="[`tone-${item.tone}`, `state-${item.state.toLowerCase()}`]"
+            :disabled="item.state !== 'READY'"
+            :aria-label="`${item.title}. ${item.context}. ${item.state === 'READY' ? 'Показать объекты результата' : 'Данные недоступны'}`"
+            @click="openCuratedWidget(item)"
+          >
+            <span class="widget-label">{{ item.title }}</span>
+            <span
+              v-if="curatedResults[item.id]?.state === 'LOADING'"
+              class="widget-skeleton"
+              aria-label="Загрузка"
+            />
+            <strong v-else-if="item.state === 'READY' && item.metric" class="widget-value">
+              {{ formatCell(curatedCell(item), metricUnit(item.metric)) }}
+            </strong>
+            <strong v-else class="widget-value muted">
+              {{ item.state === 'FORBIDDEN' ? 'Нет доступа' : 'Нет источника' }}
+            </strong>
+            <span class="widget-context">{{ item.context }}</span>
+            <span v-if="item.state === 'READY' && item.metric" class="widget-definition">
+              {{ operationLabel(item.metric.operation) }} ·
+              {{ exactnessLabel(item.metric.exactness) }}
+            </span>
+            <span v-if="item.state === 'READY'" class="widget-coverage">
+              {{ curatedCoverage(item) }}
+            </span>
+            <span v-if="item.state === 'READY'" class="widget-trend">
+              {{ curatedTrend(item) }}
+            </span>
+            <span class="widget-meta">
+              <template v-if="curatedResults[item.id]?.result?.receipt">
+                Данные по {{ curatedDataTime(item) }}
+              </template>
+              <template
+                v-else-if="item.state === 'READY' && curatedResults[item.id]?.state === 'ERROR'"
+              >
+                Не удалось обновить
+              </template>
+              <template v-else>{{ item.dataset?.name ?? item.datasetCode }}</template>
+            </span>
+          </button>
+        </div>
+        <p class="curated-refresh-status" role="status" aria-live="polite">
+          {{ curatedRefreshing ? 'Обновляем показатели, текущий снимок остаётся на экране.' : '' }}
+        </p>
+      </section>
+      <details v-if="pageMode === 'overview'" class="source-matrix">
+        <summary>
+          <span
+            ><strong>Состояние источников</strong
+            ><small>Проверить все {{ catalog.length }} семейств данных</small></span
+          >
+          <i class="pi pi-chevron-down" aria-hidden="true" />
+        </summary>
+        <div class="source-matrix-grid">
+          <button
+            v-for="item in catalog"
+            :key="item.datasetCode"
+            type="button"
+            :disabled="item.readiness.status !== 'READY'"
+            @click="
+              selectedFamily = item.datasetCode;
+              changeFamily();
+            "
           >
             <span
-              ><strong>{{ item.name }}</strong
-              ><small>{{ item.format }} · {{ item.timezone }}</small></span
-            >
-            <Tag
-              :value="deliveryStatusLabel(item.status)"
-              :severity="item.status === 'ACTIVE' ? 'success' : 'secondary'"
+              ><i
+                :class="
+                  item.readiness.status === 'READY' ? 'pi pi-check-circle' : 'pi pi-minus-circle'
+                "
+              /><strong>{{ item.name }}</strong></span
+            ><Tag
+              :value="readinessLabel(item.readiness.status)"
+              :severity="item.readiness.status === 'READY' ? 'success' : 'secondary'"
             />
           </button>
-          <p v-if="!schedules.length" class="muted-copy">Расписаний пока нет.</p>
-          <Button
-            v-if="nextScheduleCursor"
-            label="Показать ещё расписания"
-            severity="secondary"
-            text
-            @click="loadMoreSchedules"
-          />
-        </section>
-        <section>
-          <h3>Запуски</h3>
-          <div v-if="lastSchedule && selectedScheduleId" class="schedule-inline-actions">
+        </div>
+      </details>
+      <section v-if="dataset?.readiness.status !== 'READY' && !loading" class="unavailable">
+        <i class="pi pi-database" />
+        <h2>{{ dataset?.name }}: источник ещё не готов</h2>
+        <p>
+          Сервер ещё не получил подтверждённый источник для
+          {{ dataset?.readiness.missingSourceFamilies.join(', ') }}. Мы не показываем искусственные
+          нули.
+        </p>
+        <Button
+          label="Открыть доступную аналитику качества"
+          severity="secondary"
+          outlined
+          @click="
+            selectedFamily = 'SUPPORT_QUALITY';
+            changeFamily();
+          "
+        />
+      </section>
+      <section v-else class="analysis-layout">
+        <article class="surface chart-surface">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">{{ dataset?.name }}</span>
+              <h2>{{ metric ? metricLabel(metric) : 'Результат' }}</h2>
+              <p>
+                {{ operationLabel(metric?.operation) }} · минимум
+                {{ metric?.minimumSample }}
+                {{ observationLabel(metric?.minimumSample) }} ·
+                {{
+                  dataset?.readiness.coverageFrom
+                    ? 'покрытие с ' +
+                      new Date(dataset.readiness.coverageFrom).toLocaleDateString('ru')
+                    : 'покрытие уточняется'
+                }}
+              </p>
+            </div>
+            <div class="chart-actions">
+              <Button
+                v-if="result?.receipt && canAuthor"
+                label="Сохранить отчёт"
+                icon="pi pi-bookmark"
+                severity="secondary"
+                outlined
+                :disabled="artifactBusy"
+                @click="saveDialog = true"
+              />
+              <Button
+                v-if="rows.length"
+                :label="showTable ? 'График' : 'Таблица'"
+                :icon="showTable ? 'pi pi-chart-bar' : 'pi pi-table'"
+                text
+                severity="secondary"
+                @click="showTable = !showTable"
+              />
+              <Button
+                v-if="result?.receipt"
+                label="Квитанция"
+                icon="pi pi-receipt"
+                text
+                severity="secondary"
+                @click="showReceipt = !showReceipt"
+              />
+            </div>
+          </div>
+          <div v-if="(running || loading) && !result" class="chart-loading">
+            <i class="pi pi-spin pi-spinner" /> Строим проверяемый результат…
+          </div>
+          <div v-else-if="rows.length && showTable" class="analytics-table-scroll" tabindex="0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Период / группа</th>
+                  <th>{{ metric ? metricLabel(metric) : selectedMetric }}</th>
+                  <th>Состояние</th>
+                  <th>Выборка</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, index) in rows" :key="index">
+                  <td>{{ rowLabel(row, index) }}</td>
+                  <td>
+                    <button
+                      v-if="row.metrics[0]"
+                      type="button"
+                      class="analytics-drilldown-link"
+                      :disabled="drilldownLoading || row.metrics[0].state !== 'VALUE'"
+                      @click="openResultDrilldown(result!, row, row.metrics[0])"
+                    >
+                      {{ formatCell(row.metrics[0], metric ? metricUnit(metric) : 'DECIMAL') }}
+                      <i class="pi pi-angle-right" aria-hidden="true" />
+                    </button>
+                  </td>
+                  <td>{{ cellStateLabel(row.metrics[0]?.state) }}</td>
+                  <td>{{ row.metrics[0]?.sampleSize ?? '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div
+            v-else-if="rows.length"
+            class="chart"
+            role="group"
+            :aria-label="`${metric ? metricLabel(metric) : 'Метрика'}: ${rows.map((row, index) => `${rowLabel(row, index)} ${row.metrics[0]?.value}`).join(', ')}`"
+          >
+            <button
+              v-for="(row, index) in rows"
+              :key="index"
+              type="button"
+              class="bar-column"
+              :disabled="drilldownLoading || row.metrics[0]?.state !== 'VALUE'"
+              @click="row.metrics[0] && openResultDrilldown(result!, row, row.metrics[0])"
+            >
+              <div class="bar-value">
+                {{ formatCell(row.metrics[0], metric ? metricUnit(metric) : 'DECIMAL') }}
+              </div>
+              <div class="bar-track">
+                <span
+                  v-if="row.metrics[0]?.state === 'VALUE'"
+                  :style="{
+                    height: `${Math.max(2, (Number(row.metrics[0]?.value ?? 0) / maxValue) * 100)}%`,
+                  }"
+                />
+              </div>
+              <small>{{ rowLabel(row, index) }}</small>
+              <span v-if="row.metrics[0]?.sampleSize" class="sample-size"
+                >n={{ row.metrics[0]?.sampleSize }}</span
+              >
+            </button>
+          </div>
+          <div v-if="running && result" class="comparison-note" role="status">
+            <i class="pi pi-spin pi-spinner" /><span
+              >Обновляем снимок; текущие данные остаются доступны.</span
+            >
+          </div>
+          <div v-else-if="!rows.length" class="empty">
+            <i class="pi pi-chart-bar" />
+            <p>Выберите готовый источник и запустите запрос.</p>
+          </div>
+          <div v-if="result?.result?.comparison" class="comparison-note">
+            <i class="pi pi-arrow-right-arrow-left" /><span
+              >Сравнение с предыдущим периодом рассчитано по той же ревизии набора данных.</span
+            >
+          </div>
+          <div v-if="result?.result?.comparison" class="comparison-table-link">
+            <span>Предыдущий период: {{ result.result.comparison.rows.length }} строк</span>
             <Button
-              v-if="lastSchedule.status === 'ACTIVE'"
-              label="Приостановить"
-              size="small"
-              severity="secondary"
-              outlined
-              @click="pauseSchedule"
-            />
-            <Button
-              v-if="lastSchedule.status === 'PAUSED'"
-              label="Возобновить"
-              size="small"
-              severity="secondary"
-              outlined
-              @click="resumeSchedule"
-            />
-            <Button
-              v-if="lastSchedule.status !== 'ARCHIVED'"
-              label="В архив"
-              size="small"
-              severity="danger"
+              v-if="selectedFamily === 'SUPPORT_QUALITY'"
+              label="Открыть проверки качества"
               text
-              @click="archiveSchedule"
+              icon="pi pi-external-link"
+              @click="router.push('/support/quality')"
             />
           </div>
-          <article v-for="item in scheduleRuns" :key="item.runId">
-            <span
-              ><strong>{{ new Date(item.nominalOccurrenceAt).toLocaleString('ru') }}</strong
-              ><small>{{ item.rows ?? '—' }} строк · {{ item.format }}</small></span
-            >
-            <Tag
-              :value="deliveryStatusLabel(item.status)"
-              :severity="item.status === 'DELIVERED' ? 'success' : 'secondary'"
+          <div v-if="artifact" class="artifact-actions" aria-label="Действия с отчётом">
+            <div>
+              <strong>{{ artifact.name }}</strong>
+              <small>Опубликованный отчёт</small>
+            </div>
+            <Button
+              v-if="canCreateDashboard && !dashboardDraftId"
+              label="Черновик панели"
+              icon="pi pi-th-large"
+              text
+              :loading="artifactBusy"
+              @click="createDashboard"
             />
-          </article>
-          <p v-if="selectedScheduleId && !scheduleRuns.length" class="muted-copy">
-            Запусков ещё нет.
-          </p>
-          <Button
-            v-if="nextScheduleRunCursor"
-            label="Показать ещё запуски"
-            severity="secondary"
-            text
-            @click="loadMoreScheduleRuns"
-          />
-        </section>
-        <section class="delivery-inbox">
-          <h3>Входящие файлы</h3>
-          <article v-for="item in deliveries" :key="item.deliveryId">
-            <span
+            <Button
+              v-else-if="canCreateDashboard"
+              label="Опубликовать панель"
+              icon="pi pi-check"
+              :loading="artifactBusy"
+              @click="publishDashboard"
+            />
+            <Button
+              v-if="canExport"
+              label="CSV"
+              icon="pi pi-download"
+              text
+              @click="requestExport('CSV')"
+            />
+            <Button
+              v-if="canExport"
+              label="XLSX"
+              icon="pi pi-file-excel"
+              text
+              @click="requestExport('XLSX')"
+            />
+            <Button
+              v-if="canExport"
+              label="PDF"
+              icon="pi pi-file-pdf"
+              text
+              @click="requestExport('PDF')"
+            />
+            <Button
+              v-if="canExport"
+              label="PNG"
+              icon="pi pi-image"
+              text
+              @click="requestExport('PNG')"
+            />
+            <Button
+              v-if="canSchedule"
+              label="Расписание"
+              icon="pi pi-calendar-clock"
+              text
+              @click="scheduleDialog = true"
+            />
+            <Button
+              v-if="canSchedule"
+              label="Доставки"
+              icon="pi pi-inbox"
+              text
+              @click="openDeliveryCenter"
+            />
+          </div>
+          <div v-if="lastExport || lastSchedule" class="delivery-lifecycle">
+            <span v-if="lastExport"
               ><strong
-                >{{ item.format }} · {{ new Date(item.deliveredAt).toLocaleString('ru') }}</strong
-              ><small
-                >Доступен до
+                >Экспорт:
+                {{ deliveryStatusLabel(lastExportStatus?.status ?? lastExport.status) }}</strong
+              ><small>
                 {{
-                  item.expiresAt ? new Date(item.expiresAt).toLocaleString('ru') : 'отзыва'
-                }}</small
-              ></span
-            >
-            <Tag
-              :value="deliveryStatusLabel(item.status)"
-              :severity="item.status === 'READY' ? 'success' : 'secondary'"
+                  lastExportStatus?.rows == null
+                    ? 'Ожидает обработки'
+                    : `${lastExportStatus.rows} строк · ${lastExportStatus.bytes ?? 0} байт`
+                }}
+              </small>
+              <Button
+                v-if="lastExportStatus?.status === 'READY'"
+                label="Скачать"
+                icon="pi pi-download"
+                text
+                @click="downloadExport"
+              />
+              <Button
+                v-else-if="
+                  !lastExportStatus || ['QUEUED', 'RUNNING'].includes(lastExportStatus.status)
+                "
+                label="Отменить"
+                text
+                severity="secondary"
+                @click="cancelExport"
+              />
+              <Button
+                v-if="lastExportStatus && !['QUEUED', 'RUNNING'].includes(lastExportStatus.status)"
+                label="Отозвать"
+                text
+                severity="secondary"
+                @click="revokeExport"
+              />
+            </span>
+            <span v-if="lastSchedule"
+              ><strong>Расписание: {{ deliveryStatusLabel(lastSchedule.status) }}</strong
+              ><small>{{ scheduleDraft.localTime }} · {{ scheduleDraft.timezone }}</small>
+              <Button
+                v-if="lastSchedule.status === 'ACTIVE'"
+                label="Пауза"
+                text
+                severity="secondary"
+                @click="pauseSchedule"
+              />
+              <Button
+                v-if="lastSchedule.status === 'PAUSED'"
+                label="Возобновить"
+                text
+                severity="secondary"
+                @click="resumeSchedule"
+              />
+              <Button label="Архивировать" text severity="secondary" @click="archiveSchedule" />
+            </span>
+            <Button
+              label="Технические сведения"
+              icon="pi pi-info-circle"
+              text
+              severity="secondary"
+              @click="lifecycleDiagnosticsOpen = true"
             />
-          </article>
-          <p v-if="!deliveries.length" class="muted-copy">Доставленных файлов пока нет.</p>
+          </div>
+        </article>
+        <aside class="evidence-rail">
+          <section class="surface definition">
+            <div class="section-title">
+              <div>
+                <h2>Определение</h2>
+                <p>Почему это число можно сравнивать.</p>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>Код</dt>
+                <dd>{{ metric?.code }}</dd>
+              </div>
+              <div>
+                <dt>Операция</dt>
+                <dd>{{ operationLabel(metric?.operation) }}</dd>
+              </div>
+              <div>
+                <dt>Точность</dt>
+                <dd>{{ exactnessLabel(metric?.exactness) }}</dd>
+              </div>
+              <div>
+                <dt>Классификация</dt>
+                <dd>{{ classificationLabel(metric?.classification) }}</dd>
+              </div>
+              <div>
+                <dt>Совместимые разрезы</dt>
+                <dd>
+                  {{ metric?.compatibleDimensions.map(dimensionLabel).join(', ') }}
+                </dd>
+              </div>
+            </dl>
+          </section>
+          <section v-if="showReceipt && result?.receipt" class="surface receipt">
+            <div class="section-title">
+              <div>
+                <h2>Квитанция результата</h2>
+                <p>Закреплённый снимок и эпоха приватности.</p>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>Данные на</dt>
+                <dd>
+                  {{ new Date(result.receipt.dataAsOf).toLocaleString('ru') }}
+                </dd>
+              </div>
+              <div>
+                <dt>Полнота</dt>
+                <dd>{{ completenessLabel(result.receipt.completeness) }}</dd>
+              </div>
+              <div>
+                <dt>Строк / байт</dt>
+                <dd>{{ result.receipt.rows }} / {{ result.receipt.bytes }}</dd>
+              </div>
+              <div>
+                <dt>Скрыто ячеек</dt>
+                <dd>{{ result.receipt.suppressedCellCount }}</dd>
+              </div>
+              <div>
+                <dt>Истекает</dt>
+                <dd>
+                  {{ new Date(result.receipt.expiresAt).toLocaleTimeString('ru') }}
+                </dd>
+              </div>
+              <div>
+                <dt>Ревизия набора данных</dt>
+                <dd class="mono">{{ result.receipt.datasetRevisionId }}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
+      </section>
+      <Drawer
+        :visible="Boolean(drilldown)"
+        position="right"
+        :style="{ width: 'min(34rem, 100vw)' }"
+        @update:visible="!$event && (drilldown = null)"
+      >
+        <template #header>
+          <div class="drilldown-heading">
+            <span class="eyebrow">Проверяемая детализация</span>
+            <strong>{{
+              drilldown
+                ? drilldownSubjectLabel(drilldown.breadcrumb.subjectKind)
+                : 'Объекты результата'
+            }}</strong>
+          </div>
+        </template>
+        <nav v-if="drilldown" class="drilldown-breadcrumb" aria-label="Путь детализации">
+          <button type="button" :disabled="drilldownLoading" @click="resetDrilldown">
+            Все объекты
+          </button>
+          <i class="pi pi-chevron-right" aria-hidden="true" />
+          <span v-if="drilldown.breadcrumb.dimensionCode">
+            {{ dimensionLabel(drilldown.breadcrumb.dimensionCode) }}:
+            {{ drilldownGroupLabel(drilldown.breadcrumb.dimensionValue) }}
+          </span>
+          <span v-else>{{ drilldownSubjectLabel(drilldown.breadcrumb.subjectKind) }}</span>
+        </nav>
+        <p class="drilldown-copy">
+          Доступ перепроверен для этого запуска. Скрытые обращения и проверки сюда не попадают.
+        </p>
+        <ul v-if="drilldown?.items.length" class="drilldown-subjects">
+          <li v-for="(subject, index) in drilldown.items" :key="`${subject.kind}:${subject.id}`">
+            <button type="button" @click="openDrilldownSubject(index)">
+              <span>{{ subject.kind === 'CASE' ? 'Обращение' : 'Проверка качества' }}</span>
+              <strong>{{ subject.state }}</strong>
+              <small>{{ new Date(subject.occurredAt).toLocaleString('ru') }}</small>
+              <i class="pi pi-arrow-right" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
+        <p v-else class="drilldown-copy">В этой группе нет доступных объектов.</p>
+        <Button
+          v-if="drilldown?.nextCursor"
+          label="Показать ещё"
+          severity="secondary"
+          outlined
+          :loading="drilldownLoading"
+          @click="loadMoreDrilldown"
+        />
+      </Drawer>
+      <Dialog
+        v-model:visible="saveDialog"
+        modal
+        header="Сохранить Support-отчёт"
+        :style="{ width: 'min(460px, calc(100vw - 24px))' }"
+      >
+        <div class="save-dialog">
+          <p>
+            Запрос будет опубликован как неизменяемая ревизия. Панель и доставки закрепятся за этим
+            снимком.
+          </p>
+          <label>
+            Название
+            <InputText v-model="saveName" autofocus maxlength="120" />
+          </label>
+        </div>
+        <template #footer>
+          <Button label="Отмена" text severity="secondary" @click="saveDialog = false" />
           <Button
-            v-if="nextDeliveryCursor"
-            label="Показать ещё доставки"
-            severity="secondary"
-            text
-            @click="loadMoreDeliveries"
+            v-if="!artifactDraft"
+            label="Сохранить черновик"
+            icon="pi pi-save"
+            :loading="artifactBusy"
+            :disabled="!saveName.trim()"
+            @click="saveReport"
           />
-        </section>
-      </div>
-      <template #footer>
-        <Button label="Закрыть" severity="secondary" text @click="deliveryDialog = false" />
-      </template>
-    </Dialog>
-    <Dialog
-      v-if="lifecycleDiagnosticsOpen && (lastExport || lastSchedule)"
-      v-model:visible="lifecycleDiagnosticsOpen"
-      modal
-      header="Технические сведения"
-      :style="{ width: 'min(520px, calc(100vw - 24px))' }"
-    >
-      <dl>
-        <div v-if="lastExport">
-          <dt>Экспорт</dt>
-          <dd class="mono">{{ lastExport.exportId }}</dd>
+          <Button
+            v-else
+            label="Опубликовать отчёт"
+            icon="pi pi-check"
+            :loading="artifactBusy"
+            @click="publishSavedReport"
+          />
+        </template>
+      </Dialog>
+      <Dialog
+        v-model:visible="scheduleDialog"
+        modal
+        header="Настроить ежедневную доставку"
+        :style="{ width: 'min(520px, calc(100vw - 24px))' }"
+      >
+        <div class="schedule-form">
+          <p>Отчёт будет рассчитан по закреплённой ревизии и появится во входящих доставках.</p>
+          <label>Время<input v-model="scheduleDraft.localTime" type="time" /></label>
+          <label>Часовой пояс<InputText v-model="scheduleDraft.timezone" maxlength="100" /></label>
+          <label
+            >Формат<Select v-model="scheduleDraft.format" :options="['PDF', 'XLSX', 'CSV', 'PNG']"
+          /></label>
         </div>
-        <div v-if="lastSchedule">
-          <dt>Расписание</dt>
-          <dd class="mono">{{ lastSchedule.scheduleId }}</dd>
+        <template #footer>
+          <Button label="Отмена" text severity="secondary" @click="scheduleDialog = false" />
+          <Button
+            label="Создать расписание"
+            icon="pi pi-check"
+            :loading="artifactBusy"
+            @click="scheduleReport"
+          />
+        </template>
+      </Dialog>
+      <Dialog
+        v-model:visible="deliveryDialog"
+        modal
+        header="Расписания и доставки"
+        :style="{ width: 'min(900px, calc(100vw - 24px))' }"
+      >
+        <div v-if="deliveryBusy" class="dialog-loading">
+          <i class="pi pi-spin pi-spinner" /> Загружаем историю…
         </div>
-        <div v-if="artifact">
-          <dt>Ревизия отчёта</dt>
-          <dd>{{ artifact.revision }}</dd>
+        <div v-else class="delivery-center">
+          <section>
+            <h3>Расписания</h3>
+            <button
+              v-for="item in schedules"
+              :key="item.scheduleId"
+              type="button"
+              :class="{ active: selectedScheduleId === item.scheduleId }"
+              @click="selectSchedule(item.scheduleId)"
+            >
+              <span
+                ><strong>{{ item.name }}</strong
+                ><small>{{ item.format }} · {{ item.timezone }}</small></span
+              >
+              <Tag
+                :value="deliveryStatusLabel(item.status)"
+                :severity="item.status === 'ACTIVE' ? 'success' : 'secondary'"
+              />
+            </button>
+            <p v-if="!schedules.length" class="muted-copy">Расписаний пока нет.</p>
+            <Button
+              v-if="nextScheduleCursor"
+              label="Показать ещё расписания"
+              severity="secondary"
+              text
+              @click="loadMoreSchedules"
+            />
+          </section>
+          <section>
+            <h3>Запуски</h3>
+            <div v-if="lastSchedule && selectedScheduleId" class="schedule-inline-actions">
+              <Button
+                v-if="lastSchedule.status === 'ACTIVE'"
+                label="Приостановить"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="pauseSchedule"
+              />
+              <Button
+                v-if="lastSchedule.status === 'PAUSED'"
+                label="Возобновить"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="resumeSchedule"
+              />
+              <Button
+                v-if="lastSchedule.status !== 'ARCHIVED'"
+                label="В архив"
+                size="small"
+                severity="danger"
+                text
+                @click="archiveSchedule"
+              />
+            </div>
+            <article v-for="item in scheduleRuns" :key="item.runId">
+              <span
+                ><strong>{{ new Date(item.nominalOccurrenceAt).toLocaleString('ru') }}</strong
+                ><small>{{ item.rows ?? '—' }} строк · {{ item.format }}</small></span
+              >
+              <Tag
+                :value="deliveryStatusLabel(item.status)"
+                :severity="item.status === 'DELIVERED' ? 'success' : 'secondary'"
+              />
+            </article>
+            <p v-if="selectedScheduleId && !scheduleRuns.length" class="muted-copy">
+              Запусков ещё нет.
+            </p>
+            <Button
+              v-if="nextScheduleRunCursor"
+              label="Показать ещё запуски"
+              severity="secondary"
+              text
+              @click="loadMoreScheduleRuns"
+            />
+          </section>
+          <section class="delivery-inbox">
+            <h3>Входящие файлы</h3>
+            <article v-for="item in deliveries" :key="item.deliveryId">
+              <span
+                ><strong
+                  >{{ item.format }} · {{ new Date(item.deliveredAt).toLocaleString('ru') }}</strong
+                ><small
+                  >Доступен до
+                  {{
+                    item.expiresAt ? new Date(item.expiresAt).toLocaleString('ru') : 'отзыва'
+                  }}</small
+                ></span
+              >
+              <Tag
+                :value="deliveryStatusLabel(item.status)"
+                :severity="item.status === 'READY' ? 'success' : 'secondary'"
+              />
+            </article>
+            <p v-if="!deliveries.length" class="muted-copy">Доставленных файлов пока нет.</p>
+            <Button
+              v-if="nextDeliveryCursor"
+              label="Показать ещё доставки"
+              severity="secondary"
+              text
+              @click="loadMoreDeliveries"
+            />
+          </section>
         </div>
-      </dl>
-    </Dialog>
-  </main>
+        <template #footer>
+          <Button label="Закрыть" severity="secondary" text @click="deliveryDialog = false" />
+        </template>
+      </Dialog>
+      <Dialog
+        v-if="lifecycleDiagnosticsOpen && (lastExport || lastSchedule)"
+        v-model:visible="lifecycleDiagnosticsOpen"
+        modal
+        header="Технические сведения"
+        :style="{ width: 'min(520px, calc(100vw - 24px))' }"
+      >
+        <dl>
+          <div v-if="lastExport">
+            <dt>Экспорт</dt>
+            <dd class="mono">{{ lastExport.exportId }}</dd>
+          </div>
+          <div v-if="lastSchedule">
+            <dt>Расписание</dt>
+            <dd class="mono">{{ lastSchedule.scheduleId }}</dd>
+          </div>
+          <div v-if="artifact">
+            <dt>Ревизия отчёта</dt>
+            <dd>{{ artifact.revision }}</dd>
+          </div>
+        </dl>
+      </Dialog>
+    </main>
+  </PageLoadingSwap>
 </template>
 
 <style scoped>
@@ -2031,10 +2313,16 @@ nav a:hover {
   background: var(--p-content-background);
   overflow: hidden;
 }
+.curated-refresh-status {
+  min-height: 1rem;
+  margin: 6px 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.7rem;
+}
 .curated-widget {
   position: relative;
   min-width: 0;
-  min-height: 148px;
+  min-height: 214px;
   padding: 16px;
   display: grid;
   align-content: start;
@@ -2051,7 +2339,7 @@ nav a:hover {
     transform 140ms ease;
 }
 .health-spine .curated-widget {
-  min-height: 160px;
+  min-height: 224px;
   border: 0;
   border-right: 1px solid var(--p-content-border-color);
   border-radius: 0;
@@ -2106,6 +2394,21 @@ nav a:hover {
   min-height: 32px;
   font-size: 0.76rem;
   line-height: 1.35;
+}
+.widget-definition,
+.widget-coverage,
+.widget-trend {
+  color: var(--p-text-muted-color);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+.widget-definition {
+  padding-top: 7px;
+  border-top: 1px solid var(--p-content-border-color);
+}
+.widget-trend {
+  color: var(--p-text-color);
+  font-weight: 600;
 }
 .widget-meta {
   margin-top: auto;
@@ -2446,6 +2749,23 @@ nav a:hover {
   color: var(--p-text-muted-color);
   font-size: 0.7rem;
 }
+.analytics-drilldown-link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  color: var(--p-primary-color);
+  font: inherit;
+  font-weight: 650;
+  background: transparent;
+  cursor: pointer;
+}
+.analytics-drilldown-link:disabled {
+  color: inherit;
+  cursor: default;
+}
 .comparison-table-link {
   display: flex;
   align-items: center;
@@ -2463,6 +2783,14 @@ nav a:hover {
   grid-template-rows: 24px 1fr 30px 14px;
   gap: 5px;
   text-align: center;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.bar-column:disabled {
+  cursor: default;
 }
 .bar-value {
   font-size: 0.75rem;
@@ -2495,6 +2823,75 @@ nav a:hover {
 .sample-size {
   color: var(--p-text-muted-color);
   font-size: 0.63rem;
+}
+.drilldown-heading {
+  display: grid;
+  gap: 3px;
+}
+.drilldown-copy {
+  margin: 0 0 16px;
+  color: var(--p-text-muted-color);
+  line-height: 1.5;
+}
+.drilldown-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 12px;
+  color: var(--p-text-muted-color);
+  font-size: 0.76rem;
+}
+.drilldown-breadcrumb button {
+  padding: 0;
+  border: 0;
+  color: var(--p-primary-color);
+  font: inherit;
+  font-weight: 650;
+  background: transparent;
+  cursor: pointer;
+}
+.drilldown-breadcrumb button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.drilldown-subjects {
+  display: grid;
+  gap: 1px;
+  margin: 0 0 16px;
+  padding: 1px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--p-content-border-color);
+  overflow: hidden;
+}
+.drilldown-subjects button {
+  width: 100%;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  padding: 10px 12px;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  background: var(--p-content-background);
+  cursor: pointer;
+}
+.drilldown-subjects button:hover,
+.drilldown-subjects button:focus-visible {
+  background: var(--p-content-hover-background);
+}
+.drilldown-subjects strong {
+  font-size: 0.76rem;
+}
+.drilldown-subjects small {
+  color: var(--p-text-muted-color);
+}
+.drilldown-subjects i {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 .chart-loading,
 .empty,

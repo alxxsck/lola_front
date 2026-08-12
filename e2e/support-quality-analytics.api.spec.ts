@@ -447,7 +447,7 @@ test('disposable Quality task completes claim, pinned evidence, submit, acknowle
 
   await restoreUiSession(page, supplied, reviewer);
   await page.goto(`/support/quality/reviews/${review.id}`);
-  await expect(page.getByRole('heading', { name: /Оценка качества/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Проверка обращения' })).toBeVisible();
   await expect(page.getByText('Проверка безопасного жизненного цикла апелляции')).toBeVisible();
 });
 
@@ -473,8 +473,10 @@ test('disposable published report completes export and schedule lifecycle agains
   await page.getByRole('button', { name: 'Сохранить отчёт' }).click();
   const dialog = page.getByRole('dialog', { name: 'Сохранить Support-отчёт' });
   await dialog.getByLabel('Название').fill(`Ticket 33 · ${Date.now()}`);
-  await dialog.getByRole('button', { name: 'Сохранить и опубликовать' }).click();
-  await expect(page.getByText('Отчёт сохранён и опубликован.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Сохранить черновик' }).click();
+  await expect(page.getByText(/Черновик отчёта сохранён/)).toBeVisible();
+  await dialog.getByRole('button', { name: 'Опубликовать отчёт' }).click();
+  await expect(page.getByText('Отчёт опубликован.')).toBeVisible();
 
   await page.getByRole('button', { name: 'CSV' }).click();
   await expect(page.getByText(/CSV-экспорт поставлен в очередь/)).toBeVisible();

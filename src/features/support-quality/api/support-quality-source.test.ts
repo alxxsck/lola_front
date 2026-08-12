@@ -2,6 +2,27 @@ import { describe, expect, it } from "vitest";
 import { supportQualitySource } from "./support-quality-source";
 
 describe("supportQualitySource", () => {
+  it("offers bounded calibration candidates and a pinned review bootstrap", async () => {
+    const candidates = await supportQualitySource.listCalibrationCandidates("project-1");
+    expect(candidates.items[0]).toMatchObject({
+      caseTitle: "Задержка ответа по доставке",
+      conversationTitle: "Доставка заказа",
+    });
+
+    const bootstrap = await supportQualitySource.readCalibrationBootstrap(
+      "project-1",
+      "calibration-01",
+    );
+    expect(bootstrap.scorecard.sections[0]?.criteria[0]).toMatchObject({
+      code: "GREETING",
+      label: "Приветствие и тон",
+    });
+    expect(bootstrap.evidenceOptions[0]).toMatchObject({
+      ordinal: 12,
+      role: "ADMIN",
+    });
+  });
+
   it("moves a claimed draft through save and submit with OCC versions", async () => {
     const tasks = await supportQualitySource.listTasks("project-1");
     const ready = tasks.items.find(({ state }) => state === "READY")!;
