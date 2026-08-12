@@ -228,14 +228,16 @@ describe("ConversationSurface", () => {
       },
     });
 
-    const download = wrapper.get('button[aria-label="Скачать payment-proof.png"]');
+    const download = wrapper.get(
+      'button[aria-label="Скачать payment-proof.png"]',
+    );
     expect(download.attributes("tabindex")).not.toBe("-1");
     await download.trigger("click");
     await wrapper.get("form").trigger("submit");
 
-    expect(wrapper.emitted("download-attachment")).toEqual([[
-      { attachmentId: "attachment-1", visibility: "PUBLIC_REPLY" },
-    ]]);
+    expect(wrapper.emitted("download-attachment")).toEqual([
+      [{ attachmentId: "attachment-1", visibility: "PUBLIC_REPLY" }],
+    ]);
     expect(wrapper.emitted("send")).toEqual([
       [
         expect.objectContaining({
@@ -255,24 +257,28 @@ describe("ConversationSurface", () => {
         message.id === "message-1"
           ? {
               ...message,
-              attachments: [{
-                id: "published-file",
-                filename: "receipt.pdf",
-                contentType: "application/pdf",
-                sizeBytes: 4096,
-              }],
+              attachments: [
+                {
+                  id: "published-file",
+                  filename: "receipt.pdf",
+                  contentType: "application/pdf",
+                  sizeBytes: 4096,
+                },
+              ],
             }
           : message,
       ),
     });
 
     await wrapper
-      .get('[data-message-id="message-1"] .conversation-surface__message-attachments button')
+      .get(
+        '[data-message-id="message-1"] .conversation-surface__message-attachments button',
+      )
       .trigger("click");
 
-    expect(wrapper.emitted("download-attachment")).toEqual([[
-      { attachmentId: "published-file", visibility: "PUBLIC_REPLY" },
-    ]]);
+    expect(wrapper.emitted("download-attachment")).toEqual([
+      [{ attachmentId: "published-file", visibility: "PUBLIC_REPLY" }],
+    ]);
   });
 
   it("freezes attachment actions while a durable send outcome is unresolved", async () => {
@@ -291,17 +297,19 @@ describe("ConversationSurface", () => {
           error: "",
           canDownload: true,
           maxFiles: 10,
-          items: [{
-            localId: "local-1",
-            id: "attachment-1",
-            filename: "proof.png",
-            contentType: "image/png",
-            sizeBytes: 100,
-            state: "READY",
-            canAttach: true,
-            failureCode: null,
-            canRetry: false,
-          }],
+          items: [
+            {
+              localId: "local-1",
+              id: "attachment-1",
+              filename: "proof.png",
+              contentType: "image/png",
+              sizeBytes: 100,
+              state: "READY",
+              canAttach: true,
+              failureCode: null,
+              canRetry: false,
+            },
+          ],
         },
       },
     });
@@ -649,6 +657,24 @@ describe("ConversationSurface", () => {
     expect(rendered[1]?.text()).toContain("Анна · Support");
     expect(rendered[1]?.text()).toContain("Доставлено");
     expect(wrapper.get('[role="log"]').attributes("aria-live")).toBe("polite");
+  });
+
+  it("renders transport emoji shortcodes as native emoji in the canonical chat log", () => {
+    const wrapper = mountSurface({
+      messages: [
+        {
+          ...messages[1]!,
+          content: {
+            text: ":+1::skin-tone-3:",
+            status: "COMPLETED",
+          },
+        },
+      ],
+    });
+    const rendered = wrapper.get('[data-message-id="message-1"]');
+
+    expect(rendered.text()).toContain("👍🏼");
+    expect(rendered.text()).not.toContain(":skin-tone-3:");
   });
 
   it("requests translation mode without committing it before the adapter succeeds", async () => {

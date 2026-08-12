@@ -1,11 +1,9 @@
 import { registerLogoutCleanup } from "@/features/auth/logout-cleanup";
-import { createBrowserPushAdapter } from "@/features/support-notifications/model/browser-push-adapter";
 import {
-  clearStoredBrowserPushRegistration,
+  markStoredBrowserPushRegistrationForResume,
   readStoredBrowserPushRegistration,
 } from "@/features/support-notifications/model/browser-push-registration-store";
 import {
-  runSupportNotificationBrowserLifecycleUntil,
   quarantineSupportNotificationRegistrations,
 } from "@/features/support-notifications/model/support-notification-browser-lifecycle";
 import {
@@ -16,7 +14,6 @@ import {
 import { authTeardownRequestOptions } from "@/shared/api/http/axios-instance";
 
 export function registerSupportNotificationLogoutCleanup(): () => void {
-  const browser = createBrowserPushAdapter();
   return registerLogoutCleanup(async (actorId, accessToken) => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 1_500);
@@ -26,6 +23,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
         controller.signal,
       );
       const stored = readStoredBrowserPushRegistration(actorId);
+      markStoredBrowserPushRegistrationForResume(actorId);
       const receipts = registrations.flatMap((registration) =>
         registration.receipt ? [registration.receipt] : [],
       );
@@ -76,12 +74,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
     } catch {
       // Logout must continue even if the server cannot confirm cleanup.
     } finally {
-      await runSupportNotificationBrowserLifecycleUntil(
-        () => browser.unsubscribe(),
-        controller.signal,
-      );
       window.clearTimeout(timeout);
-      clearStoredBrowserPushRegistration(actorId);
     }
   });
 }

@@ -3,6 +3,7 @@ export interface StoredBrowserPushRegistration {
   endpoint: string;
   applicationServerKey: string;
   applicationServerKeyRevision: string | null;
+  resumeAfterLogin?: boolean;
 }
 
 function key(actorId: string): string {
@@ -21,12 +22,25 @@ export function readStoredBrowserPushRegistration(
       typeof value.endpoint === "string" &&
       typeof value.applicationServerKey === "string" &&
       (typeof value.applicationServerKeyRevision === "string" ||
-        value.applicationServerKeyRevision === null)
+        value.applicationServerKeyRevision === null) &&
+      (value.resumeAfterLogin === undefined ||
+        typeof value.resumeAfterLogin === "boolean")
       ? (value as StoredBrowserPushRegistration)
       : null;
   } catch {
     return null;
   }
+}
+
+export function markStoredBrowserPushRegistrationForResume(
+  actorId: string | undefined,
+): void {
+  const registration = readStoredBrowserPushRegistration(actorId);
+  if (!actorId || !registration) return;
+  writeStoredBrowserPushRegistration(actorId, {
+    ...registration,
+    resumeAfterLogin: true,
+  });
 }
 
 export function writeStoredBrowserPushRegistration(

@@ -18,6 +18,7 @@ import Select from "primevue/select";
 import Skeleton from "primevue/skeleton";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
+import FormFieldLabel from "@/shared/ui/FormFieldLabel.vue";
 import { useAuthStore } from "@/features/auth/auth.store";
 import { hasProjectPermission } from "@/features/auth/permission-access";
 import type {
@@ -245,7 +246,7 @@ const currentSafetyPresentation = computed(() => {
     return {
       severity: "success" as const,
       title: "Безопасность готова",
-      copy: `Сервер сверил обязательную версию ${value.reconciledSafetyRevisionId ?? "без номера"}.`,
+      copy: "Сервер сверил обязательные правила и разрешил обычные ответы Lola.",
     };
   if (value.state === "UNAVAILABLE")
     return {
@@ -889,6 +890,14 @@ onBeforeUnmount(() => controller.reset());
         </p>
       </div>
       <div class="header-actions">
+        <RouterLink
+          v-if="canRead"
+          class="release-workspace-link"
+          to="/support/settings/case-intelligence/evaluation"
+        >
+          Проверка и публикация
+          <i class="pi pi-arrow-right" aria-hidden="true" />
+        </RouterLink>
         <Tag
           v-if="canRead && !controller.canManage.value"
           value="Только просмотр"
@@ -925,9 +934,6 @@ onBeforeUnmount(() => controller.reset());
         >
         <RouterLink to="/support/settings/case-intelligence/models-budget"
           ><i class="pi pi-gauge" /> Модель и лимиты</RouterLink
-        >
-        <RouterLink to="/support/settings/case-intelligence/evaluation"
-          ><i class="pi pi-verified" /> Качество и публикация</RouterLink
         >
       </nav>
 
@@ -999,15 +1005,14 @@ onBeforeUnmount(() => controller.reset());
       </section>
 
       <template v-else>
-        <section class="handoff-brief">
-          <div>
+        <section class="handoff-brief" aria-labelledby="handoff-flow-title">
+          <div class="brief-copy">
             <div class="card-kicker">Как работает передача</div>
-            <h2>Сигнал → решение → сведения → распределение</h2>
+            <h2 id="handoff-flow-title">Как обращение попадает к человеку</h2>
             <p>
               Явная просьба всегда передаёт обращение. Для неоднозначной фразы
               или сценария можно сначала предложить оператора либо один раз
-              уточнить причину. Конкретного сотрудника выбирают отдельные
-              правила распределения.
+              уточнить причину.
             </p>
           </div>
           <div class="brief-actions">
@@ -1031,6 +1036,24 @@ onBeforeUnmount(() => controller.reset());
               @click="controller.save"
             />
           </div>
+          <ol class="handoff-path" aria-label="Этапы передачи обращения">
+            <li>
+              <span>1</span><strong>Сигнал</strong
+              ><small>Фраза, сценарий или риск</small>
+            </li>
+            <li>
+              <span>2</span><strong>Решение</strong
+              ><small>Предложить, уточнить или передать</small>
+            </li>
+            <li>
+              <span>3</span><strong>Сведения</strong
+              ><small>Собрать нужный контекст</small>
+            </li>
+            <li>
+              <span>4</span><strong>Распределение</strong
+              ><small>Выбрать очередь и SLA</small>
+            </li>
+          </ol>
           <dl class="brief-facts">
             <div>
               <dt>Опубликовано</dt>
@@ -1053,156 +1076,199 @@ onBeforeUnmount(() => controller.reset());
               </dd>
             </div>
             <div>
-              <dt>Политика распределения</dt>
-              <dd>{{ controller.policy.value.routingPolicyRevisionId }}</dd>
+              <dt>Правила распределения</dt>
+              <dd>Подключены</dd>
             </div>
           </dl>
         </section>
 
         <main class="policy-stack">
-          <section class="policy-section" aria-labelledby="requests-title">
+          <section
+            class="policy-section requests-section"
+            aria-labelledby="requests-title"
+            aria-label="Фразы человека"
+          >
             <div class="section-heading">
               <div>
                 <span class="card-kicker">Просьба позвать человека</span>
-                <h2 id="requests-title">Явные и неоднозначные фразы</h2>
+                <h2 id="requests-title">Фразы человека</h2>
                 <p>
-                  Разделение защищает от случайной передачи по одному слову
-                  «оператор».
+                  Три отдельных списка: подтверждённая просьба, неясное
+                  упоминание и точное исключение.
                 </p>
               </div>
             </div>
-            <div class="rule-group">
-              <div class="rule-group__head">
-                <div>
-                  <h3>Явная просьба</h3>
-                  <p>
-                    Например: «Позовите оператора». Действие всегда одно —
-                    передать сразу.
-                  </p>
+            <div class="request-groups">
+              <article class="rule-group rule-group--explicit">
+                <div class="rule-group__head">
+                  <div>
+                    <div class="rule-group__title">
+                      <span class="group-mark"><i class="pi pi-bolt" /></span>
+                      <h3>Явная просьба</h3>
+                      <span class="group-count">{{
+                        controller.policy.value.explicitHumanRequestRules.length
+                      }}</span>
+                    </div>
+                    <p>
+                      «Позовите оператора» — передаём сразу, без дополнительного
+                      вопроса.
+                    </p>
+                  </div>
+                  <Button
+                    v-if="controller.canManage.value"
+                    label="Добавить просьбу"
+                    icon="pi pi-plus"
+                    severity="secondary"
+                    outlined
+                    @click="openPhraseEditor('EXPLICIT')"
+                  />
                 </div>
-                <Button
-                  v-if="controller.canManage.value"
-                  label="Добавить просьбу"
-                  icon="pi pi-plus"
-                  severity="secondary"
-                  outlined
-                  @click="openPhraseEditor('EXPLICIT')"
-                />
-              </div>
-              <button
-                v-for="(rule, index) in controller.policy.value
-                  .explicitHumanRequestRules"
-                :key="rule.code"
-                class="rule-row"
-                type="button"
-                @click="openPhraseEditor('EXPLICIT', index)"
-              >
-                <span class="rule-icon"><i class="pi pi-bolt" /></span
-                ><span class="rule-main"
-                  ><strong>{{ rule.code }}</strong
-                  ><small>{{
-                    rule.phrases.slice(0, 2).join(" · ") || "Фразы не добавлены"
-                  }}</small></span
-                ><Tag value="Передать сразу" severity="danger" /><i
-                  class="pi pi-chevron-right"
-                />
-              </button>
-              <div
-                v-if="!controller.policy.value.explicitHumanRequestRules.length"
-                class="inline-empty"
-              >
-                Добавьте подтверждённые формулировки по языкам проекта.
-              </div>
-            </div>
-            <div class="rule-group">
-              <div class="rule-group__head">
-                <div>
-                  <h3>Неоднозначное упоминание</h3>
-                  <p>
-                    Например: «оператор» или «поддержка» без ясной просьбы.
-                    Здесь допустим мягкий следующий шаг.
-                  </p>
+                <div class="rule-list">
+                  <button
+                    v-for="(rule, index) in controller.policy.value
+                      .explicitHumanRequestRules"
+                    :key="rule.code"
+                    class="rule-row"
+                    type="button"
+                    @click="openPhraseEditor('EXPLICIT', index)"
+                  >
+                    <span class="rule-main"
+                      ><strong>{{
+                        rule.phrases[0] || "Фразы не добавлены"
+                      }}</strong
+                      ><small
+                        ><code>{{ rule.code }}</code> ·
+                        {{ rule.phrases.length }} фраз</small
+                      ></span
+                    ><Tag value="Передать сразу" severity="danger" /><i
+                      class="pi pi-chevron-right"
+                    />
+                  </button>
+                  <div
+                    v-if="
+                      !controller.policy.value.explicitHumanRequestRules.length
+                    "
+                    class="inline-empty"
+                  >
+                    Добавьте подтверждённые формулировки по языкам проекта.
+                  </div>
                 </div>
-                <Button
-                  v-if="controller.canManage.value"
-                  label="Добавить фразу"
-                  icon="pi pi-plus"
-                  severity="secondary"
-                  outlined
-                  @click="openPhraseEditor('AMBIGUOUS')"
-                />
-              </div>
-              <button
-                v-for="(rule, index) in controller.policy.value
-                  .ambiguousHumanTermRules"
-                :key="rule.code"
-                class="rule-row"
-                type="button"
-                @click="openPhraseEditor('AMBIGUOUS', index)"
-              >
-                <span class="rule-icon"><i class="pi pi-comments" /></span
-                ><span class="rule-main"
-                  ><strong>{{ rule.code }}</strong
-                  ><small>{{
-                    rule.phrases.slice(0, 2).join(" · ") || "Фразы не добавлены"
-                  }}</small></span
-                ><Tag
-                  :value="escalationActionLabel(rule.action)"
-                  severity="warn"
-                /><i class="pi pi-chevron-right" />
-              </button>
-              <div
-                v-if="!controller.policy.value.ambiguousHumanTermRules.length"
-                class="inline-empty"
-              >
-                Необязательный список: Lola может опираться на сценарии и
-                проверенные исходы.
-              </div>
-            </div>
-            <div class="rule-group">
-              <div class="rule-group__head">
-                <div>
-                  <h3>Не передавать по этой фразе</h3>
-                  <p>
-                    Точные исключения снижают ложные срабатывания. Они не
-                    отменяют явную просьбу человека и обязательные правила
-                    безопасности.
-                  </p>
+              </article>
+              <article class="rule-group rule-group--ambiguous">
+                <div class="rule-group__head">
+                  <div>
+                    <div class="rule-group__title">
+                      <span class="group-mark"
+                        ><i class="pi pi-comments"
+                      /></span>
+                      <h3>Неясное упоминание</h3>
+                      <span class="group-count">{{
+                        controller.policy.value.ambiguousHumanTermRules.length
+                      }}</span>
+                    </div>
+                    <p>
+                      «Оператор» без просьбы — можно предложить помощь или
+                      уточнить причину.
+                    </p>
+                  </div>
+                  <Button
+                    v-if="controller.canManage.value"
+                    label="Добавить фразу"
+                    icon="pi pi-plus"
+                    severity="secondary"
+                    outlined
+                    @click="openPhraseEditor('AMBIGUOUS')"
+                  />
                 </div>
-                <Button
-                  v-if="controller.canManage.value"
-                  label="Добавить исключение"
-                  icon="pi pi-plus"
-                  severity="secondary"
-                  outlined
-                  @click="openPhraseEditor('EXCLUDE')"
-                />
-              </div>
-              <button
-                v-for="(rule, index) in controller.policy.value
-                  .doNotEscalateRules ?? []"
-                :key="rule.code"
-                class="rule-row"
-                type="button"
-                @click="openPhraseEditor('EXCLUDE', index)"
-              >
-                <span class="rule-icon"><i class="pi pi-minus-circle" /></span
-                ><span class="rule-main"
-                  ><strong>{{ rule.code }}</strong
-                  ><small>{{
-                    rule.phrases.slice(0, 2).join(" · ") || "Фразы не добавлены"
-                  }}</small></span
-                ><Tag value="Не передавать" severity="secondary" /><i
-                  class="pi pi-chevron-right"
-                />
-              </button>
-              <div
-                v-if="!controller.policy.value.doNotEscalateRules?.length"
-                class="inline-empty"
-              >
-                Исключений нет. Добавляйте их только для известных ложных
-                срабатываний.
-              </div>
+                <div class="rule-list">
+                  <button
+                    v-for="(rule, index) in controller.policy.value
+                      .ambiguousHumanTermRules"
+                    :key="rule.code"
+                    class="rule-row"
+                    type="button"
+                    @click="openPhraseEditor('AMBIGUOUS', index)"
+                  >
+                    <span class="rule-main"
+                      ><strong>{{
+                        rule.phrases[0] || "Фразы не добавлены"
+                      }}</strong
+                      ><small
+                        ><code>{{ rule.code }}</code> ·
+                        {{ rule.phrases.length }} фраз</small
+                      ></span
+                    ><Tag
+                      :value="escalationActionLabel(rule.action)"
+                      severity="warn"
+                    /><i class="pi pi-chevron-right" />
+                  </button>
+                  <div
+                    v-if="
+                      !controller.policy.value.ambiguousHumanTermRules.length
+                    "
+                    class="inline-empty"
+                  >
+                    Необязательный список: Lola может опираться на сценарии и
+                    проверенные исходы.
+                  </div>
+                </div>
+              </article>
+              <article class="rule-group rule-group--exception">
+                <div class="rule-group__head">
+                  <div>
+                    <div class="rule-group__title">
+                      <span class="group-mark"
+                        ><i class="pi pi-minus-circle"
+                      /></span>
+                      <h3>Точные исключения</h3>
+                      <span class="group-count">{{
+                        controller.policy.value.doNotEscalateRules?.length ?? 0
+                      }}</span>
+                    </div>
+                    <p>
+                      Не передавать только по известной ложной формулировке.
+                      Безопасность и явная просьба важнее.
+                    </p>
+                  </div>
+                  <Button
+                    v-if="controller.canManage.value"
+                    label="Добавить исключение"
+                    icon="pi pi-plus"
+                    severity="secondary"
+                    outlined
+                    @click="openPhraseEditor('EXCLUDE')"
+                  />
+                </div>
+                <div class="rule-list">
+                  <button
+                    v-for="(rule, index) in controller.policy.value
+                      .doNotEscalateRules ?? []"
+                    :key="rule.code"
+                    class="rule-row"
+                    type="button"
+                    @click="openPhraseEditor('EXCLUDE', index)"
+                  >
+                    <span class="rule-main"
+                      ><strong>{{
+                        rule.phrases[0] || "Фразы не добавлены"
+                      }}</strong
+                      ><small
+                        ><code>{{ rule.code }}</code> ·
+                        {{ rule.phrases.length }} фраз</small
+                      ></span
+                    ><Tag value="Не передавать" severity="secondary" /><i
+                      class="pi pi-chevron-right"
+                    />
+                  </button>
+                  <div
+                    v-if="!controller.policy.value.doNotEscalateRules?.length"
+                    class="inline-empty"
+                  >
+                    Исключений нет. Добавляйте их только для известных ложных
+                    срабатываний.
+                  </div>
+                </div>
+              </article>
             </div>
           </section>
 
@@ -1223,36 +1289,38 @@ onBeforeUnmount(() => controller.reset());
                 @click="openScenarioEditor()"
               />
             </div>
-            <button
-              v-for="(scenario, index) in controller.policy.value.scenarios"
-              :key="scenario.code"
-              class="scenario-row"
-              type="button"
-              @click="openScenarioEditor(index)"
-            >
-              <span
-                ><strong>{{ scenario.code }}</strong
-                ><small
-                  >{{ scenario.reasonCode }} ·
-                  {{
-                    scenario.dataToCollect.length
-                      ? dataFieldCount(scenario.dataToCollect.length)
-                      : "Без обязательных полей"
-                  }}</small
-                ></span
-              ><span class="scenario-meta"
-                ><Tag
-                  :value="urgencyLabel(scenario.urgency)"
-                  severity="secondary" /><Tag
-                  :value="escalationActionLabel(scenario.action)" /></span
-              ><i class="pi pi-chevron-right" />
-            </button>
-            <div
-              v-if="!controller.policy.value.scenarios.length"
-              class="inline-empty"
-            >
-              Сценариев пока нет. Явная просьба человека всё равно остаётся
-              обязательным основанием для передачи.
+            <div class="scenario-list">
+              <button
+                v-for="(scenario, index) in controller.policy.value.scenarios"
+                :key="scenario.code"
+                class="scenario-row"
+                type="button"
+                @click="openScenarioEditor(index)"
+              >
+                <span
+                  ><strong>{{ escalationActionLabel(scenario.action) }}</strong
+                  ><small
+                    ><code>{{ scenario.code }}</code> · причина
+                    <code>{{ scenario.reasonCode }}</code> ·
+                    {{
+                      scenario.dataToCollect.length
+                        ? dataFieldCount(scenario.dataToCollect.length)
+                        : "Без обязательных полей"
+                    }}</small
+                  ></span
+                ><span class="scenario-meta"
+                  ><Tag
+                    :value="urgencyLabel(scenario.urgency)"
+                    severity="secondary" /></span
+                ><i class="pi pi-chevron-right" />
+              </button>
+              <div
+                v-if="!controller.policy.value.scenarios.length"
+                class="inline-empty"
+              >
+                Сценариев пока нет. Явная просьба человека всё равно остаётся
+                обязательным основанием для передачи.
+              </div>
             </div>
           </section>
 
@@ -1269,7 +1337,10 @@ onBeforeUnmount(() => controller.reset());
             </div>
             <div class="threshold-grid">
               <label
-                >Уточнений<InputNumber
+                ><FormFieldLabel
+                  text="Уточнений"
+                  help="Максимум дополнительных вопросов, которые Lola задаст до предложения помощи человека."
+                /><InputNumber
                   input-id="escalation-clarification"
                   v-model="controller.policy.value.clarificationLimit"
                   :min="0"
@@ -1287,7 +1358,10 @@ onBeforeUnmount(() => controller.reset());
                 ></label
               >
               <label
-                >Не найден ответ<InputNumber
+                ><FormFieldLabel
+                  text="Не найден ответ"
+                  help="Сколько непонятых сообщений подряд допускается до передачи обращения."
+                /><InputNumber
                   input-id="escalation-no-match"
                   v-model="controller.policy.value.noMatchLimit"
                   :min="1"
@@ -1305,7 +1379,10 @@ onBeforeUnmount(() => controller.reset());
                 ></label
               >
               <label
-                >Повтор проблемы<InputNumber
+                ><FormFieldLabel
+                  text="Повтор проблемы"
+                  help="После скольких подтверждённых повторов одной проблемы предложить помощь человека."
+                /><InputNumber
                   input-id="escalation-repeat"
                   v-model="controller.policy.value.repeatLimit"
                   :min="1"
@@ -1323,7 +1400,10 @@ onBeforeUnmount(() => controller.reset());
                 ></label
               >
               <label
-                >Неудачных решений<InputNumber
+                ><FormFieldLabel
+                  text="Неудачных решений"
+                  help="Общее число подтверждённых неудачных результатов, после которого обращение передаётся."
+                /><InputNumber
                   input-id="escalation-failed"
                   v-model="controller.policy.value.failedResolutionLimit"
                   :min="1"
@@ -1346,7 +1426,10 @@ onBeforeUnmount(() => controller.reset());
                 v-for="item in controller.policy.value.trustedOutcomeLimits"
                 :key="item.outcome"
                 ><span
-                  ><strong>{{ trustedOutcomeLabel(item.outcome) }}</strong
+                  ><FormFieldLabel
+                    :text="trustedOutcomeLabel(item.outcome)"
+                    help="Серверный результат обращения. Счётчик растёт только после подтверждённого исхода, а не по словам в сообщении."
+                  />
                   ><small
                     >Серверный результат, а не поиск слов в ответе.</small
                   ></span
@@ -1385,7 +1468,10 @@ onBeforeUnmount(() => controller.reset());
               </p>
             </div>
             <label class="routing-field"
-              >Версия правил распределения<InputText
+              ><FormFieldLabel
+                text="Версия правил распределения"
+                help="Ссылка на опубликованные правила, которые выбирают очередь, рабочее время и SLA. Это не имя сотрудника."
+              /><InputText
                 id="escalation-routing"
                 v-model="controller.policy.value.routingPolicyRevisionId"
                 maxlength="128"
@@ -1405,7 +1491,10 @@ onBeforeUnmount(() => controller.reset());
             >
             <div class="threshold-grid threshold-grid--two">
               <label
-                >Повторно предложить через, минут<InputNumber
+                ><FormFieldLabel
+                  text="Повторно предложить через, минут"
+                  help="Минимальная пауза перед тем, как Lola снова предложит оператора после отказа или пропуска."
+                /><InputNumber
                   input-id="escalation-cooldown"
                   :model-value="
                     Math.round(
@@ -1428,7 +1517,10 @@ onBeforeUnmount(() => controller.reset());
                   >{{ issue("offerCooldownSeconds") }}</small
                 ></label
               ><label
-                >Ждать ответа на предложение, минут<InputNumber
+                ><FormFieldLabel
+                  text="Ждать ответа на предложение, минут"
+                  help="Сколько времени предложение помощи считается активным, пока человек не ответил."
+                /><InputNumber
                   input-id="escalation-timeout"
                   :model-value="
                     Math.round(
@@ -1471,7 +1563,9 @@ onBeforeUnmount(() => controller.reset());
                 </p>
               </div>
               <Tag
-                :value="controller.safety.value?.revisionId ?? 'Загрузка'"
+                :value="
+                  controller.safety.value ? 'Проверено сервером' : 'Загрузка'
+                "
                 severity="secondary"
               />
             </div>
@@ -1593,6 +1687,10 @@ onBeforeUnmount(() => controller.reset());
               : 'Неоднозначная фраза'
       "
       class="rule-dialog"
+      :style="{
+        width: 'min(42.5rem, calc(100vw - 1.5rem))',
+        maxHeight: 'calc(100dvh - 1.5rem)',
+      }"
       @update:visible="!$event && closeEditor()"
     >
       <div v-if="editedPhraseRule" class="dialog-form">
@@ -1612,24 +1710,10 @@ onBeforeUnmount(() => controller.reset());
           имеют приоритет.</Message
         >
         <label
-          >Постоянный код<InputText
-            id="escalation-rule-code"
-            v-model="editedPhraseRule.code"
-            maxlength="64"
-            :disabled="!controller.canManage.value"
-            :aria-invalid="Boolean(editorIssue('code'))"
-            aria-describedby="escalation-rule-code-help escalation-rule-code-error"
-          /><small id="escalation-rule-code-help"
-            >Для истории и отчётов: например, HUMAN_REQUEST_RU.</small
-          ><small
-            v-if="editorIssue('code')"
-            id="escalation-rule-code-error"
-            class="field-error"
-            >{{ editorIssue("code") }}</small
-          ></label
-        >
-        <label
-          >Языки<MultiSelect
+          ><FormFieldLabel
+            text="Языки"
+            help="Языки, для которых Lola будет проверять эти формулировки. Добавляйте фразы именно на выбранных языках."
+          /><MultiSelect
             id="escalation-rule-locales"
             v-model="editedPhraseRule.locales"
             :options="localeOptions"
@@ -1637,6 +1721,7 @@ onBeforeUnmount(() => controller.reset());
             option-value="value"
             display="chip"
             filter
+            panel-class="escalation-locale-panel"
             :disabled="!controller.canManage.value"
             :aria-invalid="Boolean(editorIssue('locales'))"
             aria-describedby="escalation-rule-locales-error"
@@ -1648,7 +1733,9 @@ onBeforeUnmount(() => controller.reset());
           ></label
         >
         <label v-if="editorKind === 'AMBIGUOUS'"
-          >Что сделать<Select
+          ><FormFieldLabel
+            text="Что сделать"
+            help="Мягкий следующий шаг для неясного упоминания: предложить оператора или один раз уточнить причину." /><Select
             v-model="(editedPhraseRule as EscalationAmbiguousRule).action"
             :options="actionOptions"
             option-label="label"
@@ -1656,7 +1743,10 @@ onBeforeUnmount(() => controller.reset());
             :disabled="!controller.canManage.value"
         /></label>
         <label
-          >Фразы<Textarea
+          ><FormFieldLabel
+            text="Фразы"
+            help="Реальные формулировки человека. Одна законченная фраза в строке; одиночные слова дают слишком много ложных совпадений."
+          /><Textarea
             id="escalation-rule-phrases"
             v-model="phrasesText"
             rows="7"
@@ -1675,49 +1765,52 @@ onBeforeUnmount(() => controller.reset());
             >{{ editorIssue("phrases") }}</small
           ></label
         >
+        <details class="technical-fields" :open="Boolean(editorIssue('code'))">
+          <summary>
+            <span>Технический идентификатор</span>
+            <small>заполнен автоматически</small>
+          </summary>
+          <label class="technical-field">
+            <FormFieldLabel
+              text="Постоянный код"
+              help="Стабильное имя правила для истории, интеграций и отчётов. Создаётся автоматически; меняйте только если код должен совпасть с вашей схемой данных."
+            />
+            <InputText
+              id="escalation-rule-code"
+              v-model="editedPhraseRule.code"
+              maxlength="64"
+              :disabled="!controller.canManage.value"
+              :aria-invalid="Boolean(editorIssue('code'))"
+              aria-describedby="escalation-rule-code-help escalation-rule-code-error"
+            />
+            <small id="escalation-rule-code-help"
+              >Например, HUMAN_REQUEST_RU. Это не текст, который увидит
+              пользователь.</small
+            >
+            <small
+              v-if="editorIssue('code')"
+              id="escalation-rule-code-error"
+              class="field-error"
+              >{{ editorIssue("code") }}</small
+            >
+          </label>
+        </details>
       </div>
       <div v-if="editedScenario" class="dialog-form">
         <div class="field-grid">
           <label
-            >Постоянный код<InputText
-              id="escalation-scenario-code"
-              v-model="editedScenario.code"
-              maxlength="64"
-              :disabled="!controller.canManage.value"
-              :aria-invalid="Boolean(editorIssue('code'))"
-              aria-describedby="escalation-scenario-code-error"
-            /><small
-              v-if="editorIssue('code')"
-              id="escalation-scenario-code-error"
-              class="field-error"
-              >{{ editorIssue("code") }}</small
-            ></label
-          ><label
-            >Код причины<InputText
-              id="escalation-scenario-reason"
-              v-model="editedScenario.reasonCode"
-              maxlength="64"
-              :disabled="!controller.canManage.value"
-              :aria-invalid="Boolean(editorIssue('reasonCode'))"
-              aria-describedby="escalation-scenario-reason-error"
-            /><small
-              v-if="editorIssue('reasonCode')"
-              id="escalation-scenario-reason-error"
-              class="field-error"
-              >{{ editorIssue("reasonCode") }}</small
-            ></label
-          >
-        </div>
-        <div class="field-grid">
-          <label
-            >Что сделать<Select
+            ><FormFieldLabel
+              text="Что сделать"
+              help="Как Lola реагирует на этот сценарий: предлагает оператора, уточняет причину или передаёт сразу." /><Select
               v-model="editedScenario.action"
               :options="actionOptions"
               option-label="label"
               option-value="value"
               :disabled="!controller.canManage.value" /></label
           ><label
-            >Срочность<Select
+            ><FormFieldLabel
+              text="Срочность"
+              help="Приоритет передачи для очереди и SLA. Не меняет обязательные правила безопасности." /><Select
               v-model="editedScenario.urgency"
               :options="urgencyOptions"
               option-label="label"
@@ -1726,7 +1819,10 @@ onBeforeUnmount(() => controller.reset());
           /></label>
         </div>
         <label
-          >Что собрать перед передачей<Textarea
+          ><FormFieldLabel
+            text="Что собрать перед передачей"
+            help="Какие сведения Lola должна запросить до передачи: например, номер платежа или заказа. По одному коду поля в строке."
+          /><Textarea
             id="escalation-scenario-data"
             v-model="dataToCollectText"
             rows="5"
@@ -1744,6 +1840,57 @@ onBeforeUnmount(() => controller.reset());
             >{{ editorIssue("dataToCollect") }}</small
           ></label
         >
+        <details
+          class="technical-fields"
+          :open="Boolean(editorIssue('code') || editorIssue('reasonCode'))"
+        >
+          <summary>
+            <span>Технические идентификаторы</span>
+            <small>заполнены автоматически</small>
+          </summary>
+          <div class="field-grid technical-fields__grid">
+            <label class="technical-field">
+              <FormFieldLabel
+                text="Постоянный код"
+                help="Стабильное имя самого сценария. Используется в настройках, интеграциях и истории изменений."
+              />
+              <InputText
+                id="escalation-scenario-code"
+                v-model="editedScenario.code"
+                maxlength="64"
+                :disabled="!controller.canManage.value"
+                :aria-invalid="Boolean(editorIssue('code'))"
+                aria-describedby="escalation-scenario-code-error"
+              />
+              <small
+                v-if="editorIssue('code')"
+                id="escalation-scenario-code-error"
+                class="field-error"
+                >{{ editorIssue("code") }}</small
+              >
+            </label>
+            <label class="technical-field">
+              <FormFieldLabel
+                text="Код причины"
+                help="Причина именно этой передачи для отчётов и маршрутизации. Она может совпадать с кодом сценария, но отвечает на другой вопрос: почему передали."
+              />
+              <InputText
+                id="escalation-scenario-reason"
+                v-model="editedScenario.reasonCode"
+                maxlength="64"
+                :disabled="!controller.canManage.value"
+                :aria-invalid="Boolean(editorIssue('reasonCode'))"
+                aria-describedby="escalation-scenario-reason-error"
+              />
+              <small
+                v-if="editorIssue('reasonCode')"
+                id="escalation-scenario-reason-error"
+                class="field-error"
+                >{{ editorIssue("reasonCode") }}</small
+              >
+            </label>
+          </div>
+        </details>
       </div>
       <template #footer
         ><Button
@@ -1770,9 +1917,12 @@ onBeforeUnmount(() => controller.reset());
       v-if="canRead"
       :visible="simulatorVisible"
       modal
-      maximizable
       header="Проверка сценария передачи"
       class="simulator-dialog"
+      :style="{
+        width: 'min(70rem, calc(100vw - 2rem))',
+        maxHeight: 'calc(100dvh - 2rem)',
+      }"
       @update:visible="!$event && closeSimulator()"
     >
       <div class="simulator-note">
@@ -1957,7 +2107,10 @@ onBeforeUnmount(() => controller.reset());
               <span class="timeline-marker">{{ step.index + 1 }}</span>
               <article>
                 <div class="timeline-title">
-                  <strong>{{ simulationStepLabel(step.kind) }}</strong
+                  <div>
+                    <span class="card-kicker">Шаг {{ step.index + 1 }}</span>
+                    <strong>{{ simulationStepLabel(step.kind) }}</strong>
+                  </div>
                   ><Tag
                     :value="escalationActionLabel(step.action)"
                     :severity="
@@ -1969,94 +2122,124 @@ onBeforeUnmount(() => controller.reset());
                     "
                   />
                 </div>
-                <div class="counter-diff">
-                  <span
-                    >Уточнения {{ step.before.clarificationCount }} →
-                    {{ step.after.clarificationCount }}</span
-                  ><span
-                    >Неудачи {{ step.before.failedResolutionCount }} →
-                    {{ step.after.failedResolutionCount }}</span
-                  ><span
-                    >Не понято {{ step.before.noMatchCount }} →
-                    {{ step.after.noMatchCount }}</span
-                  ><span
-                    >Повторы {{ step.before.repeatCount }} →
-                    {{ step.after.repeatCount }}</span
-                  >
-                </div>
-                <div class="result-facts">
-                  <span
-                    ><i class="pi pi-shield" />
-                    {{
-                      safetyStateLabels[step.safety.state] ??
-                      "Состояние безопасности неизвестно"
-                    }}</span
-                  ><span
-                    ><i class="pi pi-directions" />
-                    {{
-                      routingAdmissionPresentation(step.routingAdmission).label
-                    }}</span
-                  ><span
-                    >{{
-                      simulationStatusLabels[step.before.status] ??
-                      "Состояние неизвестно"
-                    }}
-                    →
-                    {{
-                      simulationStatusLabels[step.after.status] ??
-                      "Состояние неизвестно"
-                    }}</span
-                  ><span>{{
-                    dispositionLabels[step.disposition] ??
-                    "Решение сервера не описано"
-                  }}</span
-                  ><span>Событие № {{ step.occurrenceNumber }}</span
-                  ><span v-if="step.policyMigration !== 'NONE'"
-                    >Смена правил:
-                    {{
-                      step.policyMigration === "APPLIED"
-                        ? "применена"
-                        : "требуется сверка"
-                    }}</span
-                  >
-                </div>
-                <p>
+                <ol class="decision-flow" aria-label="Порядок обработки шага">
+                  <li>
+                    <span>1</span>
+                    <div>
+                      <small>Сигнал</small
+                      ><strong>{{ simulationStepLabel(step.kind) }}</strong>
+                    </div>
+                  </li>
+                  <li>
+                    <span>2</span>
+                    <div>
+                      <small>Безопасность</small
+                      ><strong>{{
+                        safetyStateLabels[step.safety.state] ??
+                        "Состояние неизвестно"
+                      }}</strong>
+                    </div>
+                  </li>
+                  <li>
+                    <span>3</span>
+                    <div>
+                      <small>Допуск передачи</small
+                      ><strong>{{
+                        routingAdmissionPresentation(step.routingAdmission)
+                          .label
+                      }}</strong>
+                    </div>
+                  </li>
+                  <li>
+                    <span>4</span>
+                    <div>
+                      <small>Итог</small
+                      ><strong>{{ escalationActionLabel(step.action) }}</strong>
+                    </div>
+                  </li>
+                </ol>
+                <p class="timeline-outcome">
                   {{ routingAdmissionPresentation(step.routingAdmission).copy }}
                 </p>
-                <div class="result-facts result-facts--details">
-                  <span>Причина: {{ step.reasonCode }}</span>
-                  <span v-if="step.policyReasonCode"
-                    >Правило: {{ step.policyReasonCode }}</span
-                  >
-                  <span v-if="step.sourceCode"
-                    >Источник: {{ step.sourceCode }}</span
-                  >
-                  <span v-if="step.urgency"
-                    >Срочность: {{ urgencyLabel(step.urgency) }}</span
-                  >
-                  <span v-if="step.dataToCollect.length"
-                    >Собрать: {{ step.dataToCollect.join(", ") }}</span
-                  >
-                  <span v-if="step.offerDeadline"
-                    >Ответ до
-                    {{
-                      new Date(step.offerDeadline).toLocaleString("ru-RU")
-                    }}</span
-                  >
-                  <span v-if="step.cooldownUntil"
-                    >Повтор после
-                    {{
-                      new Date(step.cooldownUntil).toLocaleString("ru-RU")
-                    }}</span
-                  >
-                  <span
-                    v-for="(count, outcome) in step.after
-                      .trustedOutcomeCounts ?? {}"
-                    :key="outcome"
-                  >
-                    {{ trustedOutcomeLabel(String(outcome)) }}: {{ count }}
-                  </span>
-                </div>
+                <details class="timeline-details">
+                  <summary>Изменения состояния и технические детали</summary>
+                  <div class="counter-diff">
+                    <span
+                      >Уточнения {{ step.before.clarificationCount }} →
+                      {{ step.after.clarificationCount }}</span
+                    >
+                    <span
+                      >Неудачи {{ step.before.failedResolutionCount }} →
+                      {{ step.after.failedResolutionCount }}</span
+                    >
+                    <span
+                      >Не понято {{ step.before.noMatchCount }} →
+                      {{ step.after.noMatchCount }}</span
+                    >
+                    <span
+                      >Повторы {{ step.before.repeatCount }} →
+                      {{ step.after.repeatCount }}</span
+                    >
+                  </div>
+                  <div class="result-facts">
+                    <span
+                      >{{
+                        simulationStatusLabels[step.before.status] ??
+                        "Состояние неизвестно"
+                      }}
+                      →
+                      {{
+                        simulationStatusLabels[step.after.status] ??
+                        "Состояние неизвестно"
+                      }}</span
+                    >
+                    <span>{{
+                      dispositionLabels[step.disposition] ??
+                      "Решение сервера не описано"
+                    }}</span>
+                    <span>Событие № {{ step.occurrenceNumber }}</span>
+                    <span v-if="step.policyMigration !== 'NONE'"
+                      >Смена правил:
+                      {{
+                        step.policyMigration === "APPLIED"
+                          ? "применена"
+                          : "требуется сверка"
+                      }}</span
+                    >
+                    <span>Причина: {{ step.reasonCode }}</span>
+                    <span v-if="step.policyReasonCode"
+                      >Правило: {{ step.policyReasonCode }}</span
+                    >
+                    <span v-if="step.sourceCode"
+                      >Источник: {{ step.sourceCode }}</span
+                    >
+                    <span v-if="step.urgency"
+                      >Срочность: {{ urgencyLabel(step.urgency) }}</span
+                    >
+                    <span v-if="step.dataToCollect.length"
+                      >Собрать: {{ step.dataToCollect.join(", ") }}</span
+                    >
+                    <span v-if="step.offerDeadline"
+                      >Ответ до
+                      {{
+                        new Date(step.offerDeadline).toLocaleString("ru-RU")
+                      }}</span
+                    >
+                    <span v-if="step.cooldownUntil"
+                      >Повтор после
+                      {{
+                        new Date(step.cooldownUntil).toLocaleString("ru-RU")
+                      }}</span
+                    >
+                    <span
+                      v-for="(count, outcome) in step.after
+                        .trustedOutcomeCounts ?? {}"
+                      :key="outcome"
+                      >{{ trustedOutcomeLabel(String(outcome)) }}:
+                      {{ count }}</span
+                    >
+                  </div>
+                </details>
                 <Message
                   v-if="step.safety.assistantReleaseGate !== 'ALLOW'"
                   severity="warn"
@@ -2100,6 +2283,10 @@ onBeforeUnmount(() => controller.reset());
       modal
       header="Параметры события"
       class="rule-dialog"
+      :style="{
+        width: 'min(42.5rem, calc(100vw - 1.5rem))',
+        maxHeight: 'calc(100dvh - 1.5rem)',
+      }"
       @update:visible="!$event && closeStepEditor()"
     >
       <div v-if="editedStep" class="dialog-form">
@@ -2108,7 +2295,9 @@ onBeforeUnmount(() => controller.reset());
           пользователям или операторам.</Message
         >
         <label
-          >Событие<Select
+          ><FormFieldLabel
+            text="Событие"
+            help="Какой факт проверка должна воспроизвести на этом шаге. Реальных обращений и передач она не создаёт." /><Select
             v-model="editedStep.kind"
             :options="
               simulationKindOptions.map(([value, label]) => ({ value, label }))
@@ -2118,14 +2307,18 @@ onBeforeUnmount(() => controller.reset());
             filter
         /></label>
         <label
-          >Через сколько минут от начала<InputNumber
+          ><FormFieldLabel
+            text="Через сколько минут от начала"
+            help="Виртуальное время события относительно первого шага проверки." /><InputNumber
             v-model="editedStepDelayMinutes"
             :min="0"
             :max="10080"
             :use-grouping="false"
         /></label>
         <label v-if="editedStep.kind === 'EXPLICIT_HUMAN_REQUEST'"
-          >Правило явной просьбы<Select
+          ><FormFieldLabel
+            text="Правило явной просьбы"
+            help="Какое из настроенных правил явной просьбы использовать в проверке." /><Select
             v-model="editedStep.ruleCode"
             :options="
               controller.policy.value.explicitHumanRequestRules.map((rule) => ({
@@ -2139,7 +2332,9 @@ onBeforeUnmount(() => controller.reset());
             aria-describedby="escalation-step-shape-error"
         /></label>
         <label v-if="editedStep.kind === 'AMBIGUOUS_HUMAN_TERM'"
-          >Правило неоднозначной фразы<Select
+          ><FormFieldLabel
+            text="Правило неоднозначной фразы"
+            help="Какое правило неясного упоминания использовать в проверке." /><Select
             v-model="editedStep.ruleCode"
             :options="
               controller.policy.value.ambiguousHumanTermRules.map((rule) => ({
@@ -2153,7 +2348,9 @@ onBeforeUnmount(() => controller.reset());
             aria-describedby="escalation-step-shape-error"
         /></label>
         <label v-if="editedStep.kind === 'SCENARIO'"
-          >Сценарий<Select
+          ><FormFieldLabel
+            text="Сценарий"
+            help="Какой продуктовый сценарий воспроизвести на этом шаге." /><Select
             v-model="editedStep.scenarioCode"
             :options="
               controller.policy.value.scenarios.map((item) => ({
@@ -2167,7 +2364,9 @@ onBeforeUnmount(() => controller.reset());
             aria-describedby="escalation-step-shape-error"
         /></label>
         <label v-if="editedStep.kind === 'TRUSTED_OUTCOME'"
-          >Проверенный результат<Select
+          ><FormFieldLabel
+            text="Проверенный результат"
+            help="Подтверждённый сервером исход, который изменяет соответствующий счётчик." /><Select
             v-model="editedStep.outcome"
             :options="trustedOutcomeOptions"
             option-label="label"
@@ -2183,13 +2382,18 @@ onBeforeUnmount(() => controller.reset());
         >
         <div class="field-grid">
           <label
-            >Проверка безопасности<Select
+            ><FormFieldLabel
+              text="Проверка безопасности"
+              help="Состояние обязательной платформенной проверки на этом тестовом шаге." /><Select
               v-model="editedStep.safetyState"
               :options="safetyStateOptions"
               option-label="label"
               option-value="value" /></label
           ><label
-            >Класс риска<Select
+            ><FormFieldLabel
+              text="Класс риска"
+              help="Категория риска для подозрительного или срочного состояния безопасности."
+            /><Select
               v-model="editedStep.safetyRiskClass"
               :options="safetyRiskOptions"
               option-label="label"
@@ -2209,13 +2413,17 @@ onBeforeUnmount(() => controller.reset());
         </div>
         <div class="field-grid">
           <label
-            >Состояние обращения<Select
+            ><FormFieldLabel
+              text="Состояние обращения"
+              help="Бизнес-состояние обращения, которое увидит логика распределения." /><Select
               v-model="editedStep.routing.businessState"
               :options="businessStateOptions"
               option-label="label"
               option-value="value" /></label
           ><label
-            >Готовность команды<Select
+            ><FormFieldLabel
+              text="Готовность команды"
+              help="Доступна ли подходящая очередь для передачи на этом шаге проверки." /><Select
               v-model="editedStep.routing.queueState"
               :options="queueStateOptions"
               option-label="label"
@@ -2225,10 +2433,11 @@ onBeforeUnmount(() => controller.reset());
         <label class="check-row"
           ><input
             v-model="editedStep.routing.currentAssignment"
-            type="checkbox"
-          />
-          Обращение уже назначено оператору</label
-        >
+            type="checkbox" />
+          <FormFieldLabel
+            text="Обращение уже назначено оператору"
+            help="Включите, чтобы проверить поведение уже назначенного обращения и не создавать повторную передачу."
+        /></label>
         <Message
           v-if="editedStep.kind === 'POLICY_SWITCH'"
           severity="warn"
@@ -2260,7 +2469,9 @@ onBeforeUnmount(() => controller.reset());
         Intelligence. Она не меняет правила категорий или Safety.
       </p>
       <label
-        >Причина публикации<Textarea
+        ><FormFieldLabel
+          text="Причина публикации"
+          help="Короткое объяснение для истории изменений: что проверено и зачем эта версия публикуется." /><Textarea
           v-model="reason"
           rows="3"
           maxlength="500" /></label
@@ -2283,7 +2494,9 @@ onBeforeUnmount(() => controller.reset());
       class="confirm-dialog"
       ><p>Опубликованные правила не изменятся.</p>
       <label
-        >Причина удаления<Textarea
+        ><FormFieldLabel
+          text="Причина удаления"
+          help="Объяснение для журнала изменений, почему незавершённый черновик больше не нужен." /><Textarea
           v-model="reason"
           rows="3"
           maxlength="500" /></label
@@ -2312,7 +2525,8 @@ onBeforeUnmount(() => controller.reset());
   );
   max-width: 1480px;
   margin: 0 auto;
-  padding: 22px 24px 56px;
+  padding: 28px clamp(16px, 3vw, 32px) 64px;
+  overflow-x: clip;
   color: var(--text-primary);
 }
 .page-header,
@@ -2338,9 +2552,9 @@ onBeforeUnmount(() => controller.reset());
   margin-bottom: 18px;
 }
 .page-header h1 {
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  letter-spacing: -0.045em;
-  line-height: 1.02;
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
   margin: 5px 0 7px;
 }
 .page-header p,
@@ -2365,10 +2579,32 @@ onBeforeUnmount(() => controller.reset());
   gap: 8px;
   align-items: center;
 }
+.release-workspace-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.release-workspace-link:hover {
+  background: var(--soft);
+}
+.release-workspace-link:focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 2px;
+}
 .section-tabs {
   display: flex;
+  box-sizing: border-box;
   gap: 4px;
-  width: max-content;
+  width: 100%;
   max-width: 100%;
   padding: 4px;
   border: 1px solid var(--line);
@@ -2435,9 +2671,9 @@ onBeforeUnmount(() => controller.reset());
 .handoff-brief {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  padding: 20px;
-  margin-bottom: 14px;
+  gap: 20px 24px;
+  padding: 22px;
+  margin-bottom: 16px;
 }
 .handoff-brief h2,
 .policy-section h2,
@@ -2449,6 +2685,54 @@ onBeforeUnmount(() => controller.reset());
 .brief-actions {
   align-items: flex-start;
   gap: 8px;
+}
+.handoff-path {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-subtle);
+}
+.handoff-path li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 9px;
+  min-height: 82px;
+  padding: 14px;
+  border-right: 1px solid var(--line);
+}
+.handoff-path li:last-child {
+  border-right: 0;
+}
+.handoff-path li > span {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--action-primary);
+  background: color-mix(
+    in srgb,
+    var(--action-primary) 10%,
+    var(--surface-card)
+  );
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.handoff-path strong {
+  font-size: 0.88rem;
+}
+.handoff-path small {
+  color: var(--text-color-secondary);
+  line-height: 1.35;
 }
 .brief-facts {
   grid-column: 1/-1;
@@ -2482,7 +2766,7 @@ onBeforeUnmount(() => controller.reset());
 }
 .policy-section,
 .safety-section {
-  padding: 20px;
+  padding: 22px;
 }
 .section-heading,
 .rule-group__head {
@@ -2490,13 +2774,85 @@ onBeforeUnmount(() => controller.reset());
   justify-content: space-between;
   gap: 16px;
 }
-.rule-group {
+.request-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 18px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
+}
+.rule-group {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface-subtle);
+}
+.rule-group--exception {
+  grid-column: 1/-1;
+}
+.rule-group__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.group-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--action-primary);
+  background: color-mix(
+    in srgb,
+    var(--action-primary) 10%,
+    var(--surface-card)
+  );
+}
+.rule-group--explicit .group-mark {
+  color: var(--status-danger-text);
+  background: color-mix(
+    in srgb,
+    var(--status-danger-text) 9%,
+    var(--surface-card)
+  );
+}
+.rule-group--exception .group-mark {
+  color: var(--text-color-secondary);
+  background: var(--surface-card);
+}
+.group-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: var(--text-color-secondary);
+  background: var(--surface-card);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 .rule-group h3 {
-  margin: 0 0 3px;
+  margin: 0;
+  font-size: 1rem;
+}
+.rule-group__head p {
+  margin-top: 7px;
+  font-size: 0.84rem;
+}
+.rule-list,
+.scenario-list {
+  display: grid;
+  gap: 8px;
+}
+.rule-list {
+  max-height: 300px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .rule-row,
 .scenario-row {
@@ -2504,26 +2860,27 @@ onBeforeUnmount(() => controller.reset());
   display: grid;
   align-items: center;
   gap: 12px;
-  border: 0;
-  border-top: 1px solid var(--line);
-  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-card);
   color: inherit;
   text-align: left;
-  padding: 12px 4px;
+  padding: 12px;
   cursor: pointer;
   transition:
     background-color 0.16s ease,
     transform 0.16s ease;
 }
 .rule-row {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 .scenario-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 .rule-row:hover,
 .scenario-row:hover {
-  background: var(--soft);
+  border-color: color-mix(in srgb, var(--action-primary) 30%, var(--line));
+  background: color-mix(in srgb, var(--action-primary) 5%, var(--surface-card));
 }
 .rule-row:disabled,
 .scenario-row:disabled {
@@ -2559,6 +2916,18 @@ onBeforeUnmount(() => controller.reset());
   color: var(--text-color-secondary);
   line-height: 1.4;
 }
+.rule-main code,
+.scenario-row code {
+  color: var(--text-color-secondary);
+  font:
+    500 0.74rem/1.3 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+.scenario-list {
+  margin-top: 16px;
+}
 .scenario-meta {
   display: flex;
   gap: 6px;
@@ -2579,7 +2948,7 @@ onBeforeUnmount(() => controller.reset());
 .routing-field {
   flex-direction: column;
   gap: 7px;
-  font-weight: 700;
+  font-weight: 400;
 }
 .outcome-list {
   display: grid;
@@ -2708,6 +3077,43 @@ onBeforeUnmount(() => controller.reset());
 .rule-dialog {
   width: min(680px, calc(100vw - 28px));
 }
+:global(.rule-dialog),
+:global(.simulator-dialog) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+:global(.rule-dialog .p-dialog-content),
+:global(.simulator-dialog .p-dialog-content) {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+:global(.rule-dialog .dialog-form > label) {
+  min-width: 0;
+}
+:global(.rule-dialog .p-multiselect) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+:global(.rule-dialog .p-multiselect-label) {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  gap: 4px;
+  max-height: 108px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+:global(.escalation-locale-panel .p-multiselect-list-container) {
+  max-height: min(260px, 38vh);
+  overscroll-behavior: contain;
+}
 .confirm-dialog {
   width: min(520px, calc(100vw - 28px));
 }
@@ -2715,17 +3121,79 @@ onBeforeUnmount(() => controller.reset());
   display: grid;
   gap: 16px;
 }
+.technical-fields {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+.technical-fields summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.technical-fields summary small {
+  font-weight: 400;
+}
+.technical-fields[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+.technical-fields > .technical-field,
+.technical-fields__grid {
+  margin: 12px;
+}
+.technical-field small {
+  font-weight: 400;
+}
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+.escalation-page :deep(.p-inputtext),
+.escalation-page :deep(.p-select-label),
+.escalation-page :deep(.p-multiselect-label),
+.escalation-page :deep(.p-inputnumber-input),
+.escalation-page :deep(.p-textarea),
+:deep(.rule-dialog .p-inputtext),
+:deep(.rule-dialog .p-select-label),
+:deep(.rule-dialog .p-multiselect-label),
+:deep(.rule-dialog .p-inputnumber-input),
+:deep(.rule-dialog .p-textarea),
+:deep(.rule-dialog .p-chip-label),
+:deep(.confirm-dialog .p-inputtext),
+:deep(.confirm-dialog .p-textarea) {
+  font-weight: 400 !important;
+}
+:deep(.rule-dialog .p-message-text),
+:deep(.confirm-dialog label),
+:deep(.confirm-dialog .p-message-text) {
+  font-weight: 400;
+}
+:deep(.confirm-dialog label) {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+:deep(.technical-field .p-inputtext) {
+  color: var(--text-secondary);
+  font:
+    400 0.82rem/1.35 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 .dialog-spacer {
   flex: 1;
 }
 .simulator-dialog {
   width: min(1320px, calc(100vw - 32px));
-  height: min(900px, calc(100vh - 32px));
 }
 .simulator-note {
   display: flex;
@@ -2877,6 +3345,82 @@ onBeforeUnmount(() => controller.reset());
   gap: 8px;
   flex-wrap: wrap;
 }
+.timeline-title > div {
+  display: grid;
+  gap: 3px;
+}
+.decision-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--surface-subtle);
+}
+.decision-flow li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 11px 12px;
+  border-right: 1px solid var(--line);
+}
+.decision-flow li:last-child {
+  border-right: 0;
+}
+.decision-flow li > span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--action-primary);
+  background: color-mix(
+    in srgb,
+    var(--action-primary) 10%,
+    var(--surface-card)
+  );
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.decision-flow li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.decision-flow small {
+  color: var(--text-color-secondary);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+.decision-flow strong {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.timeline-outcome {
+  margin-top: 10px !important;
+}
+.timeline-details {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.timeline-details summary {
+  padding: 10px 0 2px;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.timeline-details[open] summary {
+  color: var(--text-primary);
+}
 .counter-diff,
 .result-facts {
   justify-content: flex-start;
@@ -2900,17 +3444,24 @@ onBeforeUnmount(() => controller.reset());
   .simulator-grid {
     grid-template-columns: 1fr;
   }
+  .handoff-path,
+  .request-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .handoff-path li:nth-child(2) {
+    border-right: 0;
+  }
+  .handoff-path li:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+  .rule-group--exception {
+    grid-column: 1/-1;
+  }
   .brief-actions {
     grid-row: 3;
   }
   .threshold-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .simulator-dialog {
-    width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
-    margin: 0;
   }
   .simulator-grid {
     min-height: 0;
@@ -2927,7 +3478,13 @@ onBeforeUnmount(() => controller.reset());
     display: grid;
   }
   .header-actions {
+    display: grid;
     width: 100%;
+    grid-template-columns: 1fr 1fr;
+  }
+  .release-workspace-link {
+    grid-column: 1 / -1;
+    justify-content: center;
   }
   .header-actions :deep(.p-button) {
     flex: 1;
@@ -2963,12 +3520,25 @@ onBeforeUnmount(() => controller.reset());
     width: 100%;
   }
   .brief-facts,
+  .handoff-path,
+  .request-groups,
   .threshold-grid,
   .threshold-grid--two,
   .outcome-list,
   .safety-classes,
   .field-grid {
     grid-template-columns: 1fr;
+  }
+  .handoff-path li,
+  .handoff-path li:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .handoff-path li:last-child {
+    border-bottom: 0;
+  }
+  .rule-group--exception {
+    grid-column: auto;
   }
   .brief-facts div {
     border-right: 0;
@@ -3004,6 +3574,17 @@ onBeforeUnmount(() => controller.reset());
   .simulator-grid {
     display: flex;
     flex-direction: column;
+  }
+  .decision-flow {
+    grid-template-columns: 1fr;
+  }
+  .decision-flow li,
+  .decision-flow li:last-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .decision-flow li:last-child {
+    border-bottom: 0;
   }
   .mobile-simulator-nav {
     display: grid;

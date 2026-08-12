@@ -5,7 +5,11 @@ import axios, {
 } from "axios";
 
 import { normalizeApiError } from "./api-error";
-import { clearAuthSession, getAccessToken } from "./auth-session";
+import {
+  clearAuthSession,
+  getAccessToken,
+  getSelectedProjectId,
+} from "./auth-session";
 
 export function resolveApiOrigin(configuredUrl: string | undefined): string {
   const value = configuredUrl?.replace(/\/$/, "") ?? "http://localhost:3000";
@@ -26,6 +30,7 @@ export const axiosInstance = axios.create({
 interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _authRetry?: boolean;
   _noAuthRetry?: boolean;
+  _projectScopeId?: string;
 }
 
 interface AuthTeardownRequestConfig extends AxiosRequestConfig {
@@ -112,6 +117,7 @@ export function noAuthRetryRequestOptions(): AxiosRequestConfig {
 }
 
 axiosInstance.interceptors.request.use((config) => {
+  (config as RetriableRequestConfig)._projectScopeId = getSelectedProjectId();
   const headers = AxiosHeaders.from(config.headers);
   if (!headers.has("x-request-id")) headers.set("x-request-id", requestId());
   const teardownToken = (config as AuthTeardownRequestConfig)
@@ -143,6 +149,12 @@ axiosInstance.interceptors.response.use(
       (config?.method?.toLowerCase() === "post" &&
         Boolean(config.url?.includes("/api/v1/auth/me/email-change"))) ||
       Boolean(config?.url?.includes("/api/v1/auth/mfa/"));
+    const belongsToPreviousProject = Boolean(
+      config?._projectScopeId &&
+      config._projectScopeId !== getSelectedProjectId(),
+    );
+    if (cause.response?.status === 401 && belongsToPreviousProject)
+      throw normalizeApiError(cause);
     const canRetry =
       authTeardownDepth === 0 &&
       cause.response?.status === 401 &&
@@ -170,17 +182,18 @@ axiosInstance.interceptors.response.use(
         );
         if (!currentToken || requestAuthorization === `Bearer ${currentToken}`)
           await refreshAccessToken();
-        return await axiosInstance.request(config);
       } catch (refreshCause) {
         clearAuthSession();
         unauthorizedHandler?.();
         throw normalizeApiError(refreshCause);
       }
+      return axiosInstance.request(config);
     }
 
     if (
       authTeardownDepth === 0 &&
       cause.response?.status === 401 &&
+      !config?._authRetry &&
       !isRefreshRequest &&
       !isCredentialProofRequest
     ) {

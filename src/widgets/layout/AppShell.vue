@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Avatar from "primevue/avatar";
@@ -37,6 +37,7 @@ const projectActions = useProjectActionsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
+const switchingProjectName = ref("");
 const navigationIntentPath = ref("");
 const expandedNavigationGroups = ref<Record<string, boolean>>({
   project: false,
@@ -298,32 +299,11 @@ const navigationItems = computed(() => [
     supportSection: true,
   },
   {
-    label: "Категории и правила",
-    icon: "pi pi-tags",
-    to: "/support/settings/case-intelligence/detection",
+    label: "Правила обращений",
+    icon: "pi pi-sparkles",
+    to: "/support/settings/case-intelligence",
     project: true,
     projectPermission: "project.case_intelligence.read",
-    nested: true,
-    supportSection: true,
-  },
-  {
-    label: "Передача оператору",
-    icon: "pi pi-users",
-    to: "/support/settings/case-intelligence/escalation",
-    project: true,
-    projectPermission: "project.case_intelligence.read",
-    nested: true,
-    supportSection: true,
-  },
-  {
-    label: "Качество и версии",
-    icon: "pi pi-verified",
-    to: "/support/settings/case-intelligence/evaluation",
-    project: true,
-    projectPermissionsAll: [
-      "project.case_intelligence.read",
-      "project.case_intelligence.release.manage",
-    ],
     nested: true,
     supportSection: true,
   },
@@ -487,13 +467,6 @@ const navigation = computed(() => {
             permission as Parameters<typeof hasProjectPermission>[1],
           ),
         )) &&
-      (!Array.isArray(item.projectPermissionsAll) ||
-        item.projectPermissionsAll.every((permission) =>
-          hasProjectPermission(
-            auth.project?.effectivePermissionCodes ?? [],
-            permission as Parameters<typeof hasProjectPermission>[1],
-          ),
-        )) &&
       (!item.projectMemberships || canReadMemberships.value) &&
       (!item.projectRoles || canReadRoles.value) &&
       (!item.supportWorkspace || canReadSupportWorkspace.value) &&
@@ -627,9 +600,22 @@ const profileItems = computed(() => [
 
 async function switchProject(projectId: string) {
   if (auth.project?.id === projectId) return;
-  projectActions.clear();
-  auth.selectProject(projectId);
-  await router.push("/overview");
+  const previousProjectId = auth.project?.id;
+  const nextProject = auth.projects.find((item) => item.id === projectId);
+  if (!nextProject) return;
+  profileMenu.value?.hide?.();
+  switchingProjectName.value = nextProject.name;
+  await nextTick();
+  try {
+    projectActions.clear();
+    auth.selectProject(projectId);
+    await router.replace("/overview");
+  } catch (cause) {
+    if (previousProjectId) auth.selectProject(previousProjectId);
+    throw cause;
+  } finally {
+    switchingProjectName.value = "";
+  }
 }
 
 function openProjectTab(projectId: string) {
@@ -916,7 +902,24 @@ onBeforeUnmount(() => {
           severity="secondary"
         />
       </header>
-      <RouterView />
+      <section
+        v-if="switchingProjectName"
+        class="project-switch-state"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="project-switch-state__mark" aria-hidden="true">
+          <i class="pi pi-briefcase" />
+        </span>
+        <div>
+          <strong>Переключаем проект</strong>
+          <span>{{ switchingProjectName }}</span>
+          <small
+            >Обновляем доступы и открываем безопасную стартовую страницу.</small
+          >
+        </div>
+      </section>
+      <RouterView v-else />
     </main>
     <div v-if="sidebarOpen" class="backdrop" @click="sidebarOpen = false" />
   </div>
@@ -931,6 +934,43 @@ onBeforeUnmount(() => {
 }
 .shell--sidebar-collapsed {
   grid-template-columns: 64px minmax(0, 1fr);
+}
+.project-switch-state {
+  min-height: calc(100vh - 1px);
+  display: grid;
+  place-content: center;
+  grid-template-columns: auto minmax(0, 360px);
+  gap: 14px;
+  padding: 24px;
+  color: var(--text-primary);
+  background: var(--surface-ground);
+}
+.project-switch-state__mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: var(--action-primary);
+  background: color-mix(
+    in srgb,
+    var(--action-primary) 10%,
+    var(--surface-card)
+  );
+}
+.project-switch-state > div {
+  display: grid;
+  gap: 3px;
+}
+.project-switch-state strong {
+  font-size: 1rem;
+}
+.project-switch-state span,
+.project-switch-state small {
+  color: var(--text-secondary);
+}
+.project-switch-state span {
+  font-weight: 600;
 }
 .shell--sidebar-collapsed .sidebar {
   padding: 14px 8px 12px;

@@ -341,6 +341,28 @@ onBeforeUnmount(() => controller?.abort());
         />
       </div>
     </section>
+    <section
+      v-else-if="mode === 'calibrations' && !calibrations.length"
+      class="surface calibration-empty"
+      aria-labelledby="calibrations-empty-title"
+    >
+      <div class="calibration-empty__content">
+        <span class="calibration-empty__icon" aria-hidden="true">
+          <i class="pi pi-check-circle" />
+        </span>
+        <div>
+          <h2 id="calibrations-empty-title">Калибровок пока нет</h2>
+          <p>
+            Контроль качества работает. Калибровочные сессии появятся здесь,
+            когда команда начнёт сверять оценки по одной работе.
+          </p>
+        </div>
+        <RouterLink class="calibration-empty__link" to="/support/quality">
+          Открыть очередь проверок
+          <i class="pi pi-arrow-right" aria-hidden="true" />
+        </RouterLink>
+      </div>
+    </section>
     <section v-else-if="mode === 'calibrations'" class="cards">
       <article v-for="item in calibrations" :key="item.id" class="surface card">
         <div class="card-top">
@@ -669,6 +691,58 @@ nav a:hover {
   font-size: 2rem;
   color: var(--p-green-500);
 }
+.calibration-empty {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+}
+.calibration-empty__content {
+  max-width: 520px;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+.calibration-empty__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--status-success-soft, var(--p-green-50));
+  color: var(--status-success-text, var(--p-green-700));
+  font-size: 1.35rem;
+}
+.calibration-empty h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+.calibration-empty p {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.calibration-empty__link {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--p-primary-color);
+  font-size: 0.84rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.calibration-empty__link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.calibration-empty__link:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
 .alert {
   padding: 10px;
   border: 1px solid var(--p-red-200);
@@ -716,8 +790,6 @@ nav a:hover {
   .dispute :deep(.p-button) {
     width: 100%;
   }
-}
-</style>
   .calibration-heading {
     align-items: flex-start;
   }
@@ -734,3 +806,5 @@ nav a:hover {
     align-items: stretch;
     flex-direction: column;
   }
+}
+</style>

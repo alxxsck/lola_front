@@ -109,6 +109,22 @@ interface RenderOptions {
   allowActivity?: boolean;
   readiness?: SupportLeadReadiness;
   capacityPage?: SupportLeadCapacityRiskPage;
+  initialRequests?: {
+    readiness?: Promise<SupportLeadReadiness>;
+    capacity?: Promise<SupportLeadCapacityRiskPage>;
+    summary?: Promise<SupportLeadSummary>;
+    risks?: Promise<SupportLeadCaseRiskPage>;
+    cases?: Promise<unknown>;
+    alerts?: Promise<SupportOperationalAlertPage>;
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
 }
 
 async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
@@ -122,6 +138,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     capacityPage,
     riskPage,
     alertsPage,
+    initialRequests,
   } = options;
   const pinia = createPinia();
   setActivePinia(pinia);
@@ -156,8 +173,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     },
     projects: [],
   });
-  api.readSummary.mockResolvedValue(value);
-  api.readReadiness.mockResolvedValue(readinessOverride ?? {
+  const readiness = readinessOverride ?? {
     readinessState: "READY",
     evaluatedAt: "2026-08-06T10:00:00.000Z",
     computedAt: "2026-08-06T10:00:00.000Z",
@@ -172,14 +188,23 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
       activity: "AVAILABLE",
       realtime: "AVAILABLE",
     },
-  });
-  api.readCapacityRisks.mockResolvedValue(capacityPage ?? {
+  } satisfies SupportLeadReadiness;
+  const capacity = capacityPage ?? {
     computedAt: "2026-08-06T10:00:00.000Z",
     freshnessState: "READY",
     state: "AVAILABLE",
     items: [],
     nextCursor: null,
-  });
+  } satisfies SupportLeadCapacityRiskPage;
+  api.readSummary.mockReturnValue(
+    initialRequests?.summary ?? Promise.resolve(value),
+  );
+  api.readReadiness.mockReturnValue(
+    initialRequests?.readiness ?? Promise.resolve(readiness),
+  );
+  api.readCapacityRisks.mockReturnValue(
+    initialRequests?.capacity ?? Promise.resolve(capacity),
+  );
   api.readInvestigation.mockResolvedValue({
     caseId: "case-1",
     computedAt: "2026-08-06T10:00:00.000Z",
@@ -196,7 +221,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
     nextCursor: null,
   });
   api.readCaseRisks.mockImplementation((_, riskType) =>
-    Promise.resolve({
+    initialRequests?.risks ?? Promise.resolve({
       computedAt: riskPage?.computedAt ?? "2026-08-06T10:00:00.000Z",
       freshnessState: riskPage?.freshnessState ?? "READY",
       riskType,
@@ -204,7 +229,7 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
       nextCursor: riskPage?.nextCursor ?? null,
     }),
   );
-  api.readCases.mockResolvedValue({
+  api.readCases.mockReturnValue(initialRequests?.cases ?? Promise.resolve({
     items: [
       {
         id: "case-1",
@@ -222,8 +247,10 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
       },
     ],
     nextCursor: null,
-  });
-  api.readAlerts.mockResolvedValue(alertsPage ?? alertPage);
+  }));
+  api.readAlerts.mockReturnValue(
+    initialRequests?.alerts ?? Promise.resolve(alertsPage ?? alertPage),
+  );
   api.readAlertDetail.mockResolvedValue(alertDetail);
   const availability = {
     operatorId: "operator-1",
@@ -273,6 +300,139 @@ async function render(value: SupportLeadSummary, options: RenderOptions = {}) {
 
 describe("SupportControlPage", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("keeps one full-page skeleton until every initial dashboard projection settles", async () => {
+    const readinessRequest = deferred<SupportLeadReadiness>();
+    const capacityRequest = deferred<SupportLeadCapacityRiskPage>();
+    const summaryRequest = deferred<SupportLeadSummary>();
+    const risksRequest = deferred<SupportLeadCaseRiskPage>();
+    const casesRequest = deferred<unknown>();
+    const alertsRequest = deferred<SupportOperationalAlertPage>();
+    const { wrapper } = await render(summary, {
+      allowAlerts: true,
+      allowAssignment: true,
+      initialRequests: {
+        readiness: readinessRequest.promise,
+        capacity: capacityRequest.promise,
+        summary: summaryRequest.promise,
+        risks: risksRequest.promise,
+        cases: casesRequest.promise,
+        alerts: alertsRequest.promise,
+      },
+    });
+
+    const pageSkeleton = () =>
+      wrapper.find('[data-testid="support-control-page-skeleton"]');
+    expect(pageSkeleton().exists()).toBe(true);
+    expect(pageSkeleton().findAll("[data-skeleton-block]")).toHaveLength(5);
+    expect(wrapper.find("#attention-heading").exists()).toBe(false);
+
+    readinessRequest.resolve({
+      readinessState: "READY",
+      evaluatedAt: "2026-08-06T10:00:00.000Z",
+      computedAt: "2026-08-06T10:00:00.000Z",
+      projectionGeneration: 1,
+      checkpoint: "10",
+      sourceHighWater: "10",
+      capabilities: {
+        summary: "AVAILABLE",
+        caseRisks: "AVAILABLE",
+        capacityRisks: "AVAILABLE",
+        investigation: "AVAILABLE",
+        activity: "AVAILABLE",
+        realtime: "AVAILABLE",
+      },
+    });
+    await flushPromises();
+    expect(pageSkeleton().exists()).toBe(true);
+
+    capacityRequest.resolve({
+      computedAt: "2026-08-06T10:00:00.000Z",
+      freshnessState: "READY",
+      state: "AVAILABLE",
+      items: [],
+      nextCursor: null,
+    });
+    await flushPromises();
+    expect(api.readSummary).toHaveBeenCalledTimes(1);
+    expect(api.readCaseRisks).toHaveBeenCalledTimes(1);
+    expect(api.readCases).toHaveBeenCalledTimes(1);
+    expect(api.readAlerts).toHaveBeenCalledTimes(1);
+    expect(pageSkeleton().exists()).toBe(true);
+
+    summaryRequest.resolve(summary);
+    await flushPromises();
+    expect(pageSkeleton().exists()).toBe(true);
+    risksRequest.resolve({
+      computedAt: "2026-08-06T10:00:00.000Z",
+      freshnessState: "READY",
+      riskType: "UNASSIGNED_AGED",
+      items: [],
+      nextCursor: null,
+    });
+    casesRequest.resolve({ items: [], nextCursor: null });
+    await flushPromises();
+    expect(pageSkeleton().exists()).toBe(true);
+
+    alertsRequest.resolve(alertPage);
+    await flushPromises();
+    expect(pageSkeleton().exists()).toBe(false);
+    expect(wrapper.get("#attention-heading").text()).toBe(
+      "Что требует внимания",
+    );
+    expect(wrapper.get("#capacity-heading").text()).toBe(
+      "Ёмкость по очередям",
+    );
+    expect(wrapper.get("#risk-heading").text()).toBe("Обращения в риске");
+    expect(wrapper.get("#alerts-heading").text()).toBe(
+      "Операционные сигналы",
+    );
+  });
+
+  it("keeps the settled capacity grid visible during a manual refresh", async () => {
+    const capacityPage: SupportLeadCapacityRiskPage = {
+      computedAt: "2026-08-06T10:00:00.000Z",
+      freshnessState: "READY",
+      state: "AVAILABLE",
+      nextCursor: null,
+      items: [
+        {
+          riskId: "risk-capacity-1",
+          riskVersion: 1,
+          lastDecisionId: "decision-1",
+          observedAt: "2026-08-06T10:00:00.000Z",
+          requiredCapacityUnits: 3,
+          teamId: "team-1",
+          queue: { id: "queue-1", code: "PAYMENTS", name: "Платежи" },
+          exclusionCounts: { CAPACITY_EXHAUSTED: 2 },
+        },
+      ],
+    };
+    const { wrapper } = await render(summary, { capacityPage });
+    const refreshCapacity = deferred<SupportLeadCapacityRiskPage>();
+    api.readCapacityRisks.mockReturnValueOnce(refreshCapacity.promise);
+
+    const refreshButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Обновить");
+    expect(refreshButton).toBeDefined();
+    await refreshButton!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Платежи");
+    expect(
+      wrapper.find('[data-testid="support-control-page-skeleton"]').exists(),
+    ).toBe(false);
+    expect(
+      wrapper
+        .get('[aria-labelledby="capacity-heading"]')
+        .find(".p-skeleton")
+        .exists(),
+    ).toBe(false);
+
+    refreshCapacity.resolve(capacityPage);
+    await flushPromises();
+  });
 
   it("leads with decisions, team capacity, and the risk work queue", async () => {
     const { wrapper } = await render(summary, { allowAlerts: true });

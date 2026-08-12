@@ -47,6 +47,23 @@ async function showBaseInbox(page: Page): Promise<void> {
   await expect(queue.locator(".inbox-list")).toBeVisible();
 }
 
+async function showCasesInbox(page: Page): Promise<void> {
+  await page.goto("/support/inbox?mode=cases");
+  await showBaseInbox(page);
+}
+
+async function selectSystemView(page: Page, name: string): Promise<void> {
+  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
+  const trigger = queue.locator(".inbox-tools__trigger");
+  if ((await trigger.getAttribute("aria-expanded")) !== "true")
+    await trigger.click();
+  await queue
+    .getByRole("navigation", { name: "Системные представления" })
+    .getByRole("button", { name: new RegExp(`^${name}`) })
+    .click();
+  await expect(trigger).toContainText(name);
+}
+
 test.beforeEach(async ({ page }) => {
   await login(page);
   await page.goto("/support/inbox?view=system:ALL_CONVERSATIONS");
@@ -174,18 +191,16 @@ test("keeps support status controls legible and immediately understandable", asy
     ).toBeGreaterThanOrEqual(3);
   }
 
-  const modeButtons = queue.locator('button[aria-pressed="true"]');
-  await expect(modeButtons).toHaveCount(1);
-  await expect(queue.locator(".inbox-modes__selection")).toHaveCSS(
-    "border-style",
-    "solid",
-  );
+  await expect(
+    queue.getByRole("group", { name: "Режим входящих" }),
+  ).toHaveCount(0);
+  await expect(queue.locator(".inbox-tools__trigger")).toHaveCount(1);
   await expect(
     page.getByRole("button", { name: /^Моя доступность: / }),
   ).toBeVisible();
 });
 
-test("shows clear hover, tab motion and pagination contrast in the inbox", async ({
+test("shows clear hover and pagination contrast in the inbox", async ({
   page,
 }) => {
   await showBaseInbox(page);
@@ -201,20 +216,6 @@ test("shows clear hover, tab motion and pagination contrast in the inbox", async
       row.evaluate((element) => getComputedStyle(element).backgroundColor),
     )
     .not.toBe(idleBackground);
-
-  const indicator = queue.locator(".inbox-modes__selection");
-  await expect(indicator).toBeVisible();
-  const initialTransform = await indicator.evaluate(
-    (element) => getComputedStyle(element).transform,
-  );
-  await queue
-    .getByRole("button", { name: "Обращения", exact: true })
-    .click({ noWaitAfter: true });
-  await expect
-    .poll(() =>
-      indicator.evaluate((element) => getComputedStyle(element).transform),
-    )
-    .not.toBe(initialTransform);
 
   const loadMorePresentation = await queue.evaluate((element) => {
     const row = element.querySelector<HTMLElement>(".inbox-row");
@@ -238,14 +239,13 @@ test("shows clear hover, tab motion and pagination contrast in the inbox", async
   expect(loadMorePresentation.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(loadMorePresentation.borderStyle).toBe("solid");
   expect(
-    colorContrast(
-      loadMorePresentation.color,
-      loadMorePresentation.background,
-    ),
+    colorContrast(loadMorePresentation.color, loadMorePresentation.background),
   ).toBeGreaterThanOrEqual(4.5);
 });
 
-test("keeps the inbox rail stable while switching modes", async ({ page }) => {
+test("keeps the inbox rail stable while selecting a source", async ({
+  page,
+}) => {
   await showBaseInbox(page);
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   const heading = queue.locator(".support-inbox-heading");
@@ -255,12 +255,10 @@ test("keeps the inbox rail stable while switching modes", async ({ page }) => {
     tools.boundingBox(),
   ]);
 
-  await queue.getByRole("button", { name: "Обращения", exact: true }).click({
-    noWaitAfter: true,
-  });
+  await selectSystemView(page, "Все обращения");
 
   await expect(heading.getByText(/^Загружено:/)).toBeVisible();
-  await expect(queue.locator(".case-row").first()).toBeVisible();
+  await expect(queue.locator(".search-result-row").first()).toBeVisible();
   const during = await Promise.all([
     heading.boundingBox(),
     tools.boundingBox(),
@@ -274,12 +272,9 @@ test("keeps the inbox rail stable while switching modes", async ({ page }) => {
 });
 
 test("aligns the Case sequence with the row headline", async ({ page }) => {
-  await showBaseInbox(page);
+  await showCasesInbox(page);
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
 
-  await queue.getByRole("button", { name: "Обращения", exact: true }).click({
-    noWaitAfter: true,
-  });
   const row = queue.locator(".case-row").first();
   await expect(row).toBeVisible();
   const geometry = await row.evaluate((element) => {
@@ -294,31 +289,6 @@ test("aligns the Case sequence with the row headline", async ({ page }) => {
   expect(
     Math.abs(geometry.sequenceTop - geometry.headlineTop),
   ).toBeLessThanOrEqual(4);
-});
-
-test("keeps the last inbox mode when the operator switches rapidly", async ({
-  page,
-}) => {
-  await showBaseInbox(page);
-  const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  const cases = queue.getByRole("button", { name: "Обращения", exact: true });
-  const conversations = queue.getByRole("button", {
-    name: "Все чаты",
-    exact: true,
-  });
-
-  await cases.click({ noWaitAfter: true });
-  await conversations.click({ noWaitAfter: true });
-  await cases.click({ noWaitAfter: true });
-  await conversations.click({ noWaitAfter: true });
-
-  await expect(conversations).toHaveAttribute("aria-pressed", "true");
-  await expect(queue.locator(".conversation-row").first()).toBeVisible();
-  await expect(queue.locator(".inbox-skeletons")).toBeHidden();
-  await expect(queue.getByText("Не удалось загрузить входящие")).toBeHidden();
-  await expect
-    .poll(() => new URL(page.url()).searchParams.get("mode"))
-    .toBeNull();
 });
 
 test("selects a conversation immediately and swaps it through message skeletons", async ({
@@ -722,6 +692,24 @@ test("sends a public reply only through the selected conversation", async ({
   ).toBeVisible();
 });
 
+test("renders chat transport emoji shortcodes as native emoji", async ({
+  page,
+}) => {
+  await showBaseInbox(page);
+  await page
+    .getByRole("button", { name: /Бонусы и программа лояльности/ })
+    .click();
+
+  const composer = page.getByRole("textbox", { name: "Ответ пользователю" });
+  await composer.fill(":+1::skin-tone-3:");
+  await page.getByRole("button", { name: "Отправить", exact: true }).click();
+
+  await expect(page.getByText("👍🏼", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(":+1::skin-tone-3:", { exact: true }),
+  ).toHaveCount(0);
+});
+
 test("recovers an accepted reply after reload without creating a duplicate", async ({
   page,
 }) => {
@@ -947,21 +935,10 @@ test("shows and changes only the operator's authoritative availability intent", 
   ).toBeVisible();
 });
 
-test("switches one inbox between Conversations and Cases and exposes exact context", async ({
-  page,
-}) => {
+test("opens the Cases inbox and exposes exact context", async ({ page }) => {
+  await showCasesInbox(page);
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
   await expect(queue.getByRole("heading", { name: "Входящие" })).toBeVisible();
-  await queue.locator(".inbox-tools__trigger").click();
-  await queue.getByRole("button", { name: "Новый поиск" }).click();
-  await queue
-    .getByRole("searchbox", { name: "Поиск по поддержке" })
-    .press("Escape");
-  await expect(queue.locator(".conversation-row")).toHaveCount(3);
-  await expect(
-    queue.getByRole("button", { name: "Все чаты", pressed: true }),
-  ).toBeVisible();
-  await queue.getByRole("button", { name: "Обращения", exact: true }).click();
   await expect(page).toHaveURL((url) => {
     return (
       url.pathname === "/support/inbox" &&
@@ -1004,16 +981,10 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/support/inbox");
+  await showCasesInbox(page);
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await queue.getByRole("button", { name: "Обращения", exact: true }).click();
   const searchToolsTrigger = queue.locator(".inbox-tools__trigger");
   await expect(searchToolsTrigger).toHaveAttribute("aria-expanded", "false");
-  await searchToolsTrigger.click();
-  await queue.getByRole("button", { name: "Новый поиск" }).click();
-  await queue
-    .getByRole("searchbox", { name: "Поиск по поддержке" })
-    .press("Escape");
   const slaSignal = queue.locator(
     '[data-selection-key="CASE:case-demo-game"] [data-sla-signal]',
   );
@@ -1108,14 +1079,10 @@ test("shows server-owned SLA and routing context on desktop and mobile", async (
   expect(desktopGeometry.overflow).toBe(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/support/inbox?view=system:ALL_CONVERSATIONS");
-  await showBaseInbox(page);
+  await showCasesInbox(page);
   const mobileQueue = page.getByRole("complementary", {
     name: "Диалоги проекта",
   });
-  await mobileQueue
-    .getByRole("button", { name: "Обращения", exact: true })
-    .click();
   const mobileCaseRows = mobileQueue.locator(".case-row");
   await expect(mobileCaseRows).toHaveCount(3);
   const mobileRowLayout = await mobileCaseRows.evaluateAll((rows) =>
@@ -1247,9 +1214,8 @@ test("changes Case classification through exact server authority and records the
 test("restores typed inbox routes with Back and Forward and keeps a Case without a fake chat", async ({
   page,
 }) => {
-  await showBaseInbox(page);
+  await showCasesInbox(page);
   const queue = page.getByRole("complementary", { name: "Диалоги проекта" });
-  await queue.getByRole("button", { name: "Обращения", exact: true }).click();
   await expectPath(page, "/support/inbox");
   await expect
     .poll(() => new URL(page.url()).searchParams.get("mode"))
@@ -1259,13 +1225,7 @@ test("restores typed inbox routes with Back and Forward and keeps a Case without
 
   await page.goBack();
   await expectPath(page, "/support/inbox");
-  await expect(
-    queue.getByRole("button", {
-      name: "Обращения",
-      exact: true,
-      pressed: true,
-    }),
-  ).toBeVisible();
+  await expect(queue.locator(".case-row").first()).toBeVisible();
 
   await page.goForward();
   await expectPath(page, "/support/inbox/cases/case-demo-deposit");
@@ -1704,8 +1664,9 @@ test("restores the authoritative unread position when route selection changes", 
           ".conversation-surface__first-unread",
         );
         if (boundary) {
-          const nextOrdinal = (boundary.nextElementSibling as HTMLElement | null)
-            ?.dataset.messageOrdinal;
+          const nextOrdinal = (
+            boundary.nextElementSibling as HTMLElement | null
+          )?.dataset.messageOrdinal;
           return `UNREAD:${boundary.dataset.firstUnreadOrdinal}:${nextOrdinal}`;
         }
         return `ACKED:${element.querySelector<HTMLElement>("[data-message-id]")?.dataset.messageOrdinal}`;

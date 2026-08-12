@@ -107,10 +107,12 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe("SupportInboxPane", () => {
-  it("keeps the direct mode control alongside the unified view picker", () => {
+  it("uses the unified view picker as the only inbox source selector", () => {
     const wrapper = render({ viewSystem: [systemView] });
 
-    expect(wrapper.find(".inbox-modes").exists()).toBe(true);
+    expect(
+      wrapper.find('[role="group"][aria-label="Режим входящих"]').exists(),
+    ).toBe(false);
     expect(wrapper.find(".inbox-tools__trigger").exists()).toBe(true);
   });
 
@@ -310,13 +312,11 @@ describe("SupportInboxPane", () => {
     expect(priority.classes()).not.toContain("case-row__priority--emphasis");
   });
 
-  it("changes server-owned mode and selects the exact typed row", async () => {
-    const wrapper = render({ canSearch: false });
+  it("selects the exact typed row", async () => {
+    const wrapper = render();
 
-    await wrapper.findAll(".inbox-modes button")[1]!.trigger("click");
     await wrapper.get(".inbox-row").trigger("click");
 
-    expect(wrapper.emitted("changeMode")?.[0]).toEqual(["ALL_CONVERSATIONS"]);
     expect(wrapper.emitted("select")?.[0]?.[0]).toMatchObject({
       kind: "CASE",
       id: "case-1",

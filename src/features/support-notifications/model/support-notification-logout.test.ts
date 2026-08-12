@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runLogoutCleanups } from "@/features/auth/logout-cleanup";
-import { writeStoredBrowserPushRegistration } from "./browser-push-registration-store";
+import {
+  readStoredBrowserPushRegistration,
+  writeStoredBrowserPushRegistration,
+} from "./browser-push-registration-store";
 import {
   runSupportNotificationBrowserLifecycle,
   trackSupportNotificationRegistration,
@@ -34,7 +37,7 @@ describe("support notification logout cleanup", () => {
     generated.register.mockRejectedValue(new Error("registration unavailable"));
   });
 
-  it("revokes the actor-scoped device with the captured logout token and unsubscribes locally", async () => {
+  it("revokes the actor-scoped device without dropping the browser push subscription", async () => {
     const device = {
       id: "00000000-0000-4000-8000-000000000027",
       userAgentClass: "Chrome · macOS",
@@ -68,11 +71,14 @@ describe("support notification logout cleanup", () => {
         headers: { "Idempotency-Key": expect.any(String) },
       }),
     );
-    expect(generated.unsubscribe).toHaveBeenCalledOnce();
-    expect(localStorage.getItem("support-browser-push-registration:v2:operator-1")).toBeNull();
+    expect(generated.unsubscribe).not.toHaveBeenCalled();
+    expect(readStoredBrowserPushRegistration("operator-1")).toMatchObject({
+      deviceId: device.id,
+      resumeAfterLogin: true,
+    });
   });
 
-  it("waits for an in-flight registration and serializes the final local unsubscribe", async () => {
+  it("waits for an in-flight registration and revokes its receipt without touching the browser", async () => {
     const device = {
       id: "00000000-0000-4000-8000-000000000027",
       userAgentClass: "Chrome · macOS",
@@ -83,7 +89,6 @@ describe("support notification logout cleanup", () => {
       revokedAt: null,
     };
     let resolveRegistration!: (value: typeof device) => void;
-    let resolveBrowserSubscribe!: () => void;
     const pendingRegistration = trackSupportNotificationRegistration(
       "operator-1",
       {
@@ -93,9 +98,6 @@ describe("support notification logout cleanup", () => {
         idempotencyKey: "register-1",
       },
       () => new Promise((resolve) => (resolveRegistration = resolve)),
-    );
-    const pendingBrowserSubscribe = runSupportNotificationBrowserLifecycle(
-      () => new Promise<void>((resolve) => (resolveBrowserSubscribe = resolve)),
     );
     generated.list.mockResolvedValue({ items: [] });
     generated.revoke.mockResolvedValue({ ...device, status: "REVOKED", version: 6 });
@@ -110,16 +112,13 @@ describe("support notification logout cleanup", () => {
     await vi.waitFor(() => expect(generated.revoke).toHaveBeenCalledOnce());
     expect(generated.unsubscribe).not.toHaveBeenCalled();
 
-    resolveBrowserSubscribe();
-    await pendingBrowserSubscribe;
     await cleanup;
     unregister();
 
-    expect(generated.unsubscribe).toHaveBeenCalledOnce();
-    expect(localStorage.getItem("support-browser-push-registration:v2:operator-1")).toBeNull();
+    expect(generated.unsubscribe).not.toHaveBeenCalled();
   });
 
-  it("bounds a never-settling registration and still purges the local subscription", async () => {
+  it("bounds a never-settling registration while preserving the browser subscription", async () => {
     vi.useFakeTimers();
     trackSupportNotificationRegistration(
       "operator-1",
@@ -145,12 +144,13 @@ describe("support notification logout cleanup", () => {
     unregister();
     vi.useRealTimers();
 
-    expect(generated.unsubscribe).toHaveBeenCalledOnce();
-    expect(localStorage.getItem("support-browser-push-registration:v2:operator-1")).toBeNull();
+    expect(generated.unsubscribe).not.toHaveBeenCalled();
+    expect(readStoredBrowserPushRegistration("operator-1")).toMatchObject({
+      resumeAfterLogin: true,
+    });
   });
 
   it("does not let a never-settling browser operation block logout", async () => {
-    vi.useFakeTimers();
     let resolveBrowserOperation!: () => void;
     const pendingBrowserOperation = runSupportNotificationBrowserLifecycle(
       () => new Promise<void>((resolve) => (resolveBrowserOperation = resolve)),
@@ -163,17 +163,16 @@ describe("support notification logout cleanup", () => {
     });
     const unregister = registerSupportNotificationLogoutCleanup();
 
-    const cleanup = runLogoutCleanups("operator-1", "captured-access-token");
-    await vi.advanceTimersByTimeAsync(1_500);
-    await cleanup;
+    await runLogoutCleanups("operator-1", "captured-access-token");
 
     expect(generated.unsubscribe).not.toHaveBeenCalled();
-    expect(localStorage.getItem("support-browser-push-registration:v2:operator-1")).toBeNull();
+    expect(readStoredBrowserPushRegistration("operator-1")).toMatchObject({
+      resumeAfterLogin: true,
+    });
 
     resolveBrowserOperation();
     await pendingBrowserOperation;
-    vi.useRealTimers();
-    await vi.waitFor(() => expect(generated.unsubscribe).toHaveBeenCalledOnce());
+    expect(generated.unsubscribe).not.toHaveBeenCalled();
     unregister();
   });
 });

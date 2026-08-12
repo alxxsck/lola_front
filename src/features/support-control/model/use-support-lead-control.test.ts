@@ -88,6 +88,36 @@ function setup(overrides: Partial<SupportLeadDrilldownSource> = {}) {
 }
 
 describe("createSupportLeadControlController", () => {
+  it("retains the last capacity projection while a refresh is pending", async () => {
+    let resolveCapacity!: (value: SupportLeadCapacityRiskPage) => void;
+    const pendingCapacity = new Promise<SupportLeadCapacityRiskPage>(
+      (resolve) => {
+        resolveCapacity = resolve;
+      },
+    );
+    const readCapacityRisks = vi
+      .fn()
+      .mockResolvedValueOnce(capacity)
+      .mockReturnValueOnce(pendingCapacity);
+    const { controller } = setup({ readCapacityRisks });
+    await controller.load();
+
+    const refresh = controller.load();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(controller.loadingCapacity.value).toBe(true);
+    expect(controller.capacity.value).toEqual(capacity);
+
+    const refreshed = {
+      ...capacity,
+      computedAt: "2026-08-09T08:05:00.000Z",
+    };
+    resolveCapacity(refreshed);
+    await refresh;
+    expect(controller.capacity.value).toEqual(refreshed);
+  });
+
   it("uses projection readiness as the first gate", async () => {
     const building = { ...readiness, readinessState: "BUILDING" as const };
     const { controller, source } = setup({

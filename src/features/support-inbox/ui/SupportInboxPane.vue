@@ -53,7 +53,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   select: [item: SupportInboxItem];
-  changeMode: [mode: SupportInboxMode];
   loadMore: [];
   retry: [];
   changeSearch: [state: SupportSearchRouteState];
@@ -88,12 +87,6 @@ const loadedCount = computed(() =>
   props.loading && !props.items.length
     ? lastLoadedCount.value
     : props.items.length,
-);
-const visibleModeCount = computed(
-  () => Number(props.canReadCases) + Number(props.canReadConversations),
-);
-const activeModeIsSecond = computed(
-  () => props.canReadCases && props.mode === "ALL_CONVERSATIONS",
 );
 const displayedViewSelection = computed<SupportViewSelection | null>(() => {
   if (props.viewSelection) return props.viewSelection;
@@ -349,38 +342,6 @@ function unreadLabel(
       </div>
       <span class="keyboard-hint" aria-hidden="true">J / K</span>
     </header>
-
-    <div
-      class="inbox-modes"
-      :class="{
-        'inbox-modes--single': visibleModeCount === 1,
-        'inbox-modes--second': activeModeIsSecond,
-      }"
-      role="group"
-      aria-label="Режим входящих"
-    >
-      <span class="inbox-modes__selection" aria-hidden="true" />
-      <button
-        v-if="canReadCases"
-        type="button"
-        :aria-pressed="mode === 'CASES'"
-        :class="{ active: mode === 'CASES' }"
-        @click="emit('changeMode', 'CASES')"
-      >
-        <i class="pi pi-briefcase" aria-hidden="true" />
-        Обращения
-      </button>
-      <button
-        v-if="canReadConversations"
-        type="button"
-        :aria-pressed="mode === 'ALL_CONVERSATIONS'"
-        :class="{ active: mode === 'ALL_CONVERSATIONS' }"
-        @click="emit('changeMode', 'ALL_CONVERSATIONS')"
-      >
-        <i class="pi pi-comments" aria-hidden="true" />
-        Все чаты
-      </button>
-    </div>
 
     <section
       v-if="canSearch"
@@ -819,79 +780,6 @@ function unreadLabel(
   font-size: 0.7rem;
   font-weight: 700;
 }
-.inbox-modes {
-  margin: 0 12px 12px;
-  padding: 4px;
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-subtle);
-}
-.inbox-modes__selection {
-  position: absolute;
-  inset: 4px auto 4px 4px;
-  width: calc((100% - 12px) / 2);
-  box-sizing: border-box;
-  border: 1px solid
-    color-mix(in srgb, var(--text-brand) 28%, var(--line));
-  border-radius: 8px;
-  background: var(--brand-soft);
-  pointer-events: none;
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.inbox-modes--second .inbox-modes__selection {
-  transform: translateX(calc(100% + 4px));
-}
-.inbox-modes--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-.inbox-modes--single .inbox-modes__selection {
-  width: calc(100% - 8px);
-}
-.inbox-modes button {
-  min-width: 0;
-  min-height: 40px;
-  position: relative;
-  z-index: 1;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 650;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.inbox-modes button.active {
-  background: transparent;
-  color: var(--text-primary);
-  box-shadow: none;
-}
-.inbox-modes button:active {
-  transform: scale(0.985);
-}
-.inbox-modes i {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  display: inline-grid;
-  place-items: center;
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1;
-}
 .inbox-tools {
   margin: 0 12px 10px;
   display: grid;
@@ -1185,7 +1073,6 @@ function unreadLabel(
   background: var(--brand);
 }
 .inbox-row:focus-visible,
-.inbox-modes button:focus-visible,
 .load-more:focus-visible,
 .inbox-state button:focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -1495,10 +1382,6 @@ function unreadLabel(
   .support-inbox-pane {
     border-right: 0;
   }
-  .inbox-modes button {
-    min-height: 44px;
-    font-size: 0.82rem;
-  }
   .inbox-tools__trigger {
     min-height: 52px;
   }
@@ -1525,8 +1408,6 @@ function unreadLabel(
   border: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .inbox-modes__selection,
-  .inbox-modes button,
   .inbox-row,
   .search-result-row,
   .inbox-tools__trigger,

@@ -4,6 +4,7 @@ import type {
   RequestedMessageTranslation,
   TranslatedMessageContent,
 } from "../model/translation-presentation";
+import { formatEmojiShortcodes } from "@/shared/lib/emoji-shortcodes";
 
 const props = defineProps<{
   message: TranslatedMessageContent;
@@ -31,17 +32,20 @@ const originalText = computed(
   () => props.message.translation?.originalText ?? props.message.text,
 );
 const displayText = computed(() => {
+  let text: string | null;
   if (outbound.value) {
-    return originalVisible.value
+    text = originalVisible.value
       ? translatedText.value
       : originalText.value || props.message.text;
+  } else if (originalVisible.value) {
+    text = originalText.value;
+  } else {
+    text =
+      translatedText.value ??
+      props.message.translation?.viewText ??
+      props.message.text;
   }
-  if (originalVisible.value) return originalText.value;
-  return (
-    translatedText.value ??
-    props.message.translation?.viewText ??
-    props.message.text
-  );
+  return formatEmojiShortcodes(text ?? "");
 });
 const skipReasonLabels = {
   SAME_LANGUAGE: "Язык сообщения совпадает с рабочим — перевод не требуется.",
