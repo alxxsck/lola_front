@@ -5,15 +5,17 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQualityScorecardItemInputDto } from "./supportQualityScorecardItemInputDto";
+import type { SupportQualityScorecardResponseDtoCriticalFailureOutcome } from "./supportQualityScorecardResponseDtoCriticalFailureOutcome";
+import type { SupportQualityScorecardSectionInputDto } from "./supportQualityScorecardSectionInputDto";
 import type { SupportQualityScorecardResponseDtoState } from "./supportQualityScorecardResponseDtoState";
 
 export interface SupportQualityScorecardResponseDto {
   code: string;
+  criticalFailureOutcome: SupportQualityScorecardResponseDtoCriticalFailureOutcome;
   /** @minimum 1 */
   currentRevisionNumber: number;
   id: string;
-  items: SupportQualityScorecardItemInputDto[];
   name: string;
+  sections: SupportQualityScorecardSectionInputDto[];
   state: SupportQualityScorecardResponseDtoState;
 }

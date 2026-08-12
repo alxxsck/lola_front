@@ -10,7 +10,7 @@ import type { PersonalSupportNotificationErrorBodyResponseDtoDetails } from "./p
 
 export interface PersonalSupportNotificationErrorBodyResponseDto {
   code: PersonalSupportNotificationErrorBodyResponseDtoCode;
+  details?: PersonalSupportNotificationErrorBodyResponseDtoDetails;
   message: string;
   requestId?: string;
-  details?: PersonalSupportNotificationErrorBodyResponseDtoDetails;
 }

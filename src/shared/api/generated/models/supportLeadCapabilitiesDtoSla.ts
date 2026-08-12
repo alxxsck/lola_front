@@ -11,6 +11,6 @@ export type SupportLeadCapabilitiesDtoSla =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportLeadCapabilitiesDtoSla = {
-  DISABLED: "DISABLED",
-  SHADOW: "SHADOW",
+  CONFIGURED: "CONFIGURED",
+  UNCONFIGURED: "UNCONFIGURED",
 } as const;

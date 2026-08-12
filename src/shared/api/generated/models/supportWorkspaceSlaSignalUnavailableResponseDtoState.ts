@@ -11,6 +11,6 @@ export type SupportWorkspaceSlaSignalUnavailableResponseDtoState =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportWorkspaceSlaSignalUnavailableResponseDtoState = {
-  DISABLED: "DISABLED",
+  UNCONFIGURED: "UNCONFIGURED",
   NO_ACTIVE_CLOCK: "NO_ACTIVE_CLOCK",
 } as const;

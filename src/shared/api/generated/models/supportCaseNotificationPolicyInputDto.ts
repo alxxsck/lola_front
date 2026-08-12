@@ -5,46 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyInputDtoMode } from "./supportCaseNotificationPolicyInputDtoMode";
-import type { SupportCaseNotificationPolicyInputDtoOccurrencesItem } from "./supportCaseNotificationPolicyInputDtoOccurrencesItem";
+import type { SupportCaseNotificationPolicyInputDtoChannelsItem } from "./supportCaseNotificationPolicyInputDtoChannelsItem";
 import type { SupportCaseNotificationPolicyInputDtoConversationClassesItem } from "./supportCaseNotificationPolicyInputDtoConversationClassesItem";
 import type { SupportCaseNotificationPolicyInputDtoMinimumPriority } from "./supportCaseNotificationPolicyInputDtoMinimumPriority";
+import type { SupportCaseNotificationPolicyInputDtoMode } from "./supportCaseNotificationPolicyInputDtoMode";
+import type { SupportCaseNotificationPolicyInputDtoOccurrencesItem } from "./supportCaseNotificationPolicyInputDtoOccurrencesItem";
 import type { SupportCaseNotificationPolicyInputDtoRecipientRule } from "./supportCaseNotificationPolicyInputDtoRecipientRule";
-import type { SupportCaseNotificationPolicyInputDtoChannelsItem } from "./supportCaseNotificationPolicyInputDtoChannelsItem";
 
 export interface SupportCaseNotificationPolicyInputDto {
-  mode: SupportCaseNotificationPolicyInputDtoMode;
-  /**
-   * @minItems 1
-   * @maxItems 2
-   */
-  occurrences: SupportCaseNotificationPolicyInputDtoOccurrencesItem[];
-  /**
-   * @minItems 1
-   * @maxItems 2
-   */
-  conversationClasses: SupportCaseNotificationPolicyInputDtoConversationClassesItem[];
-  /** @maxItems 100 */
-  topicCodes: string[];
-  minimumPriority: SupportCaseNotificationPolicyInputDtoMinimumPriority;
-  recipientRule: SupportCaseNotificationPolicyInputDtoRecipientRule;
-  /** @maxItems 100 */
-  teamIds: string[];
   /**
    * @minItems 1
    * @maxItems 1
    */
   channels: SupportCaseNotificationPolicyInputDtoChannelsItem[];
-  /** @nullable */
-  effectiveFrom?: string | null;
-  /** @nullable */
-  effectiveUntil?: string | null;
   /**
-   * @minimum 5
-   * @maximum 1440
-   * @nullable
+   * @minItems 1
+   * @maxItems 2
    */
-  digestWindowMinutes?: number | null;
+  conversationClasses: SupportCaseNotificationPolicyInputDtoConversationClassesItem[];
   /**
    * @minimum 1
    * @maximum 100
@@ -52,8 +30,30 @@ export interface SupportCaseNotificationPolicyInputDto {
    */
   digestMaxItems?: number | null;
   /**
+   * @minimum 5
+   * @maximum 1440
+   * @nullable
+   */
+  digestWindowMinutes?: number | null;
+  /** @nullable */
+  effectiveFrom?: string | null;
+  /** @nullable */
+  effectiveUntil?: string | null;
+  minimumPriority: SupportCaseNotificationPolicyInputDtoMinimumPriority;
+  mode: SupportCaseNotificationPolicyInputDtoMode;
+  /**
+   * @minItems 1
+   * @maxItems 2
+   */
+  occurrences: SupportCaseNotificationPolicyInputDtoOccurrencesItem[];
+  /**
    * @minLength 3
    * @maxLength 500
    */
   reason: string;
+  recipientRule: SupportCaseNotificationPolicyInputDtoRecipientRule;
+  /** @maxItems 100 */
+  teamIds: string[];
+  /** @maxItems 100 */
+  topicCodes: string[];
 }

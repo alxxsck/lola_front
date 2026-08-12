@@ -12,5 +12,4 @@ export type SupportCaseAssignmentRelease404AllOfErrorCode =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportCaseAssignmentRelease404AllOfErrorCode = {
   NOT_FOUND_OR_FORBIDDEN: "NOT_FOUND_OR_FORBIDDEN",
-  SUPPORT_ASSIGNMENT_NOT_ENABLED: "SUPPORT_ASSIGNMENT_NOT_ENABLED",
 } as const;

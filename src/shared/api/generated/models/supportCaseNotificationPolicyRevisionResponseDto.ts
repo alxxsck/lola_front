@@ -5,52 +5,52 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyRevisionResponseDtoStatus } from "./supportCaseNotificationPolicyRevisionResponseDtoStatus";
+import type { SupportCaseNotificationPolicyRevisionResponseDtoChannelsItem } from "./supportCaseNotificationPolicyRevisionResponseDtoChannelsItem";
+import type { SupportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem } from "./supportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem";
+import type { SupportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget } from "./supportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget";
+import type { SupportCaseNotificationPolicyRevisionResponseDtoMinimumPriority } from "./supportCaseNotificationPolicyRevisionResponseDtoMinimumPriority";
 import type { SupportCaseNotificationPolicyRevisionResponseDtoMode } from "./supportCaseNotificationPolicyRevisionResponseDtoMode";
 import type { SupportCaseNotificationPolicyRevisionResponseDtoOccurrencesItem } from "./supportCaseNotificationPolicyRevisionResponseDtoOccurrencesItem";
-import type { SupportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem } from "./supportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem";
-import type { SupportCaseNotificationPolicyRevisionResponseDtoMinimumPriority } from "./supportCaseNotificationPolicyRevisionResponseDtoMinimumPriority";
 import type { SupportCaseNotificationPolicyRevisionResponseDtoRecipientRule } from "./supportCaseNotificationPolicyRevisionResponseDtoRecipientRule";
-import type { SupportCaseNotificationPolicyRevisionResponseDtoChannelsItem } from "./supportCaseNotificationPolicyRevisionResponseDtoChannelsItem";
+import type { SupportCaseNotificationPolicyRevisionResponseDtoStatus } from "./supportCaseNotificationPolicyRevisionResponseDtoStatus";
 import type { SupportCaseNotificationPolicyRevisionResponseDtoTemplateRevision } from "./supportCaseNotificationPolicyRevisionResponseDtoTemplateRevision";
-import type { SupportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget } from "./supportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget";
 
 export interface SupportCaseNotificationPolicyRevisionResponseDto {
-  id: string;
-  /** @minimum 1 */
-  revisionNumber: number;
-  status: SupportCaseNotificationPolicyRevisionResponseDtoStatus;
-  mode: SupportCaseNotificationPolicyRevisionResponseDtoMode;
-  occurrences: SupportCaseNotificationPolicyRevisionResponseDtoOccurrencesItem[];
-  conversationClasses: SupportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem[];
-  /** @maxItems 100 */
-  topicCodes: string[];
-  minimumPriority: SupportCaseNotificationPolicyRevisionResponseDtoMinimumPriority;
-  recipientRule: SupportCaseNotificationPolicyRevisionResponseDtoRecipientRule;
-  /** @maxItems 100 */
-  teamIds: string[];
   channels: SupportCaseNotificationPolicyRevisionResponseDtoChannelsItem[];
-  /** @nullable */
-  effectiveFrom?: string | null;
-  /** @nullable */
-  effectiveUntil?: string | null;
-  /**
-   * @minimum 5
-   * @maximum 1440
-   * @nullable
-   */
-  digestWindowMinutes?: number | null;
+  /** @pattern ^[a-f0-9]{64}$ */
+  contentHash: string;
+  conversationClasses: SupportCaseNotificationPolicyRevisionResponseDtoConversationClassesItem[];
+  createdAt: string;
+  deepLinkTarget: SupportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget;
   /**
    * @minimum 1
    * @maximum 100
    * @nullable
    */
   digestMaxItems?: number | null;
-  templateRevision: SupportCaseNotificationPolicyRevisionResponseDtoTemplateRevision;
-  deepLinkTarget: SupportCaseNotificationPolicyRevisionResponseDtoDeepLinkTarget;
-  /** @pattern ^[a-f0-9]{64}$ */
-  contentHash: string;
-  createdAt: string;
+  /**
+   * @minimum 5
+   * @maximum 1440
+   * @nullable
+   */
+  digestWindowMinutes?: number | null;
+  /** @nullable */
+  effectiveFrom?: string | null;
+  /** @nullable */
+  effectiveUntil?: string | null;
+  id: string;
+  minimumPriority: SupportCaseNotificationPolicyRevisionResponseDtoMinimumPriority;
+  mode: SupportCaseNotificationPolicyRevisionResponseDtoMode;
+  occurrences: SupportCaseNotificationPolicyRevisionResponseDtoOccurrencesItem[];
   /** @nullable */
   publishedAt?: string | null;
+  recipientRule: SupportCaseNotificationPolicyRevisionResponseDtoRecipientRule;
+  /** @minimum 1 */
+  revisionNumber: number;
+  status: SupportCaseNotificationPolicyRevisionResponseDtoStatus;
+  /** @maxItems 100 */
+  teamIds: string[];
+  templateRevision: SupportCaseNotificationPolicyRevisionResponseDtoTemplateRevision;
+  /** @maxItems 100 */
+  topicCodes: string[];
 }

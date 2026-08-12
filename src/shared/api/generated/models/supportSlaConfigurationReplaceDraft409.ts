@@ -5,8 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaConfigurationReplaceDraft409Code } from "./supportSlaConfigurationReplaceDraft409Code";
+import type { SupportSlaConfigurationReplaceDraft409Error } from "./supportSlaConfigurationReplaceDraft409Error";
 
 export type SupportSlaConfigurationReplaceDraft409 = {
-  code: SupportSlaConfigurationReplaceDraft409Code;
+  error: SupportSlaConfigurationReplaceDraft409Error;
 };

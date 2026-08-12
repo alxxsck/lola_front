@@ -16,6 +16,7 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
 
 const etag = `"ssla1.${"a".repeat(43)}"`;
 const configuration = {
+  catalogRevisionId: "catalog-r1",
   calendar: {
     timeZone: "Europe/Madrid",
     weekly: [{ isoWeekday: 1, intervals: [{ startMinute: 540, endMinute: 1080 }] }],
@@ -51,7 +52,7 @@ describe("apiSupportSlaConfigurationSource", () => {
       intent: "REPLACE_SLA_DRAFT",
       actionEtag: etag,
       rootVersion: 2,
-      draft: { generation: 1, version: 1, contentHash: "a".repeat(64) },
+      draft: { generation: 1, version: 1, contentHash: "a".repeat(64), catalogRevisionId: "catalog-r1" },
     });
 
     await apiSupportSlaConfigurationSource.replaceDraft(
@@ -91,6 +92,15 @@ describe("apiSupportSlaConfigurationSource", () => {
       rootVersion: 3,
       draft: null,
       publishedConfiguration: {
+        configurationRevision: {
+          id: "configuration-1",
+          revisionNumber: 1,
+          catalogRevisionId: "catalog-r1",
+          configurationHash: "c".repeat(64),
+          publicationKind: "PUBLISH",
+          publishedAt: "2026-08-10T10:00:00.000Z",
+          rollbackSourceRevisionId: null,
+        },
         calendarRevision: {
           id: "calendar-1",
           revisionNumber: 1,
@@ -135,7 +145,7 @@ describe("apiSupportSlaConfigurationSource", () => {
     );
     expect(supportSlaConfigurationPublish).toHaveBeenCalledWith(
       "project-1",
-      {},
+      { reason: "Publish SLA configuration from CMS" },
       expect.objectContaining({
         headers: { "Idempotency-Key": "publish-intent-1", "If-Match": etag },
       }),

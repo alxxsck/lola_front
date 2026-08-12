@@ -40,6 +40,15 @@ function publishedSnapshot(actionEtag = etag("a")) {
     reconciliationCheckpoint: "checkpoint-1",
     draft: null,
     publishedConfiguration: {
+      configurationRevision: {
+        id: "configuration-1",
+        revisionNumber: 1,
+        catalogRevisionId: "sla-catalog-r1",
+        configurationHash: "d".repeat(64),
+        publicationKind: "PUBLISH" as const,
+        publishReason: "Начальная публикация",
+        publishedAt: "2026-08-10T10:00:00.000Z",
+      },
       calendarRevision: {
         id: "calendar-1",
         revisionNumber: 1,

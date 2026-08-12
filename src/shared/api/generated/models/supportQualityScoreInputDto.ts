@@ -7,10 +7,19 @@
  */
 
 export interface SupportQualityScoreInputDto {
+  applicable: boolean;
+  /** @pattern ^[A-Z][A-Z0-9_]{1,63}$ */
+  coachingTheme?: string;
+  /** @maxLength 2000 */
+  feedback?: string;
   itemCode: string;
+  /** @maxLength 32 */
+  rating?: string;
+  /** @pattern ^[A-Z][A-Z0-9_]{1,63}$ */
+  rootCause?: string;
   /**
    * @minimum 0
    * @maximum 1000
    */
-  score: number;
+  score?: number;
 }

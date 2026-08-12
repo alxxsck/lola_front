@@ -9,6 +9,7 @@ import type { SupportQueueMutationResponseDtoDraft } from "./supportQueueMutatio
 import type { SupportQueueMutationResponseDtoIntent } from "./supportQueueMutationResponseDtoIntent";
 import type { SupportQueueRevisionResponseDto } from "./supportQueueRevisionResponseDto";
 import type { SupportQueueIdentityResponseDto } from "./supportQueueIdentityResponseDto";
+import type { SupportQueueMutationResponseDtoReasonCode } from "./supportQueueMutationResponseDtoReasonCode";
 
 export interface SupportQueueMutationResponseDto {
   /** @pattern ^"sq1\.[A-Za-z0-9_-]{43}"$ */
@@ -18,4 +19,6 @@ export interface SupportQueueMutationResponseDto {
   intent: SupportQueueMutationResponseDtoIntent;
   publishedRevision?: SupportQueueRevisionResponseDto;
   queue: SupportQueueIdentityResponseDto;
+  reasonCode?: SupportQueueMutationResponseDtoReasonCode;
+  restoredFromRevisionId?: string;
 }

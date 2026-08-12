@@ -5,17 +5,33 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQualityCalibrationResponseDtoConsensusScore } from "./supportQualityCalibrationResponseDtoConsensusScore";
+import type { SupportQualityCalibrationResponseDtoCriterionVarianceItem } from "./supportQualityCalibrationResponseDtoCriterionVarianceItem";
+import type { SupportQualityCalibrationResponseDtoPeerVisibility } from "./supportQualityCalibrationResponseDtoPeerVisibility";
 import type { SupportQualityCalibrationResponseDtoState } from "./supportQualityCalibrationResponseDtoState";
 
 export interface SupportQualityCalibrationResponseDto {
   /**
    * @minimum 0
+   * @maximum 10000
    * @nullable
    */
-  consensusScore?: SupportQualityCalibrationResponseDtoConsensusScore;
+  agreementBasisPoints?: number | null;
+  /** @nullable */
+  baselineReviewId?: string | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  consensusScore?: number | null;
+  criterionVariance: SupportQualityCalibrationResponseDtoCriterionVarianceItem[];
   id: string;
+  /**
+   * @minimum 2
+   * @maximum 100
+   */
+  minimumReviews: number;
   operatorCmsUserId: string;
+  peerVisibility: SupportQualityCalibrationResponseDtoPeerVisibility;
   scorecardRevisionId: string;
   state: SupportQualityCalibrationResponseDtoState;
   /** @minimum 1 */

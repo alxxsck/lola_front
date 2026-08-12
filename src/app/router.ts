@@ -367,6 +367,104 @@ export const router = createRouter({
           },
         },
         {
+          path: "support/quality",
+          name: "support-quality",
+          component: () => import("@/pages/SupportQualityPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: [
+              "project.support.quality.read",
+              "project.support.quality.review",
+              "project.support.quality.self_read",
+            ],
+          },
+        },
+        {
+          path: "support/quality/reviews/:reviewId",
+          name: "support-quality-review",
+          component: () => import("@/pages/SupportQualityReviewPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: [
+              "project.support.quality.read",
+              "project.support.quality.review",
+              "project.support.quality.self_read",
+            ],
+          },
+        },
+        ...[
+          ["scorecards", "support-quality-scorecards"],
+          ["calibrations", "support-quality-calibrations"],
+          ["disputes", "support-quality-disputes"],
+        ].map(([path, name]) => ({
+          path: `support/quality/${path}`,
+          name,
+          component: () => import("@/pages/SupportQualityRegistryPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: [
+              "project.support.quality.read",
+              "project.support.quality.manage",
+              "project.support.quality.dispute",
+            ],
+          },
+        })),
+        ...([
+          ["support/settings/routing", "support-routing-overview", ["project.support.routing.read", "project.support.routing.manage"]],
+          ["support/settings/teams-skills", "support-routing-teams-skills", ["project.support.teams.read", "project.support.teams.manage"]],
+          ["support/settings/workforce", "support-routing-workforce", ["project.support.teams.read", "project.support.teams.manage"]],
+          ["support/settings/queues", "support-routing-queues", ["project.support.queues.read", "project.support.queues.manage"]],
+          ["support/settings/routing/policies", "support-routing-policies", ["project.support.routing.read", "project.support.routing.manage"]],
+          ["support/settings/routing/decisions", "support-routing-decisions", ["project.support.routing.read", "project.support.routing.manage"]],
+        ] as const).map(([path, name, permissionCodes]) => ({
+          path,
+          name,
+          component: () => import("@/pages/SupportRoutingControlPlanePage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: permissionCodes,
+          },
+        })),
+        ...[
+          ["support/analytics", "support-analytics-overview"],
+          ["support/analytics/flow", "support-analytics-flow"],
+          ["support/analytics/quality", "support-analytics-quality"],
+          ["support/analytics/team", "support-analytics-team"],
+          ["support/analytics/automation", "support-analytics-automation"],
+        ].map(([path, name]) => ({
+          path,
+          name,
+          component: () => import("@/pages/SupportAnalyticsPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: [
+              "project.reporting.catalog.read",
+              "project.reporting.aggregate.read",
+            ],
+          },
+        })),
+        {
+          path: "support/analytics/reports/:reportId",
+          name: "support-analytics-report",
+          component: () => import("@/pages/SupportAnalyticsArtifactPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermission: "project.reporting.aggregate.read",
+          },
+        },
+        {
+          path: "support/analytics/dashboards/:dashboardId",
+          name: "support-analytics-dashboard",
+          component: () => import("@/pages/SupportAnalyticsArtifactPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAll: [
+              "project.reporting.aggregate.read",
+              "project.dashboards.read",
+            ],
+          },
+        },
+        {
           path: "support/settings/case-intelligence",
           name: "support-case-intelligence",
           component: () =>

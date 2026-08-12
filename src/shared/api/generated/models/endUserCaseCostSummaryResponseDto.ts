@@ -9,12 +9,30 @@ import type { EndUserCaseCostBudgetResponseDto } from "./endUserCaseCostBudgetRe
 import type { EndUserCaseCostOperationResponseDto } from "./endUserCaseCostOperationResponseDto";
 
 export interface EndUserCaseCostSummaryResponseDto {
-  billedCostUsd: string;
+  /** @minimum 0 */
+  acceptedDecisionCount: number;
+  billedCostComplete: boolean;
+  /** @nullable */
+  billedCostUsd: string | null;
   budget: EndUserCaseCostBudgetResponseDto;
   calculatedAt: string;
+  /** @minimum 0 */
+  correctAcceptedDecisionCount: number;
+  /** @minimum 0 */
+  correctedDecisionCount: number;
+  /** @nullable */
+  costPerAcceptedDecisionUsd: string | null;
+  /** @nullable */
+  costPerCorrectAcceptedDecisionUsd: string | null;
   estimatedCostUsd: string;
+  /** @minimum 0 */
+  missingBilledCostCount: number;
   operations: EndUserCaseCostOperationResponseDto[];
   /** @minimum 0 */
   requestCount: number;
+  /** @minimum 0 */
+  reviewedAcceptedDecisionCount: number;
   totalTokens: string;
+  /** @minimum 0 */
+  unreviewedAcceptedDecisionCount: number;
 }

@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQualityDisputeResponseDtoResolutionNote } from "./supportQualityDisputeResponseDtoResolutionNote";
 import type { SupportQualityDisputeResponseDtoState } from "./supportQualityDisputeResponseDtoState";
 
 export interface SupportQualityDisputeResponseDto {
@@ -14,7 +13,7 @@ export interface SupportQualityDisputeResponseDto {
   /** @maxLength 1000 */
   reason: string;
   /** @nullable */
-  resolutionNote?: SupportQualityDisputeResponseDtoResolutionNote;
+  resolutionNote?: string | null;
   reviewId: string;
   state: SupportQualityDisputeResponseDtoState;
   /** @minimum 1 */

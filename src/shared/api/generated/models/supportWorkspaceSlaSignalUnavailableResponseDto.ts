@@ -5,17 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportWorkspaceSlaSignalUnavailableResponseDtoRolloutState } from "./supportWorkspaceSlaSignalUnavailableResponseDtoRolloutState";
 import type { SupportWorkspaceSlaSignalUnavailableResponseDtoState } from "./supportWorkspaceSlaSignalUnavailableResponseDtoState";
 
 export interface SupportWorkspaceSlaSignalUnavailableResponseDto {
   /** @nullable */
   computedAt: string | null;
-  /**
-   * @maxLength 255
-   * @nullable
-   */
-  reconciliationCheckpoint: string | null;
-  rolloutState: SupportWorkspaceSlaSignalUnavailableResponseDtoRolloutState;
   state: SupportWorkspaceSlaSignalUnavailableResponseDtoState;
 }

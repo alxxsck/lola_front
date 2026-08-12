@@ -18,6 +18,11 @@ export interface ApiErrorDetailsResponseDto {
   expectedCurrentRevisionId?: string | null;
   issues?: ApiErrorIssueResponseDto[];
   reason?: string;
+  /**
+   * Closed domain reason codes; the owning operation documents their enum.
+   * @maxItems 32
+   */
+  reasons?: string[];
   receiptId?: string;
   /** @minimum 1 */
   retryAfterSeconds?: number;

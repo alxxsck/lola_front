@@ -7,17 +7,10 @@
  */
 import type { SupportSlaCaseClockResponseDto } from "./supportSlaCaseClockResponseDto";
 import type { SupportSlaCaseProjectionResponseDtoOccurrence } from "./supportSlaCaseProjectionResponseDtoOccurrence";
-import type { SupportSlaCaseProjectionResponseDtoRolloutState } from "./supportSlaCaseProjectionResponseDtoRolloutState";
 
 export interface SupportSlaCaseProjectionResponseDto {
   /** @maxItems 3 */
   clocks: SupportSlaCaseClockResponseDto[];
   /** @nullable */
   occurrence: SupportSlaCaseProjectionResponseDtoOccurrence;
-  /**
-   * @maxLength 255
-   * @nullable
-   */
-  reconciliationCheckpoint: string | null;
-  rolloutState: SupportSlaCaseProjectionResponseDtoRolloutState;
 }

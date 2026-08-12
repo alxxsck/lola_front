@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportKnowledgeGovernanceCapabilitiesResponseDto } from "./supportKnowledgeGovernanceCapabilitiesResponseDto";
+import type { SupportKnowledgeGovernanceResponseDtoReadiness } from "./supportKnowledgeGovernanceResponseDtoReadiness";
 import type { SupportKnowledgeGovernanceResponseDtoRetentionPolicy } from "./supportKnowledgeGovernanceResponseDtoRetentionPolicy";
-import type { SupportKnowledgeGovernanceResponseDtoState } from "./supportKnowledgeGovernanceResponseDtoState";
 
 export interface SupportKnowledgeGovernanceResponseDto {
   /** @minimum 0 */
@@ -28,7 +28,7 @@ export interface SupportKnowledgeGovernanceResponseDto {
   /** @minimum 0 */
   dueArchivedDocuments: number;
   evaluatedAt: string;
+  readiness: SupportKnowledgeGovernanceResponseDtoReadiness;
   /** @nullable */
   retentionPolicy?: SupportKnowledgeGovernanceResponseDtoRetentionPolicy;
-  state: SupportKnowledgeGovernanceResponseDtoState;
 }

@@ -19,7 +19,7 @@ export interface SupportRoutingRetryDto {
   fallbackDelaySeconds?: number;
   /**
    * @minimum 1
-   * @maximum 10
+   * @maximum 5
    */
   maxAttempts?: number;
 }

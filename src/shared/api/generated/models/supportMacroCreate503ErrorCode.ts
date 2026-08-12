@@ -11,5 +11,5 @@ export type SupportMacroCreate503ErrorCode =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportMacroCreate503ErrorCode = {
-  SUPPORT_CONTENT_CAPABILITY_DISABLED: "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+  SUPPORT_DISABLED: "SUPPORT_DISABLED",
 } as const;

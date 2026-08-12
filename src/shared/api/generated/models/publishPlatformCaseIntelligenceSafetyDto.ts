@@ -5,16 +5,21 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { PlatformCaseIntelligenceSafetyPolicyDto } from "./platformCaseIntelligenceSafetyPolicyDto";
+import type { PublishPlatformCaseIntelligenceSafetyDtoReasoningEffort } from "./publishPlatformCaseIntelligenceSafetyDtoReasoningEffort";
 
 export interface PublishPlatformCaseIntelligenceSafetyDto {
-  definition: PlatformCaseIntelligenceSafetyPolicyDto;
   /** @minimum 0 */
   expectedVersion: number;
   idempotencyKey: string;
   /**
    * @minLength 1
+   * @maxLength 100
+   */
+  modelId: string;
+  /**
+   * @minLength 1
    * @maxLength 2000
    */
   reason: string;
+  reasoningEffort: PublishPlatformCaseIntelligenceSafetyDtoReasoningEffort;
 }

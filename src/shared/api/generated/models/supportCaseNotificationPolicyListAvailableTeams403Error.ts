@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicyListAvailableTeams403ErrorDetails } f
 
 export type SupportCaseNotificationPolicyListAvailableTeams403Error = {
   code: SupportCaseNotificationPolicyListAvailableTeams403ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicyListAvailableTeams403ErrorDetails;
+  message: string;
   requestId?: string;
 };

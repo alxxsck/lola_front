@@ -5,14 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { PlatformCaseIntelligenceSafetyStateResponseDtoCoverage } from "./platformCaseIntelligenceSafetyStateResponseDtoCoverage";
+import type { PlatformCaseIntelligenceSafetyStateResponseDtoProfile } from "./platformCaseIntelligenceSafetyStateResponseDtoProfile";
 import type { PlatformCaseIntelligenceSafetyStateResponseDtoReconciliationState } from "./platformCaseIntelligenceSafetyStateResponseDtoReconciliationState";
-import type { PlatformCaseIntelligenceSafetyRevisionResponseDto } from "./platformCaseIntelligenceSafetyRevisionResponseDto";
+import type { PlatformCaseIntelligenceSafetyStateResponseDtoRiskClassesItem } from "./platformCaseIntelligenceSafetyStateResponseDtoRiskClassesItem";
+import type { PlatformCaseIntelligenceSafetyStateResponseDtoStatus } from "./platformCaseIntelligenceSafetyStateResponseDtoStatus";
 
 export interface PlatformCaseIntelligenceSafetyStateResponseDto {
-  minimumSafetyRevisionId: string;
+  coverage?: PlatformCaseIntelligenceSafetyStateResponseDtoCoverage;
+  profile?: PlatformCaseIntelligenceSafetyStateResponseDtoProfile;
+  publishedAt: string;
   reconciliationState: PlatformCaseIntelligenceSafetyStateResponseDtoReconciliationState;
-  revision: PlatformCaseIntelligenceSafetyRevisionResponseDto;
-  updatedAt: string;
+  riskClasses: PlatformCaseIntelligenceSafetyStateResponseDtoRiskClassesItem[];
+  status: PlatformCaseIntelligenceSafetyStateResponseDtoStatus;
   /** @minimum 1 */
   version: number;
 }

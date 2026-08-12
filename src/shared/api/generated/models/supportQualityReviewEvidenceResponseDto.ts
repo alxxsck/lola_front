@@ -5,7 +5,6 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportQualityReviewEvidenceResponseDtoRationale } from "./supportQualityReviewEvidenceResponseDtoRationale";
 
 export interface SupportQualityReviewEvidenceResponseDto {
   /** @minimum 1 */
@@ -14,5 +13,5 @@ export interface SupportQualityReviewEvidenceResponseDto {
   /** @minimum 1 */
   messageRevisionNumber: number;
   /** @nullable */
-  rationale?: SupportQualityReviewEvidenceResponseDtoRationale;
+  rationale?: string | null;
 }

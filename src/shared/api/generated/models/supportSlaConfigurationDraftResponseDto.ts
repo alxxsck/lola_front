@@ -8,6 +8,7 @@
 import type { ReplaceSupportSlaConfigurationDraftDto } from "./replaceSupportSlaConfigurationDraftDto";
 
 export interface SupportSlaConfigurationDraftResponseDto {
+  catalogRevisionId: string;
   configuration?: ReplaceSupportSlaConfigurationDraftDto;
   /** @pattern ^[a-f0-9]{64}$ */
   contentHash: string;

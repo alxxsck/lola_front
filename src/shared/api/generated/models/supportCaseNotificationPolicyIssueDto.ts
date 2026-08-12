@@ -5,11 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyIssueDtoSeverity } from "./supportCaseNotificationPolicyIssueDtoSeverity";
 import type { SupportCaseNotificationPolicyIssueDtoCode } from "./supportCaseNotificationPolicyIssueDtoCode";
+import type { SupportCaseNotificationPolicyIssueDtoSeverity } from "./supportCaseNotificationPolicyIssueDtoSeverity";
 
 export interface SupportCaseNotificationPolicyIssueDto {
-  severity: SupportCaseNotificationPolicyIssueDtoSeverity;
   code: SupportCaseNotificationPolicyIssueDtoCode;
   path: string;
+  severity: SupportCaseNotificationPolicyIssueDtoSeverity;
 }

@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicyReadMetrics428ErrorDetails } from "./
 
 export type SupportCaseNotificationPolicyReadMetrics428Error = {
   code: SupportCaseNotificationPolicyReadMetrics428ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicyReadMetrics428ErrorDetails;
+  message: string;
   requestId?: string;
 };

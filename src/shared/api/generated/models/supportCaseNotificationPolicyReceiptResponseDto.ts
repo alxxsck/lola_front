@@ -8,7 +8,7 @@
 import type { SupportCaseNotificationPolicyCurrentResponseDto } from "./supportCaseNotificationPolicyCurrentResponseDto";
 
 export interface SupportCaseNotificationPolicyReceiptResponseDto {
+  policy: SupportCaseNotificationPolicyCurrentResponseDto;
   receiptId: string;
   replayed: boolean;
-  policy: SupportCaseNotificationPolicyCurrentResponseDto;
 }

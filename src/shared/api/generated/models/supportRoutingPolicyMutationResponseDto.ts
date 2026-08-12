@@ -5,10 +5,11 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportRoutingPolicyMutationResponseDtoIntent } from "./supportRoutingPolicyMutationResponseDtoIntent";
 import type { SupportRoutingPolicyResponseDto } from "./supportRoutingPolicyResponseDto";
 
 export interface SupportRoutingPolicyMutationResponseDto {
   actionEtag: string;
-  intent: string;
+  intent: SupportRoutingPolicyMutationResponseDtoIntent;
   policy: SupportRoutingPolicyResponseDto;
 }

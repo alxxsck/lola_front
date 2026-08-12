@@ -7,12 +7,12 @@
  */
 
 export interface SupportCaseNotificationAvailableTeamDto {
-  id: string;
   /**
    * @minLength 1
    * @maxLength 64
    */
   code: string;
+  id: string;
   /**
    * @minLength 1
    * @maxLength 120

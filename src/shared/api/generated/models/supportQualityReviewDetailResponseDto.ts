@@ -5,16 +5,19 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportQualityReviewDetailResponseDtoAcknowledgmentState } from "./supportQualityReviewDetailResponseDtoAcknowledgmentState";
+import type { SupportQualityReviewDetailResponseDtoCriticalFailureOutcome } from "./supportQualityReviewDetailResponseDtoCriticalFailureOutcome";
 import type { SupportQualityDisputeResponseDto } from "./supportQualityDisputeResponseDto";
 import type { SupportQualityReviewEvidenceResponseDto } from "./supportQualityReviewEvidenceResponseDto";
 import type { SupportQualityReviewDetailResponseDtoKind } from "./supportQualityReviewDetailResponseDtoKind";
 import type { SupportQualityReviewItemScoreResponseDto } from "./supportQualityReviewItemScoreResponseDto";
 import type { SupportQualityReviewDetailResponseDtoState } from "./supportQualityReviewDetailResponseDtoState";
-import type { SupportQualityReviewDetailResponseDtoSubmittedAt } from "./supportQualityReviewDetailResponseDtoSubmittedAt";
 
 export interface SupportQualityReviewDetailResponseDto {
+  acknowledgmentState: SupportQualityReviewDetailResponseDtoAcknowledgmentState;
   caseId: string;
   conversationId: string;
+  criticalFailureOutcome: SupportQualityReviewDetailResponseDtoCriticalFailureOutcome;
   disputes: SupportQualityDisputeResponseDto[];
   evidence: SupportQualityReviewEvidenceResponseDto[];
   id: string;
@@ -24,9 +27,15 @@ export interface SupportQualityReviewDetailResponseDto {
   operatorCmsUserId: string;
   reviewerCmsUserId: string;
   scores: SupportQualityReviewItemScoreResponseDto[];
+  /** @nullable */
+  selectionReasonCode?: string | null;
   state: SupportQualityReviewDetailResponseDtoState;
   /** @nullable */
-  submittedAt?: SupportQualityReviewDetailResponseDtoSubmittedAt;
+  submittedAt?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  taskId?: string | null;
   /** @minimum 0 */
   totalScore: number;
   /** @minimum 1 */

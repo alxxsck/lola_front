@@ -161,7 +161,6 @@ export function validateSupportInboxCaseWorkforceContract(document) {
   ]);
   requireProperties(document, "SupportWorkspaceSlaSignalAvailableResponseDto", [
     "state",
-    "rolloutState",
     "signalCode",
     "kind",
     "timing",
@@ -178,7 +177,6 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     ["SLA_BREACHED", "SLA_AT_RISK", "SLA_PAUSED", "SLA_DUE"],
   );
   requireProperties(document, "SupportSlaCaseProjectionResponseDto", [
-    "rolloutState",
     "occurrence",
     "clocks",
   ]);
@@ -668,7 +666,7 @@ export function validateSupportInboxCaseWorkforceContract(document) {
   for (const operationValue of [offerAccept, offerDecline]) {
     requireHeader(operationValue, "Idempotency-Key");
     requireHeader(operationValue, "If-Match");
-    for (const status of ["400", "403", "404", "409"])
+    for (const status of ["400", "403", "409"])
       requireInlineErrorFields(operationValue, status, ["code"]);
     requireInlineErrorEnum(operationValue, "409", [
       "SUPPORT_OFFER_VERSION_CONFLICT",
@@ -889,12 +887,11 @@ export function validateSupportInboxCaseWorkforceContract(document) {
       "project.support.routing.manage",
     ]);
   }
-  requireProperties(document, "SupportRoutingRolloutResponseDto", [
-    "hardCeiling",
-    "emergencyDisabled",
-    "version",
-    "actionEtag",
+  requireProperties(document, "SupportRoutingActivationReadResponseDto", [
     "activations",
+    "activationsTruncated",
+    "readiness",
+    "readinessTruncated",
   ]);
   requireProperties(document, "SupportRoutingDecisionDetailResponseDto", [
     "id",
@@ -916,13 +913,6 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "inputManifest",
     "sourceVector",
   ]);
-  requirePropertyEnum(
-    document,
-    "SupportRoutingRolloutResponseDto",
-    "hardCeiling",
-    ["DISABLED", "SHADOW", "OFFER", "AUTO_ASSIGN"],
-  );
-
   const slaSettings = operation(document, "SupportSlaConfiguration_read");
   const slaCorrection = operation(
     document,
@@ -939,10 +929,7 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "mode",
     "rootVersion",
     "actionEtag",
-    "rolloutState",
-  ]);
-  requireSchemaFields(document, "SupportSlaConfigurationSettingsResponseDto", [
-    "reconciliationCheckpoint",
+    "allowedActions",
   ]);
   requireProperties(document, "SupportSlaCorrectClockMutationResponseDto", [
     "intent",
@@ -954,12 +941,6 @@ export function validateSupportInboxCaseWorkforceContract(document) {
     "outcome",
     "actionEtag",
   ]);
-  requirePropertyEnum(
-    document,
-    "SupportSlaConfigurationSettingsResponseDto",
-    "rolloutState",
-    ["DISABLED", "SHADOW"],
-  );
   requirePropertyEnum(
     document,
     "SupportSlaCorrectClockMutationResponseDto",

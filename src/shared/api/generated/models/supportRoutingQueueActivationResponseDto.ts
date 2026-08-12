@@ -5,13 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportRoutingQueueActivationResponseDtoAlgorithmRevision } from "./supportRoutingQueueActivationResponseDtoAlgorithmRevision";
 import type { SupportRoutingQueueActivationResponseDtoRequestedMode } from "./supportRoutingQueueActivationResponseDtoRequestedMode";
 
 export interface SupportRoutingQueueActivationResponseDto {
   activatedAt: string;
-  admissionReceiptId: string;
-  algorithmRevision: string;
+  activationVectorId: string;
+  algorithmRevision: SupportRoutingQueueActivationResponseDtoAlgorithmRevision;
   id: string;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
   liveRoutePriority: number;
   policyId: string;
   policyRevisionId: string;

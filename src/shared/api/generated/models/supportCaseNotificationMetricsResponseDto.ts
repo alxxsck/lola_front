@@ -7,10 +7,10 @@
  */
 
 export interface SupportCaseNotificationMetricsResponseDto {
-  from: string;
-  to: string;
   /** @minimum 0 */
   admittedOccurrences: number;
+  /** @minimum 0 */
+  authorizationCancellations: number;
   /** @minimum 0 */
   deliveries: number;
   /** @minimum 0 */
@@ -20,15 +20,15 @@ export interface SupportCaseNotificationMetricsResponseDto {
    * @maximum 1000000
    */
   eligibleRecipients: number;
+  /** @minimum 0 */
+  expiredPolicyCount: number;
+  /** @minimum 0 */
+  failures: number;
+  from: string;
   /**
    * @minimum 0
    * @maximum 1000000
    */
   subscribedRecipients: number;
-  /** @minimum 0 */
-  failures: number;
-  /** @minimum 0 */
-  authorizationCancellations: number;
-  /** @minimum 0 */
-  expiredPolicyCount: number;
+  to: string;
 }

@@ -10,5 +10,6 @@ import type { SupportSlaPolicyDto } from "./supportSlaPolicyDto";
 
 export interface ReplaceSupportSlaConfigurationDraftDto {
   calendar: SupportBusinessCalendarDto;
+  catalogRevisionId: string;
   policy: SupportSlaPolicyDto;
 }

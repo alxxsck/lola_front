@@ -12,6 +12,5 @@ export type SupportInternalNoteTombstone503ErrorCode =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportInternalNoteTombstone503ErrorCode = {
   SUPPORT_CONTENT_RETENTION_NOT_READY: "SUPPORT_CONTENT_RETENTION_NOT_READY",
-  SUPPORT_CONTENT_CAPABILITY_DISABLED: "SUPPORT_CONTENT_CAPABILITY_DISABLED",
   SUPPORT_CONTENT_HOLD_FENCE_NOT_READY: "SUPPORT_CONTENT_HOLD_FENCE_NOT_READY",
 } as const;

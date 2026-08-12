@@ -166,7 +166,7 @@ const mockSource: SupportInspectorSource = {
         noEligibleOperator: "UNAVAILABLE",
         routingCapacityRisks: "AVAILABLE",
         savedQueues: "UNAVAILABLE",
-        sla: "SHADOW",
+        sla: "CONFIGURED",
         teamSkillLanguageCapacity: "UNAVAILABLE",
       },
       data: {

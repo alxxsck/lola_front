@@ -10,7 +10,6 @@ import type { SupportExternalWorkOperationsCommandsResponseDto } from "./support
 import type { SupportExternalWorkOperationsConnectionResponseDto } from "./supportExternalWorkOperationsConnectionResponseDto";
 import type { SupportExternalWorkOperationsImportsResponseDto } from "./supportExternalWorkOperationsImportsResponseDto";
 import type { SupportExternalWorkOperationsReconciliationResponseDto } from "./supportExternalWorkOperationsReconciliationResponseDto";
-import type { SupportExternalWorkOperationsRolloutResponseDto } from "./supportExternalWorkOperationsRolloutResponseDto";
 import type { SupportExternalWorkOperationsHealthResponseDtoStatus } from "./supportExternalWorkOperationsHealthResponseDtoStatus";
 import type { SupportExternalWorkOperationsWebhooksResponseDto } from "./supportExternalWorkOperationsWebhooksResponseDto";
 
@@ -22,7 +21,6 @@ export interface SupportExternalWorkOperationsHealthResponseDto {
   imports: SupportExternalWorkOperationsImportsResponseDto;
   observedAt: string;
   reconciliation: SupportExternalWorkOperationsReconciliationResponseDto;
-  rollout: SupportExternalWorkOperationsRolloutResponseDto;
   status: SupportExternalWorkOperationsHealthResponseDtoStatus;
   webhooks: SupportExternalWorkOperationsWebhooksResponseDto;
 }

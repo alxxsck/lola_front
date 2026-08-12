@@ -12,7 +12,7 @@ export interface SupportCaseNotificationCommandResultResponseDto {
   found: boolean;
   operation: SupportCaseNotificationCommandResultResponseDtoOperation;
   /** @nullable */
-  receiptId?: string | null;
-  /** @nullable */
   policy?: SupportCaseNotificationCommandResultResponseDtoPolicy;
+  /** @nullable */
+  receiptId?: string | null;
 }

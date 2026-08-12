@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicyPublish428ErrorDetails } from "./supp
 
 export type SupportCaseNotificationPolicyPublish428Error = {
   code: SupportCaseNotificationPolicyPublish428ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicyPublish428ErrorDetails;
+  message: string;
   requestId?: string;
 };

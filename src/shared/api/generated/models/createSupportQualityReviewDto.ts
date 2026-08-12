@@ -25,4 +25,9 @@ export interface CreateSupportQualityReviewDto {
    * @maxItems 100
    */
   scores: SupportQualityScoreInputDto[];
+  /** @pattern ^[A-Z][A-Z0-9_]{1,63}$ */
+  selectionReasonCode?: string;
+  /** @maxLength 2000 */
+  summary?: string;
+  taskId?: string;
 }

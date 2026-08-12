@@ -5,46 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SaveSupportCaseNotificationDraftDtoMode } from "./saveSupportCaseNotificationDraftDtoMode";
-import type { SaveSupportCaseNotificationDraftDtoOccurrencesItem } from "./saveSupportCaseNotificationDraftDtoOccurrencesItem";
+import type { SaveSupportCaseNotificationDraftDtoChannelsItem } from "./saveSupportCaseNotificationDraftDtoChannelsItem";
 import type { SaveSupportCaseNotificationDraftDtoConversationClassesItem } from "./saveSupportCaseNotificationDraftDtoConversationClassesItem";
 import type { SaveSupportCaseNotificationDraftDtoMinimumPriority } from "./saveSupportCaseNotificationDraftDtoMinimumPriority";
+import type { SaveSupportCaseNotificationDraftDtoMode } from "./saveSupportCaseNotificationDraftDtoMode";
+import type { SaveSupportCaseNotificationDraftDtoOccurrencesItem } from "./saveSupportCaseNotificationDraftDtoOccurrencesItem";
 import type { SaveSupportCaseNotificationDraftDtoRecipientRule } from "./saveSupportCaseNotificationDraftDtoRecipientRule";
-import type { SaveSupportCaseNotificationDraftDtoChannelsItem } from "./saveSupportCaseNotificationDraftDtoChannelsItem";
 
 export interface SaveSupportCaseNotificationDraftDto {
-  mode: SaveSupportCaseNotificationDraftDtoMode;
-  /**
-   * @minItems 1
-   * @maxItems 2
-   */
-  occurrences: SaveSupportCaseNotificationDraftDtoOccurrencesItem[];
-  /**
-   * @minItems 1
-   * @maxItems 2
-   */
-  conversationClasses: SaveSupportCaseNotificationDraftDtoConversationClassesItem[];
-  /** @maxItems 100 */
-  topicCodes: string[];
-  minimumPriority: SaveSupportCaseNotificationDraftDtoMinimumPriority;
-  recipientRule: SaveSupportCaseNotificationDraftDtoRecipientRule;
-  /** @maxItems 100 */
-  teamIds: string[];
   /**
    * @minItems 1
    * @maxItems 1
    */
   channels: SaveSupportCaseNotificationDraftDtoChannelsItem[];
-  /** @nullable */
-  effectiveFrom?: string | null;
-  /** @nullable */
-  effectiveUntil?: string | null;
   /**
-   * @minimum 5
-   * @maximum 1440
-   * @nullable
+   * @minItems 1
+   * @maxItems 2
    */
-  digestWindowMinutes?: number | null;
+  conversationClasses: SaveSupportCaseNotificationDraftDtoConversationClassesItem[];
   /**
    * @minimum 1
    * @maximum 100
@@ -52,13 +30,35 @@ export interface SaveSupportCaseNotificationDraftDto {
    */
   digestMaxItems?: number | null;
   /**
-   * @minLength 3
-   * @maxLength 500
+   * @minimum 5
+   * @maximum 1440
+   * @nullable
    */
-  reason: string;
+  digestWindowMinutes?: number | null;
+  /** @nullable */
+  effectiveFrom?: string | null;
+  /** @nullable */
+  effectiveUntil?: string | null;
   /**
    * @minimum 0
    * @maximum 2147483647
    */
   expectedVersion: number;
+  minimumPriority: SaveSupportCaseNotificationDraftDtoMinimumPriority;
+  mode: SaveSupportCaseNotificationDraftDtoMode;
+  /**
+   * @minItems 1
+   * @maxItems 2
+   */
+  occurrences: SaveSupportCaseNotificationDraftDtoOccurrencesItem[];
+  /**
+   * @minLength 3
+   * @maxLength 500
+   */
+  reason: string;
+  recipientRule: SaveSupportCaseNotificationDraftDtoRecipientRule;
+  /** @maxItems 100 */
+  teamIds: string[];
+  /** @maxItems 100 */
+  topicCodes: string[];
 }

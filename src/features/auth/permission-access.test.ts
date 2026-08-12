@@ -12,6 +12,11 @@ describe("permission access", () => {
       expect.arrayContaining([
         "project.support.activity.read",
         "project.support.alerts.manage",
+        "project.support.quality.read",
+        "project.support.quality.review",
+        "project.reporting.catalog.read",
+        "project.reporting.aggregate.read",
+        "project.dashboards.author",
       "project.support.search.read",
       "project.support.saved_views.read",
       "project.support.saved_views.self_manage",

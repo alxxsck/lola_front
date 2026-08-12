@@ -82,7 +82,7 @@ const PROJECT_OPERATIONS = [
     "CaseIntelligence_correctDecision",
     "project.case_intelligence.labels.review",
   ],
-  ["EndUserCases_costSummary", "project.ai_usage.read"],
+  ["EndUserCases_costSummary", "project.case_intelligence.cost.read"],
 ];
 
 const STRONG_AUTH_OPERATIONS = [

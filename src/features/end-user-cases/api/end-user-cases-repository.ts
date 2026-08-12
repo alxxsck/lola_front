@@ -3,7 +3,6 @@ import {
   endUserCasePolicyPreview,
   endUserCasePolicyPublish,
   endUserCasePolicySaveDraft,
-  endUserCasesAssignment,
   endUserCasesAssignees,
   endUserCasesCancelEscalation,
   endUserCasesClaimEscalation,
@@ -26,7 +25,6 @@ import {
   endUserCasesWorkflow,
 } from "@/shared/api/generated/retenive-backend";
 import type {
-  AssignEndUserCaseDto,
   CancelEndUserCaseEscalationDto,
   ClassifyEndUserCaseDto,
   CloseEndUserCaseEscalationDto,
@@ -54,6 +52,7 @@ import type {
   UpdateEndUserCaseWorkflowDto,
   VersionedEndUserCaseEscalationDto,
 } from "@/shared/api/generated/models";
+import { ApiError } from "@/shared/api/http/api-error";
 import {
   endUserCaseListParams,
   type EndUserCaseFilters,
@@ -69,6 +68,13 @@ export interface EndUserCaseDetailBundle {
   messages: EndUserCaseMessages;
   timeline: EndUserCaseTimeline;
   escalations: EndUserCaseEscalationsResponseDto;
+}
+
+export interface AssignEndUserCaseCommand {
+  expectedVersion: number;
+  idempotencyKey: string;
+  assignedCmsUserId: string | null;
+  reason: string;
 }
 
 export interface EndUserCasesRepository {
@@ -93,7 +99,7 @@ export interface EndUserCasesRepository {
   assign(
     projectId: string,
     caseId: string,
-    command: AssignEndUserCaseDto,
+    command: AssignEndUserCaseCommand,
   ): Promise<EndUserCaseCommandResponseDto>;
   classify(
     projectId: string,
@@ -202,7 +208,15 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
     });
   },
   workflow: endUserCasesWorkflow,
-  assign: endUserCasesAssignment,
+  async assign() {
+    throw new ApiError(
+      410,
+      "Назначение перенесено в рабочее место поддержки",
+      undefined,
+      undefined,
+      "END_USER_CASE_ASSIGNMENT_RETIRED",
+    );
+  },
   classify: endUserCasesClassification,
   linkMessage: endUserCasesLinkMessage,
   unlinkMessage: endUserCasesUnlinkMessage,

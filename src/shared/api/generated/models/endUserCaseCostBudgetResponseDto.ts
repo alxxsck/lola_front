@@ -9,9 +9,23 @@
 export interface EndUserCaseCostBudgetResponseDto {
   /** @minimum 0 */
   backlogCount: number;
+  /** @nullable */
+  budgetRevisionId: string | null;
+  /** @nullable */
+  circuitRevisionId: string | null;
+  /** @minimum 0 */
+  deadCount: number;
   degradedReasons: string[];
   emergencyPaused: boolean;
   /** @nullable */
   oldestPendingAt: string | null;
-  projectDailyTokenHardCap: string;
+  /** @nullable */
+  projectDailyCostMicroUsdHardCap: string | null;
+  /** @nullable */
+  projectDailyCostMicroUsdSoftCap: string | null;
+  /** @nullable */
+  projectDailyTokenHardCap: string | null;
+  /** @nullable */
+  projectDailyTokenSoftCap: string | null;
+  retryCount: string;
 }

@@ -7,7 +7,7 @@
  */
 import type { SupportLeadProjectionMetadataDtoEffectiveWindow } from "./supportLeadProjectionMetadataDtoEffectiveWindow";
 import type { SupportLeadProjectionMetadataDtoFreshnessState } from "./supportLeadProjectionMetadataDtoFreshnessState";
-import type { SupportLeadProjectionMetadataDtoSlaRolloutState } from "./supportLeadProjectionMetadataDtoSlaRolloutState";
+import type { SupportLeadProjectionMetadataDtoSlaReadiness } from "./supportLeadProjectionMetadataDtoSlaReadiness";
 
 export interface SupportLeadProjectionMetadataDto {
   /**
@@ -26,7 +26,7 @@ export interface SupportLeadProjectionMetadataDto {
   nextCursor: string | null;
   /** @minimum 1 */
   projectionGeneration: number;
-  slaRolloutState: SupportLeadProjectionMetadataDtoSlaRolloutState;
+  slaReadiness: SupportLeadProjectionMetadataDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

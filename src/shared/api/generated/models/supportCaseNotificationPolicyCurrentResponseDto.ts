@@ -5,30 +5,30 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus } from "./supportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus";
-import type { SupportCaseNotificationPolicyCurrentResponseDtoCurrent } from "./supportCaseNotificationPolicyCurrentResponseDtoCurrent";
-import type { SupportCaseNotificationPolicyCurrentResponseDtoDraft } from "./supportCaseNotificationPolicyCurrentResponseDtoDraft";
-import type { SupportCaseNotificationPolicyRevisionResponseDto } from "./supportCaseNotificationPolicyRevisionResponseDto";
+import type { SupportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem } from "./supportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem";
 import type { SupportCaseNotificationPolicyCurrentResponseDtoAllowedClassesItem } from "./supportCaseNotificationPolicyCurrentResponseDtoAllowedClassesItem";
 import type { SupportCaseNotificationPolicyCurrentResponseDtoAllowedPrioritiesItem } from "./supportCaseNotificationPolicyCurrentResponseDtoAllowedPrioritiesItem";
-import type { SupportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem } from "./supportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem";
+import type { SupportCaseNotificationPolicyCurrentResponseDtoCurrent } from "./supportCaseNotificationPolicyCurrentResponseDtoCurrent";
+import type { SupportCaseNotificationPolicyCurrentResponseDtoDraft } from "./supportCaseNotificationPolicyCurrentResponseDtoDraft";
+import type { SupportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus } from "./supportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus";
+import type { SupportCaseNotificationPolicyRevisionResponseDto } from "./supportCaseNotificationPolicyRevisionResponseDto";
 
 export interface SupportCaseNotificationPolicyCurrentResponseDto {
-  /** @minimum 0 */
-  version: number;
-  effectiveStatus: SupportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus;
+  allowedChannels: SupportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem[];
+  allowedClasses: SupportCaseNotificationPolicyCurrentResponseDtoAllowedClassesItem[];
+  allowedPriorities: SupportCaseNotificationPolicyCurrentResponseDtoAllowedPrioritiesItem[];
+  /** @maxItems 100 */
+  allowedTopicCodes: string[];
   /** @nullable */
   current?: SupportCaseNotificationPolicyCurrentResponseDtoCurrent;
   /** @nullable */
   draft?: SupportCaseNotificationPolicyCurrentResponseDtoDraft;
+  effectiveStatus: SupportCaseNotificationPolicyCurrentResponseDtoEffectiveStatus;
   /**
    * Previously published revisions that remain eligible as restore sources.
    * @maxItems 50
    */
   restorableRevisions: SupportCaseNotificationPolicyRevisionResponseDto[];
-  allowedClasses: SupportCaseNotificationPolicyCurrentResponseDtoAllowedClassesItem[];
-  allowedPriorities: SupportCaseNotificationPolicyCurrentResponseDtoAllowedPrioritiesItem[];
-  allowedChannels: SupportCaseNotificationPolicyCurrentResponseDtoAllowedChannelsItem[];
-  /** @maxItems 100 */
-  allowedTopicCodes: string[];
+  /** @minimum 0 */
+  version: number;
 }

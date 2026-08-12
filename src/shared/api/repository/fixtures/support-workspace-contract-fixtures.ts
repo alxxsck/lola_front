@@ -133,8 +133,6 @@ const fullSelectionSuccess = {
     attentionRequired: true,
     slaSignal: {
       state: "AVAILABLE",
-      rolloutState: "SHADOW",
-      reconciliationCheckpoint: "sla:inbox:42",
       signalCode: "SLA_AT_RISK",
       kind: "FIRST_HUMAN_RESPONSE",
       timing: "RUNNING",
@@ -150,8 +148,6 @@ const fullSelectionSuccess = {
     assignment: null,
   },
   sla: {
-    rolloutState: "SHADOW",
-    reconciliationCheckpoint: "sla:selected:42",
     occurrence: {
       id: "80000000-0000-4000-8000-000000000001",
       occurrenceNumber: 1,

@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportBusinessCalendarRevisionReceiptDto } from "./supportBusinessCalendarRevisionReceiptDto";
+import type { SupportSlaConfigurationRevisionSummaryDto } from "./supportSlaConfigurationRevisionSummaryDto";
 import type { SupportSlaPolicyRevisionReceiptDto } from "./supportSlaPolicyRevisionReceiptDto";
 
 export interface SupportSlaPublishedConfigurationReceiptDto {
   calendarRevision: SupportBusinessCalendarRevisionReceiptDto;
+  configurationRevision: SupportSlaConfigurationRevisionSummaryDto;
   policyRevision: SupportSlaPolicyRevisionReceiptDto;
 }

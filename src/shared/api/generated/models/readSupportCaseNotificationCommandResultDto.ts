@@ -8,10 +8,10 @@
 import type { ReadSupportCaseNotificationCommandResultDtoOperation } from "./readSupportCaseNotificationCommandResultDtoOperation";
 
 export interface ReadSupportCaseNotificationCommandResultDto {
-  operation: ReadSupportCaseNotificationCommandResultDtoOperation;
   /**
    * @minLength 8
    * @maxLength 200
    */
   idempotencyKey: string;
+  operation: ReadSupportCaseNotificationCommandResultDtoOperation;
 }

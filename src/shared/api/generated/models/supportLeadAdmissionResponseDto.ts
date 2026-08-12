@@ -7,7 +7,6 @@
  */
 import type { SupportLeadAdmissionCapabilitiesDto } from "./supportLeadAdmissionCapabilitiesDto";
 import type { SupportLeadAdmissionResponseDtoReadinessState } from "./supportLeadAdmissionResponseDtoReadinessState";
-import type { SupportLeadAdmissionResponseDtoRolloutState } from "./supportLeadAdmissionResponseDtoRolloutState";
 
 export interface SupportLeadAdmissionResponseDto {
   capabilities: SupportLeadAdmissionCapabilitiesDto;
@@ -22,9 +21,6 @@ export interface SupportLeadAdmissionResponseDto {
   /** @nullable */
   projectionGeneration: number | null;
   readinessState: SupportLeadAdmissionResponseDtoReadinessState;
-  rolloutState: SupportLeadAdmissionResponseDtoRolloutState;
-  /** @nullable */
-  rolloutVersion: number | null;
   /**
    * @nullable
    * @pattern ^[0-9]+$

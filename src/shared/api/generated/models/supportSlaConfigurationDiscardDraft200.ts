@@ -8,8 +8,10 @@
 import type { ReplaceSupportSlaDraftMutationResponseDto } from "./replaceSupportSlaDraftMutationResponseDto";
 import type { DiscardSupportSlaDraftMutationResponseDto } from "./discardSupportSlaDraftMutationResponseDto";
 import type { PublishSupportSlaConfigurationMutationResponseDto } from "./publishSupportSlaConfigurationMutationResponseDto";
+import type { RollbackSupportSlaConfigurationMutationResponseDto } from "./rollbackSupportSlaConfigurationMutationResponseDto";
 
 export type SupportSlaConfigurationDiscardDraft200 =
   | ReplaceSupportSlaDraftMutationResponseDto
   | DiscardSupportSlaDraftMutationResponseDto
-  | PublishSupportSlaConfigurationMutationResponseDto;
+  | PublishSupportSlaConfigurationMutationResponseDto
+  | RollbackSupportSlaConfigurationMutationResponseDto;

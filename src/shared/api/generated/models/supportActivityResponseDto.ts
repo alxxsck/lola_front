@@ -10,7 +10,7 @@ import type { SupportLeadActivityDataDto } from "./supportLeadActivityDataDto";
 import type { SupportActivityResponseDtoEffectiveWindow } from "./supportActivityResponseDtoEffectiveWindow";
 import type { SupportActivityResponseDtoFreshnessState } from "./supportActivityResponseDtoFreshnessState";
 import type { SupportActivityResponseDtoKind } from "./supportActivityResponseDtoKind";
-import type { SupportActivityResponseDtoSlaRolloutState } from "./supportActivityResponseDtoSlaRolloutState";
+import type { SupportActivityResponseDtoSlaReadiness } from "./supportActivityResponseDtoSlaReadiness";
 
 export interface SupportActivityResponseDto {
   capabilities: SupportLeadCapabilitiesDto;
@@ -32,7 +32,7 @@ export interface SupportActivityResponseDto {
   nextCursor: string | null;
   /** @minimum 1 */
   projectionGeneration: number;
-  slaRolloutState: SupportActivityResponseDtoSlaRolloutState;
+  slaReadiness: SupportActivityResponseDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

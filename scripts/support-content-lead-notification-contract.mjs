@@ -662,7 +662,6 @@ export function validateSupportContentLeadNotificationContract(document) {
     "SupportInternalKnowledge_publish",
     "SupportInternalKnowledge_archive",
     "SupportInternalKnowledge_rollbackRevision",
-    "SupportInternalKnowledge_rollbackAdmission",
   ].map((operationId) => operation(document, operationId));
   for (const operationValue of knowledgeManageOperations) {
     requirePermission(operationValue, "project.support.knowledge.manage");
@@ -711,11 +710,6 @@ export function validateSupportContentLeadNotificationContract(document) {
       "SupportKnowledgeCommandReceiptResponseDto",
     );
   }
-  requireResponseSchema(
-    operation(document, "SupportInternalKnowledge_rollbackAdmission"),
-    "200",
-    "SupportKnowledgeAdmissionRollbackResponseDto",
-  );
   requireProperties(document, "SupportKnowledgeManagedRevisionResponseDto", [
     "revisionId",
     "revisionNumber",
@@ -746,40 +740,6 @@ export function validateSupportContentLeadNotificationContract(document) {
     "state",
     "replayed",
   ]);
-
-  const rolloutRead = operation(document, "SupportContentGovernance_rollout");
-  const rolloutUpdate = operation(
-    document,
-    "SupportContentGovernance_updateRollout",
-  );
-  for (const operationValue of [rolloutRead, rolloutUpdate]) {
-    requirePermission(operationValue, "project.support.content_rollout.manage");
-    requireResponseSchema(
-      operationValue,
-      "200",
-      "SupportContentRolloutResponseDto",
-    );
-  }
-  requireHeader(rolloutUpdate, "If-Match");
-  requireHeader(rolloutUpdate, "Idempotency-Key");
-  requireProperties(document, "SupportContentRolloutResponseDto", [
-    "version",
-    "hardOff",
-    "enabledCapabilities",
-    "actionEtag",
-  ]);
-  requireArrayItemEnum(
-    document,
-    "SupportContentRolloutResponseDto",
-    "enabledCapabilities",
-    [
-      "MACRO_AUTHORING",
-      "MACRO_DRAFT",
-      "MACRO_SEND",
-      "INTERNAL_NOTES",
-      "CONTENT_PANEL",
-    ],
-  );
 
   const retentionRead = operation(
     document,
@@ -922,7 +882,6 @@ export function validateSupportContentLeadNotificationContract(document) {
       "freshnessState",
       "computedAt",
       "effectiveWindow",
-      "slaRolloutState",
       "capabilities",
       "kind",
       "data",

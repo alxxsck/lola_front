@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicySaveDraft403ErrorDetails } from "./su
 
 export type SupportCaseNotificationPolicySaveDraft403Error = {
   code: SupportCaseNotificationPolicySaveDraft403ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicySaveDraft403ErrorDetails;
+  message: string;
   requestId?: string;
 };

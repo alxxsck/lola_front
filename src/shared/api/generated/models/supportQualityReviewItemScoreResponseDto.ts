@@ -7,10 +7,22 @@
  */
 
 export interface SupportQualityReviewItemScoreResponseDto {
+  applicable: boolean;
+  /** @nullable */
+  coachingTheme?: string | null;
+  /** @nullable */
+  feedback?: string | null;
   itemCode: string;
   itemLabel: string;
   /** @minimum 1 */
   maximumScore: number;
-  /** @minimum 0 */
-  score: number;
+  /** @nullable */
+  rating?: string | null;
+  /** @nullable */
+  rootCause?: string | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  score?: number | null;
 }

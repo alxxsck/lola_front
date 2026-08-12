@@ -346,13 +346,6 @@ test("availability, workforce, queue, routing and SLA projections retain authori
       );
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportSlaConfigurationSettingsResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "rolloutState",
-      );
-    },
-    (contract) => {
       operation(
         contract,
         "SupportSlaHumanCommand_correctClock",

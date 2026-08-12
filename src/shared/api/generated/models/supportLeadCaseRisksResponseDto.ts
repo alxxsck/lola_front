@@ -11,7 +11,7 @@ import type { SupportLeadCaseRisksResponseDtoEffectiveWindow } from "./supportLe
 import type { SupportLeadCaseRisksResponseDtoFreshnessState } from "./supportLeadCaseRisksResponseDtoFreshnessState";
 import type { SupportLeadCaseRisksResponseDtoKind } from "./supportLeadCaseRisksResponseDtoKind";
 import type { SupportLeadCaseRisksResponseDtoRiskType } from "./supportLeadCaseRisksResponseDtoRiskType";
-import type { SupportLeadCaseRisksResponseDtoSlaRolloutState } from "./supportLeadCaseRisksResponseDtoSlaRolloutState";
+import type { SupportLeadCaseRisksResponseDtoSlaReadiness } from "./supportLeadCaseRisksResponseDtoSlaReadiness";
 import type { SupportLeadCaseRisksResponseDtoView } from "./supportLeadCaseRisksResponseDtoView";
 
 export interface SupportLeadCaseRisksResponseDto {
@@ -35,7 +35,7 @@ export interface SupportLeadCaseRisksResponseDto {
   /** @minimum 1 */
   projectionGeneration: number;
   riskType: SupportLeadCaseRisksResponseDtoRiskType;
-  slaRolloutState: SupportLeadCaseRisksResponseDtoSlaRolloutState;
+  slaReadiness: SupportLeadCaseRisksResponseDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

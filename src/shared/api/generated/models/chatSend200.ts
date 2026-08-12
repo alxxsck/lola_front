@@ -9,9 +9,11 @@ import type { ChatSend200OneOf } from "./chatSend200OneOf";
 import type { ChatSend200OneOfNine } from "./chatSend200OneOfNine";
 import type { ChatSend200OneOfOneseven } from "./chatSend200OneOfOneseven";
 import type { ChatSend200OneOfTwofive } from "./chatSend200OneOfTwofive";
+import type { ChatSend200OneOfThreethree } from "./chatSend200OneOfThreethree";
 
 export type ChatSend200 =
   | ChatSend200OneOf
   | ChatSend200OneOfNine
   | ChatSend200OneOfOneseven
-  | ChatSend200OneOfTwofive;
+  | ChatSend200OneOfTwofive
+  | ChatSend200OneOfThreethree;

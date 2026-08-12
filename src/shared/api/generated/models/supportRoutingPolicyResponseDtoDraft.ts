@@ -5,10 +5,10 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportRoutingPolicyDraftResponseDto } from "./supportRoutingPolicyDraftResponseDto";
 
 /**
  * @nullable
  */
-export type SupportRoutingPolicyResponseDtoDraft = {
-  [key: string]: unknown;
-} | null;
+export type SupportRoutingPolicyResponseDtoDraft =
+  SupportRoutingPolicyDraftResponseDto | null;

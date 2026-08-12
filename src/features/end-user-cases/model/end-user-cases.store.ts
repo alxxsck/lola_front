@@ -1,7 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 import type {
-  AssignEndUserCaseDto,
   ClassifyEndUserCaseDto,
   LinkEndUserCaseMessageDto,
   UnlinkEndUserCaseMessageDto,
@@ -11,6 +10,7 @@ import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
 import {
   endUserCasesRepository,
   type EndUserCaseDetailBundle,
+  type AssignEndUserCaseCommand,
 } from "../api/end-user-cases-repository";
 import {
   defaultEndUserCaseFilters,
@@ -252,7 +252,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         idempotencyKey: crypto.randomUUID(),
         assignedCmsUserId,
         reason: reason.trim(),
-      } satisfies AssignEndUserCaseDto),
+      } satisfies AssignEndUserCaseCommand),
     );
   }
 

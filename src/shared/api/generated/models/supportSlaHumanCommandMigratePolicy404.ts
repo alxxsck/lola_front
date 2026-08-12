@@ -5,8 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaHumanCommandMigratePolicy404Code } from "./supportSlaHumanCommandMigratePolicy404Code";
+import type { SupportSlaHumanCommandMigratePolicy404Error } from "./supportSlaHumanCommandMigratePolicy404Error";
 
 export type SupportSlaHumanCommandMigratePolicy404 = {
-  code: SupportSlaHumanCommandMigratePolicy404Code;
+  error: SupportSlaHumanCommandMigratePolicy404Error;
 };

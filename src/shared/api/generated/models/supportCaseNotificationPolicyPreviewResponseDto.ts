@@ -5,24 +5,24 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyIssueDto } from "./supportCaseNotificationPolicyIssueDto";
 import type { SupportCaseNotificationPolicyPreviewExampleDto } from "./supportCaseNotificationPolicyPreviewExampleDto";
+import type { SupportCaseNotificationPolicyIssueDto } from "./supportCaseNotificationPolicyIssueDto";
 
 export interface SupportCaseNotificationPolicyPreviewResponseDto {
-  /** @maxItems 100 */
-  issues: SupportCaseNotificationPolicyIssueDto[];
+  /** @minimum 0 */
+  estimatedDigestWindowsLast7Days: number;
   /**
    * @minimum 0
    * @maximum 1000000
    */
   estimatedEligibleRecipients: number;
   /** @minimum 0 */
-  matchingOccurrencesLast7Days: number;
-  /** @minimum 0 */
   estimatedImmediateDeliveriesLast7Days: number;
-  /** @minimum 0 */
-  estimatedDigestWindowsLast7Days: number;
   /** @maxItems 5 */
   examples: SupportCaseNotificationPolicyPreviewExampleDto[];
+  /** @maxItems 100 */
+  issues: SupportCaseNotificationPolicyIssueDto[];
+  /** @minimum 0 */
+  matchingOccurrencesLast7Days: number;
   publishable: boolean;
 }

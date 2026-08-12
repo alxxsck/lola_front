@@ -19,4 +19,6 @@ export interface ReplaceSupportQualityReviewDraftDto {
    * @maxItems 100
    */
   scores: SupportQualityScoreInputDto[];
+  /** @maxLength 2000 */
+  summary?: string;
 }

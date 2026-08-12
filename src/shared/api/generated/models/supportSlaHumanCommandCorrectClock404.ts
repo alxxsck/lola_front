@@ -5,8 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportSlaHumanCommandCorrectClock404Code } from "./supportSlaHumanCommandCorrectClock404Code";
+import type { SupportSlaHumanCommandCorrectClock404Error } from "./supportSlaHumanCommandCorrectClock404Error";
 
 export type SupportSlaHumanCommandCorrectClock404 = {
-  code: SupportSlaHumanCommandCorrectClock404Code;
+  error: SupportSlaHumanCommandCorrectClock404Error;
 };

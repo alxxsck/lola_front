@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicyReadCommandResult409ErrorDetails } fr
 
 export type SupportCaseNotificationPolicyReadCommandResult409Error = {
   code: SupportCaseNotificationPolicyReadCommandResult409ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicyReadCommandResult409ErrorDetails;
+  message: string;
   requestId?: string;
 };

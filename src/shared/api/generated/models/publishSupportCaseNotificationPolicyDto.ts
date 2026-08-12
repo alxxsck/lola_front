@@ -7,10 +7,10 @@
  */
 
 export interface PublishSupportCaseNotificationPolicyDto {
-  revisionId: string;
   /**
    * @minimum 0
    * @maximum 2147483647
    */
   expectedVersion: number;
+  revisionId: string;
 }

@@ -10,7 +10,7 @@ import type { SupportCaseNotificationPolicyDisable404ErrorDetails } from "./supp
 
 export type SupportCaseNotificationPolicyDisable404Error = {
   code: SupportCaseNotificationPolicyDisable404ErrorCode;
-  message: string;
   details?: SupportCaseNotificationPolicyDisable404ErrorDetails;
+  message: string;
   requestId?: string;
 };

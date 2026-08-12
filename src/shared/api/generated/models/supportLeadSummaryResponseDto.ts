@@ -10,7 +10,7 @@ import type { SupportLeadSummaryDataDto } from "./supportLeadSummaryDataDto";
 import type { SupportLeadSummaryResponseDtoEffectiveWindow } from "./supportLeadSummaryResponseDtoEffectiveWindow";
 import type { SupportLeadSummaryResponseDtoFreshnessState } from "./supportLeadSummaryResponseDtoFreshnessState";
 import type { SupportLeadSummaryResponseDtoKind } from "./supportLeadSummaryResponseDtoKind";
-import type { SupportLeadSummaryResponseDtoSlaRolloutState } from "./supportLeadSummaryResponseDtoSlaRolloutState";
+import type { SupportLeadSummaryResponseDtoSlaReadiness } from "./supportLeadSummaryResponseDtoSlaReadiness";
 import type { SupportLeadSummaryResponseDtoView } from "./supportLeadSummaryResponseDtoView";
 
 export interface SupportLeadSummaryResponseDto {
@@ -33,7 +33,7 @@ export interface SupportLeadSummaryResponseDto {
   nextCursor: string | null;
   /** @minimum 1 */
   projectionGeneration: number;
-  slaRolloutState: SupportLeadSummaryResponseDtoSlaRolloutState;
+  slaReadiness: SupportLeadSummaryResponseDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

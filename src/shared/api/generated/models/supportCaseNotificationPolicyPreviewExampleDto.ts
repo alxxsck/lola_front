@@ -5,18 +5,18 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
-import type { SupportCaseNotificationPolicyPreviewExampleDtoOccurrence } from "./supportCaseNotificationPolicyPreviewExampleDtoOccurrence";
 import type { SupportCaseNotificationPolicyPreviewExampleDtoConversationClass } from "./supportCaseNotificationPolicyPreviewExampleDtoConversationClass";
+import type { SupportCaseNotificationPolicyPreviewExampleDtoOccurrence } from "./supportCaseNotificationPolicyPreviewExampleDtoOccurrence";
 import type { SupportCaseNotificationPolicyPreviewExampleDtoPriority } from "./supportCaseNotificationPolicyPreviewExampleDtoPriority";
 
 export interface SupportCaseNotificationPolicyPreviewExampleDto {
-  occurrence: SupportCaseNotificationPolicyPreviewExampleDtoOccurrence;
   conversationClass: SupportCaseNotificationPolicyPreviewExampleDtoConversationClass;
+  occurredAt: string;
+  occurrence: SupportCaseNotificationPolicyPreviewExampleDtoOccurrence;
+  priority: SupportCaseNotificationPolicyPreviewExampleDtoPriority;
   /**
    * @minLength 1
    * @maxLength 64
    */
   topicCode: string;
-  priority: SupportCaseNotificationPolicyPreviewExampleDtoPriority;
-  occurredAt: string;
 }

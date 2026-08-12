@@ -41,17 +41,31 @@ function publishedConfiguration(
 ): ReplaceSupportSlaConfigurationDraftDto | null {
   const calendar = snapshot.publishedConfiguration?.calendarRevision.calendar;
   const policy = snapshot.publishedConfiguration?.policyRevision.policy;
-  return calendar && policy ? { calendar, policy } : null;
+  const catalogRevisionId =
+    snapshot.publishedConfiguration?.configurationRevision?.catalogRevisionId ??
+    "mock-sla-catalog-r1";
+  return calendar && policy
+    ? { calendar, policy, catalogRevisionId }
+    : null;
 }
 
 function editableConfiguration(
   snapshot: SupportSlaConfigurationSnapshot,
   canManage: boolean,
 ): ReplaceSupportSlaConfigurationDraftDto | null {
-  return (
-    (canManage ? snapshot.draft?.configuration : null) ??
-    publishedConfiguration(snapshot)
-  );
+  const draft = canManage ? snapshot.draft?.configuration : null;
+  if (draft) {
+    return {
+      ...draft,
+      catalogRevisionId:
+        draft.catalogRevisionId ??
+        snapshot.draft?.catalogRevisionId ??
+        snapshot.publishedConfiguration?.configurationRevision
+          ?.catalogRevisionId ??
+        "mock-sla-catalog-r1",
+    };
+  }
+  return publishedConfiguration(snapshot);
 }
 
 function formFingerprint(form: SupportSlaConfigurationForm): string {
@@ -306,7 +320,18 @@ export function createSupportSlaConfigurationController(
     });
     if (
       value &&
-      sameConfiguration(value.draft?.configuration, command.configuration)
+      sameConfiguration(
+        value.draft?.configuration
+          ? {
+              ...value.draft.configuration,
+              catalogRevisionId:
+                value.draft.configuration.catalogRevisionId ??
+                value.draft.catalogRevisionId ??
+                "mock-sla-catalog-r1",
+            }
+          : undefined,
+        command.configuration,
+      )
     ) {
       hydrateForm(value);
       pendingCommand = null;
@@ -422,7 +447,19 @@ export function createSupportSlaConfigurationController(
 
   async function saveDraft(): Promise<void> {
     if (recovery.value || !context.canManage()) return;
-    const serialized = serializeSupportSlaConfiguration(form.value);
+    const catalogRevisionId =
+      snapshot.value?.draft?.catalogRevisionId ??
+      snapshot.value?.publishedConfiguration?.configurationRevision
+        ?.catalogRevisionId;
+    if (!catalogRevisionId) {
+      error.value =
+        "Версия каталога SLA недоступна. Обновите конфигурацию перед сохранением.";
+      return;
+    }
+    const serialized = serializeSupportSlaConfiguration(
+      form.value,
+      catalogRevisionId,
+    );
     validationIssues.value = serialized.issues;
     if (!serialized.configuration) {
       error.value = "Проверьте календарь и правила перед сохранением.";

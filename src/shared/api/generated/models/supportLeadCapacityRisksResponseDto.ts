@@ -10,7 +10,7 @@ import type { SupportLeadCapacityRisksDataDto } from "./supportLeadCapacityRisks
 import type { SupportLeadCapacityRisksResponseDtoEffectiveWindow } from "./supportLeadCapacityRisksResponseDtoEffectiveWindow";
 import type { SupportLeadCapacityRisksResponseDtoFreshnessState } from "./supportLeadCapacityRisksResponseDtoFreshnessState";
 import type { SupportLeadCapacityRisksResponseDtoKind } from "./supportLeadCapacityRisksResponseDtoKind";
-import type { SupportLeadCapacityRisksResponseDtoSlaRolloutState } from "./supportLeadCapacityRisksResponseDtoSlaRolloutState";
+import type { SupportLeadCapacityRisksResponseDtoSlaReadiness } from "./supportLeadCapacityRisksResponseDtoSlaReadiness";
 import type { SupportLeadCapacityRisksResponseDtoView } from "./supportLeadCapacityRisksResponseDtoView";
 
 export interface SupportLeadCapacityRisksResponseDto {
@@ -33,7 +33,7 @@ export interface SupportLeadCapacityRisksResponseDto {
   nextCursor: string | null;
   /** @minimum 1 */
   projectionGeneration: number;
-  slaRolloutState: SupportLeadCapacityRisksResponseDtoSlaRolloutState;
+  slaReadiness: SupportLeadCapacityRisksResponseDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

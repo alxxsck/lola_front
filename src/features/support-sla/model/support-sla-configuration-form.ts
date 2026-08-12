@@ -121,7 +121,7 @@ function formatMinute(value: number): string {
 }
 
 export function createSupportSlaConfigurationForm(
-  configuration: ReplaceSupportSlaConfigurationDraftDto,
+  configuration: Pick<ReplaceSupportSlaConfigurationDraftDto, "calendar" | "policy">,
 ): SupportSlaConfigurationForm {
   const weekly = Array.from({ length: 7 }, (_, index) => {
     const day = configuration.calendar.weekly.find(
@@ -268,6 +268,7 @@ function validateIntervals(
 
 export function serializeSupportSlaConfiguration(
   form: SupportSlaConfigurationForm,
+  catalogRevisionId = "mock-sla-catalog-r1",
 ): SupportSlaSerializationResult {
   const issues: SupportSlaFormIssue[] = [];
   const timeZone = form.timeZone.trim();
@@ -485,6 +486,7 @@ export function serializeSupportSlaConfiguration(
   });
 
   const configuration: ReplaceSupportSlaConfigurationDraftDto = {
+    catalogRevisionId,
     calendar: {
       timeZone,
       weekly,

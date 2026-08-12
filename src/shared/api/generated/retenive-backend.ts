@@ -79,7 +79,6 @@ import type {
   ArchiveSupportKnowledgeDocumentDto,
   ArchiveSupportQueueDto,
   ArchivedSegmentResponseDto,
-  AssignEndUserCaseDto,
   AssignSupportCaseAssignmentDto,
   AssignableProjectRoleCatalogResponseDto,
   AttributeContractDraftResponseDto,
@@ -99,6 +98,7 @@ import type {
   BrowserPushSubscriptionResponseDto,
   CancelEndUserCaseEscalationDto,
   CancelIntegrationDispatchDto,
+  CancelReportingQueryRunDto,
   CanonicalIdentityPolicyPreviewResponseDto,
   CanonicalIdentityPolicyResponseDto,
   CaseIntelligenceBudgetRevisionResponseDto,
@@ -209,6 +209,7 @@ import type {
   ConversationContentRetentionPolicyResponseDto,
   ConversationContentRolloutResponseDto,
   ConversationMessageContentResponseDto,
+  ConversationMessageContentRevisionResponseDto,
   ConversationMessageTranslationItemResponseDto,
   ConversationMessageTranslationsResponseDto,
   ConversationTranslationGetParams,
@@ -245,6 +246,7 @@ import type {
   CreateProjectMembershipDto,
   CreateProjectRoleDto,
   CreateReplyTranslationDraftDto,
+  CreateReportingQueryRunDto,
   CreateSavedSupportViewDto,
   CreateScenarioAuthoringDto,
   CreateScenarioAuthoringResponseDto,
@@ -263,6 +265,7 @@ import type {
   CreateSupportQualityCalibrationDto,
   CreateSupportQualityCalibrationReviewDto,
   CreateSupportQualityReviewDto,
+  CreateSupportQualitySamplingPolicyDto,
   CreateSupportQualityScorecardDto,
   CreateSupportQualityScorecardRevisionDto,
   CreateSupportQueueDto,
@@ -274,9 +277,35 @@ import type {
   CreateTranslationJobDto,
   CreateUiElementDto,
   CustomerIoInboundBatchReceiptDto,
+  DashboardCatalogPageResponseDto,
+  DashboardCollectionCreateDto,
+  DashboardCollectionListParams,
+  DashboardCollectionMoveDto,
+  DashboardCollectionPageResponseDto,
+  DashboardCommandResponseDto,
+  DashboardCreateDto,
+  DashboardDocumentDto,
+  DashboardDrilldownResponseDto,
+  DashboardFavoriteDto,
+  DashboardInteractionCancellationResponseDto,
+  DashboardInteractionDto,
+  DashboardInteractionResponseDto,
+  DashboardListParams,
+  DashboardPublishDto,
+  DashboardRevisionPageResponseDto,
+  DashboardRevisionQueryDto,
+  DashboardShareDto,
+  DashboardShellResponseDto,
+  DashboardTransferDto,
+  DashboardWidgetDrilldownReadParams,
+  DashboardWidgetResultReadParams,
+  DashboardWidgetResultResponseDto,
+  DashboardWidgetTableReadParams,
+  DashboardWidgetTableResponseDto,
   DeleteKnowledgeDocumentResponseDto,
   DisableSupportCaseNotificationPolicyDto,
   DisableTelegramChannelDto,
+  DuplicateSavedReportDto,
   EditIntegrationEventRouteDraftDto,
   EditReplyTranslationDraftDto,
   EditSupportMacroReplyDraftDto,
@@ -403,7 +432,6 @@ import type {
   IntegrationRecoveryOperationListResponseDto,
   IntegrationRecoveryOperationsListParams,
   InteractionSessionResponseDto,
-  IssueSupportRoutingAdmissionReceiptDto,
   KnowledgeDocumentDetailResponseDto,
   KnowledgeDocumentListResponseDto,
   KnowledgeDocumentMutationResponseDto,
@@ -443,6 +471,7 @@ import type {
   PersonalSupportNotificationDeepLinkTargetDto,
   PersonalSupportNotificationSettingsResponseDto,
   PlatformCaseIntelligenceCircuitRevisionResponseDto,
+  PlatformCaseIntelligenceSafetyModelCatalogResponseDto,
   PlatformCaseIntelligenceSafetyStateResponseDto,
   PlatformCreateProject201,
   PlatformOperationsUsersPageParams,
@@ -502,6 +531,7 @@ import type {
   PublishScenarioResponseDto,
   PublishSegmentRevisionDto,
   PublishSupportCaseNotificationPolicyDto,
+  PublishSupportSlaConfigurationDto,
   PublishedSegmentResponseDto,
   PutAiAllowanceAccrualRuleDto,
   PutAllowancePlanDto,
@@ -533,33 +563,64 @@ import type {
   ReplayIntegrationDispatchDto,
   ReplayIntegrationIngressDto,
   ReplyTranslationDraftResponseDto,
+  ReportDeliveryInboxResponseDto,
+  ReportDeliveryListParams,
+  ReportDownloadCapabilityResponseDto,
+  ReportExportChangedResponseDto,
+  ReportExportCreateDto,
+  ReportExportEstimateDto,
+  ReportExportEstimateResponseDto,
+  ReportExportRequestedResponseDto,
+  ReportExportStatusResponseDto,
+  ReportScheduleCatalogResponseDto,
+  ReportScheduleChangedResponseDto,
+  ReportScheduleCreateDto,
+  ReportScheduleListParams,
+  ReportScheduleReplaceDto,
+  ReportScheduleResponseDto,
+  ReportScheduleRunHistoryResponseDto,
+  ReportScheduleRunListParams,
+  ReportingCatalogResponseDto,
+  ReportingQueryDefinitionDto,
+  ReportingQueryEstimateResponseDto,
+  ReportingQueryResultResponseDto,
+  ReportingQueryRunResponseDto,
+  ReportingQueryTablePageResponseDto,
+  ReportingQueryTableReadParams,
   RequestEndUserCaseEscalationDto,
   RequestSupportRoutingShadowRunDto,
   ResolveAiSpendAttemptDto,
   ResolveSupportExternalWorkCommandDto,
   ResolveSupportKnowledgeProblemReportDto,
   ResolveSupportOperationalAlertDto,
+  ResolveSupportOperatorPresentationsDto,
   ResolveSupportQualityDisputeDto,
+  ResolveSupportRoutingOperatorAvailabilityDto,
+  RespondCaseIntelligenceEscalationOfferDto,
+  RespondCaseIntelligenceEscalationOfferResponseDto,
   RestoreEventDefinitionDto,
   RestoreSupportCaseNotificationPolicyDto,
+  RestoreSupportQueueRevisionDto,
+  RestoreSupportRoutingPolicyRevisionDto,
+  RestoreSupportWorkforceRevisionDto,
   ResumeConversationAIDto,
   RetryFailedConversationDeliveryDto,
   RetryFailedConversationDeliveryResponseDto,
   RevokeBrowserPushSubscriptionDto,
   RevokeCmsUserSessionDto,
-  RevokeSupportRoutingAdmissionReceiptDto,
   RollbackCaseIntelligenceReleaseDto,
   RollbackScenarioDto,
   RollbackSupportExternalMappingDto,
-  RollbackSupportKnowledgeAdmissionDto,
   RollbackSupportKnowledgeRevisionDto,
   RollbackSupportMacroDto,
+  RollbackSupportSlaConfigurationDto,
   RotateAmplitudeCredentialDto,
   RotateAmplitudeInboundCredentialDto,
   RotateCustomerIoCredentialDto,
   RotateServerKeyResponseDto,
   RotateTelegramChannelDto,
   RunCaseIntelligenceEvaluationDto,
+  RunSupportQualitySamplingDto,
   SaveAttributeContractDraftDto,
   SaveCaseIntelligenceBudgetDraftDto,
   SaveCaseIntelligenceDetectionDraftDto,
@@ -569,6 +630,15 @@ import type {
   SaveEventSchemaDraftDto,
   SaveScenarioDraftDto,
   SaveSupportCaseNotificationDraftDto,
+  SavedReportAuthoringResponseDto,
+  SavedReportCatalogPageResponseDto,
+  SavedReportDocumentDto,
+  SavedReportListParams,
+  SavedReportPreviewDto,
+  SavedReportPreviewResponseDto,
+  SavedReportPublicationResponseDto,
+  SavedReportRevisionPageResponseDto,
+  SavedReportRevisionResponseDto,
   SavedSupportViewCatalogResponseDto,
   SavedSupportViewMutationResponseDto,
   SavedSupportViewQueryDto,
@@ -596,7 +666,6 @@ import type {
   SendAdminMessageDto,
   SendAdminMessageResponseDto,
   SendChatMessageDto,
-  SetSupportKnowledgeCapabilitiesDto,
   SetSupportKnowledgeRetentionPolicyDto,
   SetSupportLolaPresentationDto,
   SetSupportOperatorAvailabilityDto,
@@ -625,6 +694,7 @@ import type {
   SupportCaseNotificationPolicyPreviewResponseDto,
   SupportCaseNotificationPolicyReceiptResponseDto,
   SupportCaseSearchQueryDto,
+  SupportConfigurationAuditCatalogResponseDto,
   SupportContentGovernanceListHoldsParams,
   SupportContentGovernancePreviewRetentionParams,
   SupportContentLegalHoldPageResponseDto,
@@ -633,7 +703,6 @@ import type {
   SupportContentPanelResponseDto,
   SupportContentRetentionPolicyResponseDto,
   SupportContentRetentionPreviewDto,
-  SupportContentRolloutResponseDto,
   SupportConversationCollaborationReadParams,
   SupportConversationSearchQueryDto,
   SupportDefaultViewResponseDto,
@@ -702,8 +771,6 @@ import type {
   SupportInternalNoteResponseDto,
   SupportInternalNoteRevisionPageResponseDto,
   SupportInternalNoteRevisionsParams,
-  SupportKnowledgeAdmissionRollbackResponseDto,
-  SupportKnowledgeCapabilityRolloutResponseDto,
   SupportKnowledgeCitationDraftResponseDto,
   SupportKnowledgeCommandReceiptResponseDto,
   SupportKnowledgeDownloadGrantResponseDto,
@@ -745,17 +812,36 @@ import type {
   SupportOperationalAlertListParams,
   SupportOperationalAlertListResponseDto,
   SupportOperatorAvailabilityResponseDto,
+  SupportOperatorPresentationCatalogResponseDto,
+  SupportOperatorPresentationResolveResponseDto,
   SupportOperatorQualityMetricsResponseDto,
   SupportPresentationAvatarCompleteResponseDto,
   SupportPresentationAvatarGrantResponseDto,
   SupportPresentationAvatarUploadResponseDto,
   SupportPresentationResponseDto,
+  SupportPresentationsCatalogOperatorsParams,
+  SupportQualityCalibrationBaselineDto,
+  SupportQualityCalibrationDetailResponseDto,
+  SupportQualityCalibrationPageResponseDto,
+  SupportQualityCalibrationParticipantsDto,
   SupportQualityCalibrationResponseDto,
+  SupportQualityCalibrationsParams,
+  SupportQualityDisputePageResponseDto,
   SupportQualityDisputeResponseDto,
   SupportQualityOperatorMetricsParams,
+  SupportQualityOperatorReplyDto,
+  SupportQualityOperatorReviewsParams,
   SupportQualityReviewDetailResponseDto,
+  SupportQualityReviewDisputesParams,
+  SupportQualityReviewListParams,
+  SupportQualityReviewPageResponseDto,
   SupportQualityReviewResponseDto,
+  SupportQualitySamplingPolicyResponseDto,
+  SupportQualitySamplingRunResponseDto,
   SupportQualityScorecardResponseDto,
+  SupportQualityTaskListParams,
+  SupportQualityTaskPageResponseDto,
+  SupportQualityTaskResponseDto,
   SupportQueueCasesPageResponseDto,
   SupportQueueCasesParams,
   SupportQueueCatalogResponseDto,
@@ -764,45 +850,76 @@ import type {
   SupportQueueListParams,
   SupportQueueMutationResponseDto,
   SupportQueuePreviewDto,
-  SupportRoutingAdmissionReceiptCatalogResponseDto,
-  SupportRoutingAdmissionReceiptResponseDto,
+  SupportQueueRevisionCatalogResponseDto,
+  SupportQueueRevisionDetailResponseDto,
+  SupportQueueRevisionDiffParams,
+  SupportQueueRevisionDiffResponseDto,
+  SupportQueueRevisionsParams,
+  SupportRoutingActivationCatalogResponseDto,
+  SupportRoutingActivationReadResponseDto,
   SupportRoutingDecisionCatalogResponseDto,
   SupportRoutingDecisionDetailResponseDto,
   SupportRoutingListParams,
   SupportRoutingOfferActionDto,
   SupportRoutingOfferActionReceiptDto,
   SupportRoutingOfferListParams,
+  SupportRoutingOperatorAvailabilityCatalogResponseDto,
   SupportRoutingOwnOfferCatalogDto,
   SupportRoutingPolicyCatalogResponseDto,
   SupportRoutingPolicyMutationResponseDto,
   SupportRoutingPolicyResponseDto,
+  SupportRoutingPolicyRestoreResponseDto,
+  SupportRoutingPolicyRevisionCatalogResponseDto,
+  SupportRoutingPolicyRevisionDetailResponseDto,
+  SupportRoutingPolicyRevisionDiffResponseDto,
+  SupportRoutingQueueSlotCatalogResponseDto,
+  SupportRoutingQueueSlotDetailResponseDto,
   SupportRoutingQueueSlotResponseDto,
-  SupportRoutingRolloutResponseDto,
-  SupportRoutingRuntimeAdmissionListParams,
+  SupportRoutingReadinessCatalogResponseDto,
+  SupportRoutingRevisionDiffParams,
+  SupportRoutingRevisionHistoryParams,
+  SupportRoutingRuntimeConfigurationAuditTimelineParams,
   SupportRoutingRuntimeDecisionListParams,
+  SupportRoutingRuntimeQueueSlotsParams,
+  SupportRoutingRuntimeReadinessParams,
+  SupportRoutingRuntimeShadowRunDecisionsParams,
   SupportRoutingShadowControlResponseDto,
+  SupportRoutingShadowRunDecisionCatalogResponseDto,
   SupportRoutingShadowRunResponseDto,
   SupportSearchCasePageResponseDto,
   SupportSearchConversationPageResponseDto,
   SupportSearchEndUserPageResponseDto,
   SupportSearchMessagePageResponseDto,
+  SupportSlaConfigurationAuditParams,
+  SupportSlaConfigurationAuditResponseDto,
+  SupportSlaConfigurationDiffParams,
+  SupportSlaConfigurationDiffResponseDto,
   SupportSlaConfigurationDiscardDraft200,
+  SupportSlaConfigurationHistoryParams,
+  SupportSlaConfigurationHistoryResponseDto,
+  SupportSlaConfigurationOutcome200,
+  SupportSlaConfigurationPreviewResponseDto,
   SupportSlaConfigurationPublish200,
   SupportSlaConfigurationReplaceDraft200,
+  SupportSlaConfigurationRevisionDetailDto,
+  SupportSlaConfigurationRollback200,
   SupportSlaConfigurationSettingsResponseDto,
   SupportSlaCorrectClockMutationResponseDto,
+  SupportSlaGroupCatalogResponseDto,
   SupportSlaMigratePolicyMutationResponseDto,
   SupportViewPresetCaseQueryResponseDto,
   SupportViewPresetCatalogResponseDto,
   SupportViewPresetConversationQueryResponseDto,
+  SupportWorkforceHistoryParams,
   SupportWorkforceListSkillsParams,
   SupportWorkforceListTeamsParams,
   SupportWorkforceMutationResponseDto,
+  SupportWorkforceRevisionCatalogResponseDto,
+  SupportWorkforceRevisionDetailResponseDto,
+  SupportWorkforceRevisionDiffResponseDto,
   SupportWorkforceSettingsResponseDto,
-  SupportWorkspaceAdmissionResponseDto,
   SupportWorkspaceRead200,
   SupportWorkspaceReadParams,
-  SupportWorkspaceRolloutResponseDto,
   SyncAttributeSnapshotDto,
   TelegramAdminLinkSummaryResponseDto,
   TelegramBindingChallengeResponseDto,
@@ -865,14 +982,11 @@ import type {
   UpdateScenarioAuthoringMetadataDto,
   UpdateSlackNotificationDestinationDto,
   UpdateSupportContentRetentionDraftDto,
-  UpdateSupportContentRolloutDto,
   UpdateSupportExternalMappingDraftDto,
   UpdateSupportKnowledgeCitationDraftDto,
   UpdateSupportKnowledgeTextDraftDto,
-  UpdateSupportRoutingProjectRolloutDto,
   UpdateSupportRoutingQueueSlotDto,
   UpdateSupportRoutingShadowControlDto,
-  UpdateSupportWorkspaceRolloutDto,
   UpdateTelegramBroadcastDto,
   UpdateUiElementDto,
   UpdateUserMemorySettingsDto,
@@ -993,6 +1107,20 @@ export const caseIntelligenceSafetyLookup = (
   return request<PlatformCaseIntelligenceSafetyStateResponseDto>(
     {
       url: `/api/v1/admin/platform/case-intelligence/safety/commands/${idempotencyKey}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const caseIntelligenceSafetyModels = (
+  options?: SecondParameter<
+    typeof request<PlatformCaseIntelligenceSafetyModelCatalogResponseDto>
+  >,
+) => {
+  return request<PlatformCaseIntelligenceSafetyModelCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/platform/case-intelligence/safety/models`,
       method: "GET",
     },
     options,
@@ -3145,6 +3273,23 @@ export const conversationMessageContentCorrect = (
   );
 };
 
+export const conversationMessageContentHistory = (
+  projectId: string,
+  conversationId: string,
+  messageId: string,
+  options?: SecondParameter<
+    typeof request<ConversationMessageContentRevisionResponseDto[]>
+  >,
+) => {
+  return request<ConversationMessageContentRevisionResponseDto[]>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/conversations/${conversationId}/messages/${messageId}/content/revisions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const conversationMessageContentTombstone = (
   projectId: string,
   conversationId: string,
@@ -3297,6 +3442,318 @@ export const conversationContentGovernanceUpdateRollout = (
   );
 };
 
+export const dashboardCollectionList = (
+  projectId: string,
+  params?: DashboardCollectionListParams,
+  options?: SecondParameter<typeof request<DashboardCollectionPageResponseDto>>,
+) => {
+  return request<DashboardCollectionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboard-collections`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const dashboardCollectionCreate = (
+  projectId: string,
+  dashboardCollectionCreateDto: BodyType<DashboardCollectionCreateDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboard-collections`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardCollectionCreateDto,
+    },
+    options,
+  );
+};
+
+export const dashboardList = (
+  projectId: string,
+  params?: DashboardListParams,
+  options?: SecondParameter<typeof request<DashboardCatalogPageResponseDto>>,
+) => {
+  return request<DashboardCatalogPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const dashboardCreate = (
+  projectId: string,
+  dashboardCreateDto: BodyType<DashboardCreateDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardCreateDto,
+    },
+    options,
+  );
+};
+
+export const dashboardRead = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<DashboardShellResponseDto>>,
+) => {
+  return request<DashboardShellResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const dashboardArchive = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const dashboardCollectionMove = (
+  projectId: string,
+  id: string,
+  dashboardCollectionMoveDto: BodyType<DashboardCollectionMoveDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/collection`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardCollectionMoveDto,
+    },
+    options,
+  );
+};
+
+export const dashboardUpdateDraft = (
+  projectId: string,
+  id: string,
+  dashboardDocumentDto: BodyType<DashboardDocumentDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardDocumentDto,
+    },
+    options,
+  );
+};
+
+export const dashboardFavoriteSet = (
+  projectId: string,
+  id: string,
+  dashboardFavoriteDto: BodyType<DashboardFavoriteDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/favorite`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardFavoriteDto,
+    },
+    options,
+  );
+};
+
+export const dashboardInteractionCreate = (
+  projectId: string,
+  id: string,
+  dashboardInteractionDto: BodyType<DashboardInteractionDto>,
+  options?: SecondParameter<typeof request<DashboardInteractionResponseDto>>,
+) => {
+  return request<DashboardInteractionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/interactions`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardInteractionDto,
+    },
+    options,
+  );
+};
+
+export const dashboardInteractionCancel = (
+  projectId: string,
+  id: string,
+  interactionId: string,
+  dashboardRevisionQueryDto: BodyType<DashboardRevisionQueryDto>,
+  options?: SecondParameter<
+    typeof request<DashboardInteractionCancellationResponseDto>
+  >,
+) => {
+  return request<DashboardInteractionCancellationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/interactions/${interactionId}/cancel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardRevisionQueryDto,
+    },
+    options,
+  );
+};
+
+export const dashboardWidgetResultRead = (
+  projectId: string,
+  id: string,
+  interactionId: string,
+  widgetId: string,
+  params: DashboardWidgetResultReadParams,
+  options?: SecondParameter<typeof request<DashboardWidgetResultResponseDto>>,
+) => {
+  return request<DashboardWidgetResultResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/interactions/${interactionId}/widgets/${widgetId}`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const dashboardWidgetDrilldownRead = (
+  projectId: string,
+  id: string,
+  interactionId: string,
+  widgetId: string,
+  params: DashboardWidgetDrilldownReadParams,
+  options?: SecondParameter<typeof request<DashboardDrilldownResponseDto>>,
+) => {
+  return request<DashboardDrilldownResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/interactions/${interactionId}/widgets/${widgetId}/drilldown`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const dashboardWidgetTableRead = (
+  projectId: string,
+  id: string,
+  interactionId: string,
+  widgetId: string,
+  params: DashboardWidgetTableReadParams,
+  options?: SecondParameter<typeof request<DashboardWidgetTableResponseDto>>,
+) => {
+  return request<DashboardWidgetTableResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/interactions/${interactionId}/widgets/${widgetId}/table`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const dashboardPublish = (
+  projectId: string,
+  id: string,
+  dashboardPublishDto: BodyType<DashboardPublishDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardPublishDto,
+    },
+    options,
+  );
+};
+
+export const dashboardRevisionList = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<DashboardRevisionPageResponseDto>>,
+) => {
+  return request<DashboardRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/revisions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const dashboardShareCreate = (
+  projectId: string,
+  id: string,
+  dashboardShareDto: BodyType<DashboardShareDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/share`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardShareDto,
+    },
+    options,
+  );
+};
+
+export const dashboardShareRevoke = (
+  projectId: string,
+  id: string,
+  shareId: string,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/share/${shareId}`,
+      method: "DELETE",
+    },
+    options,
+  );
+};
+
+export const dashboardTransfer = (
+  projectId: string,
+  id: string,
+  dashboardTransferDto: BodyType<DashboardTransferDto>,
+  options?: SecondParameter<typeof request<DashboardCommandResponseDto>>,
+) => {
+  return request<DashboardCommandResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/transfer`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: dashboardTransferDto,
+    },
+    options,
+  );
+};
+
 export const endUserCasePolicyGet = (
   projectId: string,
   options?: SecondParameter<typeof request<EndUserCasePolicyResponseDto>>,
@@ -3388,23 +3845,6 @@ export const endUserCasesDetail = (
     {
       url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}`,
       method: "GET",
-    },
-    options,
-  );
-};
-
-export const endUserCasesAssignment = (
-  projectId: string,
-  caseId: string,
-  assignEndUserCaseDto: BodyType<AssignEndUserCaseDto>,
-  options?: SecondParameter<typeof request<EndUserCaseCommandResponseDto>>,
-) => {
-  return request<EndUserCaseCommandResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/end-user-cases/${caseId}/assignment`,
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      data: assignEndUserCaseDto,
     },
     options,
   );
@@ -5926,6 +6366,354 @@ export const productActionsArchiveProjectAction = (
   );
 };
 
+export const reportDeliveryList = (
+  projectId: string,
+  params?: ReportDeliveryListParams,
+  options?: SecondParameter<typeof request<ReportDeliveryInboxResponseDto>>,
+) => {
+  return request<ReportDeliveryInboxResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-deliveries`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const reportExportCreate = (
+  projectId: string,
+  reportExportCreateDto: BodyType<ReportExportCreateDto>,
+  options?: SecondParameter<typeof request<ReportExportRequestedResponseDto>>,
+) => {
+  return request<ReportExportRequestedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reportExportCreateDto,
+    },
+    options,
+  );
+};
+
+export const reportExportRead = (
+  projectId: string,
+  exportId: string,
+  options?: SecondParameter<typeof request<ReportExportStatusResponseDto>>,
+) => {
+  return request<ReportExportStatusResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/${exportId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const reportExportCancel = (
+  projectId: string,
+  exportId: string,
+  options?: SecondParameter<typeof request<ReportExportChangedResponseDto>>,
+) => {
+  return request<ReportExportChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/${exportId}/cancel`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportExportDownload = (
+  projectId: string,
+  exportId: string,
+  options?: SecondParameter<typeof request<Blob>>,
+) => {
+  return request<Blob>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/${exportId}/download`,
+      method: "GET",
+      responseType: "blob",
+    },
+    options,
+  );
+};
+
+export const reportExportIssueDownloadCapability = (
+  projectId: string,
+  exportId: string,
+  options?: SecondParameter<
+    typeof request<ReportDownloadCapabilityResponseDto>
+  >,
+) => {
+  return request<ReportDownloadCapabilityResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/${exportId}/download-capability`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportExportRevoke = (
+  projectId: string,
+  exportId: string,
+  options?: SecondParameter<typeof request<ReportExportChangedResponseDto>>,
+) => {
+  return request<ReportExportChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/${exportId}/revoke`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportExportEstimate = (
+  projectId: string,
+  reportExportEstimateDto: BodyType<ReportExportEstimateDto>,
+  options?: SecondParameter<typeof request<ReportExportEstimateResponseDto>>,
+) => {
+  return request<ReportExportEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-exports/estimate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reportExportEstimateDto,
+    },
+    options,
+  );
+};
+
+export const reportScheduleList = (
+  projectId: string,
+  params?: ReportScheduleListParams,
+  options?: SecondParameter<typeof request<ReportScheduleCatalogResponseDto>>,
+) => {
+  return request<ReportScheduleCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const reportScheduleCreate = (
+  projectId: string,
+  reportScheduleCreateDto: BodyType<ReportScheduleCreateDto>,
+  options?: SecondParameter<typeof request<ReportScheduleChangedResponseDto>>,
+) => {
+  return request<ReportScheduleChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reportScheduleCreateDto,
+    },
+    options,
+  );
+};
+
+export const reportScheduleRead = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<ReportScheduleResponseDto>>,
+) => {
+  return request<ReportScheduleResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const reportScheduleUpdate = (
+  projectId: string,
+  id: string,
+  reportScheduleReplaceDto: BodyType<ReportScheduleReplaceDto>,
+  options?: SecondParameter<typeof request<ReportScheduleChangedResponseDto>>,
+) => {
+  return request<ReportScheduleChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: reportScheduleReplaceDto,
+    },
+    options,
+  );
+};
+
+export const reportScheduleArchive = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<ReportScheduleChangedResponseDto>>,
+) => {
+  return request<ReportScheduleChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportSchedulePause = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<ReportScheduleChangedResponseDto>>,
+) => {
+  return request<ReportScheduleChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}/pause`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportScheduleResume = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<ReportScheduleChangedResponseDto>>,
+) => {
+  return request<ReportScheduleChangedResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}/resume`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const reportScheduleRunList = (
+  projectId: string,
+  id: string,
+  params?: ReportScheduleRunListParams,
+  options?: SecondParameter<
+    typeof request<ReportScheduleRunHistoryResponseDto>
+  >,
+) => {
+  return request<ReportScheduleRunHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/report-schedules/${id}/runs`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const reportingCatalogRead = (
+  projectId: string,
+  options?: SecondParameter<typeof request<ReportingCatalogResponseDto>>,
+) => {
+  return request<ReportingCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/catalog`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const reportingQueryValidate = (
+  projectId: string,
+  reportingQueryDefinitionDto: BodyType<ReportingQueryDefinitionDto>,
+  options?: SecondParameter<typeof request<ReportingQueryEstimateResponseDto>>,
+) => {
+  return request<ReportingQueryEstimateResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/queries/validate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: reportingQueryDefinitionDto,
+    },
+    options,
+  );
+};
+
+export const reportingQueryRunCreate = (
+  projectId: string,
+  createReportingQueryRunDto: BodyType<CreateReportingQueryRunDto>,
+  options?: SecondParameter<typeof request<ReportingQueryRunResponseDto>>,
+) => {
+  return request<ReportingQueryRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createReportingQueryRunDto,
+    },
+    options,
+  );
+};
+
+export const reportingQueryRunRead = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<ReportingQueryRunResponseDto>>,
+) => {
+  return request<ReportingQueryRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs/${runId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const reportingQueryRunCancel = (
+  projectId: string,
+  runId: string,
+  cancelReportingQueryRunDto: BodyType<CancelReportingQueryRunDto>,
+  options?: SecondParameter<typeof request<ReportingQueryRunResponseDto>>,
+) => {
+  return request<ReportingQueryRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs/${runId}/cancel`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: cancelReportingQueryRunDto,
+    },
+    options,
+  );
+};
+
+export const reportingQueryResultRead = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<ReportingQueryResultResponseDto>>,
+) => {
+  return request<ReportingQueryResultResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs/${runId}/result`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const reportingQueryTableRead = (
+  projectId: string,
+  runId: string,
+  params?: ReportingQueryTableReadParams,
+  options?: SecondParameter<typeof request<ReportingQueryTablePageResponseDto>>,
+) => {
+  return request<ReportingQueryTablePageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs/${runId}/table`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const projectRoleList = (
   projectId: string,
   options?: SecondParameter<typeof request<ProjectRoleListResponseDto>>,
@@ -6028,6 +6816,159 @@ export const platformOperationsRotate = (
     {
       url: `/api/v1/admin/projects/${projectId}/rotate-server-key`,
       method: "POST",
+    },
+    options,
+  );
+};
+
+export const savedReportList = (
+  projectId: string,
+  params?: SavedReportListParams,
+  options?: SecondParameter<typeof request<SavedReportCatalogPageResponseDto>>,
+) => {
+  return request<SavedReportCatalogPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const savedReportCreate = (
+  projectId: string,
+  savedReportDocumentDto: BodyType<SavedReportDocumentDto>,
+  options?: SecondParameter<typeof request<SavedReportAuthoringResponseDto>>,
+) => {
+  return request<SavedReportAuthoringResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: savedReportDocumentDto,
+    },
+    options,
+  );
+};
+
+export const savedReportRead = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<SavedReportRevisionResponseDto>>,
+) => {
+  return request<SavedReportRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const savedReportArchive = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<SavedReportAuthoringResponseDto>>,
+) => {
+  return request<SavedReportAuthoringResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/archive`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const savedReportUpdateDraft = (
+  projectId: string,
+  id: string,
+  savedReportDocumentDto: BodyType<SavedReportDocumentDto>,
+  options?: SecondParameter<typeof request<SavedReportAuthoringResponseDto>>,
+) => {
+  return request<SavedReportAuthoringResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: savedReportDocumentDto,
+    },
+    options,
+  );
+};
+
+export const savedReportDuplicate = (
+  projectId: string,
+  id: string,
+  duplicateSavedReportDto: BodyType<DuplicateSavedReportDto>,
+  options?: SecondParameter<typeof request<SavedReportAuthoringResponseDto>>,
+) => {
+  return request<SavedReportAuthoringResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/duplicate`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: duplicateSavedReportDto,
+    },
+    options,
+  );
+};
+
+export const savedReportPreview = (
+  projectId: string,
+  id: string,
+  savedReportPreviewDto: BodyType<SavedReportPreviewDto>,
+  options?: SecondParameter<typeof request<SavedReportPreviewResponseDto>>,
+) => {
+  return request<SavedReportPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: savedReportPreviewDto,
+    },
+    options,
+  );
+};
+
+export const savedReportPublish = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<SavedReportPublicationResponseDto>>,
+) => {
+  return request<SavedReportPublicationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/publish`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const savedReportRevisionList = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<SavedReportRevisionPageResponseDto>>,
+) => {
+  return request<SavedReportRevisionPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/revisions`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const savedReportRevisionRead = (
+  projectId: string,
+  id: string,
+  revision: number,
+  options?: SecondParameter<typeof request<SavedReportRevisionResponseDto>>,
+) => {
+  return request<SavedReportRevisionResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/revisions/${revision}`,
+      method: "GET",
     },
     options,
   );
@@ -6712,6 +7653,161 @@ export const supportCaseAssignmentBatchOutcome = (
   );
 };
 
+export const supportCaseNotificationPolicyReadCurrent = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyCurrentResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyCurrentResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyListAvailableTeams = (
+  projectId: string,
+  params?: SupportCaseNotificationPolicyListAvailableTeamsParams,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationAvailableTeamsResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationAvailableTeamsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/available-teams`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyReadCommandResult = (
+  projectId: string,
+  readSupportCaseNotificationCommandResultDto: BodyType<ReadSupportCaseNotificationCommandResultDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationCommandResultResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationCommandResultResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/command-result`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: readSupportCaseNotificationCommandResultDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyDisable = (
+  projectId: string,
+  disableSupportCaseNotificationPolicyDto: BodyType<DisableSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/disable`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: disableSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicySaveDraft = (
+  projectId: string,
+  saveSupportCaseNotificationDraftDto: BodyType<SaveSupportCaseNotificationDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/draft`,
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      data: saveSupportCaseNotificationDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyReadMetrics = (
+  projectId: string,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationMetricsResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationMetricsResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/metrics`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyPreview = (
+  projectId: string,
+  supportCaseNotificationPolicyInputDto: BodyType<SupportCaseNotificationPolicyInputDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyPreviewResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportCaseNotificationPolicyInputDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyPublish = (
+  projectId: string,
+  publishSupportCaseNotificationPolicyDto: BodyType<PublishSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/publish`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: publishSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportCaseNotificationPolicyRestore = (
+  projectId: string,
+  restoreSupportCaseNotificationPolicyDto: BodyType<RestoreSupportCaseNotificationPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
+  >,
+) => {
+  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/restore`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreSupportCaseNotificationPolicyDto,
+    },
+    options,
+  );
+};
+
 export const supportCaseAssignmentAssign = (
   projectId: string,
   caseId: string,
@@ -6999,35 +8095,6 @@ export const supportContentGovernancePreviewRetention = (
       url: `/api/v1/admin/projects/${projectId}/support/content-retention/internal-notes/purge-preview`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const supportContentGovernanceRollout = (
-  projectId: string,
-  options?: SecondParameter<typeof request<SupportContentRolloutResponseDto>>,
-) => {
-  return request<SupportContentRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/content-rollout`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportContentGovernanceUpdateRollout = (
-  projectId: string,
-  updateSupportContentRolloutDto: BodyType<UpdateSupportContentRolloutDto>,
-  options?: SecondParameter<typeof request<SupportContentRolloutResponseDto>>,
-) => {
-  return request<SupportContentRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/content-rollout`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateSupportContentRolloutDto,
     },
     options,
   );
@@ -7892,24 +8959,6 @@ export const supportInternalNoteRealtimeContract = (
   );
 };
 
-export const supportInternalKnowledgeRollbackAdmission = (
-  projectId: string,
-  rollbackSupportKnowledgeAdmissionDto: BodyType<RollbackSupportKnowledgeAdmissionDto>,
-  options?: SecondParameter<
-    typeof request<SupportKnowledgeAdmissionRollbackResponseDto>
-  >,
-) => {
-  return request<SupportKnowledgeAdmissionRollbackResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/knowledge/admission/rollback`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: rollbackSupportKnowledgeAdmissionDto,
-    },
-    options,
-  );
-};
-
 export const supportInternalKnowledgeCreateCitationDraft = (
   projectId: string,
   createSupportKnowledgeCitationDraftDto: BodyType<CreateSupportKnowledgeCitationDraftDto>,
@@ -8215,24 +9264,6 @@ export const supportInternalKnowledgeCompleteFileUpload = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/knowledge/file-uploads/${sessionId}/complete`,
       method: "POST",
-    },
-    options,
-  );
-};
-
-export const supportInternalKnowledgeSetCapabilities = (
-  projectId: string,
-  setSupportKnowledgeCapabilitiesDto: BodyType<SetSupportKnowledgeCapabilitiesDto>,
-  options?: SecondParameter<
-    typeof request<SupportKnowledgeCapabilityRolloutResponseDto>
-  >,
-) => {
-  return request<SupportKnowledgeCapabilityRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/knowledge/manage/capabilities`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: setSupportKnowledgeCapabilitiesDto,
     },
     options,
   );
@@ -8938,6 +9969,23 @@ export const supportPresentationsSetLola = (
   );
 };
 
+export const supportPresentationsCatalogOperators = (
+  projectId: string,
+  params?: SupportPresentationsCatalogOperatorsParams,
+  options?: SecondParameter<
+    typeof request<SupportOperatorPresentationCatalogResponseDto>
+  >,
+) => {
+  return request<SupportOperatorPresentationCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/presentations/operators`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const supportPresentationsOperator = (
   projectId: string,
   cmsUserId: string,
@@ -8969,16 +10017,36 @@ export const supportPresentationsSetOperator = (
   );
 };
 
-export const supportQualityCalibrations = (
+export const supportPresentationsResolveOperators = (
   projectId: string,
+  resolveSupportOperatorPresentationsDto: BodyType<ResolveSupportOperatorPresentationsDto>,
   options?: SecondParameter<
-    typeof request<SupportQualityCalibrationResponseDto[]>
+    typeof request<SupportOperatorPresentationResolveResponseDto>
   >,
 ) => {
-  return request<SupportQualityCalibrationResponseDto[]>(
+  return request<SupportOperatorPresentationResolveResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/presentations/operators/resolve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resolveSupportOperatorPresentationsDto,
+    },
+    options,
+  );
+};
+
+export const supportQualityCalibrations = (
+  projectId: string,
+  params?: SupportQualityCalibrationsParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationPageResponseDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/quality/calibrations`,
       method: "GET",
+      params,
     },
     options,
   );
@@ -9002,6 +10070,41 @@ export const supportQualityCreateCalibration = (
   );
 };
 
+export const supportQualityCalibrationRead = (
+  projectId: string,
+  calibrationId: string,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationDetailResponseDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/calibrations/${calibrationId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportQualityCalibrationBaselineSet = (
+  projectId: string,
+  calibrationId: string,
+  supportQualityCalibrationBaselineDto: BodyType<SupportQualityCalibrationBaselineDto>,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationResponseDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/calibrations/${calibrationId}/baseline`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportQualityCalibrationBaselineDto,
+    },
+    options,
+  );
+};
+
 export const supportQualityCloseCalibration = (
   projectId: string,
   calibrationId: string,
@@ -9016,6 +10119,25 @@ export const supportQualityCloseCalibration = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: closeSupportQualityCalibrationDto,
+    },
+    options,
+  );
+};
+
+export const supportQualityCalibrationParticipantAdd = (
+  projectId: string,
+  calibrationId: string,
+  supportQualityCalibrationParticipantsDto: BodyType<SupportQualityCalibrationParticipantsDto>,
+  options?: SecondParameter<
+    typeof request<SupportQualityCalibrationResponseDto>
+  >,
+) => {
+  return request<SupportQualityCalibrationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/calibrations/${calibrationId}/participants`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportQualityCalibrationParticipantsDto,
     },
     options,
   );
@@ -9090,12 +10212,33 @@ export const supportQualityOperatorMetrics = (
 export const supportQualityOperatorReviews = (
   projectId: string,
   operatorCmsUserId: string,
-  options?: SecondParameter<typeof request<SupportQualityReviewResponseDto[]>>,
+  params?: SupportQualityOperatorReviewsParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityReviewPageResponseDto>
+  >,
 ) => {
-  return request<SupportQualityReviewResponseDto[]>(
+  return request<SupportQualityReviewPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/quality/operators/${operatorCmsUserId}/reviews`,
       method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportQualityReviewList = (
+  projectId: string,
+  params?: SupportQualityReviewListParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityReviewPageResponseDto>
+  >,
+) => {
+  return request<SupportQualityReviewPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/reviews`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -9133,15 +10276,33 @@ export const supportQualityReviewDetail = (
   );
 };
 
+export const supportQualityReviewAcknowledge = (
+  projectId: string,
+  reviewId: string,
+  options?: SecondParameter<typeof request<SupportQualityReviewResponseDto>>,
+) => {
+  return request<SupportQualityReviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/reviews/${reviewId}/acknowledge`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
 export const supportQualityReviewDisputes = (
   projectId: string,
   reviewId: string,
-  options?: SecondParameter<typeof request<SupportQualityDisputeResponseDto[]>>,
+  params?: SupportQualityReviewDisputesParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityDisputePageResponseDto>
+  >,
 ) => {
-  return request<SupportQualityDisputeResponseDto[]>(
+  return request<SupportQualityDisputePageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/quality/reviews/${reviewId}/disputes`,
       method: "GET",
+      params,
     },
     options,
   );
@@ -9181,6 +10342,23 @@ export const supportQualityReplaceDraft = (
   );
 };
 
+export const supportQualityReviewOperatorReply = (
+  projectId: string,
+  reviewId: string,
+  supportQualityOperatorReplyDto: BodyType<SupportQualityOperatorReplyDto>,
+  options?: SecondParameter<typeof request<SupportQualityReviewResponseDto>>,
+) => {
+  return request<SupportQualityReviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/reviews/${reviewId}/operator-reply`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: supportQualityOperatorReplyDto,
+    },
+    options,
+  );
+};
+
 export const supportQualitySubmitReview = (
   projectId: string,
   reviewId: string,
@@ -9207,6 +10385,42 @@ export const supportQualityVoidReview = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: voidSupportQualityReviewDto,
+    },
+    options,
+  );
+};
+
+export const supportQualitySamplingPolicyCreate = (
+  projectId: string,
+  createSupportQualitySamplingPolicyDto: BodyType<CreateSupportQualitySamplingPolicyDto>,
+  options?: SecondParameter<
+    typeof request<SupportQualitySamplingPolicyResponseDto>
+  >,
+) => {
+  return request<SupportQualitySamplingPolicyResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/sampling-policies`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: createSupportQualitySamplingPolicyDto,
+    },
+    options,
+  );
+};
+
+export const supportQualitySamplingRunCreate = (
+  projectId: string,
+  runSupportQualitySamplingDto: BodyType<RunSupportQualitySamplingDto>,
+  options?: SecondParameter<
+    typeof request<SupportQualitySamplingRunResponseDto>
+  >,
+) => {
+  return request<SupportQualitySamplingRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/sampling-runs`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: runSupportQualitySamplingDto,
     },
     options,
   );
@@ -9255,6 +10469,77 @@ export const supportQualityCreateScorecardRevision = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: createSupportQualityScorecardRevisionDto,
+    },
+    options,
+  );
+};
+
+export const supportQualityTaskList = (
+  projectId: string,
+  params?: SupportQualityTaskListParams,
+  options?: SecondParameter<typeof request<SupportQualityTaskPageResponseDto>>,
+) => {
+  return request<SupportQualityTaskPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/tasks`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportQualityTaskRead = (
+  projectId: string,
+  taskId: string,
+  options?: SecondParameter<typeof request<SupportQualityTaskResponseDto>>,
+) => {
+  return request<SupportQualityTaskResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/tasks/${taskId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportQualityTaskCancel = (
+  projectId: string,
+  taskId: string,
+  options?: SecondParameter<typeof request<SupportQualityTaskResponseDto>>,
+) => {
+  return request<SupportQualityTaskResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/tasks/${taskId}/cancel`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportQualityTaskClaim = (
+  projectId: string,
+  taskId: string,
+  options?: SecondParameter<typeof request<SupportQualityTaskResponseDto>>,
+) => {
+  return request<SupportQualityTaskResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/tasks/${taskId}/claim`,
+      method: "POST",
+    },
+    options,
+  );
+};
+
+export const supportQualityTaskRelease = (
+  projectId: string,
+  taskId: string,
+  options?: SecondParameter<typeof request<SupportQualityTaskResponseDto>>,
+) => {
+  return request<SupportQualityTaskResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/tasks/${taskId}/release`,
+      method: "POST",
     },
     options,
   );
@@ -9388,6 +10673,77 @@ export const supportQueuePublish = (
   );
 };
 
+export const supportQueueRevisions = (
+  projectId: string,
+  queueId: string,
+  params?: SupportQueueRevisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportQueueRevisionCatalogResponseDto>
+  >,
+) => {
+  return request<SupportQueueRevisionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportQueueRevisionDetail = (
+  projectId: string,
+  queueId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportQueueRevisionDetailResponseDto>
+  >,
+) => {
+  return request<SupportQueueRevisionDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportQueueRestoreRevisionAsDraft = (
+  projectId: string,
+  queueId: string,
+  revisionId: string,
+  restoreSupportQueueRevisionDto: BodyType<RestoreSupportQueueRevisionDto>,
+  options?: SecondParameter<typeof request<SupportQueueMutationResponseDto>>,
+) => {
+  return request<SupportQueueMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/revisions/${revisionId}/restore-draft`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreSupportQueueRevisionDto,
+    },
+    options,
+  );
+};
+
+export const supportQueueRevisionDiff = (
+  projectId: string,
+  queueId: string,
+  params: SupportQueueRevisionDiffParams,
+  options?: SecondParameter<
+    typeof request<SupportQueueRevisionDiffResponseDto>
+  >,
+) => {
+  return request<SupportQueueRevisionDiffResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/queues/${queueId}/revisions/diff`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 /**
  * @summary Read the authoritative delivery reconnect and merge contract
  */
@@ -9408,28 +10764,14 @@ export const supportRealtimeDeliveryContract = (
 
 export const supportRoutingRuntimeActivation = (
   projectId: string,
-  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingActivationReadResponseDto>
+  >,
 ) => {
-  return request<SupportRoutingRolloutResponseDto>(
+  return request<SupportRoutingActivationReadResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/routing/activation`,
       method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportRoutingRuntimeTransitionProjectActivation = (
-  projectId: string,
-  updateSupportRoutingProjectRolloutDto: BodyType<UpdateSupportRoutingProjectRolloutDto>,
-  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
-) => {
-  return request<SupportRoutingRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/routing/activation/project/transition`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: updateSupportRoutingProjectRolloutDto,
     },
     options,
   );
@@ -9439,9 +10781,11 @@ export const supportRoutingRuntimeTransitionQueueActivation = (
   projectId: string,
   queueId: string,
   transitionSupportRoutingQueueActivationDto: BodyType<TransitionSupportRoutingQueueActivationDto>,
-  options?: SecondParameter<typeof request<SupportRoutingRolloutResponseDto>>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingActivationCatalogResponseDto>
+  >,
 ) => {
-  return request<SupportRoutingRolloutResponseDto>(
+  return request<SupportRoutingActivationCatalogResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/support/routing/activation/queues/${queueId}/transition`,
       method: "POST",
@@ -9452,71 +10796,18 @@ export const supportRoutingRuntimeTransitionQueueActivation = (
   );
 };
 
-export const supportRoutingRuntimeAdmissionList = (
+export const supportRoutingRuntimeConfigurationAuditTimeline = (
   projectId: string,
-  params?: SupportRoutingRuntimeAdmissionListParams,
+  params: SupportRoutingRuntimeConfigurationAuditTimelineParams,
   options?: SecondParameter<
-    typeof request<SupportRoutingAdmissionReceiptCatalogResponseDto>
+    typeof request<SupportConfigurationAuditCatalogResponseDto>
   >,
 ) => {
-  return request<SupportRoutingAdmissionReceiptCatalogResponseDto>(
+  return request<SupportConfigurationAuditCatalogResponseDto>(
     {
-      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts`,
+      url: `/api/v1/admin/projects/${projectId}/support/routing/audit`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const supportRoutingRuntimeIssueAdmission = (
-  projectId: string,
-  issueSupportRoutingAdmissionReceiptDto: BodyType<IssueSupportRoutingAdmissionReceiptDto>,
-  options?: SecondParameter<
-    typeof request<SupportRoutingAdmissionReceiptResponseDto>
-  >,
-) => {
-  return request<SupportRoutingAdmissionReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: issueSupportRoutingAdmissionReceiptDto,
-    },
-    options,
-  );
-};
-
-export const supportRoutingRuntimeAdmissionDetail = (
-  projectId: string,
-  receiptId: string,
-  options?: SecondParameter<
-    typeof request<SupportRoutingAdmissionReceiptResponseDto>
-  >,
-) => {
-  return request<SupportRoutingAdmissionReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts/${receiptId}`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportRoutingRuntimeRevokeAdmission = (
-  projectId: string,
-  receiptId: string,
-  revokeSupportRoutingAdmissionReceiptDto: BodyType<RevokeSupportRoutingAdmissionReceiptDto>,
-  options?: SecondParameter<
-    typeof request<SupportRoutingAdmissionReceiptResponseDto>
-  >,
-) => {
-  return request<SupportRoutingAdmissionReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/routing/admission-receipts/${receiptId}/revoke`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: revokeSupportRoutingAdmissionReceiptDto,
     },
     options,
   );
@@ -9550,6 +10841,24 @@ export const supportRoutingRuntimeDecisionDetail = (
     {
       url: `/api/v1/admin/projects/${projectId}/support/routing/decisions/${decisionId}`,
       method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeResolveOperatorAvailability = (
+  projectId: string,
+  resolveSupportRoutingOperatorAvailabilityDto: BodyType<ResolveSupportRoutingOperatorAvailabilityDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingOperatorAvailabilityCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingOperatorAvailabilityCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/operators/availability/resolve`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: resolveSupportRoutingOperatorAvailabilityDto,
     },
     options,
   );
@@ -9655,6 +10964,112 @@ export const supportRoutingPublish = (
   );
 };
 
+export const supportRoutingRevisionHistory = (
+  projectId: string,
+  policyId: string,
+  params?: SupportRoutingRevisionHistoryParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyRevisionCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyRevisionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRevisionDetail = (
+  projectId: string,
+  policyId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyRevisionDetailResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyRevisionDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRestoreRevisionDraft = (
+  projectId: string,
+  policyId: string,
+  revisionId: string,
+  restoreSupportRoutingPolicyRevisionDto: BodyType<RestoreSupportRoutingPolicyRevisionDto>,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyRestoreResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyRestoreResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/revisions/${revisionId}/restore-draft`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreSupportRoutingPolicyRevisionDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRevisionDiff = (
+  projectId: string,
+  policyId: string,
+  params: SupportRoutingRevisionDiffParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingPolicyRevisionDiffResponseDto>
+  >,
+) => {
+  return request<SupportRoutingPolicyRevisionDiffResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/policies/${policyId}/revisions/diff`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeQueueSlots = (
+  projectId: string,
+  params?: SupportRoutingRuntimeQueueSlotsParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingQueueSlotCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingQueueSlotCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/queue-slots`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeQueueSlotDetail = (
+  projectId: string,
+  queueId: string,
+  options?: SecondParameter<
+    typeof request<SupportRoutingQueueSlotDetailResponseDto>
+  >,
+) => {
+  return request<SupportRoutingQueueSlotDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/queue-slots/${queueId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportRoutingRuntimeQueueSlot = (
   projectId: string,
   queueId: string,
@@ -9667,6 +11082,23 @@ export const supportRoutingRuntimeQueueSlot = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: updateSupportRoutingQueueSlotDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeReadiness = (
+  projectId: string,
+  params?: SupportRoutingRuntimeReadinessParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingReadinessCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingReadinessCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/readiness`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -9716,6 +11148,38 @@ export const supportRoutingRuntimeRequest = (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       data: requestSupportRoutingShadowRunDto,
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeShadowRun = (
+  projectId: string,
+  runId: string,
+  options?: SecondParameter<typeof request<SupportRoutingShadowRunResponseDto>>,
+) => {
+  return request<SupportRoutingShadowRunResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/shadow-runs/${runId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportRoutingRuntimeShadowRunDecisions = (
+  projectId: string,
+  runId: string,
+  params?: SupportRoutingRuntimeShadowRunDecisionsParams,
+  options?: SecondParameter<
+    typeof request<SupportRoutingShadowRunDecisionCatalogResponseDto>
+  >,
+) => {
+  return request<SupportRoutingShadowRunDecisionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/routing/shadow-runs/${runId}/decisions`,
+      method: "GET",
+      params,
     },
     options,
   );
@@ -10058,6 +11522,23 @@ export const supportSlaConfigurationRead = (
   );
 };
 
+export const supportSlaConfigurationAudit = (
+  projectId: string,
+  params?: SupportSlaConfigurationAuditParams,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationAuditResponseDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationAuditResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/audit`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const supportSlaConfigurationReplaceDraft = (
   projectId: string,
   replaceSupportSlaConfigurationDraftDto: BodyType<ReplaceSupportSlaConfigurationDraftDto>,
@@ -10094,9 +11575,54 @@ export const supportSlaConfigurationDiscardDraft = (
   );
 };
 
+export const supportSlaConfigurationGroupCatalog = (
+  projectId: string,
+  options?: SecondParameter<typeof request<SupportSlaGroupCatalogResponseDto>>,
+) => {
+  return request<SupportSlaGroupCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/group-catalog`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationOutcome = (
+  projectId: string,
+  idempotencyKey: string,
+  options?: SecondParameter<typeof request<SupportSlaConfigurationOutcome200>>,
+) => {
+  return request<SupportSlaConfigurationOutcome200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/outcomes/${idempotencyKey}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationPreview = (
+  projectId: string,
+  replaceSupportSlaConfigurationDraftDto: BodyType<ReplaceSupportSlaConfigurationDraftDto>,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationPreviewResponseDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationPreviewResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/preview`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: replaceSupportSlaConfigurationDraftDto,
+    },
+    options,
+  );
+};
+
 export const supportSlaConfigurationPublish = (
   projectId: string,
-  emptySupportSlaConfigurationCommandDto: BodyType<EmptySupportSlaConfigurationCommandDto>,
+  publishSupportSlaConfigurationDto: BodyType<PublishSupportSlaConfigurationDto>,
   options?: SecondParameter<typeof request<SupportSlaConfigurationPublish200>>,
 ) => {
   return request<SupportSlaConfigurationPublish200>(
@@ -10104,7 +11630,73 @@ export const supportSlaConfigurationPublish = (
       url: `/api/v1/admin/projects/${projectId}/support/sla/settings/publish`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      data: emptySupportSlaConfigurationCommandDto,
+      data: publishSupportSlaConfigurationDto,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationHistory = (
+  projectId: string,
+  params?: SupportSlaConfigurationHistoryParams,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationHistoryResponseDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationHistoryResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationRevision = (
+  projectId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationRevisionDetailDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationRevisionDetailDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationDiff = (
+  projectId: string,
+  params: SupportSlaConfigurationDiffParams,
+  options?: SecondParameter<
+    typeof request<SupportSlaConfigurationDiffResponseDto>
+  >,
+) => {
+  return request<SupportSlaConfigurationDiffResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/revisions/diff`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportSlaConfigurationRollback = (
+  projectId: string,
+  rollbackSupportSlaConfigurationDto: BodyType<RollbackSupportSlaConfigurationDto>,
+  options?: SecondParameter<typeof request<SupportSlaConfigurationRollback200>>,
+) => {
+  return request<SupportSlaConfigurationRollback200>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/sla/settings/rollback`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: rollbackSupportSlaConfigurationDto,
     },
     options,
   );
@@ -10355,6 +11947,75 @@ export const supportWorkforcePublish = (
   );
 };
 
+export const supportWorkforceHistory = (
+  projectId: string,
+  params?: SupportWorkforceHistoryParams,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceRevisionCatalogResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceRevisionCatalogResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/revisions`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
+export const supportWorkforceDiff = (
+  projectId: string,
+  fromRevisionId: string,
+  toRevisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceRevisionDiffResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceRevisionDiffResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/revisions/${fromRevisionId}/diff/${toRevisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportWorkforceRevision = (
+  projectId: string,
+  revisionId: string,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceRevisionDetailResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceRevisionDetailResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/revisions/${revisionId}`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
+export const supportWorkforceRestore = (
+  projectId: string,
+  revisionId: string,
+  restoreSupportWorkforceRevisionDto: BodyType<RestoreSupportWorkforceRevisionDto>,
+  options?: SecondParameter<
+    typeof request<SupportWorkforceMutationResponseDto>
+  >,
+) => {
+  return request<SupportWorkforceMutationResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/workforce/revisions/${revisionId}/restore-draft`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: restoreSupportWorkforceRevisionDto,
+    },
+    options,
+  );
+};
+
 /**
  * @summary Read one bounded authoritative Support workspace projection
  */
@@ -10368,50 +12029,6 @@ export const supportWorkspaceRead = (
       url: `/api/v1/admin/projects/${projectId}/support/workspace`,
       method: "GET",
       params,
-    },
-    options,
-  );
-};
-
-export const supportWorkspaceReadAdmission = (
-  projectId: string,
-  options?: SecondParameter<
-    typeof request<SupportWorkspaceAdmissionResponseDto>
-  >,
-) => {
-  return request<SupportWorkspaceAdmissionResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/workspace/admission`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportWorkspaceReadRollout = (
-  projectId: string,
-  options?: SecondParameter<typeof request<SupportWorkspaceRolloutResponseDto>>,
-) => {
-  return request<SupportWorkspaceRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/workspace/rollout`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportWorkspaceUpdateRollout = (
-  projectId: string,
-  updateSupportWorkspaceRolloutDto: BodyType<UpdateSupportWorkspaceRolloutDto>,
-  options?: SecondParameter<typeof request<SupportWorkspaceRolloutResponseDto>>,
-) => {
-  return request<SupportWorkspaceRolloutResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/workspace/rollout`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: updateSupportWorkspaceRolloutDto,
     },
     options,
   );
@@ -12255,6 +13872,25 @@ export const chatCloseConversation = (
   );
 };
 
+export const chatRespondToEscalationOffer = (
+  conversationId: string,
+  occurrenceId: string,
+  respondCaseIntelligenceEscalationOfferDto: BodyType<RespondCaseIntelligenceEscalationOfferDto>,
+  options?: SecondParameter<
+    typeof request<RespondCaseIntelligenceEscalationOfferResponseDto>
+  >,
+) => {
+  return request<RespondCaseIntelligenceEscalationOfferResponseDto>(
+    {
+      url: `/api/v1/chat/conversations/${conversationId}/escalation-offers/${occurrenceId}/response`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      data: respondCaseIntelligenceEscalationOfferDto,
+    },
+    options,
+  );
+};
+
 export const chatListConversationMessages = (
   conversationId: string,
   params?: ChatListConversationMessagesParams,
@@ -12899,161 +14535,6 @@ export const appHealth = (options?: SecondParameter<typeof request<void>>) => {
   return request<void>({ url: `/health`, method: "GET" }, options);
 };
 
-export const supportCaseNotificationPolicyReadCurrent = (
-  projectId: string,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyCurrentResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyCurrentResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyListAvailableTeams = (
-  projectId: string,
-  params?: SupportCaseNotificationPolicyListAvailableTeamsParams,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationAvailableTeamsResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationAvailableTeamsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/available-teams`,
-      method: "GET",
-      params,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyReadCommandResult = (
-  projectId: string,
-  readSupportCaseNotificationCommandResultDto: BodyType<ReadSupportCaseNotificationCommandResultDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationCommandResultResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationCommandResultResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/command-result`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: readSupportCaseNotificationCommandResultDto,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyPreview = (
-  projectId: string,
-  supportCaseNotificationPolicyInputDto: BodyType<SupportCaseNotificationPolicyInputDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyPreviewResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyPreviewResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/preview`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: supportCaseNotificationPolicyInputDto,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyReadMetrics = (
-  projectId: string,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationMetricsResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationMetricsResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/metrics`,
-      method: "GET",
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicySaveDraft = (
-  projectId: string,
-  saveSupportCaseNotificationDraftDto: BodyType<SaveSupportCaseNotificationDraftDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/draft`,
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      data: saveSupportCaseNotificationDraftDto,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyPublish = (
-  projectId: string,
-  publishSupportCaseNotificationPolicyDto: BodyType<PublishSupportCaseNotificationPolicyDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/publish`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: publishSupportCaseNotificationPolicyDto,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyDisable = (
-  projectId: string,
-  disableSupportCaseNotificationPolicyDto: BodyType<DisableSupportCaseNotificationPolicyDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/disable`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: disableSupportCaseNotificationPolicyDto,
-    },
-    options,
-  );
-};
-
-export const supportCaseNotificationPolicyRestore = (
-  projectId: string,
-  restoreSupportCaseNotificationPolicyDto: BodyType<RestoreSupportCaseNotificationPolicyDto>,
-  options?: SecondParameter<
-    typeof request<SupportCaseNotificationPolicyReceiptResponseDto>
-  >,
-) => {
-  return request<SupportCaseNotificationPolicyReceiptResponseDto>(
-    {
-      url: `/api/v1/admin/projects/${projectId}/support/case-notification-policy/restore`,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      data: restoreSupportCaseNotificationPolicyDto,
-    },
-    options,
-  );
-};
-
 export type AiPricingRevisionGetResult = NonNullable<
   Awaited<ReturnType<typeof aiPricingRevisionGet>>
 >;
@@ -13074,6 +14555,9 @@ export type CaseIntelligenceSafetyGetResult = NonNullable<
 >;
 export type CaseIntelligenceSafetyLookupResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceSafetyLookup>>
+>;
+export type CaseIntelligenceSafetyModelsResult = NonNullable<
+  Awaited<ReturnType<typeof caseIntelligenceSafetyModels>>
 >;
 export type CaseIntelligenceSafetyPublishResult = NonNullable<
   Awaited<ReturnType<typeof caseIntelligenceSafetyPublish>>
@@ -13474,6 +14958,9 @@ export type ConversationMessageContentCurrentResult = NonNullable<
 export type ConversationMessageContentCorrectResult = NonNullable<
   Awaited<ReturnType<typeof conversationMessageContentCorrect>>
 >;
+export type ConversationMessageContentHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof conversationMessageContentHistory>>
+>;
 export type ConversationMessageContentTombstoneResult = NonNullable<
   Awaited<ReturnType<typeof conversationMessageContentTombstone>>
 >;
@@ -13501,6 +14988,63 @@ export type ConversationContentGovernanceRolloutResult = NonNullable<
 export type ConversationContentGovernanceUpdateRolloutResult = NonNullable<
   Awaited<ReturnType<typeof conversationContentGovernanceUpdateRollout>>
 >;
+export type DashboardCollectionListResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardCollectionList>>
+>;
+export type DashboardCollectionCreateResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardCollectionCreate>>
+>;
+export type DashboardListResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardList>>
+>;
+export type DashboardCreateResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardCreate>>
+>;
+export type DashboardReadResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardRead>>
+>;
+export type DashboardArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardArchive>>
+>;
+export type DashboardCollectionMoveResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardCollectionMove>>
+>;
+export type DashboardUpdateDraftResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardUpdateDraft>>
+>;
+export type DashboardFavoriteSetResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardFavoriteSet>>
+>;
+export type DashboardInteractionCreateResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardInteractionCreate>>
+>;
+export type DashboardInteractionCancelResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardInteractionCancel>>
+>;
+export type DashboardWidgetResultReadResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardWidgetResultRead>>
+>;
+export type DashboardWidgetDrilldownReadResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardWidgetDrilldownRead>>
+>;
+export type DashboardWidgetTableReadResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardWidgetTableRead>>
+>;
+export type DashboardPublishResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardPublish>>
+>;
+export type DashboardRevisionListResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardRevisionList>>
+>;
+export type DashboardShareCreateResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardShareCreate>>
+>;
+export type DashboardShareRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardShareRevoke>>
+>;
+export type DashboardTransferResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardTransfer>>
+>;
 export type EndUserCasePolicyGetResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasePolicyGet>>
 >;
@@ -13518,9 +15062,6 @@ export type EndUserCasesListResult = NonNullable<
 >;
 export type EndUserCasesDetailResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesDetail>>
->;
-export type EndUserCasesAssignmentResult = NonNullable<
-  Awaited<ReturnType<typeof endUserCasesAssignment>>
 >;
 export type EndUserCasesClassificationResult = NonNullable<
   Awaited<ReturnType<typeof endUserCasesClassification>>
@@ -13969,6 +15510,75 @@ export type ProductActionsPreviewProjectActionResult = NonNullable<
 export type ProductActionsArchiveProjectActionResult = NonNullable<
   Awaited<ReturnType<typeof productActionsArchiveProjectAction>>
 >;
+export type ReportDeliveryListResult = NonNullable<
+  Awaited<ReturnType<typeof reportDeliveryList>>
+>;
+export type ReportExportCreateResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportCreate>>
+>;
+export type ReportExportReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportRead>>
+>;
+export type ReportExportCancelResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportCancel>>
+>;
+export type ReportExportDownloadResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportDownload>>
+>;
+export type ReportExportIssueDownloadCapabilityResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportIssueDownloadCapability>>
+>;
+export type ReportExportRevokeResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportRevoke>>
+>;
+export type ReportExportEstimateResult = NonNullable<
+  Awaited<ReturnType<typeof reportExportEstimate>>
+>;
+export type ReportScheduleListResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleList>>
+>;
+export type ReportScheduleCreateResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleCreate>>
+>;
+export type ReportScheduleReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleRead>>
+>;
+export type ReportScheduleUpdateResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleUpdate>>
+>;
+export type ReportScheduleArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleArchive>>
+>;
+export type ReportSchedulePauseResult = NonNullable<
+  Awaited<ReturnType<typeof reportSchedulePause>>
+>;
+export type ReportScheduleResumeResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleResume>>
+>;
+export type ReportScheduleRunListResult = NonNullable<
+  Awaited<ReturnType<typeof reportScheduleRunList>>
+>;
+export type ReportingCatalogReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportingCatalogRead>>
+>;
+export type ReportingQueryValidateResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryValidate>>
+>;
+export type ReportingQueryRunCreateResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryRunCreate>>
+>;
+export type ReportingQueryRunReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryRunRead>>
+>;
+export type ReportingQueryRunCancelResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryRunCancel>>
+>;
+export type ReportingQueryResultReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryResultRead>>
+>;
+export type ReportingQueryTableReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryTableRead>>
+>;
 export type ProjectRoleListResult = NonNullable<
   Awaited<ReturnType<typeof projectRoleList>>
 >;
@@ -13989,6 +15599,36 @@ export type ProjectRoleReassignResult = NonNullable<
 >;
 export type PlatformOperationsRotateResult = NonNullable<
   Awaited<ReturnType<typeof platformOperationsRotate>>
+>;
+export type SavedReportListResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportList>>
+>;
+export type SavedReportCreateResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportCreate>>
+>;
+export type SavedReportReadResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportRead>>
+>;
+export type SavedReportArchiveResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportArchive>>
+>;
+export type SavedReportUpdateDraftResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportUpdateDraft>>
+>;
+export type SavedReportDuplicateResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportDuplicate>>
+>;
+export type SavedReportPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportPreview>>
+>;
+export type SavedReportPublishResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportPublish>>
+>;
+export type SavedReportRevisionListResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportRevisionList>>
+>;
+export type SavedReportRevisionReadResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportRevisionRead>>
 >;
 export type ScenarioAdmissionDecisionsGetResult = NonNullable<
   Awaited<ReturnType<typeof scenarioAdmissionDecisionsGet>>
@@ -14119,6 +15759,33 @@ export type SupportCaseAssignmentBatchExecuteResult = NonNullable<
 export type SupportCaseAssignmentBatchOutcomeResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentBatchOutcome>>
 >;
+export type SupportCaseNotificationPolicyReadCurrentResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCurrent>>
+>;
+export type SupportCaseNotificationPolicyListAvailableTeamsResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyListAvailableTeams>>
+>;
+export type SupportCaseNotificationPolicyReadCommandResultResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCommandResult>>
+>;
+export type SupportCaseNotificationPolicyDisableResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyDisable>>
+>;
+export type SupportCaseNotificationPolicySaveDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicySaveDraft>>
+>;
+export type SupportCaseNotificationPolicyReadMetricsResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadMetrics>>
+>;
+export type SupportCaseNotificationPolicyPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyPreview>>
+>;
+export type SupportCaseNotificationPolicyPublishResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyPublish>>
+>;
+export type SupportCaseNotificationPolicyRestoreResult = NonNullable<
+  Awaited<ReturnType<typeof supportCaseNotificationPolicyRestore>>
+>;
 export type SupportCaseAssignmentAssignResult = NonNullable<
   Awaited<ReturnType<typeof supportCaseAssignmentAssign>>
 >;
@@ -14169,12 +15836,6 @@ export type SupportContentGovernancePublishRetentionResult = NonNullable<
 >;
 export type SupportContentGovernancePreviewRetentionResult = NonNullable<
   Awaited<ReturnType<typeof supportContentGovernancePreviewRetention>>
->;
-export type SupportContentGovernanceRolloutResult = NonNullable<
-  Awaited<ReturnType<typeof supportContentGovernanceRollout>>
->;
-export type SupportContentGovernanceUpdateRolloutResult = NonNullable<
-  Awaited<ReturnType<typeof supportContentGovernanceUpdateRollout>>
 >;
 export type AdminProjectConversationsListResult = NonNullable<
   Awaited<ReturnType<typeof adminProjectConversationsList>>
@@ -14323,9 +15984,6 @@ export type SupportExternalSettingsMutationReadOutcomeResult = NonNullable<
 export type SupportInternalNoteRealtimeContractResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalNoteRealtimeContract>>
 >;
-export type SupportInternalKnowledgeRollbackAdmissionResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeRollbackAdmission>>
->;
 export type SupportInternalKnowledgeCreateCitationDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeCreateCitationDraft>>
 >;
@@ -14376,9 +16034,6 @@ export type SupportInternalKnowledgeStartFileUploadResult = NonNullable<
 >;
 export type SupportInternalKnowledgeCompleteFileUploadResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeCompleteFileUpload>>
->;
-export type SupportInternalKnowledgeSetCapabilitiesResult = NonNullable<
-  Awaited<ReturnType<typeof supportInternalKnowledgeSetCapabilities>>
 >;
 export type SupportInternalKnowledgeListManagedDocumentsResult = NonNullable<
   Awaited<ReturnType<typeof supportInternalKnowledgeListManagedDocuments>>
@@ -14507,11 +16162,17 @@ export type SupportPresentationsLolaResult = NonNullable<
 export type SupportPresentationsSetLolaResult = NonNullable<
   Awaited<ReturnType<typeof supportPresentationsSetLola>>
 >;
+export type SupportPresentationsCatalogOperatorsResult = NonNullable<
+  Awaited<ReturnType<typeof supportPresentationsCatalogOperators>>
+>;
 export type SupportPresentationsOperatorResult = NonNullable<
   Awaited<ReturnType<typeof supportPresentationsOperator>>
 >;
 export type SupportPresentationsSetOperatorResult = NonNullable<
   Awaited<ReturnType<typeof supportPresentationsSetOperator>>
+>;
+export type SupportPresentationsResolveOperatorsResult = NonNullable<
+  Awaited<ReturnType<typeof supportPresentationsResolveOperators>>
 >;
 export type SupportQualityCalibrationsResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCalibrations>>
@@ -14519,8 +16180,17 @@ export type SupportQualityCalibrationsResult = NonNullable<
 export type SupportQualityCreateCalibrationResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCreateCalibration>>
 >;
+export type SupportQualityCalibrationReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityCalibrationRead>>
+>;
+export type SupportQualityCalibrationBaselineSetResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityCalibrationBaselineSet>>
+>;
 export type SupportQualityCloseCalibrationResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCloseCalibration>>
+>;
+export type SupportQualityCalibrationParticipantAddResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityCalibrationParticipantAdd>>
 >;
 export type SupportQualityCreateCalibrationReviewResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCreateCalibrationReview>>
@@ -14537,11 +16207,17 @@ export type SupportQualityOperatorMetricsResult = NonNullable<
 export type SupportQualityOperatorReviewsResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityOperatorReviews>>
 >;
+export type SupportQualityReviewListResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityReviewList>>
+>;
 export type SupportQualityCreateReviewResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCreateReview>>
 >;
 export type SupportQualityReviewDetailResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReviewDetail>>
+>;
+export type SupportQualityReviewAcknowledgeResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityReviewAcknowledge>>
 >;
 export type SupportQualityReviewDisputesResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReviewDisputes>>
@@ -14552,11 +16228,20 @@ export type SupportQualityOpenDisputeResult = NonNullable<
 export type SupportQualityReplaceDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReplaceDraft>>
 >;
+export type SupportQualityReviewOperatorReplyResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityReviewOperatorReply>>
+>;
 export type SupportQualitySubmitReviewResult = NonNullable<
   Awaited<ReturnType<typeof supportQualitySubmitReview>>
 >;
 export type SupportQualityVoidReviewResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityVoidReview>>
+>;
+export type SupportQualitySamplingPolicyCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualitySamplingPolicyCreate>>
+>;
+export type SupportQualitySamplingRunCreateResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualitySamplingRunCreate>>
 >;
 export type SupportQualityScorecardsResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityScorecards>>
@@ -14566,6 +16251,21 @@ export type SupportQualityCreateScorecardResult = NonNullable<
 >;
 export type SupportQualityCreateScorecardRevisionResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCreateScorecardRevision>>
+>;
+export type SupportQualityTaskListResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityTaskList>>
+>;
+export type SupportQualityTaskReadResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityTaskRead>>
+>;
+export type SupportQualityTaskCancelResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityTaskCancel>>
+>;
+export type SupportQualityTaskClaimResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityTaskClaim>>
+>;
+export type SupportQualityTaskReleaseResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityTaskRelease>>
 >;
 export type SupportQueueListResult = NonNullable<
   Awaited<ReturnType<typeof supportQueueList>>
@@ -14591,30 +16291,29 @@ export type SupportQueuePreviewDraftResult = NonNullable<
 export type SupportQueuePublishResult = NonNullable<
   Awaited<ReturnType<typeof supportQueuePublish>>
 >;
+export type SupportQueueRevisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueRevisions>>
+>;
+export type SupportQueueRevisionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueRevisionDetail>>
+>;
+export type SupportQueueRestoreRevisionAsDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueRestoreRevisionAsDraft>>
+>;
+export type SupportQueueRevisionDiffResult = NonNullable<
+  Awaited<ReturnType<typeof supportQueueRevisionDiff>>
+>;
 export type SupportRealtimeDeliveryContractResult = NonNullable<
   Awaited<ReturnType<typeof supportRealtimeDeliveryContract>>
 >;
 export type SupportRoutingRuntimeActivationResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeActivation>>
 >;
-export type SupportRoutingRuntimeTransitionProjectActivationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof supportRoutingRuntimeTransitionProjectActivation>>
-  >;
 export type SupportRoutingRuntimeTransitionQueueActivationResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeTransitionQueueActivation>>
 >;
-export type SupportRoutingRuntimeAdmissionListResult = NonNullable<
-  Awaited<ReturnType<typeof supportRoutingRuntimeAdmissionList>>
->;
-export type SupportRoutingRuntimeIssueAdmissionResult = NonNullable<
-  Awaited<ReturnType<typeof supportRoutingRuntimeIssueAdmission>>
->;
-export type SupportRoutingRuntimeAdmissionDetailResult = NonNullable<
-  Awaited<ReturnType<typeof supportRoutingRuntimeAdmissionDetail>>
->;
-export type SupportRoutingRuntimeRevokeAdmissionResult = NonNullable<
-  Awaited<ReturnType<typeof supportRoutingRuntimeRevokeAdmission>>
+export type SupportRoutingRuntimeConfigurationAuditTimelineResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeConfigurationAuditTimeline>>
 >;
 export type SupportRoutingRuntimeDecisionListResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeDecisionList>>
@@ -14622,6 +16321,10 @@ export type SupportRoutingRuntimeDecisionListResult = NonNullable<
 export type SupportRoutingRuntimeDecisionDetailResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeDecisionDetail>>
 >;
+export type SupportRoutingRuntimeResolveOperatorAvailabilityResult =
+  NonNullable<
+    Awaited<ReturnType<typeof supportRoutingRuntimeResolveOperatorAvailability>>
+  >;
 export type SupportRoutingListResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingList>>
 >;
@@ -14640,8 +16343,29 @@ export type SupportRoutingReplaceDraftResult = NonNullable<
 export type SupportRoutingPublishResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingPublish>>
 >;
+export type SupportRoutingRevisionHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRevisionHistory>>
+>;
+export type SupportRoutingRevisionDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRevisionDetail>>
+>;
+export type SupportRoutingRestoreRevisionDraftResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRestoreRevisionDraft>>
+>;
+export type SupportRoutingRevisionDiffResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRevisionDiff>>
+>;
+export type SupportRoutingRuntimeQueueSlotsResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeQueueSlots>>
+>;
+export type SupportRoutingRuntimeQueueSlotDetailResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeQueueSlotDetail>>
+>;
 export type SupportRoutingRuntimeQueueSlotResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeQueueSlot>>
+>;
+export type SupportRoutingRuntimeReadinessResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeReadiness>>
 >;
 export type SupportRoutingRuntimeControlResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeControl>>
@@ -14651,6 +16375,12 @@ export type SupportRoutingRuntimeSetControlResult = NonNullable<
 >;
 export type SupportRoutingRuntimeRequestResult = NonNullable<
   Awaited<ReturnType<typeof supportRoutingRuntimeRequest>>
+>;
+export type SupportRoutingRuntimeShadowRunResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeShadowRun>>
+>;
+export type SupportRoutingRuntimeShadowRunDecisionsResult = NonNullable<
+  Awaited<ReturnType<typeof supportRoutingRuntimeShadowRunDecisions>>
 >;
 export type SavedSupportViewCatalogResult = NonNullable<
   Awaited<ReturnType<typeof savedSupportViewCatalog>>
@@ -14712,14 +16442,38 @@ export type SupportSlaHumanCommandMigratePolicyResult = NonNullable<
 export type SupportSlaConfigurationReadResult = NonNullable<
   Awaited<ReturnType<typeof supportSlaConfigurationRead>>
 >;
+export type SupportSlaConfigurationAuditResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationAudit>>
+>;
 export type SupportSlaConfigurationReplaceDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportSlaConfigurationReplaceDraft>>
 >;
 export type SupportSlaConfigurationDiscardDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportSlaConfigurationDiscardDraft>>
 >;
+export type SupportSlaConfigurationGroupCatalogResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationGroupCatalog>>
+>;
+export type SupportSlaConfigurationOutcomeResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationOutcome>>
+>;
+export type SupportSlaConfigurationPreviewResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationPreview>>
+>;
 export type SupportSlaConfigurationPublishResult = NonNullable<
   Awaited<ReturnType<typeof supportSlaConfigurationPublish>>
+>;
+export type SupportSlaConfigurationHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationHistory>>
+>;
+export type SupportSlaConfigurationRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationRevision>>
+>;
+export type SupportSlaConfigurationDiffResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationDiff>>
+>;
+export type SupportSlaConfigurationRollbackResult = NonNullable<
+  Awaited<ReturnType<typeof supportSlaConfigurationRollback>>
 >;
 export type SupportWorkforceListTeamsResult = NonNullable<
   Awaited<ReturnType<typeof supportWorkforceListTeams>>
@@ -14763,17 +16517,20 @@ export type SupportWorkforceDiscardDraftResult = NonNullable<
 export type SupportWorkforcePublishResult = NonNullable<
   Awaited<ReturnType<typeof supportWorkforcePublish>>
 >;
+export type SupportWorkforceHistoryResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceHistory>>
+>;
+export type SupportWorkforceDiffResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceDiff>>
+>;
+export type SupportWorkforceRevisionResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceRevision>>
+>;
+export type SupportWorkforceRestoreResult = NonNullable<
+  Awaited<ReturnType<typeof supportWorkforceRestore>>
+>;
 export type SupportWorkspaceReadResult = NonNullable<
   Awaited<ReturnType<typeof supportWorkspaceRead>>
->;
-export type SupportWorkspaceReadAdmissionResult = NonNullable<
-  Awaited<ReturnType<typeof supportWorkspaceReadAdmission>>
->;
-export type SupportWorkspaceReadRolloutResult = NonNullable<
-  Awaited<ReturnType<typeof supportWorkspaceReadRollout>>
->;
-export type SupportWorkspaceUpdateRolloutResult = NonNullable<
-  Awaited<ReturnType<typeof supportWorkspaceUpdateRollout>>
 >;
 export type TelegramBroadcastListResult = NonNullable<
   Awaited<ReturnType<typeof telegramBroadcastList>>
@@ -15120,6 +16877,9 @@ export type ChatRenameConversationResult = NonNullable<
 export type ChatCloseConversationResult = NonNullable<
   Awaited<ReturnType<typeof chatCloseConversation>>
 >;
+export type ChatRespondToEscalationOfferResult = NonNullable<
+  Awaited<ReturnType<typeof chatRespondToEscalationOffer>>
+>;
 export type ChatListConversationMessagesResult = NonNullable<
   Awaited<ReturnType<typeof chatListConversationMessages>>
 >;
@@ -15264,31 +17024,4 @@ export type VoiceConnectResult = NonNullable<
 >;
 export type AppHealthResult = NonNullable<
   Awaited<ReturnType<typeof appHealth>>
->;
-export type SupportCaseNotificationPolicyReadCurrentResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCurrent>>
->;
-export type SupportCaseNotificationPolicyListAvailableTeamsResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyListAvailableTeams>>
->;
-export type SupportCaseNotificationPolicyReadCommandResultResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadCommandResult>>
->;
-export type SupportCaseNotificationPolicyPreviewResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyPreview>>
->;
-export type SupportCaseNotificationPolicyReadMetricsResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyReadMetrics>>
->;
-export type SupportCaseNotificationPolicySaveDraftResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicySaveDraft>>
->;
-export type SupportCaseNotificationPolicyPublishResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyPublish>>
->;
-export type SupportCaseNotificationPolicyDisableResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyDisable>>
->;
-export type SupportCaseNotificationPolicyRestoreResult = NonNullable<
-  Awaited<ReturnType<typeof supportCaseNotificationPolicyRestore>>
 >;

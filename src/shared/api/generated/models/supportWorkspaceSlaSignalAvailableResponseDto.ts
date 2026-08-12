@@ -8,7 +8,6 @@
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoKind } from "./supportWorkspaceSlaSignalAvailableResponseDtoKind";
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoPauseReason } from "./supportWorkspaceSlaSignalAvailableResponseDtoPauseReason";
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoRisk } from "./supportWorkspaceSlaSignalAvailableResponseDtoRisk";
-import type { SupportWorkspaceSlaSignalAvailableResponseDtoRolloutState } from "./supportWorkspaceSlaSignalAvailableResponseDtoRolloutState";
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoSignalCode } from "./supportWorkspaceSlaSignalAvailableResponseDtoSignalCode";
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoState } from "./supportWorkspaceSlaSignalAvailableResponseDtoState";
 import type { SupportWorkspaceSlaSignalAvailableResponseDtoTiming } from "./supportWorkspaceSlaSignalAvailableResponseDtoTiming";
@@ -22,14 +21,8 @@ export interface SupportWorkspaceSlaSignalAvailableResponseDto {
   kind: SupportWorkspaceSlaSignalAvailableResponseDtoKind;
   /** @nullable */
   pauseReason: SupportWorkspaceSlaSignalAvailableResponseDtoPauseReason;
-  /**
-   * @maxLength 255
-   * @nullable
-   */
-  reconciliationCheckpoint: string | null;
   remainingBusinessMs: number;
   risk: SupportWorkspaceSlaSignalAvailableResponseDtoRisk;
-  rolloutState: SupportWorkspaceSlaSignalAvailableResponseDtoRolloutState;
   signalCode: SupportWorkspaceSlaSignalAvailableResponseDtoSignalCode;
   state: SupportWorkspaceSlaSignalAvailableResponseDtoState;
   timing: SupportWorkspaceSlaSignalAvailableResponseDtoTiming;

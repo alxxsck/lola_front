@@ -15,6 +15,7 @@ export interface SupportWorkforceMutationResponseDto {
   draft?: SupportWorkforceMutationResponseDtoDraft;
   intent: string;
   publishedRevision?: SupportWorkforcePublishedRevisionResponseDto;
+  restoredFromRevisionId?: string;
   /** @minimum 1 */
   rootVersion: number;
   skill?: SupportWorkforceIdentityResponseDto;

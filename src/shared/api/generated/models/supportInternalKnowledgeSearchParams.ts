@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SupportInternalKnowledgeSearchAudience } from "./supportInternalKnowledgeSearchAudience";
-import type { SupportInternalKnowledgeSearchRollout } from "./supportInternalKnowledgeSearchRollout";
 
 export type SupportInternalKnowledgeSearchParams = {
   caseId: string;
@@ -32,7 +31,6 @@ export type SupportInternalKnowledgeSearchParams = {
    */
   productCode?: string;
   audience?: SupportInternalKnowledgeSearchAudience;
-  rollout?: SupportInternalKnowledgeSearchRollout;
   revisionId?: string;
   /**
    * @minimum 1

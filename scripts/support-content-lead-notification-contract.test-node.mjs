@@ -69,12 +69,6 @@ test("Support content contracts retain separate authority, revisions and safe li
       );
     },
     (contract) => {
-      contract.components.schemas.SupportContentRolloutResponseDto.properties.enabledCapabilities.items.enum =
-        contract.components.schemas.SupportContentRolloutResponseDto.properties.enabledCapabilities.items.enum.filter(
-          (value) => value !== "INTERNAL_NOTES",
-        );
-    },
-    (contract) => {
       delete operation(contract, "SupportMacro_catalog")["x-iam-permission"];
     },
     (contract) => {

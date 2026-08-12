@@ -5,22 +5,31 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportQualityReviewResponseDtoAcknowledgmentState } from "./supportQualityReviewResponseDtoAcknowledgmentState";
+import type { SupportQualityReviewResponseDtoCriticalFailureOutcome } from "./supportQualityReviewResponseDtoCriticalFailureOutcome";
 import type { SupportQualityReviewResponseDtoKind } from "./supportQualityReviewResponseDtoKind";
 import type { SupportQualityReviewResponseDtoState } from "./supportQualityReviewResponseDtoState";
-import type { SupportQualityReviewResponseDtoSubmittedAt } from "./supportQualityReviewResponseDtoSubmittedAt";
 
 export interface SupportQualityReviewResponseDto {
+  acknowledgmentState: SupportQualityReviewResponseDtoAcknowledgmentState;
   caseId: string;
   conversationId: string;
+  criticalFailureOutcome: SupportQualityReviewResponseDtoCriticalFailureOutcome;
   id: string;
   kind: SupportQualityReviewResponseDtoKind;
   /** @minimum 1 */
   maximumScore: number;
   operatorCmsUserId: string;
   reviewerCmsUserId: string;
+  /** @nullable */
+  selectionReasonCode?: string | null;
   state: SupportQualityReviewResponseDtoState;
   /** @nullable */
-  submittedAt?: SupportQualityReviewResponseDtoSubmittedAt;
+  submittedAt?: string | null;
+  /** @nullable */
+  summary?: string | null;
+  /** @nullable */
+  taskId?: string | null;
   /** @minimum 0 */
   totalScore: number;
   /** @minimum 1 */

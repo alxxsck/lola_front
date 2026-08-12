@@ -11,6 +11,6 @@ export type SupportMacroListRevisions503ErrorCode =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportMacroListRevisions503ErrorCode = {
-  SUPPORT_CONTENT_CAPABILITY_DISABLED: "SUPPORT_CONTENT_CAPABILITY_DISABLED",
+  SUPPORT_DISABLED: "SUPPORT_DISABLED",
   SUPPORT_MACRO_CATALOG_NOT_READY: "SUPPORT_MACRO_CATALOG_NOT_READY",
 } as const;

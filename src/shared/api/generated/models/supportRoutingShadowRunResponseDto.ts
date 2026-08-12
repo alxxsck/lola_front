@@ -5,6 +5,8 @@
  * CMS, integration, chat and realtime API for Retenive AI Assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { SupportRoutingShadowRunResponseDtoCompletedAt } from "./supportRoutingShadowRunResponseDtoCompletedAt";
+import type { SupportRoutingShadowRunResponseDtoState } from "./supportRoutingShadowRunResponseDtoState";
 
 export interface SupportRoutingShadowRunResponseDto {
   /**
@@ -12,4 +14,29 @@ export interface SupportRoutingShadowRunResponseDto {
    * @maximum 50
    */
   accepted: number;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  completed: number;
+  /** @nullable */
+  completedAt: SupportRoutingShadowRunResponseDtoCompletedAt;
+  createdAt: string;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  failed: number;
+  id: string;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  pending: number;
+  /**
+   * @minimum 0
+   * @maximum 50
+   */
+  requested: number;
+  state: SupportRoutingShadowRunResponseDtoState;
 }

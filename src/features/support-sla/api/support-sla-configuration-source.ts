@@ -10,20 +10,21 @@ import type {
   ReplaceSupportSlaConfigurationDraftDto,
   ReplaceSupportSlaDraftMutationResponseDto,
   SupportSlaConfigurationSettingsResponseDto,
+  SupportSlaConfigurationDraftResponseDto,
 } from "@/shared/api/generated/models";
 import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
 import { noAuthRetryRequestOptions } from "@/shared/api/http/axios-instance";
 import { dataMode } from "@/shared/config/data-mode";
 
-export type SupportSlaConfigurationSnapshot = Pick<
-  SupportSlaConfigurationSettingsResponseDto,
-  | "mode"
-  | "rootVersion"
-  | "actionEtag"
-  | "reconciliationCheckpoint"
-  | "draft"
-  | "publishedConfiguration"
->;
+export type SupportSlaConfigurationSnapshot = Omit<
+  Pick<SupportSlaConfigurationSettingsResponseDto, "mode" | "rootVersion" | "actionEtag" | "draft" | "publishedConfiguration">,
+  "draft"
+> & {
+  draft?: (Omit<SupportSlaConfigurationDraftResponseDto, "catalogRevisionId" | "configuration"> & {
+    catalogRevisionId?: string;
+    configuration?: Omit<ReplaceSupportSlaConfigurationDraftDto, "catalogRevisionId"> & { catalogRevisionId?: string };
+  }) | null;
+};
 
 export interface SupportSlaConfigurationSource {
   read(
@@ -127,7 +128,7 @@ export const apiSupportSlaConfigurationSource: SupportSlaConfigurationSource = {
     try {
       const receipt = await supportSlaConfigurationPublish(
         projectId,
-        {},
+        { reason: "Publish SLA configuration from CMS" },
         commandOptions(actionEtag, idempotencyKey, signal),
       );
       return receipt.intent === "PUBLISH_SLA_CONFIGURATION"
@@ -148,6 +149,7 @@ function mockEtag(version: number): string {
 
 function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
   return {
+    catalogRevisionId: "mock-sla-catalog-r1",
     calendar: {
       timeZone: "Europe/Madrid",
       weekly: Array.from({ length: 7 }, (_, index) => ({
@@ -202,9 +204,18 @@ function initialMockRoot(): SupportSlaConfigurationSnapshot {
     mode: "SLA_SETTINGS",
     rootVersion: 1,
     actionEtag: mockEtag(1),
-    reconciliationCheckpoint: "mock-checkpoint-1",
     draft: null,
     publishedConfiguration: {
+      configurationRevision: {
+        id: "mock-configuration-revision-3",
+        revisionNumber: 3,
+        catalogRevisionId: configuration.catalogRevisionId,
+        configurationHash: "d".repeat(64),
+        publicationKind: "PUBLISH",
+        publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
+        publishReason: "Начальная публикация",
+        rollbackSourceRevisionId: null,
+      },
       calendarRevision: {
         id: "mock-calendar-revision-3",
         revisionNumber: 3,
@@ -297,6 +308,7 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
     const nextVersion = current.rootVersion + 1;
     const generation = (current.draft?.generation ?? 3) + 1;
     const draft = {
+      catalogRevisionId: configuration.catalogRevisionId,
       generation,
       version: (current.draft?.version ?? 0) + 1,
       contentHash: "c".repeat(64),
@@ -307,6 +319,7 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
       rootVersion: nextVersion,
       actionEtag: mockEtag(nextVersion),
       draft: {
+        catalogRevisionId: draft.catalogRevisionId,
         generation: draft.generation,
         version: draft.version,
         contentHash: draft.contentHash,
@@ -380,6 +393,19 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
       (current.publishedConfiguration?.policyRevision.revisionNumber ?? 0) + 1;
     const publishedAt = new Date().toISOString();
     const publishedConfiguration = {
+      configurationRevision: {
+        id: `mock-configuration-revision-${revisionNumber}`,
+        revisionNumber,
+        catalogRevisionId:
+          current.draft.configuration.catalogRevisionId ??
+          current.draft.catalogRevisionId ??
+          "mock-sla-catalog-r1",
+        configurationHash: current.draft.contentHash,
+        publicationKind: "PUBLISH" as const,
+        publishedAt,
+        publishReason: "Публикация из CMS",
+        rollbackSourceRevisionId: null,
+      },
       calendarRevision: {
         id: `mock-calendar-revision-${revisionNumber}`,
         revisionNumber,
@@ -405,6 +431,7 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
       actionEtag: mockEtag(nextVersion),
       draft: null,
       publishedConfiguration: {
+        configurationRevision: publishedConfiguration.configurationRevision,
         calendarRevision: publishedConfiguration.calendarRevision,
         policyRevision: publishedConfiguration.policyRevision,
       },

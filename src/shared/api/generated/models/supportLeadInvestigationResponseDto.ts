@@ -10,7 +10,7 @@ import type { SupportLeadInvestigationDataDto } from "./supportLeadInvestigation
 import type { SupportLeadInvestigationResponseDtoEffectiveWindow } from "./supportLeadInvestigationResponseDtoEffectiveWindow";
 import type { SupportLeadInvestigationResponseDtoFreshnessState } from "./supportLeadInvestigationResponseDtoFreshnessState";
 import type { SupportLeadInvestigationResponseDtoKind } from "./supportLeadInvestigationResponseDtoKind";
-import type { SupportLeadInvestigationResponseDtoSlaRolloutState } from "./supportLeadInvestigationResponseDtoSlaRolloutState";
+import type { SupportLeadInvestigationResponseDtoSlaReadiness } from "./supportLeadInvestigationResponseDtoSlaReadiness";
 
 export interface SupportLeadInvestigationResponseDto {
   capabilities: SupportLeadCapabilitiesDto;
@@ -33,7 +33,7 @@ export interface SupportLeadInvestigationResponseDto {
   nextCursor: string | null;
   /** @minimum 1 */
   projectionGeneration: number;
-  slaRolloutState: SupportLeadInvestigationResponseDtoSlaRolloutState;
+  slaReadiness: SupportLeadInvestigationResponseDtoSlaReadiness;
   /**
    * @nullable
    * @pattern ^(0|[1-9][0-9]*)$

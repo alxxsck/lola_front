@@ -20,6 +20,7 @@ vi.mock(
 
 const etag = (letter: string) => `"ssla1.${letter.repeat(43)}"`;
 const configuration = {
+  catalogRevisionId: "catalog-r1",
   calendar: {
     timeZone: "Europe/Madrid",
     weekly: [{ isoWeekday: 1, intervals: [{ startMinute: 540, endMinute: 1080 }] }],
@@ -52,7 +53,6 @@ function snapshot(): SupportSlaConfigurationSnapshot {
     mode: "SLA_SETTINGS" as const,
     rootVersion: 4,
     actionEtag: etag("a"),
-    reconciliationCheckpoint: "checkpoint-4",
     draft: {
       generation: 4,
       version: 1,
