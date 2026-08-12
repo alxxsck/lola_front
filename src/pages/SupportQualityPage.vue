@@ -1,57 +1,84 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { supportQualitySource } from "@/features/support-quality/api/support-quality-source";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { supportOperatorPresentationSource } from '@/features/support-quality/api/support-operator-presentation-source';
+import { supportQualitySource } from '@/features/support-quality/api/support-quality-source';
+import { qualityQueueAccess } from '@/features/support-quality/model/support-quality-permissions';
 import type {
   SupportQualityReviewResponseDto,
   SupportQualityTaskResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const auth = useAuthStore();
 const router = useRouter();
 const loading = ref(true);
-const error = ref("");
-const actingId = ref("");
-const taskState = ref("ALL");
+const error = ref('');
+const actingId = ref('');
+const taskState = ref('ALL');
 const tasks = ref<SupportQualityTaskResponseDto[]>([]);
 const reviews = ref<SupportQualityReviewResponseDto[]>([]);
+const operatorNames = ref<Record<string, string>>({});
 const taskCursor = ref<string | null>(null);
 const reviewCursor = ref<string | null>(null);
 let controller: AbortController | null = null;
 let loadGeneration = 0;
 
-const projectId = computed(() => auth.project?.id ?? "");
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const canReview = computed(() =>
-  permissions.value.includes("project.support.quality.review"),
-);
-const canReadAll = computed(() =>
-  permissions.value.includes("project.support.quality.read"),
-);
+const projectId = computed(() => auth.project?.id ?? '');
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const canReview = computed(() => permissions.value.includes('project.support.quality.review'));
+const canReadAll = computed(() => permissions.value.includes('project.support.quality.read'));
+const canManage = computed(() => permissions.value.includes('project.support.quality.manage'));
+const access = computed(() => qualityQueueAccess(permissions.value));
 const filteredTasks = computed(() =>
-  taskState.value === "ALL"
+  taskState.value === 'ALL'
     ? tasks.value
     : tasks.value.filter(({ state }) => state === taskState.value),
 );
 const submittedCount = computed(
-  () => reviews.value.filter(({ state }) => state === "SUBMITTED").length,
+  () => reviews.value.filter(({ state }) => state === 'SUBMITTED').length,
 );
 const overdueCount = computed(
   () =>
     tasks.value.filter(
       ({ dueAt, state }) =>
-        dueAt &&
-        new Date(dueAt) < new Date() &&
-        !["COMPLETED", "CANCELLED"].includes(state),
+        dueAt && new Date(dueAt) < new Date() && !['COMPLETED', 'CANCELLED'].includes(state),
     ).length,
 );
+
+function operatorName(cmsUserId: string): string {
+  return operatorNames.value[cmsUserId] ?? 'Участник проекта';
+}
+
+async function resolveOperatorNames(
+  scopeProjectId: string,
+  items: Array<{ operatorCmsUserId: string }>,
+  signal?: AbortSignal,
+): Promise<Record<string, string>> {
+  const cmsUserIds = [
+    ...new Set(items.map(({ operatorCmsUserId }) => operatorCmsUserId).filter(Boolean)),
+  ].slice(0, 100);
+  if (!cmsUserIds.length) return {};
+  try {
+    const response = await supportOperatorPresentationSource.resolve(
+      scopeProjectId,
+      cmsUserIds,
+      signal,
+    );
+    return Object.fromEntries(
+      response.items.map(({ cmsUserId, displayName }) => [
+        cmsUserId,
+        displayName.trim() || 'Участник проекта',
+      ]),
+    );
+  } catch {
+    return {};
+  }
+}
 
 async function load(): Promise<void> {
   controller?.abort();
@@ -59,86 +86,113 @@ async function load(): Promise<void> {
   const signal = controller.signal;
   const generation = ++loadGeneration;
   const scopeProjectId = projectId.value;
-  const scopeActorId = auth.user?.id ?? "";
-  const scopePermissions = permissions.value.join(",");
+  const scopeActorId = auth.user?.id ?? '';
+  const scopePermissions = permissions.value.join(',');
   tasks.value = [];
   reviews.value = [];
+  operatorNames.value = {};
+  actingId.value = '';
   taskCursor.value = null;
   reviewCursor.value = null;
   if (!scopeProjectId) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const [taskPage, reviewPage] = await Promise.all([
       canReview.value
         ? supportQualitySource.listTasks(scopeProjectId, undefined, signal)
         : Promise.resolve({ items: [], nextCursor: null }),
-      supportQualitySource.listReviews(
-        scopeProjectId,
-        canReadAll.value ? undefined : auth.user?.id,
-        undefined,
-        signal,
-      ),
+      access.value.reviews === 'NONE'
+        ? Promise.resolve({ items: [], nextCursor: null })
+        : supportQualitySource.listReviews(
+            scopeProjectId,
+            access.value.reviews === 'PROJECT' ? undefined : auth.user?.id,
+            undefined,
+            signal,
+          ),
     ]);
+    const nextOperatorNames = await resolveOperatorNames(
+      scopeProjectId,
+      [...taskPage.items, ...reviewPage.items],
+      signal,
+    );
     if (
       signal.aborted ||
       generation !== loadGeneration ||
       projectId.value !== scopeProjectId ||
-      (auth.user?.id ?? "") !== scopeActorId ||
-      permissions.value.join(",") !== scopePermissions
-    ) return;
+      (auth.user?.id ?? '') !== scopeActorId ||
+      permissions.value.join(',') !== scopePermissions
+    )
+      return;
     tasks.value = taskPage.items;
     reviews.value = reviewPage.items;
+    operatorNames.value = nextOperatorNames;
     taskCursor.value = taskPage.nextCursor ?? null;
     reviewCursor.value = reviewPage.nextCursor ?? null;
   } catch (cause) {
     if (!signal.aborted && generation === loadGeneration)
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить контроль качества";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить контроль качества';
   } finally {
     if (!signal.aborted && generation === loadGeneration) loading.value = false;
   }
 }
 
-async function loadMore(kind: "tasks" | "reviews"): Promise<void> {
+async function loadMore(kind: 'tasks' | 'reviews'): Promise<void> {
   const scopeProjectId = projectId.value;
-  const scopeActorId = auth.user?.id ?? "";
-  const scopePermissions = permissions.value.join(",");
+  const scopeActorId = auth.user?.id ?? '';
+  const scopePermissions = permissions.value.join(',');
   const generation = loadGeneration;
-  const cursor = kind === "tasks" ? taskCursor.value : reviewCursor.value;
+  const cursor = kind === 'tasks' ? taskCursor.value : reviewCursor.value;
   if (!scopeProjectId || !cursor) return;
-  const page = kind === "tasks"
-    ? await supportQualitySource.listTasks(scopeProjectId, cursor)
-    : await supportQualitySource.listReviews(
-        scopeProjectId,
-        canReadAll.value ? undefined : auth.user?.id,
-        cursor,
-      );
-  if (projectId.value !== scopeProjectId || (auth.user?.id ?? "") !== scopeActorId ||
-      permissions.value.join(",") !== scopePermissions || generation !== loadGeneration) return;
-  if (kind === "tasks") {
-    tasks.value.push(...page.items as SupportQualityTaskResponseDto[]);
+  const page =
+    kind === 'tasks'
+      ? await supportQualitySource.listTasks(scopeProjectId, cursor)
+      : await supportQualitySource.listReviews(
+          scopeProjectId,
+          canReadAll.value ? undefined : auth.user?.id,
+          cursor,
+        );
+  const nextOperatorNames = await resolveOperatorNames(
+    scopeProjectId,
+    page.items as Array<{ operatorCmsUserId: string }>,
+    controller?.signal,
+  );
+  if (
+    projectId.value !== scopeProjectId ||
+    (auth.user?.id ?? '') !== scopeActorId ||
+    permissions.value.join(',') !== scopePermissions ||
+    generation !== loadGeneration
+  )
+    return;
+  if (kind === 'tasks') {
+    tasks.value.push(...(page.items as SupportQualityTaskResponseDto[]));
     taskCursor.value = page.nextCursor ?? null;
   } else {
-    reviews.value.push(...page.items as SupportQualityReviewResponseDto[]);
+    reviews.value.push(...(page.items as SupportQualityReviewResponseDto[]));
     reviewCursor.value = page.nextCursor ?? null;
   }
+  operatorNames.value = { ...operatorNames.value, ...nextOperatorNames };
 }
 
 async function claim(task: SupportQualityTaskResponseDto): Promise<void> {
   const scopeProjectId = projectId.value;
-  const scopeActorId = auth.user?.id ?? "";
+  const scopeActorId = auth.user?.id ?? '';
+  const scopePermissions = permissions.value.join(',');
+  const generation = loadGeneration;
+  const inScope = () =>
+    projectId.value === scopeProjectId &&
+    (auth.user?.id ?? '') === scopeActorId &&
+    permissions.value.join(',') === scopePermissions &&
+    generation === loadGeneration &&
+    canReview.value;
   if (!scopeProjectId) return;
   actingId.value = task.id;
-  error.value = "";
+  error.value = '';
   try {
     const next = await supportQualitySource.claimTask(scopeProjectId, task);
-    if (projectId.value !== scopeProjectId || (auth.user?.id ?? "") !== scopeActorId) return;
-    tasks.value = tasks.value.map((item) =>
-      item.id === next.id ? next : item,
-    );
+    if (!inScope()) return;
+    tasks.value = tasks.value.map((item) => (item.id === next.id ? next : item));
     let review = reviews.value.find(({ taskId }) => taskId === task.id);
     if (!review) {
       const created = await supportQualitySource.createReview(scopeProjectId, {
@@ -152,33 +206,71 @@ async function claim(task: SupportQualityTaskResponseDto): Promise<void> {
         scores: task.defaultScores,
         evidence: [{ messageId: task.defaultEvidenceMessageId }],
       });
-      if (projectId.value !== scopeProjectId || (auth.user?.id ?? "") !== scopeActorId) return;
+      if (!inScope()) return;
       review = created;
       reviews.value = [created, ...reviews.value];
     }
     await router.push(`/support/quality/reviews/${review.id}`);
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Задание не взято";
+    if (inScope()) error.value = cause instanceof Error ? cause.message : 'Задание не взято';
   } finally {
-    actingId.value = "";
+    if (inScope()) actingId.value = '';
+  }
+}
+async function changeTask(
+  task: SupportQualityTaskResponseDto,
+  action: 'release' | 'cancel',
+): Promise<void> {
+  const scopeProjectId = projectId.value;
+  const scopeActorId = auth.user?.id ?? '';
+  const scopePermissions = permissions.value.join(',');
+  const generation = loadGeneration;
+  const inScope = () =>
+    projectId.value === scopeProjectId &&
+    (auth.user?.id ?? '') === scopeActorId &&
+    permissions.value.join(',') === scopePermissions &&
+    generation === loadGeneration;
+  if (!scopeProjectId) return;
+  actingId.value = task.id;
+  try {
+    const next =
+      action === 'release'
+        ? await supportQualitySource.releaseTask(scopeProjectId, task)
+        : await supportQualitySource.cancelTask(scopeProjectId, task);
+    if (!inScope()) return;
+    tasks.value = tasks.value.map((item) => (item.id === next.id ? next : item));
+  } catch (cause) {
+    if (inScope())
+      error.value = cause instanceof Error ? cause.message : 'Состояние задания не изменено';
+  } finally {
+    if (inScope()) actingId.value = '';
   }
 }
 
 function dueLabel(value?: string | null): string {
-  if (!value) return "Без срока";
+  if (!value) return 'Без срока';
   const diff = new Date(value).getTime() - Date.now();
-  if (diff < 0)
-    return `Просрочено ${Math.max(1, Math.round(-diff / 60_000))} мин`;
+  if (diff < 0) return `Просрочено ${Math.max(1, Math.round(-diff / 60_000))} мин`;
   return `Осталось ${Math.max(1, Math.round(diff / 60_000))} мин`;
+}
+function taskStateLabel(state: string): string {
+  return {
+    READY: 'Готово к проверке',
+    CLAIMED: 'В работе',
+    COMPLETED: 'Завершено',
+    CANCELLED: 'Отменено',
+  }[state] ?? 'Неизвестно';
 }
 
 function score(review: SupportQualityReviewResponseDto): string {
-  return review.maximumScore
+  return review.state === 'SUBMITTED' && review.maximumScore
     ? `${Math.round((review.totalScore / review.maximumScore) * 100)}%`
-    : "—";
+    : review.state === 'VOID'
+      ? 'Аннулирована'
+      : 'Черновик';
 }
 
-watch([projectId, () => auth.user?.id, () => permissions.value.join(",")], () => void load(), {
+watch([projectId, () => auth.user?.id, () => permissions.value.join(',')], () => void load(), {
   immediate: true,
 });
 onBeforeUnmount(() => controller?.abort());
@@ -188,17 +280,12 @@ onBeforeUnmount(() => controller?.abort());
   <main class="quality-page" aria-labelledby="quality-title">
     <header class="page-heading">
       <div>
-        <span class="eyebrow">Support Quality</span>
+        <span class="eyebrow">Качество поддержки</span>
         <h1 id="quality-title">Контроль качества</h1>
-        <p>
-          Очередь проверок, обратная связь операторам и единый след
-          доказательств.
-        </p>
+        <p>Очередь проверок, обратная связь операторам и единый след доказательств.</p>
       </div>
       <nav class="section-nav" aria-label="Разделы контроля качества">
-        <RouterLink to="/support/quality" aria-current="page"
-          >Очередь</RouterLink
-        >
+        <RouterLink to="/support/quality" aria-current="page">Очередь</RouterLink>
         <RouterLink to="/support/quality/scorecards">Карты оценки</RouterLink>
         <RouterLink to="/support/quality/calibrations">Калибровки</RouterLink>
         <RouterLink to="/support/quality/disputes">Апелляции</RouterLink>
@@ -213,22 +300,21 @@ onBeforeUnmount(() => controller?.abort());
     <section class="health-spine" aria-label="Сводка качества">
       <article>
         <span>Готовы к проверке</span
-        ><strong>{{
-          tasks.filter(({ state }) => state === "READY").length
-        }}</strong
-        ><small>новых заданий</small>
+        ><strong>{{ tasks.filter(({ state }) => state === 'READY').length }}</strong
+        ><small>на загруженной странице</small>
       </article>
       <article :class="{ danger: overdueCount > 0 }">
         <span>Требуют внимания</span><strong>{{ overdueCount }}</strong
-        ><small>просроченных</small>
+        ><small>на загруженной странице</small>
       </article>
       <article>
         <span>Завершено</span><strong>{{ submittedCount }}</strong
-        ><small>оценок в выборке</small>
+        ><small>на загруженной странице</small>
       </article>
-      <article>
-        <span>Покрытие</span><strong>12.4%</strong
-        ><small>за последние 7 дней</small>
+      <article class="coverage-link">
+        <span>Покрытие выборки</span><strong class="compact">В аналитике</strong
+        ><small>Только по серверной метрике и её квитанции</small>
+        <RouterLink to="/support/analytics/quality">Открыть качество</RouterLink>
       </article>
     </section>
 
@@ -260,11 +346,7 @@ onBeforeUnmount(() => controller?.abort());
           <p>Новых заданий по выбранному фильтру нет.</p>
         </div>
         <ul v-else class="record-list" aria-label="Задания контроля качества">
-          <li
-            v-for="task in filteredTasks"
-            :key="task.id"
-            :data-state="task.state"
-          >
+          <li v-for="task in filteredTasks" :key="task.id" :data-state="task.state">
             <div class="record-main">
               <div>
                 <Tag
@@ -273,11 +355,7 @@ onBeforeUnmount(() => controller?.abort());
                       ? 'Случайная выборка'
                       : 'Риск-выборка'
                   "
-                  :severity="
-                    task.selectionReasonCode === 'RANDOM_SAMPLE'
-                      ? 'secondary'
-                      : 'warn'
-                  "
+                  :severity="task.selectionReasonCode === 'RANDOM_SAMPLE' ? 'secondary' : 'warn'"
                 />
                 <h3>Кейс {{ task.caseId }}</h3>
               </div>
@@ -292,11 +370,11 @@ onBeforeUnmount(() => controller?.abort());
             <dl>
               <div>
                 <dt>Оператор</dt>
-                <dd>{{ task.operatorCmsUserId }}</dd>
+                <dd>{{ operatorName(task.operatorCmsUserId) }}</dd>
               </div>
               <div>
                 <dt>Состояние</dt>
-                <dd>{{ task.state }}</dd>
+                <dd>{{ taskStateLabel(task.state) }}</dd>
               </div>
             </dl>
             <Button
@@ -308,7 +386,28 @@ onBeforeUnmount(() => controller?.abort());
               @click="claim(task)"
             />
             <Button
-              v-else-if="reviews.some(({ taskId }) => taskId === task.id)"
+              v-if="
+                task.state === 'CLAIMED' &&
+                task.assignedReviewerCmsUserId === auth.user?.id &&
+                canReview
+              "
+              label="Вернуть в очередь"
+              severity="secondary"
+              text
+              :loading="actingId === task.id"
+              @click="changeTask(task, 'release')"
+            />
+            <Button
+              v-if="canManage && !['COMPLETED', 'CANCELLED'].includes(task.state)"
+              label="Отменить задание"
+              class="queue-cancel"
+              severity="danger"
+              text
+              :loading="actingId === task.id"
+              @click="changeTask(task, 'cancel')"
+            />
+            <Button
+              v-if="reviews.some(({ taskId }) => taskId === task.id)"
               label="Продолжить"
               severity="secondary"
               outlined
@@ -320,7 +419,13 @@ onBeforeUnmount(() => controller?.abort());
             />
           </li>
         </ul>
-        <Button v-if="taskCursor" label="Загрузить ещё" severity="secondary" text @click="loadMore('tasks')" />
+        <Button
+          v-if="taskCursor"
+          label="Загрузить ещё"
+          severity="secondary"
+          text
+          @click="loadMore('tasks')"
+        />
       </article>
 
       <aside class="surface recent-surface">
@@ -332,25 +437,27 @@ onBeforeUnmount(() => controller?.abort());
         </div>
         <ul class="review-list">
           <li v-for="review in reviews.slice(0, 6)" :key="review.id">
-            <button
-              type="button"
-              @click="router.push(`/support/quality/reviews/${review.id}`)"
-            >
+            <button type="button" @click="router.push(`/support/quality/reviews/${review.id}`)">
               <span
                 ><strong>{{ score(review) }}</strong
-                ><small>{{ review.operatorCmsUserId }}</small></span
+                ><small>{{ operatorName(review.operatorCmsUserId) }}</small></span
               >
               <span
                 ><Tag
                   :value="review.state === 'DRAFT' ? 'Черновик' : 'Отправлена'"
-                  :severity="
-                    review.state === 'DRAFT' ? 'secondary' : 'success'
-                  " /><i class="pi pi-chevron-right"
+                  :severity="review.state === 'DRAFT' ? 'secondary' : 'success'" /><i
+                  class="pi pi-chevron-right"
               /></span>
             </button>
           </li>
         </ul>
-        <Button v-if="reviewCursor" label="Загрузить ещё" severity="secondary" text @click="loadMore('reviews')" />
+        <Button
+          v-if="reviewCursor"
+          label="Загрузить ещё"
+          severity="secondary"
+          text
+          @click="loadMore('reviews')"
+        />
       </aside>
     </section>
   </main>
@@ -367,6 +474,10 @@ onBeforeUnmount(() => controller?.abort());
   display: grid;
   gap: 24px;
   color: var(--p-text-color);
+}
+.quality-page > *,
+.workbench-grid > * {
+  min-width: 0;
 }
 .page-heading {
   display: flex;
@@ -411,11 +522,14 @@ onBeforeUnmount(() => controller?.abort());
   font-size: 0.86rem;
   font-weight: 600;
 }
-.section-nav a[aria-current="page"],
+.section-nav a[aria-current='page'],
 .section-nav a:hover {
   background: var(--p-content-background);
   color: var(--p-text-color);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--p-text-color) 8%, transparent);
+}
+:deep(.queue-cancel.p-button-text) {
+  color: var(--p-red-700);
 }
 .inline-alert {
   display: flex;
@@ -593,7 +707,7 @@ onBeforeUnmount(() => controller?.abort());
     flex-direction: column;
   }
   .workbench-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .health-spine {
     grid-template-columns: repeat(2, 1fr);
@@ -610,8 +724,8 @@ onBeforeUnmount(() => controller?.abort());
     padding: 16px 12px;
   }
   .section-nav {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
+    width: 100%;
+    max-width: 100%;
   }
   .health-spine {
     grid-template-columns: 1fr 1fr;

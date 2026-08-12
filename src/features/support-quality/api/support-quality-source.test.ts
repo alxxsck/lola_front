@@ -57,4 +57,54 @@ describe("supportQualitySource", () => {
     expect(after.totalScore).toBe(before.totalScore);
     expect(after.disputes).toContainEqual(dispute);
   });
+
+  it("creates an independent calibration draft without exposing a peer review", async () => {
+    const before = await supportQualitySource.readCalibration(
+      "project-1",
+      "calibration-01",
+    );
+    expect(before.participants).toContainEqual({
+      reviewerCmsUserId: "cms_1",
+      state: "INVITED",
+      reviewId: null,
+    });
+    expect(before.participants).toContainEqual({
+      reviewerCmsUserId: "reviewer-second",
+      state: "SUBMITTED",
+      reviewId: null,
+    });
+
+    const created = await supportQualitySource.createCalibrationReview(
+      "project-1",
+      "calibration-01",
+      {
+        scores: [
+          { itemCode: "GREETING", applicable: true, score: 4 },
+          { itemCode: "CLARITY", applicable: true, score: 8 },
+          { itemCode: "ACCURACY", applicable: true, score: 9 },
+        ],
+        evidence: [
+          { messageId: "message-calibration", rationale: "Ответ для независимой оценки" },
+        ],
+      },
+    );
+
+    expect(created).toMatchObject({ kind: "CALIBRATION", state: "DRAFT" });
+    const ownDraft = await supportQualitySource.readReview(
+      "project-1",
+      created.id,
+    );
+    expect(ownDraft.scores.map(({ score }) => score)).toEqual([4, 8, 9]);
+    const after = await supportQualitySource.readCalibration(
+      "project-1",
+      "calibration-01",
+    );
+    expect(after.participants[0]).toMatchObject({
+      reviewerCmsUserId: "cms_1",
+      state: "DRAFT",
+      reviewId: created.id,
+    });
+    expect(after.peerReviewsVisible).toBe(false);
+    expect(after.baselineReviewId).toBeNull();
+  });
 });

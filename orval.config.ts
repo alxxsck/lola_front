@@ -2,6 +2,9 @@ import { defineConfig } from 'orval'
 
 export default defineConfig({
   reteniveBackend: {
+    hooks: {
+      afterAllFilesWrite: 'prettier --no-config --write',
+    },
     input: {
       target: './openapi/retenive-backend.json',
       override: {
@@ -13,7 +16,7 @@ export default defineConfig({
       schemas: './src/shared/api/generated/models',
       client: 'axios-functions',
       clean: true,
-      prettier: true,
+      prettier: false,
       override: {
         mutator: {
           path: './src/shared/api/http/orval-mutator.ts',

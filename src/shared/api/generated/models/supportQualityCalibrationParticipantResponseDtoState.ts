@@ -12,6 +12,7 @@ export type SupportQualityCalibrationParticipantResponseDtoState =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const SupportQualityCalibrationParticipantResponseDtoState = {
   INVITED: "INVITED",
+  DRAFT: "DRAFT",
   SUBMITTED: "SUBMITTED",
   REMOVED: "REMOVED",
 } as const;

@@ -285,6 +285,7 @@ import type {
   DashboardCommandResponseDto,
   DashboardCreateDto,
   DashboardDocumentDto,
+  DashboardDraftResponseDto,
   DashboardDrilldownResponseDto,
   DashboardFavoriteDto,
   DashboardInteractionCancellationResponseDto,
@@ -581,7 +582,9 @@ import type {
   ReportScheduleRunHistoryResponseDto,
   ReportScheduleRunListParams,
   ReportingCatalogResponseDto,
+  ReportingDrilldownPageResponseDto,
   ReportingQueryDefinitionDto,
+  ReportingQueryDrilldownReadParams,
   ReportingQueryEstimateResponseDto,
   ReportingQueryResultResponseDto,
   ReportingQueryRunResponseDto,
@@ -633,10 +636,12 @@ import type {
   SavedReportAuthoringResponseDto,
   SavedReportCatalogPageResponseDto,
   SavedReportDocumentDto,
+  SavedReportDraftResponseDto,
   SavedReportListParams,
   SavedReportPreviewDto,
   SavedReportPreviewResponseDto,
   SavedReportPublicationResponseDto,
+  SavedReportRevisionListParams,
   SavedReportRevisionPageResponseDto,
   SavedReportRevisionResponseDto,
   SavedSupportViewCatalogResponseDto,
@@ -826,11 +831,15 @@ import type {
   SupportQualityCalibrationParticipantsDto,
   SupportQualityCalibrationResponseDto,
   SupportQualityCalibrationsParams,
+  SupportQualityDisputeListParams,
   SupportQualityDisputePageResponseDto,
+  SupportQualityDisputeRegistryPageResponseDto,
   SupportQualityDisputeResponseDto,
+  SupportQualityEvidenceExcerptResponseDto,
   SupportQualityOperatorMetricsParams,
   SupportQualityOperatorReplyDto,
   SupportQualityOperatorReviewsParams,
+  SupportQualityReviewBootstrapResponseDto,
   SupportQualityReviewDetailResponseDto,
   SupportQualityReviewDisputesParams,
   SupportQualityReviewListParams,
@@ -3544,6 +3553,20 @@ export const dashboardCollectionMove = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: dashboardCollectionMoveDto,
+    },
+    options,
+  );
+};
+
+export const dashboardDraftRead = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<DashboardDraftResponseDto>>,
+) => {
+  return request<DashboardDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/dashboards/${id}/draft`,
+      method: "GET",
     },
     options,
   );
@@ -6684,6 +6707,22 @@ export const reportingQueryRunCancel = (
   );
 };
 
+export const reportingQueryDrilldownRead = (
+  projectId: string,
+  runId: string,
+  params: ReportingQueryDrilldownReadParams,
+  options?: SecondParameter<typeof request<ReportingDrilldownPageResponseDto>>,
+) => {
+  return request<ReportingDrilldownPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/reporting/query-runs/${runId}/drilldown`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const reportingQueryResultRead = (
   projectId: string,
   runId: string,
@@ -6880,6 +6919,20 @@ export const savedReportArchive = (
   );
 };
 
+export const savedReportDraftRead = (
+  projectId: string,
+  id: string,
+  options?: SecondParameter<typeof request<SavedReportDraftResponseDto>>,
+) => {
+  return request<SavedReportDraftResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/draft`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const savedReportUpdateDraft = (
   projectId: string,
   id: string,
@@ -6948,12 +7001,14 @@ export const savedReportPublish = (
 export const savedReportRevisionList = (
   projectId: string,
   id: string,
+  params?: SavedReportRevisionListParams,
   options?: SecondParameter<typeof request<SavedReportRevisionPageResponseDto>>,
 ) => {
   return request<SavedReportRevisionPageResponseDto>(
     {
       url: `/api/v1/admin/projects/${projectId}/saved-reports/${id}/revisions`,
       method: "GET",
+      params,
     },
     options,
   );
@@ -10160,6 +10215,23 @@ export const supportQualityCreateCalibrationReview = (
   );
 };
 
+export const supportQualityDisputeList = (
+  projectId: string,
+  params?: SupportQualityDisputeListParams,
+  options?: SecondParameter<
+    typeof request<SupportQualityDisputeRegistryPageResponseDto>
+  >,
+) => {
+  return request<SupportQualityDisputeRegistryPageResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/disputes`,
+      method: "GET",
+      params,
+    },
+    options,
+  );
+};
+
 export const supportQualityResolveDispute = (
   projectId: string,
   disputeId: string,
@@ -10290,6 +10362,22 @@ export const supportQualityReviewAcknowledge = (
   );
 };
 
+export const supportQualityReviewBootstrap = (
+  projectId: string,
+  reviewId: string,
+  options?: SecondParameter<
+    typeof request<SupportQualityReviewBootstrapResponseDto>
+  >,
+) => {
+  return request<SupportQualityReviewBootstrapResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/reviews/${reviewId}/bootstrap`,
+      method: "GET",
+    },
+    options,
+  );
+};
+
 export const supportQualityReviewDisputes = (
   projectId: string,
   reviewId: string,
@@ -10337,6 +10425,23 @@ export const supportQualityReplaceDraft = (
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       data: replaceSupportQualityReviewDraftDto,
+    },
+    options,
+  );
+};
+
+export const supportQualityReviewEvidenceExcerpt = (
+  projectId: string,
+  reviewId: string,
+  messageId: string,
+  options?: SecondParameter<
+    typeof request<SupportQualityEvidenceExcerptResponseDto>
+  >,
+) => {
+  return request<SupportQualityEvidenceExcerptResponseDto>(
+    {
+      url: `/api/v1/admin/projects/${projectId}/support/quality/reviews/${reviewId}/evidence/${messageId}`,
+      method: "GET",
     },
     options,
   );
@@ -15009,6 +15114,9 @@ export type DashboardArchiveResult = NonNullable<
 export type DashboardCollectionMoveResult = NonNullable<
   Awaited<ReturnType<typeof dashboardCollectionMove>>
 >;
+export type DashboardDraftReadResult = NonNullable<
+  Awaited<ReturnType<typeof dashboardDraftRead>>
+>;
 export type DashboardUpdateDraftResult = NonNullable<
   Awaited<ReturnType<typeof dashboardUpdateDraft>>
 >;
@@ -15573,6 +15681,9 @@ export type ReportingQueryRunReadResult = NonNullable<
 export type ReportingQueryRunCancelResult = NonNullable<
   Awaited<ReturnType<typeof reportingQueryRunCancel>>
 >;
+export type ReportingQueryDrilldownReadResult = NonNullable<
+  Awaited<ReturnType<typeof reportingQueryDrilldownRead>>
+>;
 export type ReportingQueryResultReadResult = NonNullable<
   Awaited<ReturnType<typeof reportingQueryResultRead>>
 >;
@@ -15611,6 +15722,9 @@ export type SavedReportReadResult = NonNullable<
 >;
 export type SavedReportArchiveResult = NonNullable<
   Awaited<ReturnType<typeof savedReportArchive>>
+>;
+export type SavedReportDraftReadResult = NonNullable<
+  Awaited<ReturnType<typeof savedReportDraftRead>>
 >;
 export type SavedReportUpdateDraftResult = NonNullable<
   Awaited<ReturnType<typeof savedReportUpdateDraft>>
@@ -16195,6 +16309,9 @@ export type SupportQualityCalibrationParticipantAddResult = NonNullable<
 export type SupportQualityCreateCalibrationReviewResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityCreateCalibrationReview>>
 >;
+export type SupportQualityDisputeListResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityDisputeList>>
+>;
 export type SupportQualityResolveDisputeResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityResolveDispute>>
 >;
@@ -16219,6 +16336,9 @@ export type SupportQualityReviewDetailResult = NonNullable<
 export type SupportQualityReviewAcknowledgeResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReviewAcknowledge>>
 >;
+export type SupportQualityReviewBootstrapResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityReviewBootstrap>>
+>;
 export type SupportQualityReviewDisputesResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReviewDisputes>>
 >;
@@ -16227,6 +16347,9 @@ export type SupportQualityOpenDisputeResult = NonNullable<
 >;
 export type SupportQualityReplaceDraftResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReplaceDraft>>
+>;
+export type SupportQualityReviewEvidenceExcerptResult = NonNullable<
+  Awaited<ReturnType<typeof supportQualityReviewEvidenceExcerpt>>
 >;
 export type SupportQualityReviewOperatorReplyResult = NonNullable<
   Awaited<ReturnType<typeof supportQualityReviewOperatorReply>>

@@ -27,5 +27,13 @@ describe("Support Quality and Analytics routing", () => {
     expect(routes.get("support-analytics-quality")?.meta.projectPermissionsAny).toContain(
       "project.reporting.aggregate.read",
     );
+    for (const name of ["support-quality-scorecards", "support-quality-disputes"])
+      expect(routes.get(name)?.meta.projectPermission).toBe(
+        "project.support.quality.read",
+      );
+    expect(routes.get("support-quality-calibrations")?.meta.projectPermissionsAny).toEqual([
+      "project.support.quality.read",
+      "project.support.quality.review",
+    ]);
   });
 });

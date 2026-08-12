@@ -22,19 +22,50 @@ export default defineConfig({
   },
   projects: apiMode
     ? [
-        { name: "api-chromium", use: { ...devices["Desktop Chrome"] } },
-        { name: "api-mobile-chromium", use: { ...devices["Pixel 7"] } },
+        {
+          name: "api-chromium",
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 1440, height: 1000 },
+          },
+        },
+        {
+          name: "api-mobile-chromium",
+          use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+        },
       ]
     : [
-        { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-        { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
+        {
+          name: "chromium",
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 1440, height: 1000 },
+          },
+        },
+        {
+          name: "desktop-compact-chromium",
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 1280, height: 800 },
+          },
+        },
+        {
+          name: "mobile-chromium",
+          use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+        },
         {
           name: "tablet-chromium",
-          use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } },
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 1024, height: 768 },
+          },
         },
         {
           name: "compact-chromium",
-          use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 568 } },
+          use: {
+            ...devices["Desktop Chrome"],
+            viewport: { width: 320, height: 568 },
+          },
         },
       ],
   webServer: {

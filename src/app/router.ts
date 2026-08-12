@@ -394,7 +394,6 @@ export const router = createRouter({
         },
         ...[
           ["scorecards", "support-quality-scorecards"],
-          ["calibrations", "support-quality-calibrations"],
           ["disputes", "support-quality-disputes"],
         ].map(([path, name]) => ({
           path: `support/quality/${path}`,
@@ -402,13 +401,21 @@ export const router = createRouter({
           component: () => import("@/pages/SupportQualityRegistryPage.vue"),
           meta: {
             supportPlatformAccess: true,
-            projectPermissionsAny: [
-              "project.support.quality.read",
-              "project.support.quality.manage",
-              "project.support.quality.dispute",
-            ],
+            projectPermission: "project.support.quality.read",
           },
         })),
+        {
+          path: "support/quality/calibrations",
+          name: "support-quality-calibrations",
+          component: () => import("@/pages/SupportQualityRegistryPage.vue"),
+          meta: {
+            supportPlatformAccess: true,
+            projectPermissionsAny: [
+              "project.support.quality.read",
+              "project.support.quality.review",
+            ],
+          },
+        },
         ...([
           ["support/settings/routing", "support-routing-overview", ["project.support.routing.read", "project.support.routing.manage"]],
           ["support/settings/teams-skills", "support-routing-teams-skills", ["project.support.teams.read", "project.support.teams.manage"]],

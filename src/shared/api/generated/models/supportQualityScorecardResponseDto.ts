@@ -12,6 +12,7 @@ import type { SupportQualityScorecardResponseDtoState } from "./supportQualitySc
 export interface SupportQualityScorecardResponseDto {
   code: string;
   criticalFailureOutcome: SupportQualityScorecardResponseDtoCriticalFailureOutcome;
+  currentRevisionId: string;
   /** @minimum 1 */
   currentRevisionNumber: number;
   id: string;

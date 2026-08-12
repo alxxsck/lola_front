@@ -4,38 +4,59 @@ import {
   supportQualityCalibrationParticipantAdd,
   supportQualityCalibrations,
   supportQualityCloseCalibration,
+  supportQualityCreateCalibrationReview,
   supportQualityCreateReview,
+  supportQualityDisputeList,
   supportQualityCreateScorecardRevision,
   supportQualityOpenDispute,
   supportQualityOperatorReviews,
   supportQualityReplaceDraft,
   supportQualityReviewAcknowledge,
+  supportQualityReviewBootstrap,
   supportQualityReviewDetail,
+  supportQualityReviewEvidenceExcerpt,
   supportQualityReviewList,
   supportQualityReviewOperatorReply,
   supportQualityResolveDispute,
   supportQualityScorecards,
   supportQualitySubmitReview,
   supportQualityTaskClaim,
+  supportQualityTaskRelease,
+  supportQualityTaskCancel,
+  supportQualityVoidReview,
+  supportQualityCreateCalibration,
+  supportQualitySamplingPolicyCreate,
+  supportQualitySamplingRunCreate,
   supportQualityTaskList,
   supportQualityWithdrawDispute,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateSupportQualityReviewDto,
+  CreateSupportQualityCalibrationDto,
+  CreateSupportQualityCalibrationReviewDto,
+  CreateSupportQualitySamplingPolicyDto,
+  RunSupportQualitySamplingDto,
   ReplaceSupportQualityReviewDraftDto,
   SupportQualityCalibrationDetailResponseDto,
   SupportQualityCalibrationPageResponseDto,
+  SupportQualityCalibrationResponseDto,
   SupportQualityDisputeResponseDto,
+  SupportQualityDisputeRegistryPageResponseDto,
   SupportQualityReviewDetailResponseDto,
   SupportQualityReviewPageResponseDto,
   SupportQualityReviewResponseDto,
   SupportQualityScorecardResponseDto,
   SupportQualityTaskPageResponseDto,
   SupportQualityTaskResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { noAuthRetryRequestOptions } from "@/shared/api/http/axios-instance";
-import { isMockMode } from "@/shared/config/data-mode";
+  SupportQualitySamplingPolicyResponseDto,
+  SupportQualitySamplingRunResponseDto,
+  SupportQualityDisputeListParams,
+  SupportQualityEvidenceExcerptResponseDto,
+  SupportQualityReviewBootstrapResponseDto,
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { noAuthRetryRequestOptions } from '@/shared/api/http/axios-instance';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export type QualityReviewDraft = ReplaceSupportQualityReviewDraftDto;
 
@@ -46,6 +67,14 @@ export interface SupportQualitySource {
     signal?: AbortSignal,
   ): Promise<SupportQualityTaskPageResponseDto>;
   claimTask(
+    projectId: string,
+    task: SupportQualityTaskResponseDto,
+  ): Promise<SupportQualityTaskResponseDto>;
+  releaseTask(
+    projectId: string,
+    task: SupportQualityTaskResponseDto,
+  ): Promise<SupportQualityTaskResponseDto>;
+  cancelTask(
     projectId: string,
     task: SupportQualityTaskResponseDto,
   ): Promise<SupportQualityTaskResponseDto>;
@@ -60,6 +89,17 @@ export interface SupportQualitySource {
     reviewId: string,
     signal?: AbortSignal,
   ): Promise<SupportQualityReviewDetailResponseDto>;
+  readReviewBootstrap(
+    projectId: string,
+    reviewId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportQualityReviewBootstrapResponseDto>;
+  readEvidenceExcerpt(
+    projectId: string,
+    reviewId: string,
+    messageId: string,
+    signal?: AbortSignal,
+  ): Promise<SupportQualityEvidenceExcerptResponseDto>;
   createReview(
     projectId: string,
     input: CreateSupportQualityReviewDto,
@@ -74,6 +114,12 @@ export interface SupportQualitySource {
     projectId: string,
     reviewId: string,
     version: number,
+  ): Promise<SupportQualityReviewResponseDto>;
+  voidReview(
+    projectId: string,
+    reviewId: string,
+    version: number,
+    reason: string,
   ): Promise<SupportQualityReviewResponseDto>;
   acknowledge(
     projectId: string,
@@ -92,6 +138,11 @@ export interface SupportQualitySource {
     version: number,
     reason: string,
   ): Promise<SupportQualityDisputeResponseDto>;
+  listDisputes(
+    projectId: string,
+    query?: Omit<SupportQualityDisputeListParams, 'limit'>,
+    signal?: AbortSignal,
+  ): Promise<SupportQualityDisputeRegistryPageResponseDto>;
   listScorecards(
     projectId: string,
     signal?: AbortSignal,
@@ -101,6 +152,23 @@ export interface SupportQualitySource {
     cursor?: string,
     signal?: AbortSignal,
   ): Promise<SupportQualityCalibrationPageResponseDto>;
+  createCalibration(
+    projectId: string,
+    input: CreateSupportQualityCalibrationDto,
+  ): Promise<SupportQualityCalibrationResponseDto>;
+  createCalibrationReview(
+    projectId: string,
+    calibrationId: string,
+    input: CreateSupportQualityCalibrationReviewDto,
+  ): Promise<SupportQualityReviewResponseDto>;
+  createSamplingPolicy(
+    projectId: string,
+    input: CreateSupportQualitySamplingPolicyDto,
+  ): Promise<SupportQualitySamplingPolicyResponseDto>;
+  runSampling(
+    projectId: string,
+    input: RunSupportQualitySamplingDto,
+  ): Promise<SupportQualitySamplingRunResponseDto>;
   readCalibration(
     projectId: string,
     calibrationId: string,
@@ -158,8 +226,8 @@ function requestOptions(
     ...noAuthRetryRequestOptions(),
     ...(signal ? { signal } : {}),
     headers: {
-      "Idempotency-Key": idempotencyKey,
-      ...(version ? { "If-Match": `"${version}"` } : {}),
+      'Idempotency-Key': idempotencyKey,
+      ...(version ? { 'If-Match': `"${version}"` } : {}),
     },
   };
 }
@@ -200,7 +268,21 @@ export const supportQualityApiSource: SupportQualitySource = {
   },
   async claimTask(projectId, task) {
     const intent = { taskId: task.id, version: task.version };
-    return executeAttempt("task-claim", intent, task.version, projectId, (options) => supportQualityTaskClaim(projectId, task.id, options));
+    return executeAttempt('task-claim', intent, task.version, projectId, (options) =>
+      supportQualityTaskClaim(projectId, task.id, options),
+    );
+  },
+  async releaseTask(projectId, task) {
+    const intent = { taskId: task.id, version: task.version };
+    return executeAttempt('task-release', intent, task.version, projectId, (options) =>
+      supportQualityTaskRelease(projectId, task.id, options),
+    );
+  },
+  async cancelTask(projectId, task) {
+    const intent = { taskId: task.id, version: task.version };
+    return executeAttempt('task-cancel', intent, task.version, projectId, (options) =>
+      supportQualityTaskCancel(projectId, task.id, options),
+    );
   },
   async listReviews(projectId, ownOperatorId, cursor, signal) {
     try {
@@ -222,7 +304,14 @@ export const supportQualityApiSource: SupportQualitySource = {
   },
   async readReview(projectId, reviewId, signal) {
     try {
-      return await supportQualityReviewDetail(
+      return await supportQualityReviewDetail(projectId, reviewId, signal ? { signal } : undefined);
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
+  async readReviewBootstrap(projectId, reviewId, signal) {
+    try {
+      return await supportQualityReviewBootstrap(
         projectId,
         reviewId,
         signal ? { signal } : undefined,
@@ -231,35 +320,73 @@ export const supportQualityApiSource: SupportQualitySource = {
       throw normalizeApiError(cause);
     }
   },
+  async readEvidenceExcerpt(projectId, reviewId, messageId, signal) {
+    try {
+      return await supportQualityReviewEvidenceExcerpt(
+        projectId,
+        reviewId,
+        messageId,
+        signal ? { signal } : undefined,
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
+  },
   async createReview(projectId, input) {
-    return executeAttempt("review-create", input, undefined, projectId, (options) => supportQualityCreateReview(projectId, input, options));
+    return executeAttempt('review-create', input, undefined, projectId, (options) =>
+      supportQualityCreateReview(projectId, input, options),
+    );
   },
   async saveDraft(projectId, reviewId, version, draft) {
     const intent = { reviewId, version, draft };
-    return executeAttempt("draft-replace", intent, version, projectId, (options) => supportQualityReplaceDraft(projectId, reviewId, draft, options));
+    return executeAttempt('draft-replace', intent, version, projectId, (options) =>
+      supportQualityReplaceDraft(projectId, reviewId, draft, options),
+    );
   },
   async submit(projectId, reviewId, version) {
     const intent = { reviewId, version };
-    return executeAttempt("review-submit", intent, version, projectId, (options) => supportQualitySubmitReview(projectId, reviewId, options));
+    return executeAttempt('review-submit', intent, version, projectId, (options) =>
+      supportQualitySubmitReview(projectId, reviewId, options),
+    );
+  },
+  async voidReview(projectId, reviewId, version, reason) {
+    const intent = { reviewId, version, reason };
+    return executeAttempt('review-void', intent, version, projectId, (options) =>
+      supportQualityVoidReview(projectId, reviewId, { reason }, options),
+    );
   },
   async acknowledge(projectId, reviewId, version) {
     const intent = { reviewId, version };
-    return executeAttempt("review-acknowledge", intent, version, projectId, (options) => supportQualityReviewAcknowledge(projectId, reviewId, options));
+    return executeAttempt('review-acknowledge', intent, version, projectId, (options) =>
+      supportQualityReviewAcknowledge(projectId, reviewId, options),
+    );
   },
   async reply(projectId, reviewId, version, reply) {
     const intent = { reviewId, version, reply };
-    return executeAttempt("review-reply", intent, version, projectId, (options) => supportQualityReviewOperatorReply(projectId, reviewId, { reply }, options));
+    return executeAttempt('review-reply', intent, version, projectId, (options) =>
+      supportQualityReviewOperatorReply(projectId, reviewId, { reply }, options),
+    );
   },
   async dispute(projectId, reviewId, version, reason) {
     const intent = { reviewId, version, reason };
-    return executeAttempt("dispute-open", intent, version, projectId, (options) => supportQualityOpenDispute(projectId, reviewId, { reason }, options));
+    return executeAttempt('dispute-open', intent, version, projectId, (options) =>
+      supportQualityOpenDispute(projectId, reviewId, { reason }, options),
+    );
+  },
+  async listDisputes(projectId, query, signal) {
+    try {
+      return await supportQualityDisputeList(
+        projectId,
+        { limit: 50, ...query },
+        signal ? { signal } : undefined,
+      );
+    } catch (cause) {
+      throw normalizeApiError(cause);
+    }
   },
   async listScorecards(projectId, signal) {
     try {
-      return await supportQualityScorecards(
-        projectId,
-        signal ? { signal } : undefined,
-      );
+      return await supportQualityScorecards(projectId, signal ? { signal } : undefined);
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -275,6 +402,30 @@ export const supportQualityApiSource: SupportQualitySource = {
       throw normalizeApiError(cause);
     }
   },
+  async createCalibration(projectId, input) {
+    return executeAttempt('calibration-create', input, undefined, projectId, (options) =>
+      supportQualityCreateCalibration(projectId, input, options),
+    );
+  },
+  async createCalibrationReview(projectId, calibrationId, input) {
+    return executeAttempt(
+      'calibration-review-create',
+      { calibrationId, input },
+      undefined,
+      projectId,
+      (options) => supportQualityCreateCalibrationReview(projectId, calibrationId, input, options),
+    );
+  },
+  async createSamplingPolicy(projectId, input) {
+    return executeAttempt('sampling-policy-create', input, undefined, projectId, (options) =>
+      supportQualitySamplingPolicyCreate(projectId, input, options),
+    );
+  },
+  async runSampling(projectId, input) {
+    return executeAttempt('sampling-run', input, undefined, projectId, (options) =>
+      supportQualitySamplingRunCreate(projectId, input, options),
+    );
+  },
   async readCalibration(projectId, calibrationId, signal) {
     try {
       return await supportQualityCalibrationRead(
@@ -288,123 +439,150 @@ export const supportQualityApiSource: SupportQualitySource = {
   },
   async addCalibrationParticipant(projectId, calibrationId, version, cmsUserId) {
     const intent = { calibrationId, version, cmsUserId };
-    await executeAttempt("calibration-participant", intent, version, projectId, (options) => supportQualityCalibrationParticipantAdd(projectId, calibrationId, { reviewerCmsUserIds: [cmsUserId] }, options));
+    await executeAttempt('calibration-participant', intent, version, projectId, (options) =>
+      supportQualityCalibrationParticipantAdd(
+        projectId,
+        calibrationId,
+        { reviewerCmsUserIds: [cmsUserId] },
+        options,
+      ),
+    );
   },
   async setCalibrationBaseline(projectId, calibrationId, version, reviewId) {
     const intent = { calibrationId, version, reviewId };
-    await executeAttempt("calibration-baseline", intent, version, projectId, (options) => supportQualityCalibrationBaselineSet(projectId, calibrationId, { reviewId }, options));
+    await executeAttempt('calibration-baseline', intent, version, projectId, (options) =>
+      supportQualityCalibrationBaselineSet(projectId, calibrationId, { reviewId }, options),
+    );
   },
   async closeCalibration(projectId, calibrationId, version, consensusScore) {
     const intent = { calibrationId, version, consensusScore };
-    await executeAttempt("calibration-close", intent, version, projectId, (options) => supportQualityCloseCalibration(projectId, calibrationId, { consensusScore }, options));
+    await executeAttempt('calibration-close', intent, version, projectId, (options) =>
+      supportQualityCloseCalibration(projectId, calibrationId, { consensusScore }, options),
+    );
   },
   async createScorecardRevision(projectId, scorecard) {
     const body = {
-          criticalFailureOutcome: scorecard.criticalFailureOutcome,
-          sections: scorecard.sections,
-        };
-    const intent = { scorecardId: scorecard.id, revision: scorecard.currentRevisionNumber, sections: scorecard.sections };
-    return executeAttempt("scorecard-revision", intent, undefined, projectId, (options) => supportQualityCreateScorecardRevision(projectId, scorecard.id, body, options));
+      criticalFailureOutcome: scorecard.criticalFailureOutcome,
+      sections: scorecard.sections,
+    };
+    const intent = {
+      scorecardId: scorecard.id,
+      revision: scorecard.currentRevisionNumber,
+      sections: scorecard.sections,
+    };
+    return executeAttempt('scorecard-revision', intent, undefined, projectId, (options) =>
+      supportQualityCreateScorecardRevision(projectId, scorecard.id, body, options),
+    );
   },
   async resolveDispute(projectId, dispute, note) {
     const intent = { disputeId: dispute.id, version: dispute.version, note };
-    return executeAttempt("dispute-resolve", intent, dispute.version, projectId, (options) => supportQualityResolveDispute(projectId, dispute.id, { outcome: "RESOLVED", resolutionNote: note }, options));
+    return executeAttempt('dispute-resolve', intent, dispute.version, projectId, (options) =>
+      supportQualityResolveDispute(
+        projectId,
+        dispute.id,
+        { outcome: 'RESOLVED', resolutionNote: note },
+        options,
+      ),
+    );
   },
   async withdrawDispute(projectId, dispute) {
     const intent = { disputeId: dispute.id, version: dispute.version };
-    return executeAttempt("dispute-withdraw", intent, dispute.version, projectId, (options) => supportQualityWithdrawDispute(projectId, dispute.id, options));
+    return executeAttempt('dispute-withdraw', intent, dispute.version, projectId, (options) =>
+      supportQualityWithdrawDispute(projectId, dispute.id, options),
+    );
   },
 };
 
 const now = new Date();
 const mockTasks: SupportQualityTaskResponseDto[] = [
   {
-    id: "task-001",
-    projectId: "project-1",
-    caseId: "case-4821",
-    conversationId: "conversation-4821",
-    operatorCmsUserId: "operator-anna",
+    id: 'task-001',
+    projectId: 'project-1',
+    caseId: 'case-4821',
+    conversationId: 'conversation-4821',
+    operatorCmsUserId: 'operator-anna',
     assignedReviewerCmsUserId: null,
-    scorecardRevisionId: "scorecard-rev-3",
-    scorecardId: "scorecard-main",
+    scorecardRevisionId: 'scorecard-rev-3',
+    scorecardId: 'scorecard-main',
     scorecardRevisionNumber: 3,
-    defaultEvidenceMessageId: "message-4821",
-    defaultScores: [{ itemCode: "EMPATHY", applicable: true }],
-    samplingPolicyRevisionId: "policy-weekly",
-    populationReceiptId: "population-42",
-    selectionReasonCode: "RANDOM_SAMPLE",
-    state: "READY",
+    defaultEvidenceMessageId: 'message-4821',
+    defaultScores: [{ itemCode: 'EMPATHY', applicable: true }],
+    samplingPolicyRevisionId: 'policy-weekly',
+    populationReceiptId: 'population-42',
+    selectionReasonCode: 'RANDOM_SAMPLE',
+    state: 'READY',
     version: 1,
     dueAt: new Date(now.getTime() + 3_600_000).toISOString(),
   },
   {
-    id: "task-002",
-    projectId: "project-1",
-    caseId: "case-4790",
-    conversationId: "conversation-4790",
-    operatorCmsUserId: "operator-mikhail",
-    assignedReviewerCmsUserId: "reviewer-current",
-    scorecardRevisionId: "scorecard-rev-3",
-    scorecardId: "scorecard-main",
+    id: 'task-002',
+    projectId: 'project-1',
+    caseId: 'case-4790',
+    conversationId: 'conversation-4790',
+    operatorCmsUserId: 'operator-mikhail',
+    assignedReviewerCmsUserId: 'reviewer-current',
+    scorecardRevisionId: 'scorecard-rev-3',
+    scorecardId: 'scorecard-main',
     scorecardRevisionNumber: 3,
-    defaultEvidenceMessageId: "message-4790",
-    defaultScores: [{ itemCode: "EMPATHY", applicable: true }],
-    samplingPolicyRevisionId: "policy-risk",
-    populationReceiptId: "population-41",
-    selectionReasonCode: "SLA_BREACH_SAMPLE",
-    state: "CLAIMED",
+    defaultEvidenceMessageId: 'message-4790',
+    defaultScores: [{ itemCode: 'EMPATHY', applicable: true }],
+    samplingPolicyRevisionId: 'policy-risk',
+    populationReceiptId: 'population-41',
+    selectionReasonCode: 'SLA_BREACH_SAMPLE',
+    state: 'CLAIMED',
     version: 2,
     dueAt: new Date(now.getTime() - 1_800_000).toISOString(),
   },
 ];
 
 const scorecard: SupportQualityScorecardResponseDto = {
-  id: "scorecard-main",
-  code: "SUPPORT_CORE",
-  name: "Основная оценка поддержки",
-  state: "ACTIVE",
+  id: 'scorecard-main',
+  code: 'SUPPORT_CORE',
+  name: 'Основная оценка поддержки',
+  state: 'ACTIVE',
+  currentRevisionId: 'scorecard-rev-3',
   currentRevisionNumber: 3,
-  criticalFailureOutcome: "FAIL_REVIEW",
+  criticalFailureOutcome: 'FAIL_REVIEW',
   sections: [
     {
-      code: "COMMUNICATION",
-      name: "Коммуникация",
-      description: "Тон и ясность ответа",
+      code: 'COMMUNICATION',
+      name: 'Коммуникация',
+      description: 'Тон и ясность ответа',
       weightBasisPoints: 5000,
       items: [
         {
-          code: "GREETING",
-          name: "Приветствие и тон",
-          guidance: "Проверьте уместность и эмпатию",
-          applicability: "REVIEWER_DECIDES",
+          code: 'GREETING',
+          name: 'Приветствие и тон',
+          guidance: 'Проверьте уместность и эмпатию',
+          applicability: 'REVIEWER_DECIDES',
           maximumScore: 5,
-          ratingScale: "NUMERIC",
+          ratingScale: 'NUMERIC',
           criticalFailure: false,
         },
         {
-          code: "CLARITY",
-          name: "Ясность решения",
-          guidance: "Следующий шаг должен быть однозначным",
-          applicability: "ALWAYS",
+          code: 'CLARITY',
+          name: 'Ясность решения',
+          guidance: 'Следующий шаг должен быть однозначным',
+          applicability: 'ALWAYS',
           maximumScore: 10,
-          ratingScale: "NUMERIC",
+          ratingScale: 'NUMERIC',
           criticalFailure: false,
         },
       ],
     },
     {
-      code: "RESOLUTION",
-      name: "Решение",
-      description: "Точность и полнота решения",
+      code: 'RESOLUTION',
+      name: 'Решение',
+      description: 'Точность и полнота решения',
       weightBasisPoints: 5000,
       items: [
         {
-          code: "ACCURACY",
-          name: "Точность ответа",
-          guidance: "Факты и сроки должны быть проверены",
-          applicability: "ALWAYS",
+          code: 'ACCURACY',
+          name: 'Точность ответа',
+          guidance: 'Факты и сроки должны быть проверены',
+          applicability: 'ALWAYS',
           maximumScore: 10,
-          ratingScale: "NUMERIC",
+          ratingScale: 'NUMERIC',
           criticalFailure: true,
         },
       ],
@@ -414,134 +592,159 @@ const scorecard: SupportQualityScorecardResponseDto = {
 
 const mockReviews: SupportQualityReviewDetailResponseDto[] = [
   {
-    id: "review-001",
-    taskId: "task-002",
-    caseId: "case-4790",
-    conversationId: "conversation-4790",
-    operatorCmsUserId: "operator-mikhail",
-    reviewerCmsUserId: "reviewer-current",
-    kind: "STANDARD",
-    state: "DRAFT",
+    id: 'review-001',
+    taskId: 'task-002',
+    caseId: 'case-4790',
+    conversationId: 'conversation-4790',
+    operatorCmsUserId: 'operator-mikhail',
+    reviewerCmsUserId: 'reviewer-current',
+    kind: 'STANDARD',
+    state: 'DRAFT',
     version: 2,
-    selectionReasonCode: "SLA_BREACH_SAMPLE",
-    summary: "Проверить точность обещанного срока.",
+    selectionReasonCode: 'SLA_BREACH_SAMPLE',
+    summary: 'Проверить точность обещанного срока.',
     totalScore: 16,
     maximumScore: 25,
-    criticalFailureOutcome: "NONE",
-    acknowledgmentState: "PENDING",
+    criticalFailureOutcome: 'NONE',
+    acknowledgmentState: 'PENDING',
     submittedAt: null,
     scores: [
       {
-        itemCode: "GREETING",
-        itemLabel: "Приветствие и тон",
+        itemCode: 'GREETING',
+        itemLabel: 'Приветствие и тон',
         applicable: true,
         score: 4,
         maximumScore: 5,
         rating: null,
-        feedback: "Спокойный тон",
+        feedback: 'Спокойный тон',
         coachingTheme: null,
         rootCause: null,
       },
       {
-        itemCode: "CLARITY",
-        itemLabel: "Ясность решения",
+        itemCode: 'CLARITY',
+        itemLabel: 'Ясность решения',
         applicable: true,
         score: 6,
         maximumScore: 10,
         rating: null,
-        feedback: "Не обозначен следующий шаг",
-        coachingTheme: "EXPECTATION_SETTING",
-        rootCause: "PROCESS_GAP",
+        feedback: 'Не обозначен следующий шаг',
+        coachingTheme: 'EXPECTATION_SETTING',
+        rootCause: 'PROCESS_GAP',
       },
       {
-        itemCode: "ACCURACY",
-        itemLabel: "Точность ответа",
+        itemCode: 'ACCURACY',
+        itemLabel: 'Точность ответа',
         applicable: true,
         score: 6,
         maximumScore: 10,
         rating: null,
-        feedback: "Срок указан без проверки",
+        feedback: 'Срок указан без проверки',
         coachingTheme: null,
         rootCause: null,
       },
     ],
     evidence: [
       {
-        messageId: "message-871",
+        messageId: 'message-871',
         messageRevisionNumber: 1,
         messageContentVersion: 1,
-        rationale: "Здесь оператор обещает срок",
+        rationale: 'Здесь оператор обещает срок',
       },
     ],
     disputes: [],
   },
   {
-    id: "review-002",
+    id: 'review-002',
     taskId: null,
-    caseId: "case-4652",
-    conversationId: "conversation-4652",
-    operatorCmsUserId: "operator-anna",
-    reviewerCmsUserId: "reviewer-current",
-    kind: "STANDARD",
-    state: "SUBMITTED",
+    caseId: 'case-4652',
+    conversationId: 'conversation-4652',
+    operatorCmsUserId: 'operator-anna',
+    reviewerCmsUserId: 'reviewer-current',
+    kind: 'STANDARD',
+    state: 'SUBMITTED',
     version: 4,
-    selectionReasonCode: "RANDOM_SAMPLE",
-    summary: "Сильная работа: точное решение и понятное объяснение.",
+    selectionReasonCode: 'RANDOM_SAMPLE',
+    summary: 'Сильная работа: точное решение и понятное объяснение.',
     totalScore: 23,
     maximumScore: 25,
-    criticalFailureOutcome: "NONE",
-    acknowledgmentState: "PENDING",
+    criticalFailureOutcome: 'NONE',
+    acknowledgmentState: 'PENDING',
     submittedAt: new Date(now.getTime() - 86_400_000).toISOString(),
     scores: [
       {
-        itemCode: "GREETING",
-        itemLabel: "Приветствие и тон",
+        itemCode: 'GREETING',
+        itemLabel: 'Приветствие и тон',
         applicable: true,
         score: 5,
         maximumScore: 5,
         rating: null,
-        feedback: "",
+        feedback: '',
         coachingTheme: null,
         rootCause: null,
       },
       {
-        itemCode: "CLARITY",
-        itemLabel: "Ясность решения",
+        itemCode: 'CLARITY',
+        itemLabel: 'Ясность решения',
         applicable: true,
         score: 9,
         maximumScore: 10,
         rating: null,
-        feedback: "",
+        feedback: '',
         coachingTheme: null,
         rootCause: null,
       },
       {
-        itemCode: "ACCURACY",
-        itemLabel: "Точность ответа",
+        itemCode: 'ACCURACY',
+        itemLabel: 'Точность ответа',
         applicable: true,
         score: 9,
         maximumScore: 10,
         rating: null,
-        feedback: "",
+        feedback: '',
         coachingTheme: null,
         rootCause: null,
       },
     ],
     evidence: [
       {
-        messageId: "message-762",
+        messageId: 'message-762',
         messageRevisionNumber: 2,
         messageContentVersion: 2,
-        rationale: "Финальное объяснение решения",
+        rationale: 'Финальное объяснение решения',
       },
     ],
     disputes: [],
   },
 ];
 
-function summary(
-  review: SupportQualityReviewDetailResponseDto,
-): SupportQualityReviewResponseDto {
+const mockCalibrationDetail: SupportQualityCalibrationDetailResponseDto = {
+  id: 'calibration-01',
+  operatorCmsUserId: 'operator-anna',
+  scorecardRevisionId: 'scorecard-rev-3',
+  state: 'OPEN',
+  version: 2,
+  minimumReviews: 2,
+  peerVisibility: 'AFTER_OWN_SUBMISSION',
+  peerReviewsVisible: false,
+  baselineReviewId: null,
+  consensusScore: null,
+  agreementBasisPoints: null,
+  criterionVariance: [],
+  participants: [
+    {
+      reviewerCmsUserId: 'cms_1',
+      state: 'INVITED',
+      reviewId: null,
+    },
+    {
+      reviewerCmsUserId: 'reviewer-second',
+      state: 'SUBMITTED',
+      reviewId: null,
+    },
+  ],
+};
+
+function summary(review: SupportQualityReviewDetailResponseDto): SupportQualityReviewResponseDto {
   return {
     id: review.id,
     taskId: review.taskId,
@@ -563,7 +766,7 @@ function summary(
 }
 function requireMockReview(id: string): SupportQualityReviewDetailResponseDto {
   const value = mockReviews.find((review) => review.id === id);
-  if (!value) throw new Error("Оценка не найдена");
+  if (!value) throw new Error('Оценка не найдена');
   return value;
 }
 
@@ -573,22 +776,100 @@ const mockSource: SupportQualitySource = {
   },
   async claimTask(_projectId, task) {
     const value = mockTasks.find(({ id }) => id === task.id) ?? task;
-    value.state = "CLAIMED";
+    value.state = 'CLAIMED';
     value.version += 1;
-    value.assignedReviewerCmsUserId = "reviewer-current";
+    value.assignedReviewerCmsUserId = 'reviewer-current';
     return structuredClone(value);
+  },
+  async releaseTask(_projectId, task) {
+    return structuredClone({
+      ...task,
+      state: 'READY' as const,
+      version: task.version + 1,
+      assignedReviewerCmsUserId: null,
+    });
+  },
+  async cancelTask(_projectId, task) {
+    return structuredClone({
+      ...task,
+      state: 'CANCELLED' as const,
+      version: task.version + 1,
+    });
   },
   async listReviews(_projectId, ownOperatorId) {
     const items = mockReviews
-      .filter(
-        (review) =>
-          !ownOperatorId || review.operatorCmsUserId === ownOperatorId,
-      )
+      .filter((review) => !ownOperatorId || review.operatorCmsUserId === ownOperatorId)
       .map(summary);
     return structuredClone({ items, nextCursor: null });
   },
   async readReview(_projectId, id) {
     return structuredClone(requireMockReview(id));
+  },
+  async readReviewBootstrap(_projectId, id) {
+    const review = structuredClone(requireMockReview(id));
+    return {
+      review,
+      scorecard: {
+        scorecardId: scorecard.id,
+        scorecardCode: scorecard.code,
+        scorecardName: scorecard.name,
+        revisionId: scorecard.currentRevisionId,
+        revisionNumber: scorecard.currentRevisionNumber,
+        criticalFailureOutcome: scorecard.criticalFailureOutcome as
+          'FAIL_REVIEW' | 'CAP_SCORE_AT_SECTION' | 'FLAG_ONLY',
+        sections: scorecard.sections.map((section) => ({
+          code: section.code,
+          name: section.name,
+          description: section.description,
+          sectionWeightBasisPoints: section.weightBasisPoints,
+          criteria: section.items.map((item) => ({
+            code: item.code,
+            label: item.name,
+            guidance: item.guidance,
+            ratingScale: item.ratingScale as 'BINARY' | 'THREE_POINT' | 'FIVE_POINT' | 'NUMERIC',
+            criticalFailure: item.criticalFailure,
+            applicability: item.applicability as 'ALWAYS' | 'CONDITIONAL' | 'REVIEWER_DECIDES',
+            allowNotApplicable: item.applicability === 'REVIEWER_DECIDES',
+            maximumScore: item.maximumScore,
+          })),
+        })),
+      },
+      rootCauseOptions: [
+        { code: 'KNOWLEDGE_GAP', label: 'Пробел в знаниях' },
+        { code: 'PROCESS_GAP', label: 'Пробел в процессе' },
+      ],
+      coachingThemeOptions: [
+        { code: 'ACCURACY', label: 'Точность ответа' },
+        { code: 'EXPECTATION_SETTING', label: 'Управление ожиданиями' },
+      ],
+      evidenceOptions: review.evidence.map((evidence, ordinal) => ({
+        messageId: evidence.messageId,
+        ordinal: ordinal + 1,
+        role: 'ADMIN' as const,
+        createdAt: new Date(now.getTime() - ordinal * 60_000).toISOString(),
+        messageContentVersion: evidence.messageContentVersion,
+        messageRevisionNumber: evidence.messageRevisionNumber,
+        selected: true,
+      })),
+      evidenceWindowTruncated: false,
+      submissionErrors: review.scores
+        .filter(({ applicable, score }) => applicable && score === null)
+        .map(({ itemCode }) => ({
+          field: `scores.${itemCode}.score`,
+          code: 'REQUIRED' as const,
+        })),
+    };
+  },
+  async readEvidenceExcerpt(_projectId, id, messageId) {
+    const evidence = requireMockReview(id).evidence.find((item) => item.messageId === messageId);
+    if (!evidence) throw new Error('Закреплённое сообщение не найдено');
+    return {
+      messageId,
+      messageContentVersion: evidence.messageContentVersion,
+      messageRevisionNumber: evidence.messageRevisionNumber,
+      excerpt: 'Закреплённый фрагмент ответа оператора.',
+      truncated: false,
+    };
   },
   async createReview(_projectId, input) {
     const review: SupportQualityReviewDetailResponseDto = {
@@ -597,16 +878,16 @@ const mockSource: SupportQualitySource = {
       caseId: input.caseId,
       conversationId: input.conversationId,
       operatorCmsUserId: input.operatorCmsUserId,
-      reviewerCmsUserId: "reviewer-current",
-      kind: "STANDARD",
-      state: "DRAFT",
+      reviewerCmsUserId: 'reviewer-current',
+      kind: 'STANDARD',
+      state: 'DRAFT',
       version: 1,
       selectionReasonCode: input.selectionReasonCode ?? null,
       summary: input.summary ?? null,
       totalScore: 0,
       maximumScore: 25,
-      criticalFailureOutcome: "NONE",
-      acknowledgmentState: "PENDING",
+      criticalFailureOutcome: 'NONE',
+      acknowledgmentState: 'PENDING',
       submittedAt: null,
       scores: input.scores.map((score) => ({
         ...score,
@@ -631,8 +912,7 @@ const mockSource: SupportQualitySource = {
   },
   async saveDraft(_projectId, id, version, draft) {
     const review = requireMockReview(id);
-    if (review.version !== version)
-      throw new Error("Оценка уже изменена в другой вкладке");
+    if (review.version !== version) throw new Error('Оценка уже изменена в другой вкладке');
     review.summary = draft.summary ?? null;
     review.scores = draft.scores.map((score, index) => ({
       ...review.scores[index]!,
@@ -649,30 +929,45 @@ const mockSource: SupportQualitySource = {
       messageContentVersion: 1,
       rationale: evidence.rationale ?? null,
     }));
-    review.totalScore = review.scores.reduce(
-      (sum, item) => sum + (item.score ?? 0),
-      0,
-    );
+    review.totalScore = review.scores.reduce((sum, item) => sum + (item.score ?? 0), 0);
     review.version += 1;
     return structuredClone(summary(review));
   },
   async submit(_projectId, id, version) {
     const review = requireMockReview(id);
-    if (review.version !== version) throw new Error("Версия оценки устарела");
-    review.state = "SUBMITTED";
+    if (review.version !== version) throw new Error('Версия оценки устарела');
+    review.state = 'SUBMITTED';
     review.submittedAt = new Date().toISOString();
+    review.version += 1;
+    if (review.kind === 'CALIBRATION') {
+      const participant = mockCalibrationDetail.participants.find(
+        ({ reviewerCmsUserId }) => reviewerCmsUserId === review.reviewerCmsUserId,
+      );
+      if (participant) participant.state = 'SUBMITTED';
+      mockCalibrationDetail.peerReviewsVisible = true;
+      const peer = mockCalibrationDetail.participants.find(
+        ({ reviewerCmsUserId }) => reviewerCmsUserId === 'reviewer-second',
+      );
+      if (peer) peer.reviewId = 'review-cal-2';
+    }
+    return structuredClone(summary(review));
+  },
+  async voidReview(_projectId, id, version) {
+    const review = requireMockReview(id);
+    if (review.version !== version) throw new Error('Версия оценки устарела');
+    review.state = 'VOID';
     review.version += 1;
     return structuredClone(summary(review));
   },
   async acknowledge(_projectId, id) {
     const review = requireMockReview(id);
-    review.acknowledgmentState = "ACKNOWLEDGED";
+    review.acknowledgmentState = 'ACKNOWLEDGED';
     review.version += 1;
     return structuredClone(summary(review));
   },
   async reply(_projectId, id) {
     const review = requireMockReview(id);
-    review.acknowledgmentState = "REPLIED";
+    review.acknowledgmentState = 'REPLIED';
     review.version += 1;
     return structuredClone(summary(review));
   },
@@ -683,12 +978,26 @@ const mockSource: SupportQualitySource = {
       reviewId: id,
       openedByCmsUserId: review.operatorCmsUserId,
       reason,
-      state: "OPEN",
+      state: 'OPEN',
       version: 1,
       resolutionNote: null,
     };
     review.disputes.push(value);
     return structuredClone(value);
+  },
+  async listDisputes() {
+    return structuredClone({
+      items: mockReviews.flatMap((review) =>
+        review.disputes
+          .filter(({ state }) => state === 'OPEN')
+          .map((dispute) => ({
+            ...dispute,
+            operatorCmsUserId: review.operatorCmsUserId,
+            updatedAt: review.submittedAt ?? new Date(0).toISOString(),
+          })),
+      ),
+      nextCursor: null,
+    });
   },
   async listScorecards() {
     return structuredClone([scorecard]);
@@ -697,13 +1006,13 @@ const mockSource: SupportQualitySource = {
     return {
       items: [
         {
-          id: "calibration-01",
-          operatorCmsUserId: "operator-anna",
-          scorecardRevisionId: "scorecard-rev-3",
-          state: "OPEN",
+          id: 'calibration-01',
+          operatorCmsUserId: 'operator-anna',
+          scorecardRevisionId: 'scorecard-rev-3',
+          state: 'OPEN',
           version: 2,
           minimumReviews: 3,
-          peerVisibility: "AFTER_OWN_SUBMISSION",
+          peerVisibility: 'AFTER_OWN_SUBMISSION',
           baselineReviewId: null,
           consensusScore: null,
           agreementBasisPoints: null,
@@ -713,33 +1022,104 @@ const mockSource: SupportQualitySource = {
       nextCursor: null,
     };
   },
-  async readCalibration(_projectId, id) {
+  async createCalibration(_projectId, input) {
     return {
-      id,
-      operatorCmsUserId: "operator-anna",
-      scorecardRevisionId: "scorecard-rev-3",
-      state: "OPEN",
-      version: 2,
-      minimumReviews: 3,
-      peerVisibility: "AFTER_OWN_SUBMISSION",
-      peerReviewsVisible: false,
+      id: `calibration-${Date.now()}`,
+      operatorCmsUserId: input.operatorCmsUserId,
+      scorecardRevisionId: `${input.scorecardId}-r${input.scorecardRevisionNumber}`,
+      state: 'OPEN',
+      version: 1,
+      minimumReviews: 2,
+      peerVisibility: 'AFTER_OWN_SUBMISSION',
       baselineReviewId: null,
       consensusScore: null,
       agreementBasisPoints: null,
       criterionVariance: [],
-      participants: [
-        {
-          reviewerCmsUserId: "reviewer-current",
-          state: "INVITED",
-          reviewId: null,
-        },
-        {
-          reviewerCmsUserId: "reviewer-second",
-          state: "SUBMITTED",
-          reviewId: "review-cal-2",
-        },
-      ],
     };
+  },
+  async createCalibrationReview(_projectId, calibrationId, input) {
+    if (calibrationId !== mockCalibrationDetail.id)
+      throw new Error('Калибровочная сессия не найдена');
+    const participant = mockCalibrationDetail.participants.find(
+      ({ reviewerCmsUserId }) => reviewerCmsUserId === 'cms_1',
+    );
+    if (!participant || participant.state !== 'INVITED')
+      throw new Error('Независимая оценка уже начата');
+    const items = new Map(
+      scorecard.sections.flatMap((section) =>
+        section.items.map((item) => [item.code, item] as const),
+      ),
+    );
+    const review: SupportQualityReviewDetailResponseDto = {
+      id: `review-cal-${Date.now()}`,
+      taskId: null,
+      caseId: 'case-calibration-01',
+      conversationId: 'conversation-calibration-01',
+      operatorCmsUserId: mockCalibrationDetail.operatorCmsUserId,
+      reviewerCmsUserId: participant.reviewerCmsUserId,
+      kind: 'CALIBRATION',
+      state: 'DRAFT',
+      version: 1,
+      selectionReasonCode: null,
+      summary: null,
+      totalScore: input.scores.reduce(
+        (sum, item) => sum + (item.applicable ? (item.score ?? 0) : 0),
+        0,
+      ),
+      maximumScore: [...items.values()].reduce((sum, item) => sum + item.maximumScore, 0),
+      criticalFailureOutcome: 'NONE',
+      acknowledgmentState: 'PENDING',
+      submittedAt: null,
+      scores: input.scores.map((score) => {
+        const item = items.get(score.itemCode);
+        if (!item) throw new Error('Критерий не найден в закреплённой ревизии');
+        return {
+          ...score,
+          itemLabel: item.name,
+          maximumScore: item.maximumScore,
+          score: score.score ?? null,
+          rating: score.rating ?? null,
+          feedback: score.feedback ?? null,
+          coachingTheme: score.coachingTheme ?? null,
+          rootCause: score.rootCause ?? null,
+        };
+      }),
+      evidence: input.evidence.map((evidence) => ({
+        ...evidence,
+        messageRevisionNumber: 1,
+        messageContentVersion: 1,
+        rationale: evidence.rationale ?? null,
+      })),
+      disputes: [],
+    };
+    mockReviews.unshift(review);
+    (participant as { state: string }).state = 'DRAFT';
+    participant.reviewId = review.id;
+    return structuredClone(summary(review));
+  },
+  async createSamplingPolicy(_projectId, input) {
+    return {
+      ...input,
+      id: `policy-${Date.now()}`,
+      currentRevisionId: `policy-revision-${Date.now()}`,
+      revisionNumber: 1,
+      state: 'ACTIVE',
+    };
+  },
+  async runSampling(_projectId, input) {
+    return {
+      samplingPolicyRevisionId: input.samplingPolicyId,
+      populationFrom: input.populationFrom,
+      populationUntil: input.populationUntil,
+      populationReceiptId: `population-${Date.now()}`,
+      populationDigest: 'a'.repeat(64),
+      eligibleCount: 100,
+      selectedCount: 10,
+    };
+  },
+  async readCalibration(_projectId, id) {
+    if (id !== mockCalibrationDetail.id) throw new Error('Калибровочная сессия не найдена');
+    return structuredClone(mockCalibrationDetail);
   },
   async addCalibrationParticipant() {},
   async setCalibrationBaseline() {},
@@ -749,12 +1129,17 @@ const mockSource: SupportQualitySource = {
     return structuredClone(card);
   },
   async resolveDispute(_projectId, dispute, note) {
-    return { ...dispute, state: "RESOLVED", version: dispute.version + 1, resolutionNote: note };
+    return {
+      ...dispute,
+      state: 'RESOLVED',
+      version: dispute.version + 1,
+      resolutionNote: note,
+    };
   },
   async withdrawDispute(_projectId, dispute) {
-    return { ...dispute, state: "WITHDRAWN", version: dispute.version + 1 };
+    return { ...dispute, state: 'WITHDRAWN', version: dispute.version + 1 };
   },
 };
 
 export const supportQualitySource: SupportQualitySource =
-  isMockMode || import.meta.env.MODE === "test" ? mockSource : supportQualityApiSource;
+  isMockMode || import.meta.env.MODE === 'test' ? mockSource : supportQualityApiSource;

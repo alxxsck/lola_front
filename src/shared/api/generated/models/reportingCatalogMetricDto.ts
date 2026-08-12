@@ -6,12 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ReportingCatalogMetricDtoClassification } from "./reportingCatalogMetricDtoClassification";
+import type { ReportingCatalogMetricDtoDrilldownSubjectKind } from "./reportingCatalogMetricDtoDrilldownSubjectKind";
 import type { ReportingCatalogMetricDtoExactness } from "./reportingCatalogMetricDtoExactness";
 
 export interface ReportingCatalogMetricDto {
   classification: ReportingCatalogMetricDtoClassification;
   code: string;
   compatibleDimensions: string[];
+  drilldownSubjectKind?: ReportingCatalogMetricDtoDrilldownSubjectKind;
   exactness: ReportingCatalogMetricDtoExactness;
   /** @minimum 1 */
   minimumSample: number;

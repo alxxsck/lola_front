@@ -26,30 +26,40 @@ describe("supportAnalyticsArtifactSource", () => {
       "Published support quality report",
       query,
     );
-    expect(await supportAnalyticsArtifactSource.readReport("project-1", report.savedReportId)).toEqual(
-      report,
-    );
+    expect(
+      await supportAnalyticsArtifactSource.readReport(
+        "project-1",
+        report.savedReportId,
+      ),
+    ).toEqual(report);
 
-    const dashboardReceipt = await supportAnalyticsArtifactSource.createDashboard(
-      "project-1",
-      "cms-user-1",
-      report,
-    );
+    const dashboardReceipt =
+      await supportAnalyticsArtifactSource.createDashboard(
+        "project-1",
+        "cms-user-1",
+        report,
+      );
     const dashboard = await supportAnalyticsArtifactSource.readDashboard(
       "project-1",
       dashboardReceipt.dashboardId,
     );
-    expect(dashboard.report.savedReportRevisionId).toBe(report.savedReportRevisionId);
+    expect(dashboard.report.savedReportRevisionId).toBe(
+      report.savedReportRevisionId,
+    );
 
     await expect(
       supportAnalyticsArtifactSource.exportReport("project-1", report, "CSV"),
-    ).resolves.toMatchObject({ kind: "EXPORT_REQUESTED", lane: "EXPORT", status: "QUEUED" });
+    ).resolves.toMatchObject({
+      kind: "EXPORT_REQUESTED",
+      lane: "EXPORT",
+      status: "QUEUED",
+    });
     await expect(
       supportAnalyticsArtifactSource.scheduleReport(
         "project-1",
         "cms-user-1",
         report,
-        "Europe/Madrid",
+        { timezone: "Europe/Madrid", localTime: "09:00", format: "PDF" },
       ),
     ).resolves.toMatchObject({ kind: "SCHEDULE_CHANGED", status: "ACTIVE" });
   });

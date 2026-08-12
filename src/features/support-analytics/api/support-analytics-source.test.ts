@@ -5,21 +5,17 @@ import {
 } from "./support-analytics-source";
 
 describe("supportAnalyticsSource", () => {
-  it("fails closed for owner families without an authoritative publisher", async () => {
+  it("exposes every production owner family after the B1 publishers are ready", async () => {
     const catalog = await supportAnalyticsSource.catalog("project-1");
     expect(catalog.datasets).toHaveLength(10);
+    expect(catalog.datasets.map(({ readiness }) => readiness.status)).toEqual(
+      Array.from({ length: 10 }, () => "READY"),
+    );
     expect(
-      catalog.datasets.find(
-        ({ datasetCode }) => datasetCode === "SUPPORT_QUALITY",
-      )?.readiness.status,
-    ).toBe("READY");
-    expect(
-      catalog.datasets.find(({ datasetCode }) => datasetCode === "SUPPORT_CASE")
-        ?.readiness,
-    ).toMatchObject({
-      status: "UNAVAILABLE",
-      missingSourceFamilies: ["SUPPORT_CASE"],
-    });
+      catalog.datasets.every(
+        ({ readiness }) => readiness.missingSourceFamilies.length === 0,
+      ),
+    ).toBe(true);
   });
 
   it("returns bounded Quality rows, comparison and a privacy receipt", async () => {

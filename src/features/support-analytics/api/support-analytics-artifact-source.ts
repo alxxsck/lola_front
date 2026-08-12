@@ -6,9 +6,12 @@ import {
   dashboardShareRevoke,
   dashboardInteractionCreate,
   dashboardWidgetResultRead,
+  dashboardWidgetDrilldownRead,
   reportExportCreate,
   reportExportCancel,
+  reportExportDownload,
   reportExportEstimate,
+  reportExportIssueDownloadCapability,
   reportExportRead,
   reportExportRevoke,
   reportScheduleCreate,
@@ -16,6 +19,9 @@ import {
   reportSchedulePause,
   reportScheduleRead,
   reportScheduleResume,
+  reportScheduleList,
+  reportScheduleRunList,
+  reportDeliveryList,
   savedReportCreate,
   savedReportArchive,
   savedReportDuplicate,
@@ -26,11 +32,17 @@ import {
 } from "@/shared/api/generated/retenive-backend";
 import type {
   DashboardCommandResponseDto,
+  DashboardDrilldownResponseDto,
+  DashboardShareDto,
   DashboardShellResponseDto,
   ReportExportRequestedResponseDto,
   ReportExportStatusResponseDto,
   ReportScheduleChangedResponseDto,
+  ReportScheduleCatalogResponseDto,
+  ReportScheduleCatalogItemResponseDto,
   ReportScheduleResponseDto,
+  ReportScheduleRunHistoryResponseDto,
+  ReportDeliveryInboxResponseDto,
   ReportingQueryDefinitionDto,
   ReportingQueryResultResponseDto,
   SavedReportRevisionResponseDto,
@@ -57,6 +69,11 @@ export interface SupportDashboardArtifact {
   name: string;
   description: string;
   report: SupportSavedArtifact;
+}
+export interface SupportScheduleInput {
+  timezone: string;
+  localTime: string;
+  format: "CSV" | "XLSX" | "PDF" | "PNG";
 }
 
 export interface SupportAnalyticsArtifactSource {
@@ -86,6 +103,13 @@ export interface SupportAnalyticsArtifactSource {
     dashboard: SupportDashboardArtifact,
     signal?: AbortSignal,
   ): Promise<ReportingQueryResultResponseDto>;
+  drilldownDashboard(
+    projectId: string,
+    dashboard: SupportDashboardArtifact,
+    day: string,
+    currency: string,
+    signal?: AbortSignal,
+  ): Promise<DashboardDrilldownResponseDto>;
   exportReport(
     projectId: string,
     report: SupportSavedArtifact,
@@ -96,23 +120,80 @@ export interface SupportAnalyticsArtifactSource {
     projectId: string,
     actorCmsUserId: string,
     report: SupportSavedArtifact,
-    timezone: string,
+    input: SupportScheduleInput,
   ): Promise<ReportScheduleChangedResponseDto>;
-  readExport(projectId: string, exportId: string): Promise<ReportExportStatusResponseDto>;
+  readExport(
+    projectId: string,
+    exportId: string,
+  ): Promise<ReportExportStatusResponseDto>;
+  downloadExport(projectId: string, exportId: string): Promise<Blob>;
   cancelExport(projectId: string, exportId: string): Promise<void>;
   revokeExport(projectId: string, exportId: string): Promise<void>;
-  readSchedule(projectId: string, scheduleId: string): Promise<ReportScheduleResponseDto>;
-  pauseSchedule(projectId: string, scheduleId: string): Promise<ReportScheduleChangedResponseDto>;
-  resumeSchedule(projectId: string, scheduleId: string): Promise<ReportScheduleChangedResponseDto>;
-  archiveSchedule(projectId: string, scheduleId: string): Promise<ReportScheduleChangedResponseDto>;
-  reportHistory(projectId: string, reportId: string): Promise<SavedReportRevisionPageResponseDto>;
-  duplicateReport(projectId: string, reportId: string, name: string): Promise<string>;
+  readSchedule(
+    projectId: string,
+    scheduleId: string,
+  ): Promise<ReportScheduleResponseDto>;
+  listSchedules(
+    projectId: string,
+    beforeScheduleId?: string,
+  ): Promise<ReportScheduleCatalogResponseDto>;
+  listScheduleRuns(
+    projectId: string,
+    scheduleId: string,
+    beforeRunId?: string,
+  ): Promise<ReportScheduleRunHistoryResponseDto>;
+  listDeliveries(
+    projectId: string,
+    beforeDeliveryId?: string,
+  ): Promise<ReportDeliveryInboxResponseDto>;
+  pauseSchedule(
+    projectId: string,
+    scheduleId: string,
+  ): Promise<ReportScheduleChangedResponseDto>;
+  resumeSchedule(
+    projectId: string,
+    scheduleId: string,
+  ): Promise<ReportScheduleChangedResponseDto>;
+  archiveSchedule(
+    projectId: string,
+    scheduleId: string,
+  ): Promise<ReportScheduleChangedResponseDto>;
+  reportHistory(
+    projectId: string,
+    reportId: string,
+    beforeRevision?: number,
+  ): Promise<SavedReportRevisionPageResponseDto>;
+  duplicateReport(
+    projectId: string,
+    reportId: string,
+    name: string,
+  ): Promise<string>;
   archiveReport(projectId: string, reportId: string): Promise<void>;
-  shareDashboard(projectId: string, dashboardId: string, cmsUserId: string): Promise<string>;
-  revokeDashboardShare(projectId: string, dashboardId: string, shareId: string): Promise<void>;
+  shareDashboard(
+    projectId: string,
+    dashboardId: string,
+    target: DashboardShareDto,
+  ): Promise<string>;
+  revokeDashboardShare(
+    projectId: string,
+    dashboardId: string,
+    shareId: string,
+  ): Promise<void>;
 }
 
 const artifactAttempts = new Map<string, { key: string; expiresAt: number }>();
+const dashboardInteractions = new Map<string, string>();
+const dashboardRunAttempts = new Map<
+  string,
+  { interactionId: string; expiresAt: number }
+>();
+
+function dashboardInteractionKey(
+  projectId: string,
+  dashboard: SupportDashboardArtifact,
+): string {
+  return `${projectId}:${dashboard.dashboardId}:${dashboard.dashboardRevisionId}`;
+}
 
 function attemptSignature(operation: string, intent: unknown): string {
   return `${operation}:${JSON.stringify(intent)}`;
@@ -126,9 +207,10 @@ function commandOptions(operation: string, intent: unknown) {
   const signature = attemptSignature(operation, intent);
   const now = Date.now();
   const retained = artifactAttempts.get(signature);
-  const attempt = retained && retained.expiresAt > now
-    ? retained
-    : { key: crypto.randomUUID(), expiresAt: now + 5 * 60_000 };
+  const attempt =
+    retained && retained.expiresAt > now
+      ? retained
+      : { key: crypto.randomUUID(), expiresAt: now + 5 * 60_000 };
   artifactAttempts.set(signature, attempt);
   return {
     ...noAuthRetryRequestOptions(),
@@ -221,314 +303,478 @@ function dashboardDocument(report: SupportSavedArtifact) {
   };
 }
 
-export const supportAnalyticsArtifactApiSource: SupportAnalyticsArtifactSource = {
-  async saveAndPublishReport(projectId, name, description, query) {
-    try {
-      const created = await savedReportCreate(
-        projectId,
-        reportDocument(name, description, query),
-        commandOptions("saved-report-create", { name, description, query }),
-      );
-      const published = await savedReportPublish(
-        projectId,
-        created.savedReportId,
-        commandOptions("saved-report-publish", { savedReportId: created.savedReportId }),
-      );
-      completeAttempt("saved-report-create", { name, description, query });
-      completeAttempt("saved-report-publish", { savedReportId: created.savedReportId });
-      return {
-        savedReportId: published.savedReportId,
-        savedReportRevisionId: published.savedReportRevisionId,
-        revision: published.revision,
-        queryDefinitionHash: published.queryDefinitionHash,
-        name,
-        description,
-        query,
-      };
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async readReport(projectId, reportId, signal) {
-    try {
-      const revision = await savedReportRead(projectId, reportId, signal ? { signal } : undefined);
-      const preview = await savedReportPreview(
-        projectId,
-        reportId,
-        { periodDays: revision.document.query.range.defaultDays ?? 7 },
-        signal ? { signal } : undefined,
-      );
-      const mapped = mapRevision(revision);
-      mapped.query.range.from = preview.resolvedRange.fromDay;
-      mapped.query.range.until = preview.resolvedRange.untilDay;
-      return mapped;
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async createDashboard(projectId, actorCmsUserId, report) {
-    try {
-      const created = await dashboardCreate(
-        projectId,
-        {
-          collectionId: null,
-          space: { kind: "PERSONAL", ownerCmsUserId: actorCmsUserId },
-          document: dashboardDocument(report),
-        },
-        commandOptions("dashboard-create", {
+export const supportAnalyticsArtifactApiSource: SupportAnalyticsArtifactSource =
+  {
+    async saveAndPublishReport(projectId, name, description, query) {
+      try {
+        const created = await savedReportCreate(
+          projectId,
+          reportDocument(name, description, query),
+          commandOptions("saved-report-create", { name, description, query }),
+        );
+        const published = await savedReportPublish(
+          projectId,
+          created.savedReportId,
+          commandOptions("saved-report-publish", {
+            savedReportId: created.savedReportId,
+          }),
+        );
+        completeAttempt("saved-report-create", { name, description, query });
+        completeAttempt("saved-report-publish", {
+          savedReportId: created.savedReportId,
+        });
+        return {
+          savedReportId: published.savedReportId,
+          savedReportRevisionId: published.savedReportRevisionId,
+          revision: published.revision,
+          queryDefinitionHash: published.queryDefinitionHash,
+          name,
+          description,
+          query,
+        };
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async readReport(projectId, reportId, signal) {
+      try {
+        const revision = await savedReportRead(
+          projectId,
+          reportId,
+          signal ? { signal } : undefined,
+        );
+        const preview = await savedReportPreview(
+          projectId,
+          reportId,
+          { periodDays: revision.document.query.range.defaultDays ?? 7 },
+          signal ? { signal } : undefined,
+        );
+        const mapped = mapRevision(revision);
+        mapped.query.range.from = preview.resolvedRange.fromDay;
+        mapped.query.range.until = preview.resolvedRange.untilDay;
+        return mapped;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async createDashboard(projectId, actorCmsUserId, report) {
+      try {
+        const created = await dashboardCreate(
+          projectId,
+          {
+            collectionId: null,
+            space: { kind: "PERSONAL", ownerCmsUserId: actorCmsUserId },
+            document: dashboardDocument(report),
+          },
+          commandOptions("dashboard-create", {
+            actorCmsUserId,
+            savedReportRevisionId: report.savedReportRevisionId,
+          }),
+        );
+        const published = await dashboardPublish(
+          projectId,
+          created.dashboardId,
+          { acknowledgeCostWarnings: true },
+          commandOptions("dashboard-publish", {
+            dashboardId: created.dashboardId,
+          }),
+        );
+        completeAttempt("dashboard-create", {
           actorCmsUserId,
           savedReportRevisionId: report.savedReportRevisionId,
-        }),
-      );
-      const published = await dashboardPublish(
-        projectId,
-        created.dashboardId,
-        { acknowledgeCostWarnings: true },
-        commandOptions("dashboard-publish", { dashboardId: created.dashboardId }),
-      );
-      completeAttempt("dashboard-create", { actorCmsUserId, savedReportRevisionId: report.savedReportRevisionId });
-      completeAttempt("dashboard-publish", { dashboardId: created.dashboardId });
-      return published;
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async readDashboard(projectId, dashboardId, signal) {
-    try {
-      return mapDashboard(
-        await dashboardRead(projectId, dashboardId, signal ? { signal } : undefined),
-      );
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async runDashboard(projectId, dashboard, signal) {
-    try {
-      const interactionId = crypto.randomUUID();
-      await dashboardInteractionCreate(
-        projectId,
-        dashboard.dashboardId,
-        {
-          dashboardRevisionId: dashboard.dashboardRevisionId,
-          interactionId,
-          pageId: "overview",
-          tabId: "main",
-          widgetIds: ["quality"],
-          filters: { periodDays: 7 },
-        },
-        {
-          ...commandOptions("dashboard-interaction", {
+        });
+        completeAttempt("dashboard-publish", {
+          dashboardId: created.dashboardId,
+        });
+        return published;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async readDashboard(projectId, dashboardId, signal) {
+      try {
+        return mapDashboard(
+          await dashboardRead(
+            projectId,
+            dashboardId,
+            signal ? { signal } : undefined,
+          ),
+        );
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async runDashboard(projectId, dashboard, signal) {
+      const runKey = dashboardInteractionKey(projectId, dashboard);
+      const retained = dashboardRunAttempts.get(runKey);
+      const now = Date.now();
+      const attempt =
+        retained && retained.expiresAt > now
+          ? retained
+          : { interactionId: crypto.randomUUID(), expiresAt: now + 5 * 60_000 };
+      dashboardRunAttempts.set(runKey, attempt);
+      const interactionIntent = {
+        dashboardRevisionId: dashboard.dashboardRevisionId,
+        interactionId: attempt.interactionId,
+      };
+      try {
+        await dashboardInteractionCreate(
+          projectId,
+          dashboard.dashboardId,
+          {
             dashboardRevisionId: dashboard.dashboardRevisionId,
-            interactionId,
-          }),
-          ...(signal ? { signal } : {}),
-        },
+            interactionId: attempt.interactionId,
+            pageId: "overview",
+            tabId: "main",
+            widgetIds: ["quality"],
+            filters: { periodDays: 7 },
+          },
+          {
+            ...commandOptions("dashboard-interaction", interactionIntent),
+            ...(signal ? { signal } : {}),
+          },
+        );
+        dashboardInteractions.set(
+          dashboardInteractionKey(projectId, dashboard),
+          attempt.interactionId,
+        );
+        const deadline = Date.now() + 60_000;
+        while (Date.now() < deadline) {
+          const widget = await dashboardWidgetResultRead(
+            projectId,
+            dashboard.dashboardId,
+            attempt.interactionId,
+            "quality",
+            { dashboardRevisionId: dashboard.dashboardRevisionId },
+            signal ? { signal } : undefined,
+          );
+          if (!["QUEUED", "RUNNING"].includes(widget.status)) {
+            dashboardRunAttempts.delete(runKey);
+            completeAttempt("dashboard-interaction", interactionIntent);
+            return widget;
+          }
+          await new Promise<void>((resolve, reject) => {
+            const timer = window.setTimeout(
+              resolve,
+              widget.retryAfterMs ?? 350,
+            );
+            signal?.addEventListener(
+              "abort",
+              () => {
+                window.clearTimeout(timer);
+                reject(new DOMException("Aborted", "AbortError"));
+              },
+              { once: true },
+            );
+          });
+        }
+        throw new Error("Widget не завершился за минуту");
+      } catch (cause) {
+        const error = normalizeApiError(cause);
+        if (
+          error.status > 0 &&
+          error.status < 500 &&
+          ![408, 425, 429].includes(error.status)
+        ) {
+          dashboardRunAttempts.delete(runKey);
+          completeAttempt("dashboard-interaction", interactionIntent);
+        }
+        throw error;
+      }
+    },
+    async drilldownDashboard(projectId, dashboard, day, currency, signal) {
+      const interactionId = dashboardInteractions.get(
+        dashboardInteractionKey(projectId, dashboard),
       );
-      const deadline = Date.now() + 60_000;
-      while (Date.now() < deadline) {
-        const widget = await dashboardWidgetResultRead(
+      if (!interactionId)
+        throw new Error("Сначала дождитесь результата закреплённого виджета");
+      try {
+        return await dashboardWidgetDrilldownRead(
           projectId,
           dashboard.dashboardId,
           interactionId,
           "quality",
-          { dashboardRevisionId: dashboard.dashboardRevisionId },
+          {
+            dashboardRevisionId: dashboard.dashboardRevisionId,
+            day,
+            currency,
+          },
           signal ? { signal } : undefined,
         );
-        if (!['QUEUED', 'RUNNING'].includes(widget.status)) return widget;
-        await new Promise<void>((resolve, reject) => {
-          const timer = window.setTimeout(resolve, widget.retryAfterMs ?? 350);
-          signal?.addEventListener("abort", () => {
-            window.clearTimeout(timer);
-            reject(new DOMException("Aborted", "AbortError"));
-          }, { once: true });
-        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
       }
-      throw new Error("Widget не завершился за минуту");
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async exportReport(projectId, report, format, highCostConfirmed = false) {
-    try {
-      const preview = await savedReportPreview(
-        projectId,
-        report.savedReportId,
-        { periodDays: 7 },
-      );
-      const estimate = await reportExportEstimate(projectId, {
-        savedReportId: report.savedReportId,
-        savedReportRevisionId: report.savedReportRevisionId,
-        expectedQueryHash: preview.estimate.canonicalQueryHash,
-        format,
-        resolvedCurrencies: preview.resolvedCurrencies,
-        resolvedRange: preview.resolvedRange,
-      });
-      if (estimate.highCostConfirmationRequired && !highCostConfirmed)
-        throw new Error("Экспорт требует отдельного подтверждения высокой стоимости");
-      return await reportExportCreate(
-        projectId,
-        {
+    },
+    async exportReport(projectId, report, format, highCostConfirmed = false) {
+      try {
+        const preview = await savedReportPreview(
+          projectId,
+          report.savedReportId,
+          { periodDays: 7 },
+        );
+        const estimate = await reportExportEstimate(projectId, {
           savedReportId: report.savedReportId,
           savedReportRevisionId: report.savedReportRevisionId,
           expectedQueryHash: preview.estimate.canonicalQueryHash,
           format,
           resolvedCurrencies: preview.resolvedCurrencies,
           resolvedRange: preview.resolvedRange,
-          maximumRows: estimate.maximumRows,
-          maximumBytes: estimate.maximumBytes,
-          highCostConfirmed,
-        },
-        commandOptions("report-export", {
+        });
+        if (estimate.highCostConfirmationRequired && !highCostConfirmed)
+          throw new Error(
+            "Экспорт требует отдельного подтверждения высокой стоимости",
+          );
+        const intent = {
           savedReportRevisionId: report.savedReportRevisionId,
           format,
           queryHash: preview.estimate.canonicalQueryHash,
           range: preview.resolvedRange,
-        }),
-      );
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async scheduleReport(projectId, actorCmsUserId, report, timezone) {
-    try {
-      return await reportScheduleCreate(
-        projectId,
-        {
-          savedReportId: report.savedReportId,
-          savedReportRevisionId: report.savedReportRevisionId,
-          name: `Ежедневно: ${report.name}`,
-          format: "PDF",
-          maximumRows: 10_000,
-          maximumBytes: 10_000_000,
-          highCostConfirmed: false,
-          recurrence: { kind: "DAILY", localTime: "09:00", timezone },
-          target: { kind: "IN_APP", cmsUserId: actorCmsUserId },
-        },
-        commandOptions("report-schedule", {
+        };
+        const receipt = await reportExportCreate(
+          projectId,
+          {
+            savedReportId: report.savedReportId,
+            savedReportRevisionId: report.savedReportRevisionId,
+            expectedQueryHash: preview.estimate.canonicalQueryHash,
+            format,
+            resolvedCurrencies: preview.resolvedCurrencies,
+            resolvedRange: preview.resolvedRange,
+            maximumRows: estimate.maximumRows,
+            maximumBytes: estimate.maximumBytes,
+            highCostConfirmed,
+          },
+          commandOptions("report-export", intent),
+        );
+        completeAttempt("report-export", intent);
+        return receipt;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async scheduleReport(projectId, actorCmsUserId, report, input) {
+      try {
+        const intent = {
           actorCmsUserId,
           savedReportRevisionId: report.savedReportRevisionId,
-          timezone,
-        }),
-      );
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async readExport(projectId, exportId) {
-    try {
-      return await reportExportRead(projectId, exportId);
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async cancelExport(projectId, exportId) {
-    try {
-      await reportExportCancel(projectId, exportId, commandOptions("export-cancel", { exportId }));
-      completeAttempt("export-cancel", { exportId });
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async revokeExport(projectId, exportId) {
-    try {
-      await reportExportRevoke(projectId, exportId, commandOptions("export-revoke", { exportId }));
-      completeAttempt("export-revoke", { exportId });
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async readSchedule(projectId, scheduleId) {
-    try {
-      return await reportScheduleRead(projectId, scheduleId);
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async pauseSchedule(projectId, scheduleId) {
-    try {
-      return await reportSchedulePause(projectId, scheduleId, commandOptions("schedule-pause", { scheduleId }));
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async resumeSchedule(projectId, scheduleId) {
-    try {
-      return await reportScheduleResume(projectId, scheduleId, commandOptions("schedule-resume", { scheduleId }));
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async archiveSchedule(projectId, scheduleId) {
-    try {
-      return await reportScheduleArchive(projectId, scheduleId, commandOptions("schedule-archive", { scheduleId }));
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async reportHistory(projectId, reportId) {
-    try {
-      return await savedReportRevisionList(projectId, reportId);
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async duplicateReport(projectId, reportId, name) {
-    try {
-      const result = await savedReportDuplicate(
-        projectId,
-        reportId,
-        { name },
-        commandOptions("saved-report-duplicate", { reportId, name }),
-      );
-      return result.savedReportId;
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async archiveReport(projectId, reportId) {
-    try {
-      await savedReportArchive(
-        projectId,
-        reportId,
-        commandOptions("saved-report-archive", { reportId }),
-      );
-      completeAttempt("saved-report-archive", { reportId });
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async shareDashboard(projectId, dashboardId, cmsUserId) {
-    try {
-      const result = await dashboardShareCreate(
-        projectId,
-        dashboardId,
-        { kind: "CMS_USER", id: cmsUserId },
-        commandOptions("dashboard-share", { dashboardId, cmsUserId }),
-      );
-      if (!result.shareId) throw new Error("Backend не вернул share ID");
-      completeAttempt("dashboard-share", { dashboardId, cmsUserId });
-      return result.shareId;
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-  async revokeDashboardShare(projectId, dashboardId, shareId) {
-    try {
-      await dashboardShareRevoke(
-        projectId,
-        dashboardId,
-        shareId,
-        commandOptions("dashboard-share-revoke", { dashboardId, shareId }),
-      );
-      completeAttempt("dashboard-share-revoke", { dashboardId, shareId });
-    } catch (cause) {
-      throw normalizeApiError(cause);
-    }
-  },
-};
+          input,
+        };
+        const receipt = await reportScheduleCreate(
+          projectId,
+          {
+            savedReportId: report.savedReportId,
+            savedReportRevisionId: report.savedReportRevisionId,
+            name: `Ежедневно: ${report.name}`,
+            format: input.format,
+            maximumRows: 10_000,
+            maximumBytes: 10_000_000,
+            highCostConfirmed: false,
+            recurrence: {
+              kind: "DAILY",
+              localTime: input.localTime,
+              timezone: input.timezone,
+            },
+            target: { kind: "IN_APP", cmsUserId: actorCmsUserId },
+          },
+          commandOptions("report-schedule", intent),
+        );
+        completeAttempt("report-schedule", intent);
+        return receipt;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async readExport(projectId, exportId) {
+      try {
+        return await reportExportRead(projectId, exportId);
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async downloadExport(projectId, exportId) {
+      try {
+        const capability = await reportExportIssueDownloadCapability(
+          projectId,
+          exportId,
+          commandOptions("export-download-capability", { exportId }),
+        );
+        completeAttempt("export-download-capability", { exportId });
+        return await reportExportDownload(projectId, exportId, {
+          ...noAuthRetryRequestOptions(),
+          headers: { "x-download-capability": capability.downloadCapability },
+        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async cancelExport(projectId, exportId) {
+      try {
+        await reportExportCancel(
+          projectId,
+          exportId,
+          commandOptions("export-cancel", { exportId }),
+        );
+        completeAttempt("export-cancel", { exportId });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async revokeExport(projectId, exportId) {
+      try {
+        await reportExportRevoke(
+          projectId,
+          exportId,
+          commandOptions("export-revoke", { exportId }),
+        );
+        completeAttempt("export-revoke", { exportId });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async readSchedule(projectId, scheduleId) {
+      try {
+        return await reportScheduleRead(projectId, scheduleId);
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async listSchedules(projectId, beforeScheduleId) {
+      try {
+        return await reportScheduleList(projectId, {
+          limit: 50,
+          ...(beforeScheduleId ? { before: beforeScheduleId } : {}),
+        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async listScheduleRuns(projectId, scheduleId, beforeRunId) {
+      try {
+        return await reportScheduleRunList(projectId, scheduleId, {
+          limit: 50,
+          ...(beforeRunId ? { before: beforeRunId } : {}),
+        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async listDeliveries(projectId, beforeDeliveryId) {
+      try {
+        return await reportDeliveryList(projectId, {
+          limit: 50,
+          ...(beforeDeliveryId ? { before: beforeDeliveryId } : {}),
+        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async pauseSchedule(projectId, scheduleId) {
+      try {
+        const receipt = await reportSchedulePause(
+          projectId,
+          scheduleId,
+          commandOptions("schedule-pause", { scheduleId }),
+        );
+        completeAttempt("schedule-pause", { scheduleId });
+        return receipt;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async resumeSchedule(projectId, scheduleId) {
+      try {
+        const receipt = await reportScheduleResume(
+          projectId,
+          scheduleId,
+          commandOptions("schedule-resume", { scheduleId }),
+        );
+        completeAttempt("schedule-resume", { scheduleId });
+        return receipt;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async archiveSchedule(projectId, scheduleId) {
+      try {
+        const receipt = await reportScheduleArchive(
+          projectId,
+          scheduleId,
+          commandOptions("schedule-archive", { scheduleId }),
+        );
+        completeAttempt("schedule-archive", { scheduleId });
+        return receipt;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async reportHistory(projectId, reportId, beforeRevision) {
+      try {
+        return await savedReportRevisionList(projectId, reportId, {
+          limit: 50,
+          ...(beforeRevision ? { before: beforeRevision } : {}),
+        });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async duplicateReport(projectId, reportId, name) {
+      try {
+        const result = await savedReportDuplicate(
+          projectId,
+          reportId,
+          { name },
+          commandOptions("saved-report-duplicate", { reportId, name }),
+        );
+        completeAttempt("saved-report-duplicate", { reportId, name });
+        return result.savedReportId;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async archiveReport(projectId, reportId) {
+      try {
+        await savedReportArchive(
+          projectId,
+          reportId,
+          commandOptions("saved-report-archive", { reportId }),
+        );
+        completeAttempt("saved-report-archive", { reportId });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async shareDashboard(projectId, dashboardId, target) {
+      try {
+        const result = await dashboardShareCreate(
+          projectId,
+          dashboardId,
+          target,
+          commandOptions("dashboard-share", { dashboardId, target }),
+        );
+        if (!result.shareId) throw new Error("Backend не вернул share ID");
+        completeAttempt("dashboard-share", { dashboardId, target });
+        return result.shareId;
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+    async revokeDashboardShare(projectId, dashboardId, shareId) {
+      try {
+        await dashboardShareRevoke(
+          projectId,
+          dashboardId,
+          shareId,
+          commandOptions("dashboard-share-revoke", { dashboardId, shareId }),
+        );
+        completeAttempt("dashboard-share-revoke", { dashboardId, shareId });
+      } catch (cause) {
+        throw normalizeApiError(cause);
+      }
+    },
+  };
 
 const reports = new Map<string, SupportSavedArtifact>();
 const dashboards = new Map<string, SupportDashboardArtifact>();
+const mockSchedules = new Map<string, ReportScheduleCatalogItemResponseDto>();
 
 function persistMockArtifact(key: string, value: unknown): void {
   if (typeof sessionStorage === "undefined") return;
@@ -545,7 +791,9 @@ function cloneMockArtifact<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function mockRevision(report: SupportSavedArtifact): SavedReportRevisionResponseDto {
+function mockRevision(
+  report: SupportSavedArtifact,
+): SavedReportRevisionResponseDto {
   return {
     savedReportId: report.savedReportId,
     savedReportRevisionId: report.savedReportRevisionId,
@@ -553,7 +801,8 @@ function mockRevision(report: SupportSavedArtifact): SavedReportRevisionResponse
     datasetRevisionId: report.query.datasetRevisionId,
     queryDefinitionHash: report.queryDefinitionHash,
     semanticDigest: "mock-semantic-digest",
-    document: reportDocument(report.name, report.description, report.query).document,
+    document: reportDocument(report.name, report.description, report.query)
+      .document,
   };
 }
 
@@ -575,21 +824,28 @@ const mockSource: SupportAnalyticsArtifactSource = {
   },
   async readReport(_projectId, id) {
     const value =
-      reports.get(id) ?? restoreMockArtifact<SupportSavedArtifact>(`report:${id}`);
+      reports.get(id) ??
+      restoreMockArtifact<SupportSavedArtifact>(`report:${id}`);
     if (!value) throw new Error("Сохранённый отчёт не найден");
     return cloneMockArtifact(value);
   },
   async createDashboard(_projectId, _actorCmsUserId, report) {
     const dashboardId = `support-dashboard-${Date.now()}`;
-    dashboards.set(dashboardId, cloneMockArtifact({
+    dashboards.set(
       dashboardId,
-      dashboardRevisionId: `${dashboardId}-r1`,
-      revision: 1,
-      name: `Дашборд: ${report.name}`,
-      description: report.description,
-      report,
-    }));
-    persistMockArtifact(`dashboard:${dashboardId}`, dashboards.get(dashboardId));
+      cloneMockArtifact({
+        dashboardId,
+        dashboardRevisionId: `${dashboardId}-r1`,
+        revision: 1,
+        name: `Дашборд: ${report.name}`,
+        description: report.description,
+        report,
+      }),
+    );
+    persistMockArtifact(
+      `dashboard:${dashboardId}`,
+      dashboards.get(dashboardId),
+    );
     return {
       dashboardId,
       dashboardRevisionId: `${dashboardId}-r1`,
@@ -606,8 +862,36 @@ const mockSource: SupportAnalyticsArtifactSource = {
     return cloneMockArtifact(value);
   },
   async runDashboard(_projectId, dashboard, signal) {
-    const { supportAnalyticsSource } = await import("./support-analytics-source");
-    return await supportAnalyticsSource.run("project-1", dashboard.report.query, signal);
+    const { supportAnalyticsSource } =
+      await import("./support-analytics-source");
+    return await supportAnalyticsSource.run(
+      "project-1",
+      dashboard.report.query,
+      signal,
+    );
+  },
+  async drilldownDashboard(_projectId, _dashboard, day, currency) {
+    return {
+      status: "READY",
+      interactionId: "mock-interaction",
+      runId: "mock-run",
+      day,
+      currency,
+      metrics: [],
+      breadcrumb: {
+        dashboardId: _dashboard.dashboardId,
+        dashboardRevisionId: _dashboard.dashboardRevisionId,
+        pageId: "overview",
+        tabId: "main",
+        widgetId: "quality",
+      },
+      reset: {
+        dashboardId: _dashboard.dashboardId,
+        dashboardRevisionId: _dashboard.dashboardRevisionId,
+        pageId: "overview",
+        tabId: "main",
+      },
+    };
   },
   async exportReport(_projectId, report) {
     return {
@@ -618,10 +902,20 @@ const mockSource: SupportAnalyticsArtifactSource = {
       status: "QUEUED",
     };
   },
-  async scheduleReport() {
+  async scheduleReport(_projectId, _actorCmsUserId, report, input) {
+    const scheduleId = `schedule-${Date.now()}`;
+    mockSchedules.set(scheduleId, {
+      scheduleId,
+      name: `Ежедневно: ${report.name}`,
+      status: "ACTIVE",
+      timezone: input.timezone,
+      format: input.format,
+      version: 1,
+      updatedAt: new Date().toISOString(),
+    });
     return {
       kind: "SCHEDULE_CHANGED",
-      scheduleId: `schedule-${Date.now()}`,
+      scheduleId,
       status: "ACTIVE",
       version: 1,
     };
@@ -631,31 +925,93 @@ const mockSource: SupportAnalyticsArtifactSource = {
       exportId,
       kind: "EXPORT_STATUS",
       format: "CSV",
-      status: "QUEUED",
-      bytes: null,
-      rows: null,
-      expiresAt: null,
+      status: "READY",
+      bytes: 29,
+      rows: 7,
+      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
     };
+  },
+  async downloadExport() {
+    return new Blob(["mock support analytics export"], { type: "text/csv" });
   },
   async cancelExport() {},
   async revokeExport() {},
   async readSchedule(_projectId, scheduleId) {
-    return { kind: "SCHEDULE", scheduleId, status: "ACTIVE", timezone: "Europe/Madrid", version: 1 };
+    const current = mockSchedules.get(scheduleId);
+    return {
+      kind: "SCHEDULE",
+      scheduleId,
+      status: current?.status ?? "ACTIVE",
+      timezone: current?.timezone ?? "Europe/Madrid",
+      version: current?.version ?? 1,
+    };
+  },
+  async listSchedules() {
+    return {
+      kind: "SCHEDULE_CATALOG",
+      schedules: [...mockSchedules.values()],
+    };
+  },
+  async listScheduleRuns(_projectId, scheduleId) {
+    return { kind: "RUN_HISTORY", scheduleId, runs: [] };
+  },
+  async listDeliveries() {
+    return { kind: "IN_APP_INBOX", deliveries: [] };
   },
   async pauseSchedule(_projectId, scheduleId) {
-    return { kind: "SCHEDULE_CHANGED", scheduleId, status: "PAUSED", version: 2 };
+    const current = mockSchedules.get(scheduleId);
+    if (current)
+      mockSchedules.set(scheduleId, {
+        ...current,
+        status: "PAUSED",
+        version: current.version + 1,
+      });
+    return {
+      kind: "SCHEDULE_CHANGED",
+      scheduleId,
+      status: "PAUSED",
+      version: 2,
+    };
   },
   async resumeSchedule(_projectId, scheduleId) {
-    return { kind: "SCHEDULE_CHANGED", scheduleId, status: "ACTIVE", version: 3 };
+    const current = mockSchedules.get(scheduleId);
+    if (current)
+      mockSchedules.set(scheduleId, {
+        ...current,
+        status: "ACTIVE",
+        version: current.version + 1,
+      });
+    return {
+      kind: "SCHEDULE_CHANGED",
+      scheduleId,
+      status: "ACTIVE",
+      version: 3,
+    };
   },
   async archiveSchedule(_projectId, scheduleId) {
-    return { kind: "SCHEDULE_CHANGED", scheduleId, status: "ARCHIVED", version: 4 };
+    const current = mockSchedules.get(scheduleId);
+    if (current)
+      mockSchedules.set(scheduleId, {
+        ...current,
+        status: "ARCHIVED",
+        version: current.version + 1,
+      });
+    return {
+      kind: "SCHEDULE_CHANGED",
+      scheduleId,
+      status: "ARCHIVED",
+      version: 4,
+    };
   },
-  async reportHistory(_projectId, reportId) {
+  async reportHistory(_projectId, reportId, beforeRevision) {
     const report =
       reports.get(reportId) ??
       restoreMockArtifact<SupportSavedArtifact>(`report:${reportId}`);
-    return { items: report ? [mockRevision(report)] : [] };
+    return {
+      items: report && (!beforeRevision || beforeRevision > report.revision)
+        ? [mockRevision(report)]
+        : [],
+    };
   },
   async duplicateReport(_projectId, reportId, name) {
     const report =
@@ -702,7 +1058,9 @@ function mapRevision(
   };
 }
 
-function mapDashboard(shell: DashboardShellResponseDto): SupportDashboardArtifact {
+function mapDashboard(
+  shell: DashboardShellResponseDto,
+): SupportDashboardArtifact {
   const widget = shell.document.pages[0]?.tabs[0]?.widgets[0];
   if (!widget) throw new Error("В дашборде нет Support-виджета");
   return {
@@ -725,7 +1083,9 @@ function mapDashboard(shell: DashboardShellResponseDto): SupportDashboardArtifac
         groupBy: [],
         filters: [],
         range: {
-          from: new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10),
+          from: new Date(Date.now() - 7 * 86_400_000)
+            .toISOString()
+            .slice(0, 10),
           until: new Date().toISOString().slice(0, 10),
           grain: "DAY",
           timezone: "UTC",
