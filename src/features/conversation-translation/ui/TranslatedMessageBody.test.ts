@@ -217,6 +217,18 @@ describe("translated message body", () => {
     expect(wrapper.find("button-stub").exists()).toBe(false);
   });
 
+  it("renders a shortcode emoji with its adjacent skin-tone modifier", () => {
+    const wrapper = shallowMount(TranslatedMessageBody, {
+      props: {
+        message: message({ text: ":+1::skin-tone-3:" }),
+      },
+    });
+
+    expect(wrapper.text()).toContain("👍🏼");
+    expect(wrapper.text()).not.toContain(":+1:");
+    expect(wrapper.text()).not.toContain(":skin-tone-3:");
+  });
+
   it.each([
     ["русского", "Спасибо, всё получилось"],
     ["болгарского", "Благодаря"],

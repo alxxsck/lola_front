@@ -150,9 +150,8 @@ describe("useSupportCaseIntelligence", () => {
   });
 
   it("does not publish a late preview from a previous project", async () => {
-    const previewResult = deferred<
-      Awaited<ReturnType<SupportCaseIntelligenceSource["dryRun"]>>
-    >();
+    const previewResult =
+      deferred<Awaited<ReturnType<SupportCaseIntelligenceSource["dryRun"]>>>();
     let projectId = "preview-project-a";
     const source: SupportCaseIntelligenceSource = {
       ...mockSupportCaseIntelligenceSource,
@@ -214,7 +213,11 @@ describe("useSupportCaseIntelligence", () => {
           ),
       };
       const controller = useSupportCaseIntelligence({
-        authority: () => ({ actorId: `actor-${status}`, projectId, permissions }),
+        authority: () => ({
+          actorId: `actor-${status}`,
+          projectId,
+          permissions,
+        }),
         source,
         createIdempotencyKey: () => `stable-${status}`,
       });
@@ -393,6 +396,36 @@ describe("useSupportCaseIntelligence", () => {
     expect(controller.hasDetectionErrors.value).toBe(true);
   });
 
+  it("accepts the server-assigned model even when it is not repeated in the selectable catalog", async () => {
+    const projectId = crypto.randomUUID();
+    const snapshot = await mockSupportCaseIntelligenceSource.read(projectId);
+    const assignedRevisionId =
+      snapshot.detection!.published!.definition.modelProfileRevisionId;
+    const source: SupportCaseIntelligenceSource = {
+      ...mockSupportCaseIntelligenceSource,
+      read: vi.fn().mockResolvedValue(snapshot),
+      readModelProfiles: vi.fn().mockResolvedValue({
+        selectedRevisionId: assignedRevisionId,
+        items: [],
+      }),
+    };
+    const controller = useSupportCaseIntelligence({
+      authority: () => ({
+        actorId: "actor-assigned-model",
+        projectId,
+        permissions,
+      }),
+      source,
+    });
+
+    await controller.load();
+
+    expect(controller.assignedModelRevisionId.value).toBe(assignedRevisionId);
+    expect(controller.detectionIssues.value).not.toContainEqual(
+      expect.objectContaining({ path: "modelProfileRevisionId" }),
+    );
+  });
+
   it("maps server validation issues to the exact field and does not save", async () => {
     const projectId = crypto.randomUUID();
     const source: SupportCaseIntelligenceSource = {
@@ -413,7 +446,11 @@ describe("useSupportCaseIntelligence", () => {
       saveDetectionDraft: vi.fn(),
     };
     const controller = useSupportCaseIntelligence({
-      authority: () => ({ actorId: "actor-validation", projectId, permissions }),
+      authority: () => ({
+        actorId: "actor-validation",
+        projectId,
+        permissions,
+      }),
       source,
     });
     await controller.load();
@@ -492,9 +529,10 @@ describe("useSupportCaseIntelligence", () => {
   });
 
   it("discards a late calibration response from a previous project", async () => {
-    const result = deferred<
-      Awaited<ReturnType<SupportCaseIntelligenceSource["readCalibration"]>>
-    >();
+    const result =
+      deferred<
+        Awaited<ReturnType<SupportCaseIntelligenceSource["readCalibration"]>>
+      >();
     let projectId = "calibration-project-a";
     const source: SupportCaseIntelligenceSource = {
       ...mockSupportCaseIntelligenceSource,
@@ -509,7 +547,11 @@ describe("useSupportCaseIntelligence", () => {
       ),
     };
     const controller = useSupportCaseIntelligence({
-      authority: () => ({ actorId: "actor-calibration", projectId, permissions }),
+      authority: () => ({
+        actorId: "actor-calibration",
+        projectId,
+        permissions,
+      }),
       source,
     });
     await controller.load();

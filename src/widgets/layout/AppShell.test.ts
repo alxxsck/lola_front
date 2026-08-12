@@ -132,14 +132,12 @@ describe("AppShell", () => {
     disabled.unmount();
   });
 
-  it("links Categories directly to its nested workspace section", async () => {
+  it("exposes one Case Intelligence entry that opens its overview", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
     authenticateWithProjects(auth, [
-      project("project-1", "Project One", [
-        "project.case_intelligence.read",
-      ]),
+      project("project-1", "Project One", ["project.case_intelligence.read"]),
     ]);
     const router = createRouter({
       history: createMemoryHistory(),
@@ -151,12 +149,21 @@ describe("AppShell", () => {
     const wrapper = mountProjectMenu(pinia, router);
     await flushPromises();
 
-    const categories = wrapper
+    const caseIntelligence = wrapper
       .findAll(".sidebar-scroll nav a")
-      .find((link) => link.text().includes("Категории и правила"));
-    expect(categories?.attributes("href")).toBe(
-      "/support/settings/case-intelligence/detection",
+      .find((link) => link.text().includes("Правила обращений"));
+    expect(caseIntelligence?.attributes("href")).toBe(
+      "/support/settings/case-intelligence",
     );
+    expect(
+      wrapper
+        .findAll(".sidebar-scroll nav a")
+        .filter((link) =>
+          link
+            .attributes("href")
+            ?.startsWith("/support/settings/case-intelligence"),
+        ),
+    ).toHaveLength(1);
   });
 
   it("links a Cases-only operator to the exact canonical inbox mode", async () => {
@@ -398,6 +405,56 @@ describe("AppShell", () => {
     expect(router.currentRoute.value.path).toBe("/overview");
   });
 
+  it("covers the old workspace while a Project switch is resolving", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const auth = useAuthStore();
+    authenticateWithProjects(auth, [
+      project("project-1", "Project One"),
+      project("project-2", "Project Two"),
+    ]);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: "/support/inbox",
+          component: { template: '<div data-testid="old-workspace">Old</div>' },
+        },
+        { path: "/overview", component: { template: "<div>Overview</div>" } },
+      ],
+    });
+    let releaseNavigation!: () => void;
+    router.beforeEach((to) =>
+      to.path === "/overview"
+        ? new Promise<boolean>((resolve) => {
+            releaseNavigation = () => resolve(true);
+          })
+        : true,
+    );
+    await router.push("/support/inbox");
+    await router.isReady();
+    const wrapper = mountProjectMenu(pinia, router);
+
+    await wrapper
+      .get('button[aria-label="Переключить на проект Project Two"]')
+      .trigger("click");
+
+    expect(wrapper.get(".project-switch-state").text()).toContain(
+      "Переключаем проект",
+    );
+    expect(wrapper.get(".project-switch-state").text()).toContain(
+      "Project Two",
+    );
+    expect(wrapper.find('[data-testid="old-workspace"]').exists()).toBe(false);
+    expect(wrapper.get(".sidebar-profile").text()).toContain("Оператор");
+
+    await vi.waitFor(() => expect(releaseNavigation).toBeTypeOf("function"));
+    releaseNavigation();
+    await flushPromises();
+    expect(wrapper.find(".project-switch-state").exists()).toBe(false);
+    expect(router.currentRoute.value.path).toBe("/overview");
+  });
+
   it("opens a Project from its row action without switching the current tab", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -597,8 +654,7 @@ describe("AppShell", () => {
     expect(supportLinks.map((link) => link.text().trim())).toEqual([
       "Рабочее место",
       "Операционный обзор",
-      "Категории и правила",
-      "Передача оператору",
+      "Правила обращений",
       "Календарь и SLA",
       "Шаблоны ответов",
       "Уведомления",
@@ -967,9 +1023,7 @@ describe("AppShell", () => {
         id: "operator-1",
         email: "operator@example.com",
         name: "Оператор",
-        platformPermissionCodes: [
-          "platform.case_intelligence.safety.manage",
-        ],
+        platformPermissionCodes: ["platform.case_intelligence.safety.manage"],
       },
       project: null,
       projects: [],

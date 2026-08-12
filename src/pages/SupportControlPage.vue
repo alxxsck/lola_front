@@ -30,7 +30,9 @@ import { createSupportLeadAssignmentController } from "@/features/support-lead-a
 import { createSupportLeadAssignmentBatchController } from "@/features/support-lead-assignment/model/use-support-lead-assignment-batch";
 import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
 import SupportLeadAssignmentBatchDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentBatchDesk.vue";
+import SupportControlPageSkeleton from "@/features/support-control/ui/SupportControlPageSkeleton.vue";
 import { relativeTime } from "@/shared/lib/format";
+import PageLoadingSwap from "@/shared/ui/PageLoadingSwap.vue";
 import {
   supportWorkspaceSource,
   type SupportWorkspaceCaseRow,
@@ -41,10 +43,15 @@ const auth = useAuthStore();
 const router = useRouter();
 const accessDenied = ref(false);
 const fallbackCaseId = ref("");
+const initialLoadSettled = ref(false);
+let reloadGeneration = 0;
 const canRead = computed(
   () =>
     !accessDenied.value &&
     canReadSupportControl(auth.project?.effectivePermissionCodes ?? []),
+);
+const initialPageLoading = computed(
+  () => canRead.value && !initialLoadSettled.value,
 );
 const availabilityAccessDenied = ref(false);
 const canReadAvailability = computed(
@@ -423,24 +430,41 @@ function riskCaseContext(caseId: string): string {
 }
 
 async function reload(): Promise<void> {
+  const projectId = auth.project?.id;
+  const generation = ++reloadGeneration;
   await leadControl.load();
+  if (
+    generation !== reloadGeneration ||
+    auth.project?.id !== projectId ||
+    !canRead.value
+  )
+    return;
   const readiness = leadControl.readiness.value;
+  const requests: Promise<void>[] = [];
   if (
     (readiness?.readinessState === "READY" ||
       readiness?.readinessState === "STALE") &&
     readiness.capabilities.summary === "AVAILABLE"
   )
-    await overview.load();
+    requests.push(overview.load());
   else overview.reset();
   if (
     (readiness?.readinessState === "READY" ||
       readiness?.readinessState === "STALE") &&
     readiness.capabilities.caseRisks === "AVAILABLE"
   )
-    await risks.load();
+    requests.push(risks.load());
   else risks.reset();
-  await loadRiskCaseCatalog();
-  if (canReadAlerts.value) void alerts.load();
+  requests.push(loadRiskCaseCatalog());
+  if (canReadAlerts.value) requests.push(alerts.load());
+  else alerts.reset();
+  await Promise.all(requests);
+  if (
+    generation === reloadGeneration &&
+    auth.project?.id === projectId &&
+    canRead.value
+  )
+    initialLoadSettled.value = true;
 }
 
 function openInvestigation(caseId: string): void {
@@ -754,6 +778,8 @@ onMounted(async () => {
 watch(
   () => auth.project?.id,
   () => {
+    reloadGeneration += 1;
+    initialLoadSettled.value = false;
     accessDenied.value = false;
     alertsAccessDenied.value = false;
     availabilityAccessDenied.value = false;
@@ -768,7 +794,7 @@ watch(
     leadAssignment.reset();
     leadAssignmentBatch.reset();
     selectedRiskCaseIds.value = [];
-    reload();
+    void reload();
     loadAvailability();
   },
 );
@@ -830,6 +856,7 @@ watch(risks.riskType, () => {
 });
 
 onBeforeUnmount(() => {
+  reloadGeneration += 1;
   overview.reset();
   risks.reset();
   leadControl.reset();
@@ -869,6 +896,11 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <PageLoadingSwap :loading="initialPageLoading">
+      <template #loading>
+        <SupportControlPageSkeleton />
+      </template>
+      <div class="support-control-content">
     <Message v-if="leadControl.error.value" severity="error" :closable="false">
       {{ leadControl.error.value }}
     </Message>
@@ -911,28 +943,9 @@ onBeforeUnmount(() => {
         :disabled="!fallbackCaseId.trim()"
       />
     </form>
-    <div
-      v-if="leadControl.loadingReadiness.value && !leadControl.readiness.value"
-      class="readiness-skeleton"
-      aria-label="Проверяем готовность панели руководителя"
-    >
-      <Skeleton height="72px" border-radius="14px" />
-    </div>
-
     <Message v-if="overview.error.value" severity="error" :closable="false">
       {{ overview.error.value }}
     </Message>
-    <div
-      v-if="overview.loading.value && !overview.summary.value"
-      class="metric-grid"
-    >
-      <Skeleton
-        v-for="index in 5"
-        :key="index"
-        height="164px"
-        border-radius="16px"
-      />
-    </div>
     <template v-if="overview.summary.value">
       <details class="control-context">
         <summary>
@@ -1149,7 +1162,12 @@ onBeforeUnmount(() => {
           Данные о рисках неполные. Перед действием перепроверьте текущую
           очередь.
         </Message>
-        <div v-if="leadControl.loadingCapacity.value" class="capacity-grid">
+        <div
+          v-if="
+            leadControl.loadingCapacity.value && !leadControl.capacity.value
+          "
+          class="capacity-grid"
+        >
           <Skeleton
             v-for="index in 2"
             :key="index"
@@ -1528,6 +1546,8 @@ onBeforeUnmount(() => {
       />
       </section>
     </div>
+      </div>
+    </PageLoadingSwap>
 
     <Dialog
       :visible="Boolean(leadControl.selectedCaseId.value)"

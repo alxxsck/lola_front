@@ -236,10 +236,18 @@ export function createSupportNotificationsController(
       const storedDevice = stored
         ? nextDevices.find((item) => item.id === stored.deviceId)
         : undefined;
-      if (stored && !storedDevice) clearRegistration(actorId);
+      const canResumeAfterLogin = Boolean(
+        stored?.resumeAfterLogin &&
+          nextBrowser.permission === "GRANTED" &&
+          nextBrowser.locallySubscribed &&
+          nextBrowser.endpoint === stored.endpoint &&
+          nextBrowser.applicationServerKey === stored.applicationServerKey,
+      );
+      if (stored && !storedDevice && !canResumeAfterLogin)
+        clearRegistration(actorId);
       else if (
         stored &&
-        storedDevice?.status === "ACTIVE" &&
+        (storedDevice?.status === "ACTIVE" || canResumeAfterLogin) &&
         nextBrowser.permission === "GRANTED" &&
         nextBrowser.locallySubscribed &&
         !currentDeviceId.value &&
@@ -392,10 +400,15 @@ export function createSupportNotificationsController(
     error.value = "";
     success.value = "";
     try {
+      const stored =
+        storedRegistration.value?.actorId === actorId
+          ? storedRegistration.value.registration
+          : loadStoredRegistration(actorId);
       if (
         browserState.value.locallySubscribed &&
         !currentDeviceId.value &&
-        !connectAttempt
+        !connectAttempt &&
+        !stored?.resumeAfterLogin
       ) {
         await runSupportNotificationBrowserLifecycle(() =>
           browser.unsubscribe(),
@@ -429,10 +442,6 @@ export function createSupportNotificationsController(
           ).catch(() => undefined);
         return;
       }
-      const stored =
-        storedRegistration.value?.actorId === actorId
-          ? storedRegistration.value.registration
-          : loadStoredRegistration(actorId);
       const currentDevice = devices.value.find(
         (item) => item.id === stored?.deviceId,
       );

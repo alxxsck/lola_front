@@ -1293,22 +1293,12 @@ const reservationReconcileInFlight = computed(
 );
 const lastInboxSelectionKey = ref("");
 const selectionIntentKey = ref("");
-const inboxModeIntent = ref<SupportInboxMode | null>(null);
 const selectedInboxKey = computed(
   () =>
     selectionIntentKey.value ||
     requestedSelectionKey.value ||
     lastInboxSelectionKey.value ||
     undefined,
-);
-const presentedInboxMode = computed(
-  () => inboxModeIntent.value ?? inboxMode.value,
-);
-const presentedInboxItems = computed(() =>
-  inboxModeIntent.value ? [] : inbox.items.value,
-);
-const inboxPresentationLoading = computed(
-  () => Boolean(inboxModeIntent.value) || inbox.loading.value,
 );
 const committedSelectionKey = computed(() => {
   const selection = conversation.selection.value;
@@ -1909,23 +1899,6 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
   } catch (error) {
     if (selectionIntentKey.value === selectionKey)
       selectionIntentKey.value = "";
-    throw error;
-  }
-}
-
-async function changeInboxMode(mode: SupportInboxMode): Promise<void> {
-  if (mode === presentedInboxMode.value) return;
-  inboxModeIntent.value = mode;
-  const query = { ...route.query };
-  delete query.panel;
-  if (mode === "ALL_CONVERSATIONS") delete query.mode;
-  else query.mode = "cases";
-  try {
-    await router.push({ name: "support-inbox", query });
-    if (inboxMode.value !== mode && inboxModeIntent.value === mode)
-      inboxModeIntent.value = null;
-  } catch (error) {
-    if (inboxModeIntent.value === mode) inboxModeIntent.value = null;
     throw error;
   }
 }
@@ -3304,10 +3277,9 @@ watch(
   },
 );
 
-watch(inboxMode, async (mode) => {
+watch(inboxMode, async () => {
   inbox.reset();
   await inbox.load();
-  if (inboxModeIntent.value === mode) inboxModeIntent.value = null;
 });
 
 watch(
@@ -3635,10 +3607,10 @@ onBeforeUnmount(() => {
       >
         <SupportInboxPane
           ref="supportInboxPane"
-          :mode="presentedInboxMode"
-          :items="presentedInboxItems"
+          :mode="inboxMode"
+          :items="inbox.items.value"
           :selected-key="selectedInboxKey"
-          :loading="inboxPresentationLoading"
+          :loading="inbox.loading.value"
           :error="inbox.error.value"
           :failure="inbox.failure.value"
           :has-more="Boolean(inbox.nextCursor.value)"
@@ -3680,7 +3652,6 @@ onBeforeUnmount(() => {
           :view-conflict="supportViews.conflict.value"
           :view-active="viewActive"
           @select="openInboxItem"
-          @change-mode="changeInboxMode"
           @load-more="inbox.loadMore"
           @retry="inbox.load"
           @change-search="changeSupportSearch"
@@ -4001,7 +3972,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div
-            v-else-if="inboxPresentationLoading"
+            v-else-if="inbox.loading.value"
             class="empty-selection"
             aria-busy="true"
           >

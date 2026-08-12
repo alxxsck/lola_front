@@ -248,4 +248,16 @@ describe('SupportQualityRegistryPage hardening', () => {
     expect(wrapper.text()).not.toContain('Политика выборки создана');
     expect(wrapper.text()).not.toContain('Детерминированная выборка проверок');
   });
+
+  it('explains an empty calibration registry and offers a safe next step', async () => {
+    state.route.name = 'support-quality-calibrations';
+    quality.listCalibrations.mockResolvedValue({ items: [], nextCursor: null });
+
+    const wrapper = mount(SupportQualityRegistryPage, { global: { stubs } });
+    await vi.waitFor(() => expect(wrapper.find('.loading').exists()).toBe(false));
+
+    expect(wrapper.get('#calibrations-empty-title').text()).toBe('Калибровок пока нет');
+    expect(wrapper.text()).toContain('Контроль качества работает');
+    expect(wrapper.get('.calibration-empty__link').text()).toBe('Открыть очередь проверок');
+  });
 });

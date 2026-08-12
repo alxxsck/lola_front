@@ -224,9 +224,8 @@ export function useSupportCaseIntelligence(
   const dryRunResult = shallowRef<CaseIntelligenceDryRunResponseDto | null>(
     null,
   );
-  const modelProfiles = shallowRef<CaseIntelligenceModelProfileCatalogResponseDto | null>(
-    null,
-  );
+  const modelProfiles =
+    shallowRef<CaseIntelligenceModelProfileCatalogResponseDto | null>(null);
   const calibration = shallowRef<CaseIntelligenceCalibrationResponseDto | null>(
     null,
   );
@@ -244,8 +243,9 @@ export function useSupportCaseIntelligence(
   const canRead = computed(() =>
     permission(authority.value, "project.case_intelligence.read"),
   );
-  const allows = (action: CaseIntelligenceCurrentResponseDtoAllowedActionsItem) =>
-    snapshot.value?.allowedActions.includes(action) === true;
+  const allows = (
+    action: CaseIntelligenceCurrentResponseDtoAllowedActionsItem,
+  ) => snapshot.value?.allowedActions.includes(action) === true;
   const canPreview = computed(
     () =>
       permission(authority.value, "project.case_intelligence.preview") &&
@@ -276,12 +276,29 @@ export function useSupportCaseIntelligence(
   const canReadCost = computed(() =>
     permission(authority.value, "project.case_intelligence.cost.read"),
   );
+  const assignedModelRevisionId = computed(() => {
+    const candidates = [
+      modelProfiles.value?.selectedRevisionId,
+      snapshot.value?.release?.modelProfileRevisionId,
+    ];
+    return (
+      candidates
+        .find(
+          (candidate): candidate is string =>
+            typeof candidate === "string" && candidate.trim().length > 0,
+        )
+        ?.trim() ?? ""
+    );
+  });
   const modelProfileIssues = computed<PolicyIssue[]>(() => {
     if (!modelProfiles.value) return [];
-    const selected = modelProfiles.value.items.some(
-      (profile) =>
-        profile.revisionId === detection.value.modelProfileRevisionId,
-    );
+    const selected =
+      assignedModelRevisionId.value ===
+        detection.value.modelProfileRevisionId ||
+      modelProfiles.value.items.some(
+        (profile) =>
+          profile.revisionId === detection.value.modelProfileRevisionId,
+      );
     return selected
       ? []
       : [
@@ -454,9 +471,9 @@ export function useSupportCaseIntelligence(
         !options.preserveForms &&
         !value.detection?.draft &&
         !value.detection?.published &&
-        profiles.selectedRevisionId
+        assignedModelRevisionId.value
       )
-        detection.value.modelProfileRevisionId = profiles.selectedRevisionId;
+        detection.value.modelProfileRevisionId = assignedModelRevisionId.value;
       if (pendingAttempt.value && !canRunAttempt(scope, pendingAttempt.value))
         forget(scope);
     } catch (cause) {
@@ -904,6 +921,7 @@ export function useSupportCaseIntelligence(
     pendingAttempt,
     dryRunResult,
     modelProfiles,
+    assignedModelRevisionId,
     calibration,
     serverDetectionIssues,
     validatedPolicyHash,

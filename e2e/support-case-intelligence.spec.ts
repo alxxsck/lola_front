@@ -33,8 +33,38 @@ test("edits, checks, saves and publishes classification rules", async ({
   await expect(
     page.getByRole("dialog", { name: "Проверка на примере" }),
   ).toBeHidden();
+  const classificationBrief = page.locator(".classification-brief");
+  await expect(classificationBrief).not.toContainText("Языки классификации");
+  await expect(classificationBrief).not.toContainText("Запасной язык");
+  await expect(
+    classificationBrief.getByLabel("Каналы классификации"),
+  ).toContainText(/Каналы\s*Текст/u);
+  await expect(page.locator(".catalog-footer").first()).toHaveText(
+    /Категорий: \d+ из 50/u,
+  );
+  await expect(page.locator(".catalog-footer").last()).toHaveText(
+    /Точных правил: \d+ из 200/u,
+  );
+  const addCategory = page.getByRole("button", { name: "Добавить категорию" });
+  const addRule = page.getByRole("button", { name: "Добавить правило" });
+  await expect(addCategory).toHaveClass(/p-button-secondary/u);
+  await expect(addCategory).toHaveClass(/p-button-outlined/u);
+  await expect(addRule).toHaveClass(/p-button-secondary/u);
+  await expect(addRule).toHaveClass(/p-button-outlined/u);
 
-  await page.getByRole("button", { name: "Добавить категорию" }).click();
+  const alignment = await page.evaluate(() => {
+    const title = document.querySelector("#intelligence-title");
+    const map = document.querySelector(".classification-map");
+    return {
+      titleLeft: Math.round(title?.getBoundingClientRect().left ?? -1),
+      mapLeft: Math.round(map?.getBoundingClientRect().left ?? -1),
+    };
+  });
+  expect(Math.abs(alignment.titleLeft - alignment.mapLeft)).toBeLessThanOrEqual(
+    1,
+  );
+
+  await addCategory.click();
   const categoryDialog = page.getByRole("dialog", { name: "Новая категория" });
   await expect(categoryDialog).toBeVisible();
   await categoryDialog.getByLabel("Код категории").fill("DELIVERY");
@@ -132,9 +162,7 @@ test("keeps the permanent settings navigation responsive and accessible", async 
   ).toBeVisible();
   const projectLanguages = scopeDialog.getByLabel("Языки проекта");
   await expect(projectLanguages.getByText("Русский · ru")).toBeVisible();
-  await expect(
-    projectLanguages.getByText("Английский · en"),
-  ).toBeVisible();
+  await expect(projectLanguages.getByText("Английский · en")).toBeVisible();
   await expect(
     scopeDialog.getByText(
       "Равен основному языку проекта и используется, если канал или профиль пользователя не сообщил язык.",
@@ -186,6 +214,39 @@ test("keeps the permanent settings navigation responsive and accessible", async 
   ).toEqual([]);
 });
 
+test("separates rule authoring from quality and release operations", async ({
+  page,
+}) => {
+  const authoringNavigation = page.getByRole("navigation", {
+    name: "Разделы правил обращений",
+  });
+  await expect(authoringNavigation.getByRole("link")).toHaveText([
+    "Обзор",
+    "Категории и правила",
+    "Передача оператору",
+    "Модель и лимиты",
+  ]);
+  await expect(authoringNavigation).not.toContainText("Качество");
+
+  await page.getByRole("link", { name: "Проверка и публикация" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Качество и публикация" }),
+  ).toBeVisible();
+  const operationsNavigation = page.getByRole("navigation", {
+    name: "Разделы Case Intelligence",
+  });
+  await expect(operationsNavigation.getByRole("link")).toHaveText([
+    "Качество и публикация",
+    "Расходы и путь обращения",
+    "Журнал решений",
+    "Версии",
+  ]);
+  await expect(operationsNavigation).not.toContainText("Категории и правила");
+
+  await page.getByRole("link", { name: "Настройки правил" }).click();
+  await expect(page).toHaveURL(/case-intelligence\/detection$/u);
+});
+
 test("edits and simulates Human Escalation without dispatching work", async ({
   page,
 }) => {
@@ -203,6 +264,18 @@ test("edits and simulates Human Escalation without dispatching work", async ({
     page.getByText("Обязательные правила платформы · только просмотр"),
   ).toBeVisible();
   await expect(page.getByText("Безопасность готова")).toBeVisible();
+  const phraseRegion = page.getByRole("region", { name: "Фразы человека" });
+  await expect(phraseRegion).toBeVisible();
+  await expect(phraseRegion.locator(".rule-group")).toHaveCount(3);
+  await expect(
+    phraseRegion.getByRole("heading", { name: "Явная просьба" }),
+  ).toBeVisible();
+  await expect(
+    phraseRegion.getByRole("heading", { name: "Неясное упоминание" }),
+  ).toBeVisible();
+  await expect(
+    phraseRegion.getByRole("heading", { name: "Точные исключения" }),
+  ).toBeVisible();
 
   const explicitRule = page.getByRole("button", { name: /HUMAN_REQUEST_RU/ });
   await explicitRule.focus();
@@ -220,19 +293,110 @@ test("edits and simulates Human Escalation without dispatching work", async ({
   const newEditor = page.getByRole("dialog", {
     name: "Явная просьба человека",
   });
-  const phrases = newEditor.getByLabel("Фразы");
+  const editorGeometry = await newEditor.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(editorGeometry.width).toBeLessThanOrEqual(
+    Math.min(680, editorGeometry.viewportWidth - 24),
+  );
+  expect(editorGeometry.height).toBeLessThanOrEqual(
+    editorGeometry.viewportHeight - 24,
+  );
+  const phrases = newEditor.locator("#escalation-rule-phrases");
   await expect(phrases).toHaveAttribute("aria-invalid", "true");
   await expect(newEditor.getByText("Добавьте от 1 до 50 фраз.")).toBeVisible();
   await expect(
     newEditor.getByRole("button", { name: "Готово" }),
   ).toBeDisabled();
+  await expect(
+    newEditor.getByRole("note", { name: /Фразы\. Реальные формулировки/u }),
+  ).toBeVisible();
+  expect(
+    await newEditor
+      .locator("input, textarea, .p-multiselect-label")
+      .evaluateAll((controls) =>
+        controls.every((control) =>
+          ["400", "normal"].includes(getComputedStyle(control).fontWeight),
+        ),
+      ),
+  ).toBe(true);
+  await newEditor.locator(".p-multiselect").click();
+  const localeOptions = await page.getByRole("option").all();
+  for (const option of localeOptions) {
+    if ((await option.getAttribute("aria-selected")) !== "true") {
+      await option.click();
+    }
+  }
+  await page.keyboard.press("Escape");
+  const localeGeometry = await newEditor.evaluate((element) => {
+    const dialog = element.getBoundingClientRect();
+    const multiselect = element.querySelector<HTMLElement>(".p-multiselect");
+    const content = element.querySelector<HTMLElement>(".p-dialog-content");
+    return {
+      selectedCount: element.querySelectorAll(".p-multiselect-chip").length,
+      dialogRight: Math.round(dialog.right),
+      viewportWidth: window.innerWidth,
+      multiselectClientWidth: multiselect?.clientWidth ?? 0,
+      multiselectScrollWidth: multiselect?.scrollWidth ?? 0,
+      contentClientWidth: content?.clientWidth ?? 0,
+      contentScrollWidth: content?.scrollWidth ?? 0,
+    };
+  });
+  expect(localeGeometry.selectedCount).toBe(localeOptions.length);
+  expect(localeGeometry.dialogRight).toBeLessThanOrEqual(
+    localeGeometry.viewportWidth,
+  );
+  expect(localeGeometry.multiselectScrollWidth).toBeLessThanOrEqual(
+    localeGeometry.multiselectClientWidth + 1,
+  );
+  expect(localeGeometry.contentScrollWidth).toBeLessThanOrEqual(
+    localeGeometry.contentClientWidth + 1,
+  );
   await newEditor.getByRole("button", { name: "Отмена" }).click();
+
+  await page.getByRole("button", { name: "Добавить сценарий" }).click();
+  const scenarioEditor = page.getByRole("dialog", {
+    name: "Сценарий передачи",
+  });
+  const technicalFields = scenarioEditor.locator(".technical-fields");
+  await expect(technicalFields).not.toHaveAttribute("open", "");
+  await technicalFields.getByText("Технические идентификаторы").click();
+  await expect(
+    scenarioEditor.locator("#escalation-scenario-code"),
+  ).toBeVisible();
+  await expect(
+    scenarioEditor.getByRole("note", {
+      name: /Код причины\. Причина именно этой передачи/u,
+    }),
+  ).toBeVisible();
+  await scenarioEditor.getByRole("button", { name: "Отмена" }).click();
 
   await page.getByRole("button", { name: "Проверить сценарий" }).click();
   await expect(page).toHaveURL(/escalationPanel=simulator/u);
   const simulator = page.getByRole("dialog", {
     name: "Проверка сценария передачи",
   });
+  const simulatorGeometry = await simulator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  if (simulatorGeometry.viewportWidth > 900) {
+    expect(simulatorGeometry.width).toBeLessThanOrEqual(1120);
+    expect(simulatorGeometry.height).toBeLessThanOrEqual(
+      simulatorGeometry.viewportHeight - 32,
+    );
+  }
   await expect(simulator.getByText("Без реальных действий")).toBeVisible();
   await simulator.getByRole("button", { name: "Явная просьба" }).click();
   await simulator
@@ -242,6 +406,12 @@ test("edits and simulates Human Escalation without dispatching work", async ({
   await simulator.getByRole("button", { name: "Запустить проверку" }).click();
   await expect(page).toHaveURL(/escalationPanel=result/u);
   await expect(simulator.getByText("Без записи")).toBeVisible();
+  await expect(
+    simulator.locator(".decision-flow").first().locator("li"),
+  ).toHaveCount(4);
+  await simulator.locator(".timeline-details").evaluateAll((details) => {
+    details.forEach((item) => item.setAttribute("open", ""));
+  });
   await expect(simulator.getByText(/Повтор шага 1/)).toBeVisible();
   await expect(
     simulator.getByText(/Передаём обращение команде поддержки/).first(),
@@ -302,6 +472,9 @@ test("renders the complete Human Escalation transition and Safety states", async
     await simulator.getByRole("button", { name: "Запустить проверку" }).click();
     await expect(page).toHaveURL(/escalationPanel=result/u);
     await expect(simulator.getByText("Без записи")).toBeVisible();
+    await simulator.locator(".timeline-details").evaluateAll((details) => {
+      details.forEach((item) => item.setAttribute("open", ""));
+    });
   };
   const editEvent = async (
     index: number,

@@ -350,6 +350,54 @@ describe("createSupportNotificationsController", () => {
     expect(controller.currentDeviceId.value).toBe(reactivated.id);
   });
 
+  it("restores a browser subscription for the same actor after logout", async () => {
+    const { controller, source, browser, setBrowserState } = setup();
+    const revoked = {
+      id: "00000000-0000-4000-8000-000000000027",
+      userAgentClass: "Chrome · macOS",
+      status: "REVOKED" as const,
+      version: 5,
+      createdAt: "2026-08-08T10:00:00.000Z",
+      lastSeenAt: "2026-08-09T09:00:00.000Z",
+      revokedAt: "2026-08-09T10:00:00.000Z",
+    };
+    const resumed = {
+      ...revoked,
+      status: "ACTIVE" as const,
+      version: 6,
+      revokedAt: null,
+    };
+    writeStoredBrowserPushRegistration("operator-1", {
+      deviceId: revoked.id,
+      endpoint: "https://push.example.test/device",
+      applicationServerKey: "public-key",
+      applicationServerKeyRevision: "fedcba9876543210",
+      resumeAfterLogin: true,
+    });
+    setBrowserState({
+      permission: "GRANTED",
+      locallySubscribed: true,
+      requiresInstalledApp: false,
+      endpoint: "https://push.example.test/device",
+      applicationServerKey: "public-key",
+    });
+    vi.mocked(source.listDevices)
+      .mockResolvedValueOnce([revoked])
+      .mockResolvedValue([resumed]);
+    vi.mocked(source.registerDevice).mockResolvedValue(resumed);
+
+    await controller.load();
+
+    expect(browser.unsubscribe).not.toHaveBeenCalled();
+    expect(browser.subscribe).toHaveBeenCalledWith("public-key");
+    expect(source.registerDevice).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedVersion: revoked.version }),
+      expect.anything(),
+    );
+    expect(controller.currentDeviceId.value).toBe(resumed.id);
+    expect(controller.browserReady.value).toBe(true);
+  });
+
   it("rotates a stale browser registration and retires the old active device", async () => {
     const { controller, source, setBrowserState } = setup();
     const oldDevice = {

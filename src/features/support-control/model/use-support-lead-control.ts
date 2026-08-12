@@ -112,12 +112,12 @@ export function createSupportLeadControlController(
       const nextReadiness = await source.readReadiness(projectId, abort.signal);
       if (!currentProject(projectId, generation)) return;
       readiness.value = nextReadiness;
-      capacity.value = null;
       loadingReadiness.value = false;
       if (
         !["READY", "STALE"].includes(nextReadiness.readinessState) ||
         nextReadiness.capabilities.capacityRisks !== "AVAILABLE"
       ) {
+        capacity.value = null;
         if (
           caseToRestore &&
           nextReadiness.capabilities.investigation !== "UNAVAILABLE"

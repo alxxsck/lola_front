@@ -9,6 +9,7 @@ import {
   clearAuthSession,
   getAccessToken,
   storeAccessToken,
+  storeSelectedProjectId,
 } from "./auth-session";
 import {
   authTeardownRequestOptions,
@@ -16,6 +17,7 @@ import {
   endAuthTeardown,
   axiosInstance,
   noAuthRetryRequestOptions,
+  registerUnauthorizedHandler,
   registerMfaRequirementHandler,
   registerRefreshHandler,
 } from "./axios-instance";
@@ -113,6 +115,54 @@ describe("axios auth lifecycle", () => {
     expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
   });
 
+  it("does not clear the active session when a late 401 belongs to the previous Project", async () => {
+    storeAccessToken({ accessToken: "valid", expiresIn: 60 });
+    storeSelectedProjectId("project-1");
+    const refresh = vi.fn(async () => undefined);
+    const unauthorized = vi.fn();
+    registerRefreshHandler(refresh);
+    registerUnauthorizedHandler(unauthorized);
+    let rejectRequest!: () => void;
+    let attempts = 0;
+    axiosInstance.defaults.adapter = (config) => {
+      attempts += 1;
+      if (attempts > 1)
+        return Promise.reject(
+          new AxiosError(
+            "Request failed",
+            "ERR_BAD_REQUEST",
+            config,
+            undefined,
+            response(config, 401),
+          ),
+        );
+      return new Promise((_, rejectPromise) => {
+        rejectRequest = () => {
+          try {
+            reject(config, 401);
+          } catch (cause) {
+            rejectPromise(cause);
+          }
+        };
+      });
+    };
+
+    const oldProjectRequest = axiosInstance.get(
+      "/api/v1/admin/projects/project-1/support/inbox",
+    );
+    await vi.waitFor(() => expect(rejectRequest).toBeTypeOf("function"));
+    storeSelectedProjectId("project-2");
+    rejectRequest();
+
+    await expect(oldProjectRequest).rejects.toMatchObject({ status: 401 });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(unauthorized).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe("valid");
+    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBe(
+      "project-2",
+    );
+  });
+
   it("never refreshes or replays an audited Support mutation", async () => {
     storeAccessToken({ accessToken: "confirmed-authority", expiresIn: 60 });
     const refresh = vi.fn();
@@ -208,6 +258,35 @@ describe("axios auth lifecycle", () => {
     });
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(attempts).toBe(2);
+  });
+
+  it("keeps the CMS session when scenario creation is still rejected after a successful refresh", async () => {
+    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+    storeSelectedProjectId("project-1");
+    const unauthorized = vi.fn();
+    registerUnauthorizedHandler(unauthorized);
+    registerRefreshHandler(async () => {
+      storeAccessToken({ accessToken: "fresh", expiresIn: 60 });
+    });
+    let attempts = 0;
+    axiosInstance.defaults.adapter = async (config) => {
+      attempts += 1;
+      return reject(config, 401);
+    };
+
+    await expect(
+      axiosInstance.post(
+        "/api/v1/admin/projects/project-1/scenario-authoring/scenarios",
+        { scenario: {}, draft: {} },
+      ),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(attempts).toBe(2);
+    expect(unauthorized).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe("fresh");
+    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBe(
+      "project-1",
+    );
   });
 
   it("does not enter a refresh loop for the refresh endpoint", async () => {
