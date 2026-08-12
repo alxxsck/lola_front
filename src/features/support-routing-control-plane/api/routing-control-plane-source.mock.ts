@@ -104,7 +104,7 @@ function initialSnapshot(): RoutingWorkspaceSnapshot {
       published: { id: "workforce-revision-3", revisionNumber: 3, publishedAt: "2026-08-12T07:20:00.000Z", configuration: structuredClone(workforceConfiguration) },
     },
     queues: [{
-      id: "queue-urgent", code: "urgent", name: initialQueueDraft.displayName,
+      id: "queue-urgent", code: "urgent", kind: "SYSTEM", name: initialQueueDraft.displayName,
       description: initialQueueDraft.description, lifecycle: "ACTIVE", version: 4,
       actionEtag: '"mock-queue-4"', draft: null,
       detailLoaded: true,

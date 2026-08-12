@@ -23,6 +23,33 @@ export type CaseIntelligenceRuntimePresentation = {
   tone: "success" | "warning" | "neutral";
 };
 
+export type CaseIntelligenceModelSetupNotice = {
+  title: string;
+  copy: string;
+  action: string;
+};
+
+export function presentCaseIntelligenceModelSetup(
+  catalogLoaded: boolean,
+  profileCount: number,
+  assignedRevisionId: string | null,
+): CaseIntelligenceModelSetupNotice | null {
+  if (!catalogLoaded) return null;
+  if (profileCount === 0)
+    return {
+      title: "Контур классификации ещё не подготовлен платформой.",
+      copy: "Модели помощника и перевода в настройках проекта не используются для классификации обращений. Платформе нужно отдельно опубликовать профиль Case Intelligence, калибратор и проверочный набор данных. Настройки проекта здесь ни при чём.",
+      action: "Открыть диагностику модели",
+    };
+  if (!assignedRevisionId)
+    return {
+      title: "Для проекта не выбрана модель классификации.",
+      copy: "Платформенный каталог уже доступен. Выберите профиль для этого проекта и опубликуйте бюджет — после этого станут доступны проверка и публикация.",
+      action: "Выбрать модель и лимиты",
+    };
+  return null;
+}
+
 export function presentCaseIntelligenceRuntime(
   snapshot: CaseIntelligenceCurrentResponseDto | null,
 ): CaseIntelligenceRuntimePresentation {

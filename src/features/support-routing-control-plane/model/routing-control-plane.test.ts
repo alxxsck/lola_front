@@ -3,6 +3,8 @@ import {
   emptyPolicyDraft,
   emptyQueueDraft,
   labelUnknown,
+  routingQueueLabel,
+  routingQueuePurpose,
   routingPolicyLabel,
 } from "./routing-control-plane";
 
@@ -32,5 +34,27 @@ describe("routing control plane domain", () => {
   it("renders an empty policy catalog without crashing the overview", () => {
     expect(routingPolicyLabel(undefined)).toBe("Не настроена");
     expect(routingPolicyLabel({ code: "balanced" })).toBe("Сбалансированная");
+  });
+
+  it("explains platform queues with human labels instead of technical slugs", () => {
+    const queue = {
+      code: "waiting-admin",
+      name: "waiting-admin",
+      kind: "SYSTEM" as const,
+      description: null,
+    };
+    expect(routingQueueLabel(queue)).toBe("Ожидают администратора");
+    expect(routingQueuePurpose(queue)).toContain("решение администратора");
+  });
+
+  it("preserves a project queue name and description", () => {
+    const queue = {
+      code: "vip",
+      name: "VIP-клиенты",
+      kind: "PROJECT" as const,
+      description: "Персональное обслуживание",
+    };
+    expect(routingQueueLabel(queue)).toBe("VIP-клиенты");
+    expect(routingQueuePurpose(queue)).toBe("Персональное обслуживание");
   });
 });

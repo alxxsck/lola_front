@@ -68,6 +68,7 @@ export interface QueueDraft {
 export interface RoutingQueue {
   id: string;
   code: string;
+  kind?: "SYSTEM" | "PROJECT";
   name: string;
   description: string | null;
   lifecycle: Lifecycle;
@@ -267,4 +268,52 @@ export function routingPolicyLabel(
 ): string {
   if (!policy) return "Не настроена";
   return policy.code === "balanced" ? "Сбалансированная" : policy.code;
+}
+
+const SYSTEM_QUEUE_PRESENTATIONS: Record<string, { label: string; purpose: string }> = {
+  unassigned: {
+    label: "Без исполнителя",
+    purpose: "Новые обращения, которым ещё не назначен оператор",
+  },
+  "waiting-admin": {
+    label: "Ожидают администратора",
+    purpose: "Обращения, где требуется решение администратора",
+  },
+  "sla-at-risk": {
+    label: "Риск нарушения SLA",
+    purpose: "Обращения с приближающимся или нарушенным сроком",
+  },
+  urgent: {
+    label: "Срочные обращения",
+    purpose: "Обращения с высоким приоритетом или срочностью",
+  },
+  "recently-resolved": {
+    label: "Недавно решённые",
+    purpose: "Недавно закрытые обращения для контроля результата",
+  },
+  unmapped: {
+    label: "Без маршрута",
+    purpose: "Обращения, которые не попали ни в одну рабочую очередь",
+  },
+  degraded: {
+    label: "Проблемы обработки",
+    purpose: "Обращения, обработанные с ограничениями или ошибками",
+  },
+};
+
+export function routingQueueLabel(
+  queue: Pick<RoutingQueue, "code" | "name" | "kind">,
+): string {
+  if (queue.kind === "SYSTEM" || queue.name === queue.code) {
+    return SYSTEM_QUEUE_PRESENTATIONS[queue.code]?.label ?? queue.name ?? queue.code;
+  }
+  return queue.name || queue.code;
+}
+
+export function routingQueuePurpose(
+  queue: Pick<RoutingQueue, "code" | "description" | "kind">,
+): string {
+  return queue.description ||
+    (queue.kind === "SYSTEM" ? SYSTEM_QUEUE_PRESENTATIONS[queue.code]?.purpose : undefined) ||
+    "Пользовательская выборка обращений";
 }
