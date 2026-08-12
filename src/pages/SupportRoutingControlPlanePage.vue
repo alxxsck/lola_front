@@ -19,10 +19,10 @@ import {
   emptyPolicyDraft,
   emptyQueueDraft,
   labelUnknown,
+  routingPolicyLabel,
   type PolicyDraft,
   type QueueDraft,
   type QueuePredicate,
-  type RoutingPolicy,
   type RoutingQueue,
   type RoutingSection,
   type WorkforceConfiguration,
@@ -241,7 +241,7 @@ const policyOptions = computed(
   () =>
     snapshot.value?.policies
       .filter((item) => item.lifecycle === "ACTIVE" && item.published)
-      .map((item) => ({ label: policyLabel(item), value: item.id })) ?? [],
+      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ?? [],
 );
 const activationModeOptions = computed(() =>
   [
@@ -435,9 +435,6 @@ onBeforeRouteLeave(
 
 function queueLabel(queue: RoutingQueue): string {
   return queue.name || queue.code;
-}
-function policyLabel(policy: RoutingPolicy): string {
-  return policy.code === "balanced" ? "Сбалансированная" : policy.code;
 }
 function teamName(id: string | null): string {
   return (
@@ -940,10 +937,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <div>
               <span>Политика</span
               ><strong>{{
-                policyLabel(
+                routingPolicyLabel(
                   snapshot.policies.find(
                     (item) => item.id === selectedSlot?.policyId,
-                  ) ?? snapshot.policies[0]!,
+                  ) ?? snapshot.policies[0],
                 )
               }}</strong>
             </div>
@@ -1691,7 +1688,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             @click="selectedPolicyId = policy.id"
           >
             <span
-              ><strong>{{ policyLabel(policy) }}</strong
+              ><strong>{{ routingPolicyLabel(policy) }}</strong
               ><small>{{
                 policy.draft
                   ? "Отдельный черновик"
@@ -1711,7 +1708,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div class="surface-title">
             <div>
               <span class="routing-eyebrow">Политика назначения</span>
-              <h2>{{ policyLabel(selectedPolicy) }}</h2>
+              <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
               <p>Числа сопровождаются объяснением влияния на выбор.</p>
             </div>
             <div class="surface-title__actions">
@@ -1900,7 +1897,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         </div>
         <div v-else-if="selectedPolicy" class="routing-surface">
           <span class="routing-eyebrow">Опубликованная политика</span>
-          <h2>{{ policyLabel(selectedPolicy) }}</h2>
+          <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
           <Message severity="info" :closable="false"
             >Черновик и команды изменения скрыты. Показана опубликованная версия
             {{ selectedPolicy.published?.revisionNumber ?? "—" }}.</Message
@@ -2213,10 +2210,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             ><small>Очередь</small></span
           ><span
             ><i class="pi pi-sliders-h" /><strong>{{
-              policyLabel(
+              routingPolicyLabel(
                 snapshot?.policies.find(
                   (item) => item.id === selectedSlot?.policyId,
-                ) ?? snapshot!.policies[0]!,
+                ) ?? snapshot?.policies[0],
               )
             }}</strong
             ><small>Политика</small></span

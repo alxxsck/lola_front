@@ -261,3 +261,10 @@ export const emptyQueueDraft = (name = "Новая очередь"): QueueDraft 
 export function labelUnknown(value: string, labels: Record<string, string>): string {
   return labels[value] ?? `Неизвестное состояние · ${value}`;
 }
+
+export function routingPolicyLabel(
+  policy: Pick<RoutingPolicy, "code"> | null | undefined,
+): string {
+  if (!policy) return "Не настроена";
+  return policy.code === "balanced" ? "Сбалансированная" : policy.code;
+}
