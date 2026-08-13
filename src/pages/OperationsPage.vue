@@ -16,6 +16,7 @@ import ScenarioAdmissionDecisionsPanel from '@/features/scenario-admission/Scena
 import { repository } from '@/shared/api/repository';
 import { formatDate, relativeTime } from '@/shared/lib/format';
 import CodeBlock from '@/shared/ui/CodeBlock.vue';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 import type {
   AuditEvent,
   ProductApiRequestLog,
@@ -647,10 +648,8 @@ onMounted(() => void refresh());
             ></Column
           >
           <Column header="Пользователь"
-            ><template #body="{ data }"
-              ><span class="mono compact">{{ data.userExternalId }}</span></template
-            ></Column
-          >
+            ><template #body="{ data }"><ExternalUserId :value="data.userExternalId" /></template
+          ></Column>
           <Column header="Прогресс" class="mobile-hide"
             ><template #body="{ data }"
               ><span>{{ data.currentStep }} / {{ data.steps.length }}</span></template
@@ -804,7 +803,10 @@ onMounted(() => void refresh());
           >
           <Column header="User" class="mobile-hide"
             ><template #body="{ data }"
-              ><span class="mono compact">{{ data.externalUserId || '—' }}</span></template
+              ><ExternalUserId v-if="data.externalUserId" :value="data.externalUserId" /><span
+                v-else
+                >—</span
+              ></template
             ></Column
           >
           <Column header="Размер" class="mobile-hide"
@@ -859,9 +861,7 @@ onMounted(() => void refresh());
           <span>Статус</span
           ><Tag :value="selectedRun.status" :severity="severity(selectedRun.status)" />
         </div>
-        <div>
-          <span>Пользователь</span><strong class="mono">{{ selectedRun.userExternalId }}</strong>
-        </div>
+        <div><span>Пользователь</span><ExternalUserId :value="selectedRun.userExternalId" /></div>
         <div>
           <span>Начало</span><strong>{{ formatDate(selectedRun.startedAt) }}</strong>
         </div>
@@ -1010,7 +1010,11 @@ onMounted(() => void refresh());
         </div>
         <div class="request-user">
           <span>Пользователь</span>
-          <strong class="mono">{{ selectedProductApiRequest.externalUserId || '—' }}</strong>
+          <ExternalUserId
+            v-if="selectedProductApiRequest.externalUserId"
+            :value="selectedProductApiRequest.externalUserId"
+          />
+          <strong v-else>—</strong>
         </div>
         <div class="request-vitals">
           <span

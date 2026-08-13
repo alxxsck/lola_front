@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { adminEndUserProfilesHistory } from '@/shared/api/generated/retenive-backend';
+import {
+  adminEndUserProfilesHistory,
+  adminEndUserProfilesList,
+} from '@/shared/api/generated/retenive-backend';
 import { endUserProfileRepository } from './end-user-profile-repository';
 
 vi.mock('@/shared/api/generated/retenive-backend', () => ({
@@ -34,9 +37,33 @@ describe('endUserProfileRepository', () => {
     });
   });
 
-  it('не выполняет небезопасный поиск по внешнему ID в API mode', async () => {
+  it('разрешает внешний ID через профильный list endpoint в API mode', async () => {
+    vi.mocked(adminEndUserProfilesList).mockResolvedValue({
+      items: [
+        {
+          endUserId: 'user-1',
+          externalUserId: 'player-42',
+          fields: [],
+          lastSeenAt: '2026-08-13T10:00:00.000Z',
+          profileVersion: '2',
+          syncStatus: 'VALID',
+          conversationAiSuspensionSummary: {
+            activeConversationCount: 0,
+            mostRecentlyStartedConversationId: null,
+            nearestSuspendedUntil: null,
+            serverTime: '2026-08-13T10:00:00.000Z',
+          },
+        },
+      ],
+      nextCursor: null,
+    });
+
     await expect(
       endUserProfileRepository.resolveIdentity('project-1', 'player-42'),
-    ).resolves.toBeNull();
+    ).resolves.toEqual({ endUserId: 'user-1' });
+    expect(adminEndUserProfilesList).toHaveBeenCalledWith('project-1', {
+      externalUserId: 'player-42',
+      limit: 1,
+    });
   });
 });

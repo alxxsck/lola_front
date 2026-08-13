@@ -48,6 +48,7 @@ const mocks = vi.hoisted(() => ({
       }
     | undefined,
   logout: vi.fn(),
+  push: vi.fn(),
   replace: vi.fn(),
   route: { fullPath: '/users?userId=user-1' },
   permissions: [
@@ -74,7 +75,7 @@ vi.mock('@/features/auth/auth.store', () => ({
 }));
 vi.mock('vue-router', () => ({
   useRoute: () => mocks.route,
-  useRouter: () => ({ replace: mocks.replace }),
+  useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
 }));
 vi.mock('@/features/end-user-profile/api/end-user-profile-repository', () => ({
   endUserProfileRepository: { profile: mocks.profile },
@@ -372,6 +373,81 @@ describe('единое рабочее пространство пользова�
       },
     });
   }
+
+  it('показывает внешний ID в заголовке и оба ID в основной информации', async () => {
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const overview = wrapper.get('[data-testid="profile-overview"]');
+    expect(overview.text()).toContain('customer-1');
+    expect(overview.text()).toContain('Внешний ID пользователя');
+    expect(overview.text()).toContain('Внутренний ID пользователя');
+    expect(overview.text()).toContain('user-1');
+  });
+
+  it('показывает имя из профиля над внешним ID', async () => {
+    mocks.profile.mockResolvedValueOnce({
+      endUserId: 'user-1',
+      externalUserId: 'customer-1',
+      profileVersion: '8',
+      syncStatus: 'VALID',
+      fields: [
+        {
+          definitionId: 'display-name',
+          definitionRevisionId: 'display-name-r1',
+          key: 'fullName',
+          label: 'Имя',
+          valueType: 'STRING',
+          semanticRole: 'DISPLAY_NAME',
+          lifecycle: 'ACTIVE',
+          classification: 'PERSONAL',
+          access: 'ALLOWED',
+          availability: 'AVAILABLE',
+          value: { type: 'STRING', value: 'Анна Смирнова' },
+        },
+      ],
+      observedAt: '2026-07-20T12:00:00.000Z',
+      receivedAt: '2026-07-20T12:00:00.000Z',
+      ageSeconds: 60,
+      contractRevision: 1,
+      publicationId: 'publication-12',
+      publicationSequence: 12,
+      provenance: 'PRODUCT_PROFILE',
+    });
+
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    const overview = wrapper.get('[data-testid="profile-overview"]');
+    expect(overview.text()).toContain('Анна Смирнова');
+    expect(overview.text()).toContain('customer-1');
+  });
+
+  it('открывает журнал проекта с фильтром по внешнему ID пользователя', async () => {
+    mocks.permissions.push('project.event_logs.read');
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    await wrapper.get('[data-action="open-project-journal"]').trigger('click');
+
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: 'event-logs',
+      query: { tab: 'events', user: 'customer-1' },
+    });
+  });
+
+  it('открывает историю интеграций, когда журнал событий недоступен', async () => {
+    mocks.permissions.splice(0, mocks.permissions.length, 'project.integration_activity.read');
+    const wrapper = mountWorkspace();
+    await flushPromises();
+
+    await wrapper.get('[data-action="open-project-journal"]').trigger('click');
+
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: 'event-logs',
+      query: { tab: 'integrations', user: 'customer-1' },
+    });
+  });
 
   it('renders the selected Users chat through the canonical Conversation Surface', async () => {
     mocks.permissions.push('project.translation.create');

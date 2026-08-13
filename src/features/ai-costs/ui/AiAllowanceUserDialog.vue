@@ -5,6 +5,7 @@ import Dialog from 'primevue/dialog';
 import Message from 'primevue/message';
 import Skeleton from 'primevue/skeleton';
 import { ApiError } from '@/shared/api/http/api-error';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 import {
   addDecimalStrings,
   compareDecimalStrings,
@@ -603,10 +604,15 @@ async function refreshAssignmentDraft(): Promise<void> {
   <Dialog
     :visible="visible && canRead"
     modal
-    :header="canRead ? `AI-квота · ${identity}` : 'AI-квота'"
     :style="{ width: 'min(820px, 96vw)' }"
     @update:visible="emit('update:visible', $event)"
   >
+    <template #header>
+      <div class="allowance-dialog-title">
+        <span>AI-квота</span>
+        <ExternalUserId v-if="canRead" :value="identity" />
+      </div>
+    </template>
     <div class="user-allowance">
       <Message severity="info" :closable="false"
         >Это внутренняя квота потребления AI в USD, не денежный кошелёк пользователя.</Message
@@ -906,6 +912,13 @@ async function refreshAssignmentDraft(): Promise<void> {
 </template>
 
 <style scoped>
+.allowance-dialog-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
 .user-allowance,
 .mutation-form,
 .details,

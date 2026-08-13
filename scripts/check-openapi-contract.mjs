@@ -1487,6 +1487,7 @@ requireSchemaProperties('TranslationJobResponseDto', [
 ]);
 requireSchemaProperties('ProfileProjectionResponseDto', [
   'endUserId',
+  'externalUserId',
   'profileVersion',
   'contractRevision',
   'publicationId',
@@ -1499,7 +1500,12 @@ requireSchemaProperties('ProfileProjectionResponseDto', [
   'provenance',
   'lastRejectedSync',
 ]);
-forbidSchemaProperties('ProfileProjectionResponseDto', ['externalUserId']);
+requireSchemaProperties('CmsProfileSummaryResponseDto', [
+  'endUserId',
+  'externalUserId',
+  'profileVersion',
+  'fields',
+]);
 requireRequiredProperties('CmsConversationCollaborationResponseDto', [
   'conversationId',
   'generation',

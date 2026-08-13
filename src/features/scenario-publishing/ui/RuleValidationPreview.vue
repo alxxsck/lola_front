@@ -33,6 +33,7 @@ import {
   type ValidateScenarioRuleResponseDto,
 } from '@/shared/api/repository/scenario-authoring';
 import type { EventLog } from '@/shared/types/domain';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -855,11 +856,12 @@ onBeforeUnmount(() => {
             <span
               ><strong>{{ log.eventName }}</strong
               ><small
-                >{{ log.userExternalId }} ·
+                ><span class="mono">{{ log.userExternalId }}</span> ·
                 {{ new Date(log.receivedAt).toLocaleString('ru-RU') }}</small
               ></span
             >
           </label>
+          <ExternalUserId :value="log.userExternalId" icon-only />
         </li>
       </ul>
       <nav class="pagination" aria-label="Страницы событий">
@@ -1117,9 +1119,10 @@ button {
 }
 .event-list label {
   display: flex;
+  min-width: 0;
+  flex: 1;
   align-items: center;
   gap: 12px;
-  width: 100%;
   cursor: pointer;
 }
 .event-list label span {

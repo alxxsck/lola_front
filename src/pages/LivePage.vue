@@ -10,6 +10,7 @@ import type { ActiveSession } from '@/shared/types/domain';
 import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { hasProjectPermission } from '@/features/auth/permission-access';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 const auth = useAuthStore();
 const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
@@ -124,7 +125,7 @@ onUnmounted(() => window.clearInterval(timer));
           <div class="session-avatar">{{ session.userName.slice(0, 1).toUpperCase() }}<i /></div>
           <div>
             <strong>{{ session.userName }}</strong
-            ><span class="mono">{{ session.externalId }}</span>
+            ><ExternalUserId :value="session.externalId" />
           </div>
           <Tag
             :value="session.status === 'ONLINE' ? 'Онлайн' : 'Нет активности'"
@@ -369,6 +370,10 @@ onUnmounted(() => window.clearInterval(timer));
   pointer-events: none;
 }
 .session-card .session-actions {
+  z-index: 2;
+  pointer-events: auto;
+}
+.session-card :deep(.external-user-id) {
   z-index: 2;
   pointer-events: auto;
 }

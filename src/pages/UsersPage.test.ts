@@ -6,6 +6,7 @@ import UsersPage from './UsersPage.vue';
 
 const profile = {
   endUserId: 'user-1',
+  externalUserId: 'product-user-42',
   profileVersion: '8',
   syncStatus: 'VALID' as const,
   lastSeenAt: '2026-07-16T10:00:00.000Z',
@@ -186,17 +187,13 @@ describe('страница профилей с единым рабочим пр�
     );
   });
 
-  it('ищет пользователя по точному внутреннему ID через защищённую проекцию', async () => {
+  it('ищет пользователя по точному внешнему ID через список профилей', async () => {
     const wrapper = mountPage();
     await flushPromises();
     mocks.list.mockClear();
-    mocks.profile.mockResolvedValueOnce({
-      ...profile,
-      endUserId: 'user-off-page',
-      contractRevision: 3,
-      ageSeconds: 60,
-      receivedAt: profile.lastSeenAt,
-      provenance: 'PRODUCT_PROFILE',
+    mocks.list.mockResolvedValueOnce({
+      items: [{ ...profile, externalUserId: 'product-user-off-page' }],
+      nextCursor: null,
     });
     const page = wrapper.vm as unknown as {
       query: string;
@@ -204,13 +201,16 @@ describe('страница профилей с единым рабочим пр�
       items: (typeof profile)[];
     };
 
-    page.query = 'user-off-page';
+    page.query = 'product-user-off-page';
     page.search();
     await flushPromises();
 
-    expect(mocks.profile).toHaveBeenCalledWith('project-1', 'user-off-page');
-    expect(mocks.list).not.toHaveBeenCalled();
-    expect(page.items.map((item) => item.endUserId)).toEqual(['user-off-page']);
+    expect(mocks.list).toHaveBeenCalledWith(
+      'project-1',
+      expect.objectContaining({ externalUserId: 'product-user-off-page' }),
+    );
+    expect(mocks.profile).not.toHaveBeenCalled();
+    expect(page.items.map((item) => item.externalUserId)).toEqual(['product-user-off-page']);
   });
 
   it('сохраняет понятную продуктовую навигацию к настройке полей', async () => {
@@ -237,7 +237,7 @@ describe('страница профилей с единым рабочим пр�
     ]);
   });
 
-  it('показывает разрешённое имя над коротким внутренним ID', async () => {
+  it('показывает разрешённое имя над внешним ID', async () => {
     const wrapper = mountPage();
     await flushPromises();
     const namedProfile = {
@@ -264,8 +264,8 @@ describe('страница профилей с единым рабочим пр�
     };
 
     expect(page.userDisplayName(namedProfile)).toBe('Анна Смирнова');
-    expect(page.userProductId(namedProfile)).toBe('ID user-1');
+    expect(namedProfile.externalUserId).toBe('product-user-42');
     expect(page.userDisplayName(profile)).toBe('Пользователь');
-    expect(page.userProductId(profile)).toBe('ID user-1');
+    expect(profile.externalUserId).toBe('product-user-42');
   });
 });

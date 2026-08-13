@@ -29,6 +29,7 @@ import {
   type IntegrationActivityType,
 } from '../model/integration-activity';
 import { formatDate, relativeTime } from '@/shared/lib/format';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 interface FailedPageRequest {
   cursor: string | undefined;
@@ -566,7 +567,7 @@ function formatBytes(value: number): string {
           </Column>
           <Column header="Пользователь">
             <template #body="{ data }">
-              <strong class="mono user-id">{{ data.endUser.externalId }}</strong>
+              <ExternalUserId :value="data.endUser.externalId" />
             </template>
           </Column>
           <Column header="Источник">
@@ -625,13 +626,13 @@ function formatBytes(value: number): string {
       </div>
 
       <div v-if="items.length" class="activity-cards">
-        <button
-          v-for="item in items"
-          :key="item.id"
-          type="button"
-          class="activity-card card"
-          @click="openDetail(item)"
-        >
+        <article v-for="item in items" :key="item.id" class="activity-card card">
+          <button
+            type="button"
+            class="activity-card-open"
+            :aria-label="`Открыть ${activityStateLabel(item.state)}`"
+            @click="openDetail(item)"
+          />
           <span class="card-top"
             ><span class="provider-mark"><i :class="providerIcon(item.provider)" /></span
             ><span class="card-title"
@@ -646,10 +647,11 @@ function formatBytes(value: number): string {
               rounded
           /></span>
           <span class="card-meta"
-            ><span class="mono"><i class="pi pi-user" /> {{ item.endUser.externalId }}</span
+            ><span
+              ><i class="pi pi-user" /> <ExternalUserId :value="item.endUser.externalId" /></span
             ><span><i class="pi pi-clock" /> {{ relativeTime(item.createdAt) }}</span></span
           >
-        </button>
+        </article>
       </div>
 
       <footer v-if="items.length" class="pagination">
@@ -711,7 +713,7 @@ function formatBytes(value: number): string {
           </div>
           <div>
             <span>Пользователь</span>
-            <strong class="mono">{{ detail.endUser.externalId }}</strong>
+            <ExternalUserId :value="detail.endUser.externalId" />
           </div>
           <div>
             <span>Источник</span>
@@ -1087,6 +1089,7 @@ function formatBytes(value: number): string {
   display: none;
 }
 .activity-card {
+  position: relative;
   display: grid;
   gap: 13px;
   width: 100%;
@@ -1095,6 +1098,28 @@ function formatBytes(value: number): string {
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+.activity-card-open {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.activity-card-open:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.activity-card > :not(.activity-card-open) {
+  position: relative;
+  pointer-events: none;
+}
+.activity-card :deep(.external-user-id) {
+  z-index: 2;
+  pointer-events: auto;
 }
 .card-top {
   display: flex;

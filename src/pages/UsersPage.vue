@@ -22,6 +22,7 @@ import type {
 import { repository } from '@/shared/api/repository';
 import { conversationAISuspensionEnabled } from '@/shared/config/features';
 import { formatDate, relativeTime } from '@/shared/lib/format';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -72,6 +73,7 @@ const aiFilterOptions = [
 function summaryFromProfile(profile: ProfileProjectionResponseDto): CmsProfileSummaryResponseDto {
   return {
     endUserId: profile.endUserId,
+    externalUserId: profile.externalUserId,
     fields: profile.fields,
     lastSeenAt: profile.observedAt ?? profile.receivedAt ?? new Date(0).toISOString(),
     observedAt: profile.observedAt,
@@ -97,30 +99,20 @@ async function load(append = false): Promise<void> {
     const response =
       repository.mode === 'mock'
         ? await loadMockProfiles(projectId)
-        : appliedQuery.value
-          ? {
-              items: [
-                summaryFromProfile(
-                  await endUserProfileRepository.profile(projectId, appliedQuery.value),
-                ),
-              ],
-              nextCursor: null,
-            }
-          : await endUserProfileRepository.list(projectId, {
-              limit: 50,
-              ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
-              ...(aiFilter.value === 'SUSPENDED'
-                ? { hasActiveConversationAiSuspension: true }
-                : {}),
-              ...(filterDefinitionId.value && filterValue.value
-                ? {
-                    filterDefinitionId: filterDefinitionId.value,
-                    filterOperator: filterOperator.value,
-                    filterValue: filterValue.value,
-                  }
-                : {}),
-              sort: sort.value,
-            });
+        : await endUserProfileRepository.list(projectId, {
+            limit: 50,
+            ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
+            ...(appliedQuery.value ? { externalUserId: appliedQuery.value } : {}),
+            ...(aiFilter.value === 'SUSPENDED' ? { hasActiveConversationAiSuspension: true } : {}),
+            ...(filterDefinitionId.value && filterValue.value
+              ? {
+                  filterDefinitionId: filterDefinitionId.value,
+                  filterOperator: filterOperator.value,
+                  filterValue: filterValue.value,
+                }
+              : {}),
+            sort: sort.value,
+          });
     if (request !== requestSequence) return;
     items.value = append ? [...items.value, ...response.items] : response.items;
     nextCursor.value = response.nextCursor ?? null;
@@ -186,6 +178,7 @@ async function loadMockProfiles(
       );
       return {
         endUserId: user.id,
+        externalUserId: user.externalId,
         locale: user.locale,
         lastSeenAt: user.lastSeenAt,
         observedAt: user.lastSeenAt,
@@ -208,10 +201,7 @@ async function loadMockProfiles(
   );
   const filtered = profiles
     .filter(
-      (profile) =>
-        !normalizedQuery ||
-        profile.endUserId.toLowerCase().includes(normalizedQuery) ||
-        userDisplayName(profile).toLowerCase().includes(normalizedQuery),
+      (profile) => !normalizedQuery || profile.externalUserId.toLowerCase() === normalizedQuery,
     )
     .filter(
       (profile) =>
@@ -293,10 +283,6 @@ function userDisplayName(profile: CmsProfileSummaryResponseDto): string {
   );
   if (!displayName?.value) return 'Пользователь';
   return formatProfileValue(displayName.value).trim() || 'Пользователь';
-}
-
-function userProductId(profile: CmsProfileSummaryResponseDto): string {
-  return `ID ${profile.endUserId.slice(0, 8)}`;
 }
 
 function syncSeverity(status: string): 'success' | 'warn' | 'secondary' | 'danger' {
@@ -389,11 +375,11 @@ onBeforeUnmount(() => {
 
     <form class="filters card" @submit.prevent="search">
       <label class="search"
-        ><span>Внутренний ID пользователя</span>
+        ><span>Внешний ID пользователя</span>
         <div>
           <i class="pi pi-search" /><InputText
             v-model="query"
-            placeholder="UUID пользователя"
+            placeholder="ID пользователя в продукте"
           /><Button type="submit" label="Найти" /></div
       ></label>
       <label
@@ -469,7 +455,9 @@ onBeforeUnmount(() => {
               <span class="avatar">{{ userDisplayName(data).slice(0, 1).toUpperCase() }}</span>
               <div>
                 <strong>{{ userDisplayName(data) }}</strong
-                ><small>{{ userProductId(data) }}</small>
+                ><small class="user-product-id"
+                  ><span>ID</span><ExternalUserId :value="data.externalUserId"
+                /></small>
               </div>
               <UserAISuspensionIndicator
                 v-if="conversationAISuspensionEnabled"
@@ -525,6 +513,7 @@ onBeforeUnmount(() => {
     v-model:visible="workspaceVisible"
     :project-id="auth.project.id"
     :end-user-id="selected?.endUserId ?? null"
+    :external-user-id="selected?.externalUserId"
     :preferred-conversation-id="
       typeof route.query.conversationId === 'string' ? route.query.conversationId : undefined
     "
@@ -546,6 +535,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.user-product-id {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
 }
 .header-actions {
   flex-wrap: wrap;

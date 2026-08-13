@@ -9,6 +9,7 @@ import AICommandComposer from '@/features/cms-agent/ui/AICommandComposer.vue';
 import { repository } from '@/shared/api/repository';
 import { relativeTime } from '@/shared/lib/format';
 import type { DashboardStats, EventLog } from '@/shared/types/domain';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 const auth = useAuthStore();
 const loading = ref(true);
@@ -280,7 +281,7 @@ onMounted(loadDashboard);
                 />
               </div>
               <p>
-                {{ item.userExternalId }} · {{ item.eventCode }} ·
+                <ExternalUserId :value="item.userExternalId" /> · {{ item.eventCode }} ·
                 {{ item.source.toLowerCase() }}
               </p>
             </div>

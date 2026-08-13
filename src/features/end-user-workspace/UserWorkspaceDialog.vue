@@ -60,6 +60,7 @@ import {
   releaseRootScrollLock,
 } from '@/shared/ui/workspace-presentation/root-scroll-lock';
 import FullViewportWorkspaceShell from '@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 import ConversationTicketDrawer from './ConversationTicketDrawer.vue';
 import UserConversationPane from './UserConversationPane.vue';
 
@@ -227,6 +228,12 @@ const projectPermissions = computed(() => auth.project?.effectivePermissionCodes
 const canReadProfiles = computed(() =>
   hasProjectPermission(projectPermissions.value, 'project.profiles.read'),
 );
+const projectJournalTab = computed<'events' | 'integrations' | null>(() => {
+  if (hasProjectPermission(projectPermissions.value, 'project.event_logs.read')) return 'events';
+  if (hasProjectPermission(projectPermissions.value, 'project.integration_activity.read'))
+    return 'integrations';
+  return null;
+});
 const canReadTelegramLinks = computed(() =>
   hasProjectPermission(projectPermissions.value, 'project.telegram.links.read'),
 );
@@ -600,7 +607,27 @@ const projectTimezone = computed(() => {
     ? scenarioEngine.activity.timezone
     : 'UTC';
 });
-const displayName = computed(() => props.externalUserId || props.endUserId || 'Пользователь');
+const externalIdentity = computed(() => detail.value?.externalUserId || props.externalUserId || '');
+const displayName = computed(() => {
+  const displayNameField = detail.value?.fields.find(
+    (field) =>
+      field.semanticRole === 'DISPLAY_NAME' &&
+      field.availability === 'AVAILABLE' &&
+      field.access === 'ALLOWED' &&
+      field.value,
+  );
+  const profileName = displayNameField?.value
+    ? formatProfileValue(displayNameField.value).trim()
+    : '';
+  return profileName || externalIdentity.value || props.endUserId || 'Пользователь';
+});
+function openProjectJournal(): void {
+  if (!projectJournalTab.value || !externalIdentity.value) return;
+  void router.push({
+    name: 'event-logs',
+    query: { tab: projectJournalTab.value, user: externalIdentity.value },
+  });
+}
 const realtimeStatus = computed(() => {
   if (realtimeState.value === 'CONNECTED') {
     return { label: 'Live', state: 'connected' };
@@ -849,6 +876,7 @@ async function loadProfile(endUserId: string): Promise<ProfileProjectionResponse
   });
   return {
     endUserId: user.id,
+    externalUserId: user.externalId,
     profileVersion: 'demo',
     syncStatus: 'VALID',
     fields: [
@@ -1325,7 +1353,13 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
           <div class="workspace-identity">
             <h2>{{ displayName }}</h2>
             <span class="workspace-identity-meta">
-              {{ workspaceMode === 'CHAT' ? endUserId || '—' : 'Профиль пользователя' }}
+              <ExternalUserId
+                v-if="workspaceMode === 'CHAT' && externalIdentity"
+                :value="externalIdentity"
+              />
+              <template v-else>{{
+                workspaceMode === 'CHAT' ? '—' : 'Профиль пользователя'
+              }}</template>
               <i
                 v-if="workspaceMode === 'CHAT'"
                 class="presence-dot"
@@ -1387,21 +1421,33 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
               <span class="eyebrow">Профиль пользователя</span>
               <h2>{{ displayName }}</h2>
               <p>
-                {{ endUserId }}
+                <ExternalUserId v-if="externalIdentity" :value="externalIdentity" />
+                <template v-else>—</template>
                 <template v-if="detail?.observedAt">
                   · обновлён {{ relativeTime(detail.observedAt) }}
                 </template>
               </p>
             </div>
           </div>
-          <Button
-            v-if="canReadConversations"
-            data-action="open-chat"
-            label="Открыть чат"
-            icon="pi pi-arrow-right"
-            icon-pos="right"
-            @click="openChat"
-          />
+          <div class="profile-hero-actions">
+            <Button
+              v-if="projectJournalTab && externalIdentity"
+              data-action="open-project-journal"
+              label="История событий"
+              icon="pi pi-history"
+              severity="secondary"
+              outlined
+              @click="openProjectJournal"
+            />
+            <Button
+              v-if="canReadConversations"
+              data-action="open-chat"
+              label="Открыть чат"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              @click="openChat"
+            />
+          </div>
         </div>
 
         <div class="profile-layout">
@@ -1433,6 +1479,10 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
               </Message>
               <template v-else-if="detail">
                 <dl class="profile-facts">
+                  <div>
+                    <dt>Внешний ID пользователя</dt>
+                    <dd><ExternalUserId :value="detail.externalUserId" /></dd>
+                  </div>
                   <div>
                     <dt>Внутренний ID пользователя</dt>
                     <dd>{{ detail.endUserId }}</dd>
@@ -1820,7 +1870,7 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
           <ConversationTicketDrawer
             v-if="selectedConversation"
             :visible="ticketDrawerVisible"
-            :external-user-id="endUserId || '—'"
+            :external-user-id="externalIdentity || '—'"
             :conversation-title="selectedConversation.title"
             :message-count="messages.length"
             @close="ticketDrawerVisible = false"
@@ -1848,7 +1898,7 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
         :visible="true"
         :project-id="projectId"
         :end-user-id="endUserId"
-        :identity="externalUserId || endUserId"
+        :identity="externalIdentity || endUserId"
         :initial-mode="allowanceDialogMode"
         :can-read="canReadAllowance"
         :can-grant="canGrantAllowance"
@@ -1864,7 +1914,7 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
         v-if="canReadAllowance && endUserId"
         v-model:visible="allowanceJournalVisible"
         modal
-        :header="`Журнал AI-квоты · ${externalUserId || endUserId}`"
+        :header="`Журнал AI-квоты · ${externalIdentity || endUserId}`"
         :style="{ width: 'min(1180px, 96vw)' }"
       >
         <AiAllowanceJournalPanel
@@ -2094,6 +2144,11 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
   max-width: 1220px;
   padding: 4px 4px 24px;
   margin: 0 auto;
+}
+.profile-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .profile-identity {
   min-width: 0;
@@ -2983,6 +3038,10 @@ function displayField(field: ProfileProjectionResponseDto['fields'][number]): st
   }
   .profile-hero :deep(.p-button) {
     width: 100%;
+  }
+  .profile-hero-actions {
+    width: 100%;
+    flex-direction: column;
   }
   .profile-layout {
     grid-template-columns: 1fr;

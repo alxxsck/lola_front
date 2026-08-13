@@ -15,8 +15,6 @@ export interface ResolvedEndUserIdentity {
   endUserId: string;
 }
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 async function call<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
@@ -38,9 +36,6 @@ export const endUserProfileRepository = {
   ): Promise<ResolvedEndUserIdentity | null> {
     const normalized = identity.trim();
     if (!normalized) return null;
-    if (uuidPattern.test(normalized)) {
-      return { endUserId: normalized };
-    }
 
     if (isMockMode) {
       const page = await repository.getUsersPage(projectId, { limit: 100 });
@@ -48,9 +43,10 @@ export const endUserProfileRepository = {
       return user ? { endUserId: user.id } : null;
     }
 
-    // The permission-safe CMS contract intentionally does not expose or
-    // accept product-owned external identifiers. API mode resolves only the
-    // opaque End User id above instead of attempting an unsafe lookup.
-    return null;
+    const page = await call(() =>
+      adminEndUserProfilesList(projectId, { externalUserId: normalized, limit: 1 }),
+    );
+    const user = page.items[0];
+    return user ? { endUserId: user.endUserId } : null;
   },
 };

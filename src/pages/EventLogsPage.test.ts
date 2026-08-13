@@ -347,7 +347,7 @@ describe('EventLogsPage', () => {
     expect(wrapper.findAll('.timeline-payload > span')).toHaveLength(4);
     expect(wrapper.get('.timeline-source-icon').classes()).toContain('pi-desktop');
 
-    await wrapper.get('.timeline-item').trigger('click');
+    await wrapper.get('.timeline-item-open').trigger('click');
     expect(wrapper.find('drawer-stub').attributes()).toHaveProperty('visible');
     expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain('Приём включёнДа');
     expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain('Из браузераНет');

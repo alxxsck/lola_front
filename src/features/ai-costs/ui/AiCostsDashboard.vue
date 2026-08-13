@@ -8,6 +8,7 @@ import Skeleton from 'primevue/skeleton';
 import { useAuthStore } from '@/features/auth/auth.store';
 import { hasProjectPermission } from '@/features/auth/permission-access';
 import { AI_USAGE_CATEGORY_LABELS } from '@/features/ai-usage/ai-usage.model';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 import {
   compareDecimalStrings,
   decimalRatio,
@@ -498,6 +499,10 @@ function rowIdentity(row: AiCostRankedRow): string {
   return '—';
 }
 
+function externalUserId(row: AiCostRankedRow): string {
+  return 'externalId' in row && typeof row.externalId === 'string' ? row.externalId : '';
+}
+
 function userHref(row: AiCostRankedRow): string | undefined {
   return 'endUserId' in row && typeof row.endUserId === 'string' && canReadProfiles.value
     ? `/users/${encodeURIComponent(row.endUserId)}`
@@ -774,9 +779,11 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
             <tbody>
               <tr v-for="row in displayedRows" :key="rowIdentity(row)">
                 <td>
-                  <a v-if="state.tab === 'users' && userHref(row)" :href="userHref(row)">{{
-                    rowIdentity(row)
-                  }}</a>
+                  <ExternalUserId
+                    v-if="state.tab === 'users' && externalUserId(row)"
+                    :value="externalUserId(row)"
+                    :href="userHref(row)"
+                  />
                   <a
                     v-else-if="state.tab === 'employees' && employeeHref(row)"
                     :href="employeeHref(row)"

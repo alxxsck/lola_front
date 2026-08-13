@@ -96,6 +96,7 @@ const selection: SupportWorkspaceSelection = {
 function profile(): ProfileProjectionResponseDto {
   return {
     endUserId: 'end-user-1',
+    externalUserId: 'product-user-1',
     profileVersion: '1',
     syncStatus: 'VALID_WITH_WARNINGS',
     provenance: 'PRODUCT_PROFILE',

@@ -21,6 +21,7 @@ import type { EventLogFilters } from '@/shared/api/repository/contracts';
 import { buildEventLogFilters, eventPayloadHighlights } from '@/shared/lib/event-logs';
 import { formatDate, relativeTime } from '@/shared/lib/format';
 import type { EventDefinition, EventLog } from '@/shared/types/domain';
+import ExternalUserId from '@/shared/ui/ExternalUserId.vue';
 
 withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
 
@@ -550,7 +551,7 @@ function json(value: unknown) {
           ><i class="pi pi-lock" /> Список зафиксирован на момент загрузки. Новые события появятся
           после обновления.</span
         ><span v-if="appliedUserId"
-          ><i class="pi pi-user" /> Путь <strong class="mono">{{ appliedUserId }}</strong></span
+          ><i class="pi pi-user" /> Путь <ExternalUserId :value="appliedUserId" /></span
         ><span><i class="pi pi-desktop" /> {{ frontendCount }} frontend</span
         ><span :class="{ danger: failedCount }"
           ><i class="pi pi-exclamation-circle" /> {{ failedCount }} ошибок</span
@@ -592,8 +593,8 @@ function json(value: unknown) {
           <Column header="Пользователь"
             ><template #body="{ data }"
               ><div class="user-cell">
-                <strong class="mono">{{ data.userExternalId }}</strong
-                ><small>{{ sourceLabel(data.source) }}</small>
+                <ExternalUserId :value="data.userExternalId" />
+                <small>{{ sourceLabel(data.source) }}</small>
               </div></template
             ></Column
           >
@@ -658,13 +659,13 @@ function json(value: unknown) {
           <Tag :value="`${logs.length} на странице`" severity="secondary" />
         </header>
         <div class="timeline-list">
-          <button
-            v-for="item in logs"
-            :key="item.id"
-            type="button"
-            class="timeline-item"
-            @click="openDetail(item)"
-          >
+          <article v-for="item in logs" :key="item.id" class="timeline-item">
+            <button
+              type="button"
+              class="timeline-item-open"
+              :aria-label="`Открыть лог ${item.eventName}`"
+              @click="openDetail(item)"
+            />
             <span class="timeline-rail"><i :class="item.status.toLowerCase()" /></span
             ><span class="timeline-time"
               ><strong>{{
@@ -689,7 +690,9 @@ function json(value: unknown) {
                   class="timeline-source-icon"
                   :class="item.source === 'FRONTEND' ? 'pi pi-desktop' : 'pi pi-server'"
                   aria-hidden="true"
-                /><span>{{ item.userExternalId }} · {{ sourceLabel(item.source) }}</span></span
+                /><ExternalUserId :value="item.userExternalId" /><span
+                  >· {{ sourceLabel(item.source) }}</span
+                ></span
               ><span v-if="eventPayloadHighlights(item.payload).length" class="timeline-payload"
                 ><span
                   v-for="entry in eventPayloadHighlights(
@@ -703,7 +706,7 @@ function json(value: unknown) {
             ><Tag :value="statusLabel(item.status)" :severity="severity(item.status)" rounded /><i
               class="pi pi-arrow-up-right open-icon"
             />
-          </button>
+          </article>
         </div>
       </div>
 
@@ -758,9 +761,7 @@ function json(value: unknown) {
           <div>
             <span>Получено</span><strong>{{ formatDate(selectedLog.receivedAt) }}</strong>
           </div>
-          <div>
-            <span>Пользователь</span><strong class="mono">{{ selectedLog.userExternalId }}</strong>
-          </div>
+          <div><span>Пользователь</span><ExternalUserId :value="selectedLog.userExternalId" /></div>
         </div>
         <Message v-if="selectedLog.status === 'FAILED'" severity="error" :closable="false"
           ><div>
@@ -1180,6 +1181,28 @@ function json(value: unknown) {
   padding: 13px 5px;
   cursor: pointer;
   border-radius: 12px;
+}
+.timeline-item-open {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.timeline-item-open:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.timeline-item > :not(.timeline-item-open) {
+  position: relative;
+  pointer-events: none;
+}
+.timeline-item :deep(.external-user-id) {
+  z-index: 2;
+  pointer-events: auto;
 }
 .timeline-item:hover {
   background: var(--surface-hover);

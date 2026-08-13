@@ -9,6 +9,7 @@ import {
 
 const profile = {
   endUserId: 'end-user-1',
+  externalUserId: 'product-user-1',
   profileVersion: '7',
   contractRevision: 3,
   publicationId: null,

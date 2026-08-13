@@ -88,6 +88,7 @@ const mockSource: SupportInspectorSource = {
     if (!user) throw new Error('Support workspace End User is unavailable');
     return {
       endUserId: user.id,
+      externalUserId: user.externalId,
       profileVersion: '7',
       syncStatus: 'VALID',
       fields: [
