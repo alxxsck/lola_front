@@ -26,23 +26,28 @@ test('pins the permission-safe Support Inspector Events recipe', () => {
   assert.ok(operation.responses['503']);
 });
 
-test('does not republish product external identifiers in Inspector projections', () => {
+test('keeps product external identity explicit in profiles and absent from workspace selection', () => {
   for (const schemaName of [
     'SupportWorkspaceEndUserResponseDto',
     'EndUserCaseEndUserResponseDto',
-    'CmsProfileSummaryResponseDto',
-    'ProfileProjectionResponseDto',
   ]) {
     const properties = contract.components.schemas[schemaName]?.properties ?? {};
     assert.equal('externalId' in properties, false, schemaName);
     assert.equal('externalUserId' in properties, false, schemaName);
   }
+
+  for (const schemaName of ['CmsProfileSummaryResponseDto', 'ProfileProjectionResponseDto']) {
+    const externalUserId = contract.components.schemas[schemaName]?.properties?.externalUserId;
+    assert.equal(externalUserId?.type, 'string', schemaName);
+  }
+
   const listParameters =
-    contract.paths?.['/api/v1/admin/projects/{projectId}/end-user-profiles']?.get?.parameters ?? [];
-  assert.equal(
-    listParameters.some((parameter) => parameter.name === 'externalUserId'),
-    false,
+    contract.paths?.['/api/v1/admin/projects/{projectId}/end-users']?.get?.parameters ?? [];
+  const externalUserIdFilter = listParameters.find(
+    (parameter) => parameter.name === 'externalUserId',
   );
+  assert.equal(externalUserIdFilter?.schema?.minLength, 1);
+  assert.equal(externalUserIdFilter?.schema?.maxLength, 200);
 });
 
 test('pins CMS field visibility as an explicit base or restricted policy', () => {

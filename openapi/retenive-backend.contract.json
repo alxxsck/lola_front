@@ -5,5 +5,6 @@
   },
   "artifact": "retenive-backend.json",
   "contractRevision": "sha256:4d0bf64dce4d35b8662931e81c35dbe02e94f4dec64d5bb9b16a412ee270ecd4",
-  "sha256": "4d0bf64dce4d35b8662931e81c35dbe02e94f4dec64d5bb9b16a412ee270ecd4"
+  "sha256": "4d0bf64dce4d35b8662931e81c35dbe02e94f4dec64d5bb9b16a412ee270ecd4",
+  "backendSourceRevision": "b6c56a9fa7ccb20b96174dc55c56dcabf4d9518f"
 }
